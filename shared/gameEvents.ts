@@ -36,6 +36,10 @@ export interface CompletedTicket {
   description: string;
   storyPoints: number;
   completedAt: string; // ISO 8601 date string for JSON serialization
+  teamBreakdown: {
+    developers: { participated: boolean; consensusScore?: number };
+    qa: { participated: boolean; consensusScore?: number };
+  };
 }
 
 export interface Boss {

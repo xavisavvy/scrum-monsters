@@ -69,6 +69,14 @@ export function BattleScreen() {
         const completedTickets = Array.isArray(currentLobby.completedTickets) ? currentLobby.completedTickets : [];
         const totalStoryPoints = completedTickets.reduce((sum, ticket) => sum + ticket.storyPoints, 0);
         
+        // Calculate story points by team
+        const devStoryPoints = completedTickets.reduce((sum, ticket) => 
+          ticket.teamBreakdown?.developers.participated ? sum + (ticket.teamBreakdown.developers.consensusScore || 0) : sum, 0
+        );
+        const qaStoryPoints = completedTickets.reduce((sum, ticket) => 
+          ticket.teamBreakdown?.qa.participated ? sum + (ticket.teamBreakdown.qa.consensusScore || 0) : sum, 0
+        );
+        
         return (
           <div className="p-6">
             <div className="text-center mb-6">
@@ -83,6 +91,20 @@ export function BattleScreen() {
                   </p>
                   <div className="text-sm text-gray-400">
                     Total Objectives: {currentLobby.tickets.length} • Total Story Points: {totalStoryPoints}
+                  </div>
+                  
+                  {/* Team Story Points Breakdown */}
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div className="bg-blue-900/30 rounded-lg border border-blue-500/30 p-3">
+                      <div className="text-blue-400 font-bold text-sm">👨‍💻 Developers</div>
+                      <div className="text-xl font-bold text-blue-300">{devStoryPoints}</div>
+                      <div className="text-xs text-gray-400">Story Points</div>
+                    </div>
+                    <div className="bg-green-900/30 rounded-lg border border-green-500/30 p-3">
+                      <div className="text-green-400 font-bold text-sm">🧪 QA Engineers</div>
+                      <div className="text-xl font-bold text-green-300">{qaStoryPoints}</div>
+                      <div className="text-xs text-gray-400">Story Points</div>
+                    </div>
                   </div>
                 </div>
               </RetroCard>
@@ -108,6 +130,19 @@ export function BattleScreen() {
                       <div className="text-right">
                         <div className="text-2xl font-bold text-yellow-400">{ticket.storyPoints}</div>
                         <div className="text-xs text-gray-400">Story Points</div>
+                        {/* Team participation indicators */}
+                        <div className="flex gap-1 justify-end mt-1">
+                          {ticket.teamBreakdown?.developers.participated && (
+                            <span className="text-xs bg-blue-600 text-white px-1 rounded">
+                              Dev: {ticket.teamBreakdown.developers.consensusScore}
+                            </span>
+                          )}
+                          {ticket.teamBreakdown?.qa.participated && (
+                            <span className="text-xs bg-green-600 text-white px-1 rounded">
+                              QA: {ticket.teamBreakdown.qa.consensusScore}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}

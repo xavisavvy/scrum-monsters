@@ -288,7 +288,17 @@ class GameStateManager {
         title: lobby.currentTicket.title,
         description: lobby.currentTicket.description,
         storyPoints,
-        completedAt: new Date().toISOString()
+        completedAt: new Date().toISOString(),
+        teamBreakdown: {
+          developers: { 
+            participated: devTeamExists && devConsensus, 
+            consensusScore: devConsensus ? devScoreValues[0] : undefined 
+          },
+          qa: { 
+            participated: qaTeamExists && qaConsensus, 
+            consensusScore: qaConsensus ? qaScoreValues[0] : undefined 
+          }
+        }
       };
       lobby.completedTickets.push(completedTicket);
       
