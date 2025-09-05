@@ -113,6 +113,25 @@
 }
 
 /* Animation classes */
+@keyframes cinematic-fade-in {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes cinematic-pan-left {
+  0% { transform: translateX(-10%) scale(1.1); }
+  100% { transform: translateX(10%) scale(1.1); }
+}
+
+@keyframes cinematic-pan-right {
+  0% { transform: translateX(10%) scale(1.1); }
+  100% { transform: translateX(-10%) scale(1.1); }
+}
+
+.cinematic-fade-in {
+  animation: cinematic-fade-in 2s ease-in-out;
+}
+
 @keyframes damage-flash {
   0% { background-color: rgba(255, 0, 0, 0.8); }
   100% { background-color: transparent; }

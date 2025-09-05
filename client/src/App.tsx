@@ -5,6 +5,7 @@ import { Lobby } from '@/components/game/Lobby';
 import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
 import { RetroButton } from '@/components/ui/retro-button';
+import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -148,43 +149,46 @@ function App() {
     switch (appState) {
       case 'menu':
         return (
-          <div className="flex items-center justify-center min-h-screen p-6">
-            <div className="retro-card text-center max-w-md w-full">
-              <h1 className="text-4xl font-bold retro-text-glow mb-2">
-                SCRUM QUEST
-              </h1>
-              <p className="text-lg text-gray-400 mb-8">
-                Battle Jira Tickets in Epic JRPG Style!
-              </p>
-              
-              <div className="space-y-4">
-                <RetroButton
-                  onClick={() => setAppState('create_lobby')}
-                  className="w-full"
-                >
-                  Create Battle Lobby
-                </RetroButton>
+          <>
+            <CinematicBackground />
+            <div className="flex items-center justify-center min-h-screen p-6 relative z-10">
+              <div className="retro-card text-center max-w-md w-full">
+                <h1 className="text-4xl font-bold retro-text-glow mb-2">
+                  SCRUM QUEST
+                </h1>
+                <p className="text-lg text-gray-400 mb-8">
+                  Battle Jira Tickets in Epic JRPG Style!
+                </p>
                 
-                <RetroButton
-                  onClick={() => setAppState('join_lobby')}
-                  className="w-full"
-                  variant="secondary"
-                >
-                  Join Battle
-                </RetroButton>
-              </div>
-              
-              <div className="mt-8 pt-4 border-t border-gray-600">
-                <RetroButton
-                  onClick={toggleMute}
-                  size="sm"
-                  variant="secondary"
-                >
-                  {isMuted ? '🔇 Unmute' : '🔊 Mute'}
-                </RetroButton>
+                <div className="space-y-4">
+                  <RetroButton
+                    onClick={() => setAppState('create_lobby')}
+                    className="w-full"
+                  >
+                    Create Battle Lobby
+                  </RetroButton>
+                  
+                  <RetroButton
+                    onClick={() => setAppState('join_lobby')}
+                    className="w-full"
+                    variant="secondary"
+                  >
+                    Join Battle
+                  </RetroButton>
+                </div>
+                
+                <div className="mt-8 pt-4 border-t border-gray-600">
+                  <RetroButton
+                    onClick={toggleMute}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    {isMuted ? '🔇 Unmute' : '🔊 Mute'}
+                  </RetroButton>
+                </div>
               </div>
             </div>
-          </div>
+          </>
         );
 
       case 'create_lobby':
