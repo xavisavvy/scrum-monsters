@@ -44,40 +44,38 @@ export function CinematicBackground({ className = '' }: CinematicBackgroundProps
     const animationName = panLeft ? 'cinematic-pan-left' : 'cinematic-pan-right';
     
     return {
-      animationName,
-      animationDuration: '20s',
-      animationTimingFunction: 'linear' as const,
-      animationIterationCount: 'infinite' as const,
       opacity: isNext && isTransitioning ? 1 : (isNext ? 0 : 1),
       transition: 'opacity 1s ease-in-out',
-      transform: 'scale(1.1)',
+      // Temporarily disable animations to debug
+      // animationName,
+      // animationDuration: '20s',
+      // animationTimingFunction: 'linear' as const,
+      // animationIterationCount: 'infinite' as const,
+      // transform: 'scale(1.1)',
     };
   };
 
+  // Debug: Log current image to console
+  useEffect(() => {
+    console.log('Current image:', BOSS_LAIR_IMAGES[currentImageIndex]);
+    console.log('Current index:', currentImageIndex);
+  }, [currentImageIndex]);
+
   return (
-    <div className={`fixed top-0 left-0 w-screen h-screen overflow-hidden -z-10 ${className}`}>
-      {/* Current background image */}
-      <div
-        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${currentImageIndex === 0 ? 'cinematic-fade-in' : ''}`}
-        style={{
-          backgroundImage: `url(${BOSS_LAIR_IMAGES[currentImageIndex]})`,
-          ...getAnimationStyle(currentImageIndex),
-        }}
-      />
-      
-      {/* Next background image for crossfade */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${BOSS_LAIR_IMAGES[nextImageIndex]})`,
-          ...getAnimationStyle(nextImageIndex, true),
-        }}
-      />
-      
+    <div 
+      className="fixed inset-0 z-0"
+      style={{
+        backgroundImage: `url(${BOSS_LAIR_IMAGES[currentImageIndex]})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       {/* Dark overlay for better text readability */}
       <div 
         className="absolute inset-0 bg-black"
-        style={{ opacity: 0.4 }}
+        style={{ opacity: 0.2 }}
       />
     </div>
   );

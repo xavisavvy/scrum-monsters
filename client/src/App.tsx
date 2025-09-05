@@ -151,7 +151,7 @@ function App() {
         return (
           <>
             <CinematicBackground />
-            <div className="flex items-center justify-center min-h-screen p-6 relative z-10">
+            <div className="flex items-center justify-center min-h-screen p-6 relative z-20">
               <div className="retro-card text-center max-w-md w-full">
                 <h1 className="text-4xl font-bold retro-text-glow mb-2">
                   SCRUM QUEST
