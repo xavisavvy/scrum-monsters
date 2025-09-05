@@ -87,15 +87,78 @@ export interface ServerEvents {
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
-export const AVATAR_CLASSES: Record<AvatarClass, { name: string; description: string; color: string }> = {
-  ranger: { name: 'Ranger', description: 'Swift archer with keen eyes', color: '#228B22' },
-  rogue: { name: 'Rogue', description: 'Stealthy assassin', color: '#2F4F4F' },
-  bard: { name: 'Bard', description: 'Musical storyteller', color: '#9370DB' },
-  sorcerer: { name: 'Sorcerer', description: 'Raw magic wielder', color: '#FF4500' },
-  wizard: { name: 'Wizard', description: 'Learned spellcaster', color: '#4169E1' },
-  warrior: { name: 'Warrior', description: 'Brave melee fighter', color: '#B22222' },
-  paladin: { name: 'Paladin', description: 'Holy knight', color: '#FFD700' },
-  cleric: { name: 'Cleric', description: 'Divine healer', color: '#F0F8FF' }
+export interface CharacterStats {
+  str: number; // Strength - Physical damage, HP
+  dex: number; // Dexterity - Attack speed, critical chance
+  con: number; // Constitution - HP, damage resistance
+  wis: number; // Wisdom - Mana, spell resistance
+  int: number; // Intelligence - Spell damage, mana
+  cha: number; // Charisma - Team buffs, leadership bonuses
+}
+
+export const AVATAR_CLASSES: Record<AvatarClass, { 
+  name: string; 
+  description: string; 
+  color: string; 
+  stats: CharacterStats;
+  specialties: string[];
+}> = {
+  ranger: { 
+    name: 'Ranger', 
+    description: 'Swift archer with keen eyes', 
+    color: '#228B22',
+    stats: { str: 12, dex: 16, con: 10, wis: 14, int: 12, cha: 14 },
+    specialties: ['Ranged Combat', 'Tracking', 'Nature Magic']
+  },
+  rogue: { 
+    name: 'Rogue', 
+    description: 'Stealthy assassin', 
+    color: '#2F4F4F',
+    stats: { str: 10, dex: 18, con: 8, wis: 12, int: 14, cha: 16 },
+    specialties: ['Stealth', 'Critical Strikes', 'Lockpicking']
+  },
+  bard: { 
+    name: 'Bard', 
+    description: 'Musical storyteller', 
+    color: '#9370DB',
+    stats: { str: 6, dex: 12, con: 10, wis: 12, int: 16, cha: 22 },
+    specialties: ['Support Magic', 'Inspiration', 'Versatility']
+  },
+  sorcerer: { 
+    name: 'Sorcerer', 
+    description: 'Raw magic wielder', 
+    color: '#FF4500',
+    stats: { str: 6, dex: 10, con: 12, wis: 8, int: 22, cha: 20 },
+    specialties: ['Elemental Magic', 'Raw Power', 'Metamagic']
+  },
+  wizard: { 
+    name: 'Wizard', 
+    description: 'Learned spellcaster', 
+    color: '#4169E1',
+    stats: { str: 6, dex: 8, con: 10, wis: 16, int: 22, cha: 16 },
+    specialties: ['Arcane Knowledge', 'Spell Variety', 'Research']
+  },
+  warrior: { 
+    name: 'Warrior', 
+    description: 'Brave melee fighter', 
+    color: '#B22222',
+    stats: { str: 20, dex: 10, con: 16, wis: 8, int: 6, cha: 18 },
+    specialties: ['Melee Combat', 'Defense', 'Leadership']
+  },
+  paladin: { 
+    name: 'Paladin', 
+    description: 'Holy knight', 
+    color: '#FFD700',
+    stats: { str: 16, dex: 8, con: 14, wis: 12, int: 10, cha: 18 },
+    specialties: ['Divine Magic', 'Protection', 'Healing']
+  },
+  cleric: { 
+    name: 'Cleric', 
+    description: 'Divine healer', 
+    color: '#F0F8FF',
+    stats: { str: 10, dex: 6, con: 12, wis: 20, int: 12, cha: 18 },
+    specialties: ['Healing Magic', 'Divine Power', 'Support']
+  }
 };
 
 export const TEAM_NAMES: Record<TeamType, string> = {

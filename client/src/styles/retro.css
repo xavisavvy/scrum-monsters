@@ -241,6 +241,20 @@
   gap: 12px;
 }
 
+@media (max-width: 768px) {
+  .avatar-selection-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .avatar-selection-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}
+
 .avatar-card {
   background: var(--retro-primary);
   border: 2px solid var(--retro-border);
@@ -249,17 +263,30 @@
   text-align: center;
   cursor: pointer;
   transition: all 0.3s ease;
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
 .avatar-card:hover {
   border-color: var(--retro-glow);
   box-shadow: 0 0 15px hsla(var(--hue), 100%, 60%, 0.3);
+  transform: translateY(-2px);
 }
 
 .avatar-card.selected {
   border-color: var(--retro-accent);
   background: var(--retro-secondary);
-  box-shadow: 0 0 20px rgba(233, 69, 96, 0.5);
+  box-shadow: 
+    0 0 20px rgba(233, 69, 96, 0.5),
+    inset 0 0 10px rgba(233, 69, 96, 0.2);
+  transform: translateY(-2px);
+}
+
+.avatar-card:active {
+  transform: translateY(0px);
 }
 
 .team-section {
