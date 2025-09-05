@@ -15,13 +15,13 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 
 export function BattleScreen() {
-  const { currentLobby, currentBoss, addAttackAnimation } = useGameState();
+  const { currentLobby, addAttackAnimation } = useGameState();
   const { emit } = useWebSocket();
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
 
   // Handle boss music when entering/leaving battle
   useEffect(() => {
-    if (currentLobby?.gamePhase === 'battle' && currentBoss) {
+    if (currentLobby?.gamePhase === 'battle' && currentLobby?.boss) {
       // Fade in boss music when battle starts
       fadeInBossMusic();
     } else {
@@ -33,7 +33,7 @@ export function BattleScreen() {
     return () => {
       stopBossMusic();
     };
-  }, [currentLobby?.gamePhase, currentBoss, fadeInBossMusic, stopBossMusic]);
+  }, [currentLobby?.gamePhase, currentLobby?.boss, fadeInBossMusic, stopBossMusic]);
 
   const handleBossAttack = () => {
     const damage = Math.floor(Math.random() * 50) + 10;
@@ -60,11 +60,11 @@ export function BattleScreen() {
 
     switch (currentLobby.gamePhase) {
       case 'battle':
-        if (!currentBoss) return null;
+        if (!currentLobby?.boss) return null;
         return (
           <div className="relative">
             {/* Fullscreen Boss Background */}
-            <BossDisplay boss={currentBoss} onAttack={handleBossAttack} fullscreen />
+            <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
             {/* UI Overlay */}
             <div className="relative z-30 min-h-screen flex items-center justify-end p-6">

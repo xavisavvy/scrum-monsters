@@ -301,7 +301,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
             {onAttack && (
               <div className="text-center mt-3">
                 <p className="text-xs text-gray-300">
-                  Click anywhere on the boss to attack!
+                  Hit Tab for controls
                 </p>
               </div>
             )}
