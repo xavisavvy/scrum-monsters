@@ -66,7 +66,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   buttonSelectSound: null,
   musicTracks: [],
   currentTrackIndex: 0,
-  isMuted: true, // Start muted by default
+  isMuted: false, // Start unmuted by default
   isBossMusicMuted: false,
   isMenuMusicPlaying: false,
   isBossMusicPlaying: false,

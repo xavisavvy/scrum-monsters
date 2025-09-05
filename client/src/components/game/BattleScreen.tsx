@@ -85,8 +85,8 @@ export function BattleScreen() {
               />
             </div>
 
-            {/* Team Competition Display - Top Left */}
-            <div className="absolute top-6 left-6 z-30 max-w-sm">
+            {/* Team Competition Display - Top Right Side */}
+            <div className="absolute top-6 right-80 z-30 max-w-sm">
               <TeamScoreboard />
             </div>
 

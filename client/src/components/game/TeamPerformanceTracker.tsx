@@ -115,7 +115,7 @@ export function TeamPerformanceTracker() {
   const qaPerformance = getTeamPerformance('qa');
 
   return (
-    <div className="fixed top-4 left-4 z-30 pointer-events-none">
+    <div className="fixed top-20 left-4 z-30 pointer-events-none">
       <div className="bg-black bg-opacity-70 rounded-lg p-3 text-white text-sm">
         <div className="font-bold mb-2 text-center">⚡ Live Performance</div>
         
