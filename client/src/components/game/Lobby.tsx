@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -86,10 +87,24 @@ export function Lobby() {
             Lobby Code: <span className="retro-text-glow text-xl font-mono">{currentLobby.id}</span>
           </p>
           {inviteLink && (
-            <div className="mt-2">
-              <RetroButton size="sm" onClick={copyInviteLink}>
-                Copy Invite Link
-              </RetroButton>
+            <div className="mt-4 space-y-4">
+              {/* QR Code for easy mobile sharing */}
+              <div className="bg-white p-4 rounded-lg inline-block">
+                <QRCode
+                  value={inviteLink}
+                  size={128}
+                  level="M"
+                  includeMargin={true}
+                />
+              </div>
+              <div className="text-xs text-gray-500">
+                📱 Scan QR code to join on mobile
+              </div>
+              <div>
+                <RetroButton size="sm" onClick={copyInviteLink}>
+                  Copy Invite Link
+                </RetroButton>
+              </div>
             </div>
           )}
         </div>
