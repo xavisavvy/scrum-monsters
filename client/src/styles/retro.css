@@ -362,3 +362,30 @@
   padding: 16px;
   z-index: 100;
 }
+
+/* Boss animations */
+.boss-hovering {
+  animation: boss-hover 3s ease-in-out infinite, boss-menace 6s ease-in-out infinite;
+}
+
+@keyframes boss-hover {
+  0%, 100% { transform: translateY(0px) rotate(0deg); }
+  50% { transform: translateY(-15px) rotate(1deg); }
+}
+
+@keyframes boss-menace {
+  0%, 100% { transform: scale(1) translateX(0px); }
+  25% { transform: scale(1.02) translateX(5px); }
+  75% { transform: scale(0.98) translateX(-5px); }
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 1;
+    transform: translateY(0px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-80px) scale(1.2);
+  }
+}

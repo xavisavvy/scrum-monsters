@@ -2,12 +2,12 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { Boss } from '@/lib/gameTypes';
 
-// Import boss images
-import bugHydraImg from '@/assets/bosses/Bug_Hydra_Boss_8b867e3e.png';
-import sprintDemonImg from '@/assets/bosses/Sprint_Demon_Boss_a43a8439.png';
-import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_4f628254.png';
-import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_882e6943.png';
-import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_3a9ec6b7.png';
+// Import boss images (transparent versions)
+import bugHydraImg from '@/assets/bosses/Bug_Hydra_Boss_transparent.png';
+import sprintDemonImg from '@/assets/bosses/Sprint_Demon_Boss_transparent.png';
+import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_4f628254.png'; // No transparent version available
+import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_transparent.png';
+import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_transparent.png';
 
 // Lair background paths (using public URLs)
 const bugHydraLair = '/images/lairs/Bug_Hydra_Cave_Lair_a07f8108.png';
@@ -120,7 +120,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
               <img
                 src={bossImage}
                 alt={boss.name}
-                className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''}`}
+                className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''} ${!boss.defeated ? 'boss-hovering' : ''}`}
                 style={{
                   maxWidth: '400px',
                   maxHeight: '400px',
