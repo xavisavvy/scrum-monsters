@@ -3,7 +3,7 @@ import { Projectile } from './PlayerCharacter';
 
 interface ProjectileSystemProps {
   projectiles: Projectile[];
-  onProjectileComplete: (projectileId: string) => void;
+  onProjectileComplete: (projectile: Projectile) => void;
 }
 
 export function ProjectileSystem({ projectiles, onProjectileComplete }: ProjectileSystemProps) {
@@ -21,7 +21,7 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
           
           if (newProgress >= 1) {
             // Projectile reached target
-            setTimeout(() => onProjectileComplete(projectile.id), 100);
+            setTimeout(() => onProjectileComplete(projectile), 100);
             return { ...projectile, progress: 1 };
           }
           

@@ -2,6 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { PlayerCharacter, PlayerPosition, Projectile } from './PlayerCharacter';
 import { ProjectileSystem } from './ProjectileSystem';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useWebSocket } from '@/lib/stores/useWebSocket';
+import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
 
 interface PlayerControllerProps {
@@ -10,7 +12,9 @@ interface PlayerControllerProps {
 }
 
 export function PlayerController({ containerWidth, containerHeight }: PlayerControllerProps) {
-  const { currentPlayer, currentLobby } = useGameState();
+  const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
+  const { emit } = useWebSocket();
+  const { playHit } = useAudio();
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 50 });
   const [isJumping, setIsJumping] = useState(false);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -102,9 +106,9 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     const targetX = event.clientX - rect.left;
     const targetY = event.clientY - rect.top;
     
-    // Calculate character center position
+    // Calculate character center position (convert bottom-based Y to top-based Y for projectiles)
     const characterCenterX = playerPosition.x + characterSize / 2;
-    const characterCenterY = containerHeight - playerPosition.y - characterSize / 2;
+    const characterCenterY = containerHeight - (playerPosition.y + characterSize / 2);
     
     // Create projectile from character to click position
     handleShoot({
@@ -114,6 +118,8 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       targetY,
       emoji: currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'
     });
+    
+    console.log(`🎯 Shooting ${currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'} from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
   }, [playerPosition, containerHeight, characterSize, handleShoot, currentPlayer]);
 
   const getProjectileEmoji = (avatarClass: AvatarClass): string => {
@@ -131,9 +137,44 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     return projectileEmojis[avatarClass];
   };
 
-  const handleProjectileComplete = useCallback((projectileId: string) => {
-    setProjectiles(prev => prev.filter(p => p.id !== projectileId));
-  }, []);
+  const handleProjectileComplete = useCallback((projectile: Projectile) => {
+    // Remove the projectile from the list
+    setProjectiles(prev => prev.filter(p => p.id !== projectile.id));
+    
+    // Check if projectile hit the boss area (center region of screen)
+    const bossAreaX = containerWidth * 0.3; // Boss takes up center area
+    const bossAreaY = containerHeight * 0.2;
+    const bossAreaWidth = containerWidth * 0.4;
+    const bossAreaHeight = containerHeight * 0.6;
+    
+    const hitBoss = projectile.targetX >= bossAreaX && 
+                   projectile.targetX <= bossAreaX + bossAreaWidth &&
+                   projectile.targetY >= bossAreaY && 
+                   projectile.targetY <= bossAreaY + bossAreaHeight;
+    
+    if (hitBoss && currentPlayer && currentLobby?.boss) {
+      // Calculate damage (story points scale)
+      const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
+      
+      // Play hit sound
+      playHit();
+      
+      // Add attack animation
+      addAttackAnimation({
+        id: projectile.id,
+        playerId: currentPlayer.id,
+        damage,
+        timestamp: Date.now(),
+        x: projectile.targetX,
+        y: projectile.targetY
+      });
+      
+      // Emit attack to server
+      emit('attack_boss', { damage });
+      
+      console.log(`💥 ${currentPlayer.name} hit boss for ${damage} damage with ${projectile.emoji}!`);
+    }
+  }, [containerWidth, containerHeight, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
 
   // Don't render if not in battle or no current player
   if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {
