@@ -35,8 +35,6 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
     return () => clearInterval(interval);
   }, [onProjectileComplete]);
 
-  console.log('🎬 Rendering ProjectileSystem with', animatedProjectiles.length, 'projectiles');
-
   return (
     <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 100 }}>
       {animatedProjectiles.map(projectile => {

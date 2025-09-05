@@ -42,7 +42,8 @@ export function TeamScoreboard() {
   const leadingTeam = getLeadingTeam();
 
   return (
-    <RetroCard title="🏆 Team Competition">
+    <div className="team-scoreboard">
+      <RetroCard title="🏆 Team Competition">
       <div className="space-y-4">
         {/* Overall Leader */}
         {leadingTeam && (
@@ -183,5 +184,6 @@ export function TeamScoreboard() {
         </div>
       </div>
     </RetroCard>
+    </div>
   );
 }

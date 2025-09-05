@@ -101,11 +101,13 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
 
   // Handle screen clicks for shooting
   const handleScreenClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    event.stopPropagation();
     console.log('🖱️ Click detected!', event.clientX, event.clientY);
     
     // Don't shoot if clicking on UI elements
     const target = event.target as HTMLElement;
-    if (target.closest('.retro-card, .retro-button, button, input')) {
+    if (target.closest('.retro-card, .retro-button, button, input, .team-scoreboard, .performance-tracker')) {
       console.log('⛔ Click on UI element, ignoring');
       return;
     }
@@ -198,8 +200,6 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     });
     return null;
   }
-
-  console.log('✅ PlayerController rendering with', projectiles.length, 'projectiles');
 
   return (
     <div 
