@@ -28,13 +28,27 @@ function App() {
     setError,
     clearAll 
   } = useGameState();
-  const { toggleMute, isMuted } = useAudio();
+  const { 
+    toggleMute, 
+    isMuted, 
+    setMenuMusic, 
+    fadeInMenuMusic, 
+    fadeOutMenuMusic, 
+    stopMenuMusic,
+    isMenuMusicPlaying 
+  } = useAudio();
 
-  // Connect to WebSocket on mount
+  // Connect to WebSocket on mount and setup menu music
   useEffect(() => {
     connect();
+    
+    // Load menu music
+    const menuAudio = new Audio('/sounds/menu-theme.mp3');
+    menuAudio.preload = 'auto';
+    setMenuMusic(menuAudio);
+    
     return () => disconnect();
-  }, [connect, disconnect]);
+  }, [connect, disconnect, setMenuMusic]);
 
   // Check for lobby join URL parameter
   useEffect(() => {
@@ -45,6 +59,16 @@ function App() {
       setAppState('join_lobby');
     }
   }, []);
+
+  // Handle menu music based on app state
+  useEffect(() => {
+    if (appState === 'menu' && !isMuted && !isMenuMusicPlaying) {
+      // Small delay to ensure audio is loaded
+      setTimeout(() => fadeInMenuMusic(), 500);
+    } else if (appState !== 'menu' && isMenuMusicPlaying) {
+      fadeOutMenuMusic();
+    }
+  }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
 
   // Setup WebSocket event listeners
   useEffect(() => {
@@ -107,6 +131,15 @@ function App() {
     socket.on('game_error', ({ message }) => {
       setError(message);
       console.error('Game error:', message);
+      
+      // If we're trying to join a lobby and it fails, fade menu music back in
+      if (appState === 'join_lobby' && !isMuted) {
+        setTimeout(() => {
+          if (!isMenuMusicPlaying) {
+            fadeInMenuMusic();
+          }
+        }, 500);
+      }
     });
 
     socket.on('player_disconnected', ({ playerId }) => {
@@ -132,6 +165,7 @@ function App() {
     clearAll();
     setAppState('menu');
     window.history.replaceState(null, '', window.location.pathname);
+    // Remove duplicate fade-in - let appState effect handle it
   };
 
   const renderCurrentState = () => {
@@ -162,14 +196,20 @@ function App() {
                 
                 <div className="space-y-4">
                   <RetroButton
-                    onClick={() => setAppState('create_lobby')}
+                    onClick={() => {
+                      fadeOutMenuMusic();
+                      setAppState('create_lobby');
+                    }}
                     className="w-full"
                   >
                     Create Battle Lobby
                   </RetroButton>
                   
                   <RetroButton
-                    onClick={() => setAppState('join_lobby')}
+                    onClick={() => {
+                      fadeOutMenuMusic();
+                      setAppState('join_lobby');
+                    }}
                     className="w-full"
                     variant="secondary"
                   >
