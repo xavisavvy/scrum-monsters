@@ -292,6 +292,32 @@ function App() {
                     {isMuted ? '🔇 Unmute' : '🔊 Mute'}
                   </RetroButton>
                 </div>
+
+                {/* Credits Section */}
+                <div className="mt-6 pt-4 border-t border-gray-700 text-center">
+                  <div className="text-sm text-gray-400 mb-3">
+                    Made with ❤️ by{' '}
+                    <a 
+                      href="https://prestonfarr.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                    >
+                      Preston Farr
+                    </a>
+                  </div>
+                  <p className="text-xs text-gray-500 mb-3">
+                    Consider Supporting my work
+                  </p>
+                  <RetroButton
+                    onClick={() => window.open('https://account.venmo.com/u/preston_farr', '_blank')}
+                    size="sm"
+                    variant="secondary"
+                    className="text-xs"
+                  >
+                    💳 Donate via Venmo
+                  </RetroButton>
+                </div>
               </div>
             </div>
           </>
