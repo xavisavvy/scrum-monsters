@@ -19,6 +19,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const [isJumping, setIsJumping] = useState(false);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [keys, setKeys] = useState<Set<string>>(new Set());
+  const [showDebugModal, setShowDebugModal] = useState(false);
 
   const characterSize = 64;
   const moveSpeed = 5;
@@ -34,6 +35,13 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         event.preventDefault();
         setIsJumping(true);
         setTimeout(() => setIsJumping(false), jumpDuration);
+      }
+      
+      // Handle debug modal toggle with Tab
+      if (event.code === 'Tab') {
+        event.preventDefault();
+        setShowDebugModal(prev => !prev);
+        return;
       }
       
       // Handle shooting with Ctrl keys
@@ -276,21 +284,41 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       />
       
       {/* Movement Instructions */}
-      {/* Debug Info */}
-      <div className="absolute top-4 left-4 text-white text-xs bg-red-600 bg-opacity-80 p-2 rounded pointer-events-none">
-        <div>🎮 Player: {currentPlayer?.name}</div>
-        <div>📍 Pos: ({playerPosition.x}, {playerPosition.y})</div>
-        <div>🚀 Projectiles: {projectiles.length}</div>
-        <div>🎯 Click to test!</div>
-      </div>
-
-      {/* Movement Instructions */}
-      <div className="absolute bottom-4 left-4 text-white text-sm bg-black bg-opacity-50 p-2 rounded pointer-events-none">
-        <div>🏃 Arrow Keys / WASD: Move</div>
-        <div>🤸 Spacebar: Jump</div>
-        <div>🎯 Click anywhere: Shoot</div>
-        <div>⌨️ Ctrl (L/R): Shoot at boss</div>
-      </div>
+      {/* Debug Modal - Toggle with Tab */}
+      {showDebugModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 pointer-events-auto">
+          <div className="bg-gray-900 border-2 border-green-400 rounded-lg p-6 max-w-md w-full mx-4 text-white">
+            {/* Header */}
+            <div className="text-center mb-4">
+              <h2 className="text-xl font-bold text-green-400">🎮 Debug Info & Controls</h2>
+              <p className="text-sm text-gray-400">Press Tab to close</p>
+            </div>
+            
+            {/* Debug Information */}
+            <div className="bg-red-600 bg-opacity-20 border border-red-400 rounded p-3 mb-4">
+              <h3 className="text-red-400 font-semibold mb-2">🔧 Debug Info</h3>
+              <div className="text-xs space-y-1">
+                <div>🎮 Player: {currentPlayer?.name || 'None'}</div>
+                <div>📍 Position: ({playerPosition.x}, {playerPosition.y})</div>
+                <div>🚀 Projectiles: {projectiles.length}</div>
+                <div>🎯 Container: {containerWidth}x{containerHeight}</div>
+              </div>
+            </div>
+            
+            {/* Movement Controls */}
+            <div className="bg-blue-600 bg-opacity-20 border border-blue-400 rounded p-3">
+              <h3 className="text-blue-400 font-semibold mb-2">🎮 Controls</h3>
+              <div className="text-sm space-y-1">
+                <div>🏃 <span className="text-yellow-400">Arrow Keys / WASD:</span> Move</div>
+                <div>🤸 <span className="text-yellow-400">Spacebar:</span> Jump</div>
+                <div>🎯 <span className="text-yellow-400">Click anywhere:</span> Shoot</div>
+                <div>⌨️ <span className="text-yellow-400">Ctrl (L/R):</span> Shoot at boss</div>
+                <div>🔧 <span className="text-yellow-400">Tab:</span> Toggle this modal</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
