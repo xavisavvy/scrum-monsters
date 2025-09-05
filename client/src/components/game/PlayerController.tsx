@@ -91,14 +91,22 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       progress: 0
     };
     
-    setProjectiles(prev => [...prev, newProjectile]);
+    console.log('✨ Creating new projectile:', newProjectile);
+    setProjectiles(prev => {
+      const updated = [...prev, newProjectile];
+      console.log('📦 Updated projectiles array:', updated);
+      return updated;
+    });
   }, []);
 
   // Handle screen clicks for shooting
   const handleScreenClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
+    console.log('🖱️ Click detected!', event.clientX, event.clientY);
+    
     // Don't shoot if clicking on UI elements
     const target = event.target as HTMLElement;
     if (target.closest('.retro-card, .retro-button, button, input')) {
+      console.log('⛔ Click on UI element, ignoring');
       return;
     }
 
@@ -110,16 +118,21 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     const characterCenterX = playerPosition.x + characterSize / 2;
     const characterCenterY = containerHeight - (playerPosition.y + characterSize / 2);
     
+    console.log(`🎯 Preparing to shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
+    
     // Create projectile from character to click position
-    handleShoot({
+    const projectileData = {
       startX: characterCenterX,
       startY: characterCenterY,
       targetX,
       targetY,
       emoji: currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'
-    });
+    };
     
-    console.log(`🎯 Shooting ${currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'} from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
+    console.log('🚀 Projectile data:', projectileData);
+    handleShoot(projectileData);
+    
+    console.log(`🎯 Shot ${currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'} from character!`);
   }, [playerPosition, containerHeight, characterSize, handleShoot, currentPlayer]);
 
   const getProjectileEmoji = (avatarClass: AvatarClass): string => {
@@ -178,8 +191,15 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
 
   // Don't render if not in battle or no current player
   if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {
+    console.log('❌ PlayerController not rendering - missing player or not in battle', {
+      hasCurrentPlayer: !!currentPlayer,
+      hasCurrentLobby: !!currentLobby,
+      gamePhase: currentLobby?.gamePhase
+    });
     return null;
   }
+
+  console.log('✅ PlayerController rendering with', projectiles.length, 'projectiles');
 
   return (
     <div 
@@ -202,6 +222,15 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         onProjectileComplete={handleProjectileComplete}
       />
       
+      {/* Movement Instructions */}
+      {/* Debug Info */}
+      <div className="absolute top-4 left-4 text-white text-xs bg-red-600 bg-opacity-80 p-2 rounded pointer-events-none">
+        <div>🎮 Player: {currentPlayer?.name}</div>
+        <div>📍 Pos: ({playerPosition.x}, {playerPosition.y})</div>
+        <div>🚀 Projectiles: {projectiles.length}</div>
+        <div>🎯 Click to test!</div>
+      </div>
+
       {/* Movement Instructions */}
       <div className="absolute bottom-4 left-4 text-white text-sm bg-black bg-opacity-50 p-2 rounded pointer-events-none">
         <div>🏃 Arrow Keys / WASD: Move</div>

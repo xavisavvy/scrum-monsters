@@ -10,6 +10,7 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
   const [animatedProjectiles, setAnimatedProjectiles] = useState<Projectile[]>([]);
 
   useEffect(() => {
+    console.log('🎯 ProjectileSystem received projectiles:', projectiles);
     setAnimatedProjectiles(projectiles);
   }, [projectiles]);
 
@@ -34,8 +35,10 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
     return () => clearInterval(interval);
   }, [onProjectileComplete]);
 
+  console.log('🎬 Rendering ProjectileSystem with', animatedProjectiles.length, 'projectiles');
+
   return (
-    <div className="absolute inset-0 pointer-events-none">
+    <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 100 }}>
       {animatedProjectiles.map(projectile => {
         // Calculate current position using bezier curve for arc
         const startX = projectile.startX;
