@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { Boss } from '@/lib/gameTypes';
 
@@ -9,6 +9,13 @@ import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_4f628254.png
 import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_882e6943.png';
 import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_3a9ec6b7.png';
 
+// Lair background paths (using public URLs)
+const bugHydraLair = '/images/lairs/Bug_Hydra_Cave_Lair_a07f8108.png';
+const sprintDemonLair = '/images/lairs/Sprint_Demon_Volcano_Lair_01853ccf.png';
+const deadlineDragonLair = '/images/lairs/Deadline_Dragon_Clocktower_Lair_5c2916e4.png';
+const techDebtGolemLair = '/images/lairs/Technical_Debt_Golem_Temple_f7e377fe.png';
+const scopeCreepBeastLair = '/images/lairs/Scope_Creep_Beast_Void_bd13cec0.png';
+
 // Boss image mapping (outside component for performance)
 const BOSS_IMAGE_MAP: Record<string, string> = {
   'Bug_Hydra_Boss_8b867e3e.png': bugHydraImg,
@@ -18,6 +25,15 @@ const BOSS_IMAGE_MAP: Record<string, string> = {
   'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastImg,
 };
 
+// Lair background mapping
+const LAIR_BACKGROUND_MAP: Record<string, string> = {
+  'Bug_Hydra_Boss_8b867e3e.png': bugHydraLair,
+  'Sprint_Demon_Boss_a43a8439.png': sprintDemonLair,
+  'Deadline_Dragon_Boss_4f628254.png': deadlineDragonLair,
+  'Technical_Debt_Golem_882e6943.png': techDebtGolemLair,
+  'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastLair,
+};
+
 const getBossImage = (sprite: string): string => {
   const image = BOSS_IMAGE_MAP[sprite];
   if (!image) {
@@ -25,6 +41,15 @@ const getBossImage = (sprite: string): string => {
     return bugHydraImg;
   }
   return image;
+};
+
+const getLairBackground = (sprite: string): string => {
+  const background = LAIR_BACKGROUND_MAP[sprite];
+  if (!background) {
+    console.warn(`Unknown lair background for sprite: ${sprite}, falling back to Bug Hydra lair`);
+    return bugHydraLair;
+  }
+  return background;
 };
 
 interface BossDisplayProps {
@@ -37,12 +62,15 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
   const [isDamaged, setIsDamaged] = useState(false);
   const [imageError, setImageError] = useState(false);
   const { attackAnimations } = useGameState();
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cleanup timeout on unmount
   useEffect(() => {
-    let timeoutId: NodeJS.Timeout;
     return () => {
-      if (timeoutId) clearTimeout(timeoutId);
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
     };
   }, []);
 
@@ -52,72 +80,107 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
     if (onAttack) {
       onAttack();
       setIsDamaged(true);
-      const timeoutId = setTimeout(() => setIsDamaged(false), 500);
-      return () => clearTimeout(timeoutId);
+      
+      // Clear any existing timeout
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      
+      // Set new timeout and store reference
+      timeoutRef.current = setTimeout(() => {
+        setIsDamaged(false);
+        timeoutRef.current = null;
+      }, 500);
     }
   };
 
   const renderBossSprite = () => {
     const bossImage = getBossImage(boss.sprite);
+    const lairBackground = getLairBackground(boss.sprite);
     
     if (fullscreen) {
       return (
         <div className="fixed inset-0 z-0">
+          {/* Lair Background */}
           <img
-            src={bossImage}
-            alt={boss.name}
-            className={`boss-sprite w-full h-full object-cover ${isDamaged ? 'boss-damaged' : ''}`}
+            src={lairBackground}
+            alt={`${boss.name} lair`}
+            className="w-full h-full object-cover"
             style={{
-              imageRendering: 'pixelated',
-              cursor: onAttack ? 'pointer' : 'default',
-              transition: 'all 0.3s ease'
-            }}
-            onClick={handleBossClick}
-            onError={() => {
-              console.error(`Failed to load boss image: ${boss.sprite}`);
-              setImageError(true);
+              imageRendering: 'pixelated'
             }}
           />
           
           {/* Dimming overlay for better UI readability */}
-          <div className="absolute inset-0 bg-black bg-opacity-30 pointer-events-none" />
+          <div className="absolute inset-0 bg-black bg-opacity-20 pointer-events-none" />
           
-          {/* Damage flash overlay */}
-          {isDamaged && (
-            <div className="absolute inset-0 bg-white bg-opacity-20 pointer-events-none" />
-          )}
-          
-          {/* Fallback if image fails to load */}
-          {imageError && (
-            <div 
-              className="absolute inset-0 flex items-center justify-center bg-gray-900"
-              style={{ cursor: onAttack ? 'pointer' : 'default' }}
-              onClick={handleBossClick}
-            >
-              <div className="text-center text-white">
-                <div className="text-8xl mb-4">👾</div>
-                <div className="text-2xl">{boss.name}</div>
-              </div>
+          {/* Boss Sprite positioned in center */}
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div className="relative">
+              <img
+                src={bossImage}
+                alt={boss.name}
+                className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''}`}
+                style={{
+                  maxWidth: '400px',
+                  maxHeight: '400px',
+                  objectFit: 'contain',
+                  imageRendering: 'pixelated',
+                  transition: 'all 0.3s ease',
+                  transform: isDamaged ? 'scale(1.1)' : 'scale(1)',
+                  filter: isDamaged ? 'brightness(1.5) contrast(1.2)' : 'none',
+                  cursor: onAttack ? 'pointer' : 'default',
+                  pointerEvents: 'auto'
+                }}
+                onClick={handleBossClick}
+                onError={() => {
+                  console.error(`Failed to load boss image: ${boss.sprite}`);
+                  setImageError(true);
+                }}
+              />
+              
+              {/* Fallback if boss image fails to load */}
+              {imageError && (
+                <div 
+                  className="absolute inset-0 flex items-center justify-center"
+                  style={{
+                    cursor: onAttack ? 'pointer' : 'default',
+                    pointerEvents: 'auto'
+                  }}
+                  onClick={handleBossClick}
+                >
+                  <div className="text-center text-white">
+                    <div className="text-8xl mb-4">👾</div>
+                    <div className="text-2xl">{boss.name}</div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Damage phase indicator around boss */}
+              {boss.phase > 1 && (
+                <div
+                  className="absolute inset-0 border-4 border-orange-500 rounded-full pointer-events-none"
+                  style={{
+                    animation: 'pulse 2s infinite',
+                    boxShadow: '0 0 30px rgba(255, 102, 0, 0.8)'
+                  }}
+                />
+              )}
             </div>
-          )}
-          
-          {/* Damage phase indicator */}
-          {boss.phase > 1 && (
-            <div className="absolute inset-0 border-8 border-orange-500 pointer-events-none opacity-80" />
-          )}
+          </div>
           
           {/* Attack Animations for fullscreen */}
           {attackAnimations.map(animation => (
             <div
               key={animation.id}
-              className="damage-animation absolute text-4xl font-bold"
+              className="damage-animation absolute text-4xl font-bold pointer-events-none"
               style={{
                 left: `${animation.x}%`,
                 top: `${animation.y}%`,
                 animation: 'float-up 2s ease-out forwards',
                 color: '#ff6600',
                 textShadow: '2px 2px 4px #000',
-                zIndex: 10
+                zIndex: 15
               }}
             >
               -{animation.damage}
@@ -253,8 +316,8 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
             key={animation.id}
             className="damage-animation"
             style={{
-              left: `${animation.x}px`,
-              top: `${animation.y}px`
+              left: `${animation.x}%`,
+              top: `${animation.y}%`
             }}
           >
             -{animation.damage}
