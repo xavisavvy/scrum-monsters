@@ -2,6 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { Boss } from '@/lib/gameTypes';
 
+// Import boss images
+import bugHydraImg from '@/assets/bosses/Bug_Hydra_Boss_8b867e3e.png';
+import sprintDemonImg from '@/assets/bosses/Sprint_Demon_Boss_a43a8439.png';
+import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_4f628254.png';
+import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_882e6943.png';
+import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_3a9ec6b7.png';
+
+// Boss image mapping (outside component for performance)
+const BOSS_IMAGE_MAP: Record<string, string> = {
+  'Bug_Hydra_Boss_8b867e3e.png': bugHydraImg,
+  'Sprint_Demon_Boss_a43a8439.png': sprintDemonImg,
+  'Deadline_Dragon_Boss_4f628254.png': deadlineDragonImg,
+  'Technical_Debt_Golem_882e6943.png': techDebtGolemImg,
+  'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastImg,
+};
+
+const getBossImage = (sprite: string): string => {
+  const image = BOSS_IMAGE_MAP[sprite];
+  if (!image) {
+    console.warn(`Unknown boss sprite: ${sprite}, falling back to Bug Hydra`);
+    return bugHydraImg;
+  }
+  return image;
+};
+
 interface BossDisplayProps {
   boss: Boss;
   onAttack?: () => void;
@@ -9,6 +34,7 @@ interface BossDisplayProps {
 
 export function BossDisplay({ boss, onAttack }: BossDisplayProps) {
   const [isDamaged, setIsDamaged] = useState(false);
+  const [imageError, setImageError] = useState(false);
   const { attackAnimations } = useGameState();
 
   const healthPercentage = (boss.currentHealth / boss.maxHealth) * 100;
@@ -22,74 +48,52 @@ export function BossDisplay({ boss, onAttack }: BossDisplayProps) {
   };
 
   const renderBossSprite = () => {
-    // Create a pixel art style boss using CSS
+    const bossImage = getBossImage(boss.sprite);
+    
     return (
-      <div
-        className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''}`}
-        style={{
-          width: '200px',
-          height: '200px',
-          background: 'linear-gradient(145deg, #8B0000, #FF4500)',
-          border: '4px solid #4A0E0E',
-          borderRadius: '20px',
-          position: 'relative',
-          cursor: onAttack ? 'pointer' : 'default',
-          transition: 'all 0.3s ease'
-        }}
-        onClick={handleBossClick}
-      >
-        {/* Boss eyes */}
-        <div
+      <div className="relative flex justify-center items-center" style={{ width: '300px', height: '300px' }}>
+        <img
+          src={bossImage}
+          alt={boss.name}
+          className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''}`}
           style={{
-            position: 'absolute',
-            top: '30%',
-            left: '25%',
-            width: '20px',
-            height: '20px',
-            background: '#FF0000',
-            borderRadius: '50%',
-            boxShadow: '0 0 10px #FF0000'
+            maxWidth: '300px',
+            maxHeight: '300px',
+            objectFit: 'contain',
+            imageRendering: 'pixelated',
+            imageRendering: 'crisp-edges', // Safari fallback
+            cursor: onAttack ? 'pointer' : 'default',
+            transition: 'all 0.3s ease',
+            filter: isDamaged ? 'brightness(1.5) contrast(1.2)' : 'none'
           }}
-        />
-        <div
-          style={{
-            position: 'absolute',
-            top: '30%',
-            right: '25%',
-            width: '20px',
-            height: '20px',
-            background: '#FF0000',
-            borderRadius: '50%',
-            boxShadow: '0 0 10px #FF0000'
+          onClick={handleBossClick}
+          onError={() => {
+            console.error(`Failed to load boss image: ${boss.sprite}`);
+            setImageError(true);
           }}
         />
         
-        {/* Boss mouth */}
-        <div
-          style={{
-            position: 'absolute',
-            bottom: '30%',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '60px',
-            height: '20px',
-            background: '#000',
-            borderRadius: '0 0 30px 30px'
-          }}
-        />
+        {/* Fallback if image fails to load */}
+        {imageError && (
+          <div 
+            className="absolute inset-0 flex items-center justify-center bg-gray-800 border-2 border-red-500 rounded"
+            style={{ cursor: onAttack ? 'pointer' : 'default' }}
+            onClick={handleBossClick}
+          >
+            <div className="text-center text-white">
+              <div className="text-4xl mb-2">👾</div>
+              <div className="text-sm">{boss.name}</div>
+            </div>
+          </div>
+        )}
         
         {/* Damage phase indicator */}
         {boss.phase > 1 && (
           <div
+            className="absolute inset-0 border-4 border-orange-500 rounded-lg pointer-events-none"
             style={{
-              position: 'absolute',
-              top: '-10px',
-              left: '-10px',
-              right: '-10px',
-              bottom: '-10px',
-              border: '2px solid #FF6600',
-              borderRadius: '25px',
-              animation: 'glow 2s infinite alternate'
+              animation: 'glow 2s infinite alternate',
+              boxShadow: '0 0 20px rgba(255, 102, 0, 0.6)'
             }}
           />
         )}

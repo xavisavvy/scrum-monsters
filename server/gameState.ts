@@ -278,18 +278,24 @@ class GameStateManager {
     const ticketCount = tickets.length;
     const phases = Math.min(ticketCount, 5); // Max 5 phases
     
-    const bossNames = [
-      'Bug Hydra', 'Sprint Demon', 'Deadline Dragon', 'Technical Debt Golem', 'Scope Creep Beast'
+    const bosses = [
+      { name: 'Bug Hydra', sprite: 'Bug_Hydra_Boss_8b867e3e.png' },
+      { name: 'Sprint Demon', sprite: 'Sprint_Demon_Boss_a43a8439.png' },
+      { name: 'Deadline Dragon', sprite: 'Deadline_Dragon_Boss_4f628254.png' },
+      { name: 'Technical Debt Golem', sprite: 'Technical_Debt_Golem_882e6943.png' },
+      { name: 'Scope Creep Beast', sprite: 'Scope_Creep_Beast_3a9ec6b7.png' }
     ];
+    
+    const selectedBoss = bosses[Math.floor(Math.random() * bosses.length)];
     
     const boss: Boss = {
       id: Math.random().toString(36).substring(2, 15),
-      name: bossNames[Math.floor(Math.random() * bossNames.length)],
+      name: selectedBoss.name,
       maxHealth: ticketCount * 100,
       currentHealth: ticketCount * 100,
       phase: 1,
       maxPhases: phases,
-      sprite: 'boss_dragon', // Will be rendered as pixel art
+      sprite: selectedBoss.sprite,
       defeated: false
     };
 
