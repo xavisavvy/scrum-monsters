@@ -136,7 +136,7 @@ function App() {
   const renderCurrentState = () => {
     if (!isConnected) {
       return (
-        <div className="flex items-center justify-center min-h-screen">
+        <div className="flex items-center justify-center min-h-screen p-6">
           <div className="retro-card text-center">
             <h2 className="text-xl font-bold mb-4">Connecting to Server...</h2>
             <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
@@ -148,7 +148,7 @@ function App() {
     switch (appState) {
       case 'menu':
         return (
-          <div className="flex items-center justify-center min-h-screen p-4">
+          <div className="flex items-center justify-center min-h-screen p-6">
             <div className="retro-card text-center max-w-md w-full">
               <h1 className="text-4xl font-bold retro-text-glow mb-2">
                 SCRUM QUEST
@@ -188,16 +188,32 @@ function App() {
         );
 
       case 'create_lobby':
-        return <LobbyCreation onLobbyCreated={() => {}} />;
+        return (
+          <div className="p-6">
+            <LobbyCreation onLobbyCreated={() => {}} />
+          </div>
+        );
 
       case 'join_lobby':
-        return <LobbyJoin lobbyId={joinLobbyId} onLobbyJoined={() => {}} />;
+        return (
+          <div className="p-6">
+            <LobbyJoin lobbyId={joinLobbyId} onLobbyJoined={() => {}} />
+          </div>
+        );
 
       case 'avatar_selection':
-        return <AvatarSelection />;
+        return (
+          <div className="p-6">
+            <AvatarSelection />
+          </div>
+        );
 
       case 'lobby':
-        return <Lobby />;
+        return (
+          <div className="p-6">
+            <Lobby />
+          </div>
+        );
 
       case 'battle':
         return <BattleScreen />;

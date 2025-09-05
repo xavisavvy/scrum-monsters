@@ -76,7 +76,7 @@ export function Lobby() {
   if (!currentLobby) return null;
 
   return (
-    <div className="retro-container p-4">
+    <div className="retro-container">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
