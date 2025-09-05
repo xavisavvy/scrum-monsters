@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -11,6 +11,14 @@ export function ScoreSubmission() {
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer } = useGameState();
 
+  // Reset local hasSubmitted state when server state changes
+  useEffect(() => {
+    if (currentPlayer && !currentPlayer.hasSubmittedScore) {
+      setHasSubmitted(false);
+      setSelectedScore(null);
+    }
+  }, [currentPlayer?.hasSubmittedScore]);
+
   const handleScoreSubmit = () => {
     if (selectedScore === null) return;
     
@@ -19,6 +27,12 @@ export function ScoreSubmission() {
   };
 
   const currentTicket = currentLobby?.currentTicket;
+  // Count submitted scores by team
+  const devPlayers = currentLobby?.players.filter(p => p.team === 'developers') || [];
+  const qaPlayers = currentLobby?.players.filter(p => p.team === 'qa') || [];
+  const devSubmitted = devPlayers.filter(p => p.hasSubmittedScore).length;
+  const qaSubmitted = qaPlayers.filter(p => p.hasSubmittedScore).length;
+  
   const submittedCount = currentLobby?.players.filter(p => 
     p.team !== 'spectators' && p.hasSubmittedScore
   ).length || 0;
@@ -39,6 +53,23 @@ export function ScoreSubmission() {
           </p>
         </div>
       </RetroCard>
+
+      {/* Spectator Message */}
+      {currentPlayer.team === 'spectators' && (
+        <RetroCard title="Spectator View">
+          <div className="text-center space-y-4">
+            <div className="text-yellow-400 text-lg font-bold">
+              🎭 Spectator Mode 🎭
+            </div>
+            <p className="text-sm text-gray-400">
+              You're watching the estimation process. Developers and QA teams are voting!
+            </p>
+            <p className="text-xs text-gray-500">
+              Future feature: You'll be able to control lair animations and other fun spectator activities!
+            </p>
+          </div>
+        </RetroCard>
+      )}
 
       {/* Score Selection */}
       {currentPlayer.team !== 'spectators' && !hasSubmitted && (
@@ -77,35 +108,54 @@ export function ScoreSubmission() {
         </RetroCard>
       )}
 
-      {/* Submission Status */}
-      <RetroCard title="Team Progress">
-        <div className="space-y-3">
-          <div className="flex justify-between items-center">
-            <span>Estimates Submitted:</span>
-            <span className="retro-text-glow font-bold">
+      {/* Team Submission Status */}
+      <RetroCard title="Team Battle Status">
+        <div className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            {/* Developers Status */}
+            <div className="text-center p-3 bg-blue-900/30 rounded-lg border border-blue-500/30">
+              <div className="text-blue-400 font-bold text-sm mb-1">
+                👨‍💻 Developers
+              </div>
+              <div className="text-lg font-bold">
+                {devPlayers.length === 0 ? '— No members' : `${devSubmitted} / ${devPlayers.length}`}
+              </div>
+              <div className="text-xs text-gray-500">
+                {devPlayers.length === 0 ? '' : (devSubmitted === devPlayers.length ? '✅ Ready' : '⏳ Voting...')}
+              </div>
+            </div>
+
+            {/* QA Status */}
+            <div className="text-center p-3 bg-green-900/30 rounded-lg border border-green-500/30">
+              <div className="text-green-400 font-bold text-sm mb-1">
+                🧪 QA Engineers
+              </div>
+              <div className="text-lg font-bold">
+                {qaPlayers.length === 0 ? '— No members' : `${qaSubmitted} / ${qaPlayers.length}`}
+              </div>
+              <div className="text-xs text-gray-500">
+                {qaPlayers.length === 0 ? '' : (qaSubmitted === qaPlayers.length ? '✅ Ready' : '⏳ Testing...')}
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <div className="text-sm text-gray-400 mb-1">
+              Overall Progress
+            </div>
+            <div className="text-xl font-bold retro-text-glow">
               {submittedCount} / {totalPlayers}
-            </span>
+            </div>
+            {submittedCount < totalPlayers && (
+              <div className="text-xs text-gray-500 mt-2">
+                Both teams must submit estimates to reveal scores...
+              </div>
+            )}
           </div>
-          
-          <div className="retro-health-bar">
-            <div
-              className="retro-health-fill"
-              style={{
-                width: `${totalPlayers > 0 ? (submittedCount / totalPlayers) * 100 : 0}%`,
-                background: 'linear-gradient(90deg, #00ff00 0%, #ffff00 100%)'
-              }}
-            />
-          </div>
-          
+
           {hasSubmitted && (
             <p className="text-center text-green-400 text-sm">
               ✓ Your estimate has been submitted!
-            </p>
-          )}
-          
-          {submittedCount < totalPlayers && (
-            <p className="text-center text-gray-400 text-sm">
-              Waiting for remaining team members...
             </p>
           )}
         </div>

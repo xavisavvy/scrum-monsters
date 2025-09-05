@@ -70,14 +70,24 @@ export interface ClientEvents {
   'abandon_quest': {};
 }
 
+export interface TeamScores {
+  developers: Record<string, number>;
+  qa: Record<string, number>;
+}
+
+export interface TeamConsensus {
+  developers: { hasConsensus: boolean; score?: number };
+  qa: { hasConsensus: boolean; score?: number };
+}
+
 export interface ServerEvents {
   'lobby_created': { lobby: Lobby; inviteLink: string };
   'lobby_joined': { lobby: Lobby; player: Player };
   'lobby_updated': { lobby: Lobby };
   'avatar_selected': { playerId: string; avatar: AvatarClass };
   'battle_started': { lobby: Lobby; boss: Boss };
-  'score_submitted': { playerId: string };
-  'scores_revealed': { scores: Record<string, number>; consensus: boolean };
+  'score_submitted': { playerId: string; team: TeamType };
+  'scores_revealed': { teamScores: TeamScores; teamConsensus: TeamConsensus };
   'boss_attacked': { playerId: string; damage: number; bossHealth: number };
   'boss_defeated': { lobby: Lobby };
   'quest_abandoned': { lobby: Lobby };

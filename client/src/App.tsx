@@ -6,9 +6,11 @@ import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
+import { CheatMenu } from '@/components/ui/CheatMenu';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
+import { useKonamiCode } from '@/hooks/useKonamiCode';
 import '@/styles/retro.css';
 
 type AppState = 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
@@ -16,6 +18,7 @@ type AppState = 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selec
 function App() {
   const [appState, setAppState] = useState<AppState>('menu');
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
+  const [showCheatMenu, setShowCheatMenu] = useState(false);
   
   const { socket, connect, disconnect, isConnected } = useWebSocket();
   const { 
@@ -46,6 +49,11 @@ function App() {
   const currentTrackName = useAudio(state => 
     state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
   );
+
+  // Konami code easter egg
+  useKonamiCode(() => {
+    setShowCheatMenu(true);
+  });
 
   // Connect to WebSocket on mount and setup menu music
   useEffect(() => {
@@ -142,8 +150,8 @@ function App() {
       setAppState('battle');
     });
 
-    socket.on('scores_revealed', ({ scores, consensus }) => {
-      console.log('Scores revealed:', { scores, consensus });
+    socket.on('scores_revealed', ({ teamScores, teamConsensus }) => {
+      console.log('Team scores revealed:', { teamScores, teamConsensus });
       // Game state will be updated via lobby_updated event
     });
 
@@ -330,6 +338,12 @@ function App() {
       )}
 
       {renderCurrentState()}
+      
+      {/* Konami Code Cheat Menu */}
+      <CheatMenu 
+        isOpen={showCheatMenu} 
+        onClose={() => setShowCheatMenu(false)} 
+      />
     </div>
   );
 }

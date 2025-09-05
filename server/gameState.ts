@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus } from '../shared/gameEvents.js';
 
 class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
@@ -195,6 +195,9 @@ class GameStateManager {
     const player = lobby.players.find(p => p.id === playerId);
     if (!player) return null;
 
+    // Prevent spectators from submitting scores
+    if (player.team === 'spectators') return null;
+
     player.currentScore = score;
     player.hasSubmittedScore = true;
 
@@ -209,29 +212,59 @@ class GameStateManager {
     return lobby;
   }
 
-  revealScores(lobbyId: string): { lobby: Lobby; scores: Record<string, number>; consensus: boolean } | null {
+  revealScores(lobbyId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'reveal') return null;
 
-    const scores: Record<string, number> = {};
-    const nonSpectatorPlayers = lobby.players.filter(p => p.team !== 'spectators');
+    const teamScores = {
+      developers: {} as Record<string, number>,
+      qa: {} as Record<string, number>
+    };
+
+    // Separate scores by team
+    const developerPlayers = lobby.players.filter(p => p.team === 'developers' && p.currentScore !== undefined);
+    const qaPlayers = lobby.players.filter(p => p.team === 'qa' && p.currentScore !== undefined);
     
-    nonSpectatorPlayers.forEach(p => {
+    developerPlayers.forEach(p => {
       if (p.currentScore !== undefined) {
-        scores[p.id] = p.currentScore;
+        teamScores.developers[p.id] = p.currentScore;
       }
     });
 
-    // Check for consensus (all scores match)
-    const scoreValues = Object.values(scores);
-    const consensus = scoreValues.length > 0 && scoreValues.every(score => score === scoreValues[0]);
+    qaPlayers.forEach(p => {
+      if (p.currentScore !== undefined) {
+        teamScores.qa[p.id] = p.currentScore;
+      }
+    });
 
-    if (consensus && lobby.boss && lobby.currentTicket) {
+    // Check for consensus within each team
+    const devScoreValues = Object.values(teamScores.developers);
+    const qaScoreValues = Object.values(teamScores.qa);
+    
+    const devConsensus = devScoreValues.length > 0 && devScoreValues.every(score => score === devScoreValues[0]);
+    const qaConsensus = qaScoreValues.length > 0 && qaScoreValues.every(score => score === qaScoreValues[0]);
+
+    const teamConsensus = {
+      developers: { 
+        hasConsensus: devConsensus, 
+        score: devConsensus ? devScoreValues[0] : undefined 
+      },
+      qa: { 
+        hasConsensus: qaConsensus, 
+        score: qaConsensus ? qaScoreValues[0] : undefined 
+      }
+    };
+
+    // Check if both teams have consensus and agree on the same score
+    const bothTeamsHaveConsensus = devConsensus && qaConsensus;
+    const teamsAgree = bothTeamsHaveConsensus && devScoreValues[0] === qaScoreValues[0];
+
+    if (teamsAgree && lobby.boss && lobby.currentTicket) {
       // Defeat current boss phase
       lobby.boss.currentHealth = 0;
       
-      // Store completed ticket with story points
-      const storyPoints = scoreValues[0]; // Consensus score
+      // Store completed ticket with agreed story points
+      const storyPoints = devScoreValues[0]; // Both teams agree on this score
       const completedTicket: CompletedTicket = {
         id: lobby.currentTicket.id,
         title: lobby.currentTicket.title,
@@ -251,15 +284,18 @@ class GameStateManager {
         lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
       }
     } else {
-      // Reset for another round
+      // Reset for another round if no consensus or teams disagree
       lobby.gamePhase = 'battle';
+      // Reset all non-spectator players' voting state
       lobby.players.forEach(p => {
-        p.hasSubmittedScore = false;
-        p.currentScore = undefined;
+        if (p.team !== 'spectators') {
+          p.hasSubmittedScore = false;
+          p.currentScore = undefined;
+        }
       });
     }
 
-    return { lobby, scores, consensus };
+    return { lobby, teamScores, teamConsensus };
   }
 
   attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number } | null {

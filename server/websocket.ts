@@ -106,17 +106,25 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       const lobby = gameState.submitScore(playerId, score);
       if (lobby) {
-        socket.to(lobby.id).emit('score_submitted', { playerId });
+        const player = lobby.players.find(p => p.id === playerId);
+        if (player) {
+          socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
+        }
         
         // Check if all scores submitted and reveal
         if (lobby.gamePhase === 'reveal') {
           const result = gameState.revealScores(lobby.id);
           if (result) {
-            const { lobby: updatedLobby, scores, consensus } = result;
-            io.to(lobby.id).emit('scores_revealed', { scores, consensus });
+            const { lobby: updatedLobby, teamScores, teamConsensus } = result;
+            io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
             io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
             
-            if (consensus && updatedLobby.boss?.defeated) {
+            // Check if both teams agreed and boss is defeated
+            const bothTeamsAgree = teamConsensus.developers.hasConsensus && 
+                                 teamConsensus.qa.hasConsensus &&
+                                 teamConsensus.developers.score === teamConsensus.qa.score;
+            
+            if (bothTeamsAgree && updatedLobby.boss?.defeated) {
               io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
             }
           }
