@@ -1,0 +1,185 @@
+import React, { useState } from 'react';
+import { RetroButton } from '@/components/ui/retro-button';
+import { RetroCard } from '@/components/ui/retro-card';
+import { useWebSocket } from '@/lib/stores/useWebSocket';
+import { useGameState } from '@/lib/stores/useGameState';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket } from '@/lib/gameTypes';
+
+export function Lobby() {
+  const [tickets, setTickets] = useState<JiraTicket[]>([]);
+  const [newTicketTitle, setNewTicketTitle] = useState('');
+  const { emit } = useWebSocket();
+  const { currentLobby, currentPlayer, inviteLink } = useGameState();
+
+  const isHost = currentPlayer?.isHost;
+
+  const addTicket = () => {
+    if (!newTicketTitle.trim()) return;
+    
+    const newTicket: JiraTicket = {
+      id: Math.random().toString(36).substring(2, 15),
+      title: newTicketTitle.trim(),
+      description: 'Jira ticket to be estimated by the team'
+    };
+    
+    setTickets([...tickets, newTicket]);
+    setNewTicketTitle('');
+  };
+
+  const removeTicket = (ticketId: string) => {
+    setTickets(tickets.filter(t => t.id !== ticketId));
+  };
+
+  const startBattle = () => {
+    if (tickets.length === 0) return;
+    emit('start_battle', { tickets });
+  };
+
+  const copyInviteLink = () => {
+    if (inviteLink) {
+      navigator.clipboard.writeText(inviteLink);
+      // Could add a toast notification here
+    }
+  };
+
+  const renderPlayerSprite = (avatarClass: string) => {
+    const avatar = AVATAR_CLASSES[avatarClass as keyof typeof AVATAR_CLASSES];
+    return (
+      <div
+        className="w-6 h-6 rounded border border-gray-500"
+        style={{ backgroundColor: avatar?.color || '#666' }}
+      />
+    );
+  };
+
+  if (!currentLobby) return null;
+
+  return (
+    <div className="retro-container p-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-6">
+          <h1 className="text-3xl font-bold retro-text-glow mb-2">
+            {currentLobby.name}
+          </h1>
+          <p className="text-gray-400">
+            Lobby Code: <span className="retro-text-glow text-xl font-mono">{currentLobby.id}</span>
+          </p>
+          {inviteLink && (
+            <div className="mt-2">
+              <RetroButton size="sm" onClick={copyInviteLink}>
+                Copy Invite Link
+              </RetroButton>
+            </div>
+          )}
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Teams Section */}
+          <div>
+            <RetroCard title="Battle Teams">
+              {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
+                const team = teamKey as TeamType;
+                const teamPlayers = currentLobby.teams[team] || [];
+                
+                return (
+                  <div key={team} className="team-section">
+                    <h4 className="font-bold text-lg mb-2">{teamName}</h4>
+                    <p className="text-sm text-gray-400 mb-3">
+                      {teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}
+                    </p>
+                    
+                    <div className="player-list">
+                      {teamPlayers.map(player => (
+                        <div
+                          key={player.id}
+                          className={`player-chip ${player.isHost ? 'host' : ''}`}
+                        >
+                          {renderPlayerSprite(player.avatar)}
+                          <span>{player.name}</span>
+                          {player.isHost && <span className="text-xs">(HOST)</span>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </RetroCard>
+          </div>
+
+          {/* Tickets Section */}
+          <div>
+            <RetroCard title="Battle Objectives">
+              {isHost && (
+                <div className="mb-4">
+                  <div className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={newTicketTitle}
+                      onChange={(e) => setNewTicketTitle(e.target.value)}
+                      className="retro-input flex-1"
+                      placeholder="Add Jira ticket..."
+                      onKeyPress={(e) => e.key === 'Enter' && addTicket()}
+                    />
+                    <RetroButton onClick={addTicket} disabled={!newTicketTitle.trim()}>
+                      Add
+                    </RetroButton>
+                  </div>
+                </div>
+              )}
+              
+              <div className="space-y-2 mb-4">
+                {tickets.map((ticket, index) => (
+                  <div
+                    key={ticket.id}
+                    className="bg-gray-800 border border-gray-600 rounded p-3 flex justify-between items-center"
+                  >
+                    <div>
+                      <span className="font-mono text-sm text-blue-400">#{index + 1}</span>
+                      <span className="ml-2">{ticket.title}</span>
+                    </div>
+                    {isHost && (
+                      <RetroButton
+                        size="sm"
+                        variant="accent"
+                        onClick={() => removeTicket(ticket.id)}
+                      >
+                        Remove
+                      </RetroButton>
+                    )}
+                  </div>
+                ))}
+              </div>
+              
+              {tickets.length === 0 && (
+                <p className="text-center text-gray-400 py-8">
+                  {isHost ? 'Add tickets to begin the battle' : 'Waiting for host to add tickets...'}
+                </p>
+              )}
+              
+              {isHost && tickets.length > 0 && (
+                <RetroButton
+                  onClick={startBattle}
+                  className="w-full"
+                  variant="accent"
+                >
+                  Begin Battle! ({tickets.length} ticket{tickets.length !== 1 ? 's' : ''})
+                </RetroButton>
+              )}
+            </RetroCard>
+          </div>
+        </div>
+
+        <div className="mt-6 text-center">
+          <p className="text-sm text-gray-400">
+            Players: {currentLobby.players.length} / 32
+          </p>
+          {!isHost && (
+            <p className="text-sm text-gray-400 mt-2">
+              Waiting for host to start the battle...
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
