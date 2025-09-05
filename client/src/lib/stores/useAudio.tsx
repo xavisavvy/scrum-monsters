@@ -9,26 +9,36 @@ interface MusicTrack {
 interface AudioState {
   backgroundMusic: HTMLAudioElement | null;
   menuMusic: HTMLAudioElement | null;
+  bossMusic: HTMLAudioElement | null;
+  youtubePlayer: any | null;
   hitSound: HTMLAudioElement | null;
   successSound: HTMLAudioElement | null;
   buttonSelectSound: HTMLAudioElement | null;
   musicTracks: MusicTrack[];
   currentTrackIndex: number;
   isMuted: boolean;
+  isBossMusicMuted: boolean;
   isMenuMusicPlaying: boolean;
+  isBossMusicPlaying: boolean;
+  isYoutubeAudioActive: boolean;
   fadeTimer: NodeJS.Timeout | null;
   isTransitioning: boolean;
+  youtubeUrl: string;
   
   // Setter functions
   setBackgroundMusic: (music: HTMLAudioElement) => void;
   setMenuMusic: (music: HTMLAudioElement) => void;
+  setBossMusic: (music: HTMLAudioElement) => void;
+  setYoutubePlayer: (player: any) => void;
   setHitSound: (sound: HTMLAudioElement) => void;
   setSuccessSound: (sound: HTMLAudioElement) => void;
   setButtonSelectSound: (sound: HTMLAudioElement) => void;
   setMusicTracks: (tracks: MusicTrack[]) => void;
+  setYoutubeUrl: (url: string) => void;
   
   // Control functions
   toggleMute: () => void;
+  toggleBossMusicMute: () => void;
   playHit: () => void;
   playSuccess: () => void;
   playButtonSelect: () => void;
@@ -36,6 +46,12 @@ interface AudioState {
   fadeInMenuMusic: () => void;
   fadeOutMenuMusic: () => void;
   stopMenuMusic: () => void;
+  playBossMusic: () => void;
+  fadeInBossMusic: () => void;
+  fadeOutBossMusic: () => void;
+  stopBossMusic: () => void;
+  playYoutubeAudio: (videoId: string) => void;
+  stopYoutubeAudio: () => void;
   switchToNextTrack: () => void;
   getCurrentTrackName: () => string;
 }
@@ -43,22 +59,31 @@ interface AudioState {
 export const useAudio = create<AudioState>((set, get) => ({
   backgroundMusic: null,
   menuMusic: null,
+  bossMusic: null,
+  youtubePlayer: null,
   hitSound: null,
   successSound: null,
   buttonSelectSound: null,
   musicTracks: [],
   currentTrackIndex: 0,
   isMuted: true, // Start muted by default
+  isBossMusicMuted: false,
   isMenuMusicPlaying: false,
+  isBossMusicPlaying: false,
+  isYoutubeAudioActive: false,
   fadeTimer: null,
   isTransitioning: false,
+  youtubeUrl: '',
   
   setBackgroundMusic: (music) => set({ backgroundMusic: music }),
   setMenuMusic: (music) => set({ menuMusic: music }),
+  setBossMusic: (music) => set({ bossMusic: music }),
+  setYoutubePlayer: (player) => set({ youtubePlayer: player }),
   setHitSound: (sound) => set({ hitSound: sound }),
   setSuccessSound: (sound) => set({ successSound: sound }),
   setButtonSelectSound: (sound) => set({ buttonSelectSound: sound }),
   setMusicTracks: (tracks) => set({ musicTracks: tracks }),
+  setYoutubeUrl: (url) => set({ youtubeUrl: url }),
   
   toggleMute: () => {
     const { isMuted, menuMusic, fadeTimer } = get();
@@ -329,5 +354,121 @@ export const useAudio = create<AudioState>((set, get) => ({
       return musicTracks[currentTrackIndex].name;
     }
     return 'Unknown Track';
+  },
+
+  toggleBossMusicMute: () => {
+    const { isBossMusicMuted, bossMusic, youtubePlayer, isYoutubeAudioActive } = get();
+    const newMutedState = !isBossMusicMuted;
+    
+    if (isYoutubeAudioActive && youtubePlayer) {
+      if (newMutedState) {
+        youtubePlayer.pauseVideo();
+      } else {
+        youtubePlayer.playVideo();
+      }
+    } else if (bossMusic) {
+      if (newMutedState) {
+        bossMusic.pause();
+        set({ isBossMusicPlaying: false });
+      } else {
+        bossMusic.play().catch((error: any) => {
+          console.log("Boss music resume prevented:", error);
+        });
+        set({ isBossMusicPlaying: true });
+      }
+    }
+    
+    set({ isBossMusicMuted: newMutedState });
+    console.log(`Boss music ${newMutedState ? 'muted' : 'unmuted'}`);
+  },
+
+  playBossMusic: () => {
+    const { bossMusic, isBossMusicMuted } = get();
+    if (bossMusic && !isBossMusicMuted) {
+      bossMusic.loop = true;
+      bossMusic.volume = 0.6;
+      bossMusic.play().catch((error: any) => {
+        console.log("Boss music play prevented:", error);
+      });
+      set({ isBossMusicPlaying: true });
+    }
+  },
+
+  fadeInBossMusic: () => {
+    const { bossMusic, isBossMusicMuted } = get();
+    if (bossMusic && !isBossMusicMuted) {
+      bossMusic.volume = 0;
+      bossMusic.loop = true;
+      bossMusic.play().catch((error: any) => {
+        console.log("Boss music fade in prevented:", error);
+      });
+      
+      set({ isBossMusicPlaying: true });
+      
+      // Fade in over 1 second
+      const fadeInInterval = setInterval(() => {
+        if (bossMusic.volume < 0.6) {
+          bossMusic.volume = Math.min(bossMusic.volume + 0.05, 0.6);
+        } else {
+          clearInterval(fadeInInterval);
+        }
+      }, 50);
+    }
+  },
+
+  fadeOutBossMusic: () => {
+    const { bossMusic } = get();
+    if (bossMusic && !bossMusic.paused) {
+      const fadeOutInterval = setInterval(() => {
+        if (bossMusic.volume > 0.05) {
+          bossMusic.volume = Math.max(bossMusic.volume - 0.05, 0);
+        } else {
+          bossMusic.pause();
+          bossMusic.volume = 0.6; // Reset volume for next play
+          set({ isBossMusicPlaying: false });
+          clearInterval(fadeOutInterval);
+        }
+      }, 50);
+    }
+  },
+
+  stopBossMusic: () => {
+    const { bossMusic, youtubePlayer, isYoutubeAudioActive } = get();
+    
+    if (isYoutubeAudioActive && youtubePlayer) {
+      youtubePlayer.stopVideo();
+      set({ isYoutubeAudioActive: false });
+    }
+    
+    if (bossMusic) {
+      bossMusic.pause();
+      bossMusic.currentTime = 0;
+      set({ isBossMusicPlaying: false });
+    }
+  },
+
+  playYoutubeAudio: (videoId: string) => {
+    const { youtubePlayer, bossMusic, isBossMusicMuted } = get();
+    
+    if (isBossMusicMuted) return;
+    
+    // Stop regular boss music if playing
+    if (bossMusic && !bossMusic.paused) {
+      bossMusic.pause();
+      set({ isBossMusicPlaying: false });
+    }
+    
+    if (youtubePlayer && videoId) {
+      youtubePlayer.loadVideoById(videoId);
+      set({ isYoutubeAudioActive: true });
+    }
+  },
+
+  stopYoutubeAudio: () => {
+    const { youtubePlayer } = get();
+    if (youtubePlayer) {
+      youtubePlayer.stopVideo();
+      set({ isYoutubeAudioActive: false });
+    }
   }
 }));

@@ -4,6 +4,8 @@ import { ScoreSubmission } from './ScoreSubmission';
 import { PlayerHUD } from './PlayerHUD';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
+import { BossMusicControls } from '@/components/ui/BossMusicControls';
+import { YoutubeAudioPlayer } from '@/components/ui/YoutubeAudioPlayer';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -11,7 +13,23 @@ import { useAudio } from '@/lib/stores/useAudio';
 export function BattleScreen() {
   const { currentLobby, currentBoss, addAttackAnimation } = useGameState();
   const { emit } = useWebSocket();
-  const { playHit, playSuccess } = useAudio();
+  const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
+
+  // Handle boss music when entering/leaving battle
+  useEffect(() => {
+    if (currentLobby?.gamePhase === 'battle' && currentBoss) {
+      // Fade in boss music when battle starts
+      fadeInBossMusic();
+    } else {
+      // Stop boss music when leaving battle
+      stopBossMusic();
+    }
+
+    // Cleanup on unmount
+    return () => {
+      stopBossMusic();
+    };
+  }, [currentLobby?.gamePhase, currentBoss, fadeInBossMusic, stopBossMusic]);
 
   const handleBossAttack = () => {
     const damage = Math.floor(Math.random() * 50) + 10;
@@ -49,6 +67,11 @@ export function BattleScreen() {
               <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600">
                 <ScoreSubmission />
               </div>
+            </div>
+
+            {/* Boss Music Controls - Top Right */}
+            <div className="absolute top-6 right-6 z-40">
+              <BossMusicControls />
             </div>
           </div>
         );
@@ -197,6 +220,8 @@ export function BattleScreen() {
       <div className="relative z-40">
         <PlayerHUD />
       </div>
+      {/* YouTube Audio Player (hidden) */}
+      <YoutubeAudioPlayer />
     </div>
   );
 }
