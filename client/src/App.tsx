@@ -33,21 +33,47 @@ function App() {
     isMuted, 
     setMenuMusic, 
     setButtonSelectSound,
+    setMusicTracks,
     fadeInMenuMusic, 
     fadeOutMenuMusic, 
     stopMenuMusic,
     playButtonSelect,
+    switchToNextTrack,
     isMenuMusicPlaying 
   } = useAudio();
+  
+  // Direct selector for current track name to ensure re-renders
+  const currentTrackName = useAudio(state => 
+    state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
+  );
 
   // Connect to WebSocket on mount and setup menu music
   useEffect(() => {
     connect();
     
-    // Load menu music
-    const menuAudio = new Audio('/sounds/menu-theme.mp3');
-    menuAudio.preload = 'auto';
-    setMenuMusic(menuAudio);
+    // Load music tracks
+    const tracks = [
+      {
+        name: 'Main Theme',
+        file: '/sounds/menu-theme.mp3',
+        audio: new Audio('/sounds/menu-theme.mp3')
+      },
+      {
+        name: 'Scrum Battles',
+        file: '/sounds/scrum-battles.mp3', 
+        audio: new Audio('/sounds/scrum-battles.mp3')
+      }
+    ];
+    
+    // Preload all tracks
+    tracks.forEach(track => {
+      if (track.audio) {
+        track.audio.preload = 'auto';
+      }
+    });
+    
+    setMusicTracks(tracks);
+    setMenuMusic(tracks[0].audio!); // Set first track as default
     
     // Load button select sound
     const buttonSelectAudio = new Audio('/sounds/button-select.mp3');
@@ -55,7 +81,7 @@ function App() {
     setButtonSelectSound(buttonSelectAudio);
     
     return () => disconnect();
-  }, [connect, disconnect, setMenuMusic, setButtonSelectSound]);
+  }, [connect, disconnect, setMenuMusic, setButtonSelectSound, setMusicTracks]);
 
   // Check for lobby join URL parameter
   useEffect(() => {
@@ -226,7 +252,19 @@ function App() {
                   </RetroButton>
                 </div>
                 
-                <div className="mt-8 pt-4 border-t border-gray-600">
+                <div className="mt-8 pt-4 border-t border-gray-600 space-y-3">
+                  <RetroButton
+                    onClick={() => {
+                      playButtonSelect();
+                      switchToNextTrack();
+                    }}
+                    size="sm"
+                    variant="secondary"
+                    className="w-full"
+                  >
+                    🎵 {currentTrackName}
+                  </RetroButton>
+                  
                   <RetroButton
                     onClick={toggleMute}
                     size="sm"

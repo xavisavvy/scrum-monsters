@@ -1,14 +1,23 @@
 import { create } from "zustand";
 
+interface MusicTrack {
+  name: string;
+  file: string;
+  audio?: HTMLAudioElement;
+}
+
 interface AudioState {
   backgroundMusic: HTMLAudioElement | null;
   menuMusic: HTMLAudioElement | null;
   hitSound: HTMLAudioElement | null;
   successSound: HTMLAudioElement | null;
   buttonSelectSound: HTMLAudioElement | null;
+  musicTracks: MusicTrack[];
+  currentTrackIndex: number;
   isMuted: boolean;
   isMenuMusicPlaying: boolean;
   fadeTimer: NodeJS.Timeout | null;
+  isTransitioning: boolean;
   
   // Setter functions
   setBackgroundMusic: (music: HTMLAudioElement) => void;
@@ -16,6 +25,7 @@ interface AudioState {
   setHitSound: (sound: HTMLAudioElement) => void;
   setSuccessSound: (sound: HTMLAudioElement) => void;
   setButtonSelectSound: (sound: HTMLAudioElement) => void;
+  setMusicTracks: (tracks: MusicTrack[]) => void;
   
   // Control functions
   toggleMute: () => void;
@@ -26,6 +36,8 @@ interface AudioState {
   fadeInMenuMusic: () => void;
   fadeOutMenuMusic: () => void;
   stopMenuMusic: () => void;
+  switchToNextTrack: () => void;
+  getCurrentTrackName: () => string;
 }
 
 export const useAudio = create<AudioState>((set, get) => ({
@@ -34,15 +46,19 @@ export const useAudio = create<AudioState>((set, get) => ({
   hitSound: null,
   successSound: null,
   buttonSelectSound: null,
+  musicTracks: [],
+  currentTrackIndex: 0,
   isMuted: true, // Start muted by default
   isMenuMusicPlaying: false,
   fadeTimer: null,
+  isTransitioning: false,
   
   setBackgroundMusic: (music) => set({ backgroundMusic: music }),
   setMenuMusic: (music) => set({ menuMusic: music }),
   setHitSound: (sound) => set({ hitSound: sound }),
   setSuccessSound: (sound) => set({ successSound: sound }),
   setButtonSelectSound: (sound) => set({ buttonSelectSound: sound }),
+  setMusicTracks: (tracks) => set({ musicTracks: tracks }),
   
   toggleMute: () => {
     const { isMuted, menuMusic, fadeTimer } = get();
@@ -214,5 +230,104 @@ export const useAudio = create<AudioState>((set, get) => ({
       menuMusic.currentTime = 0;
       set({ isMenuMusicPlaying: false });
     }
+  },
+  
+  switchToNextTrack: () => {
+    const { musicTracks, currentTrackIndex, isMenuMusicPlaying, isMuted, fadeTimer, isTransitioning } = get();
+    
+    if (musicTracks.length === 0 || isTransitioning) return;
+    
+    // Set transitioning flag to prevent multiple switches
+    set({ isTransitioning: true });
+    
+    const currentMusic = get().menuMusic;
+    const nextIndex = (currentTrackIndex + 1) % musicTracks.length;
+    const nextTrack = musicTracks[nextIndex];
+    
+    if (!nextTrack.audio) {
+      set({ isTransitioning: false });
+      return;
+    }
+    
+    // If music is playing, fade out current track first
+    if (currentMusic && isMenuMusicPlaying && !isMuted) {
+      // Clear any existing fade timer
+      if (fadeTimer) {
+        clearInterval(fadeTimer);
+        set({ fadeTimer: null });
+      }
+      
+      // Crossfade: fade out current track
+      const fadeOutInterval = setInterval(() => {
+        if (currentMusic.volume > 0) {
+          currentMusic.volume = Math.max(0, currentMusic.volume - 0.04); // Faster fade-out
+        } else {
+          clearInterval(fadeOutInterval);
+          
+          // Now switch to new track
+          currentMusic.pause();
+          currentMusic.currentTime = 0;
+          
+          // Set new track with volume 0
+          nextTrack.audio!.volume = 0;
+          nextTrack.audio!.loop = true;
+          
+          set({ 
+            menuMusic: nextTrack.audio!, 
+            currentTrackIndex: nextIndex,
+            isMenuMusicPlaying: false,
+            fadeTimer: null
+          });
+          
+          // Fade in new track
+          nextTrack.audio!.play().then(() => {
+            set({ isMenuMusicPlaying: true });
+            
+            const fadeInInterval = setInterval(() => {
+              if (nextTrack.audio!.volume < 0.4) {
+                nextTrack.audio!.volume = Math.min(0.4, nextTrack.audio!.volume + 0.02);
+              } else {
+                clearInterval(fadeInInterval);
+                set({ fadeTimer: null, isTransitioning: false });
+              }
+            }, 50);
+            
+            set({ fadeTimer: fadeInInterval });
+          }).catch(error => {
+            console.log("Track switch play prevented:", error);
+            set({ isTransitioning: false, fadeTimer: null });
+          });
+        }
+      }, 25); // Faster fade-out for crossfade
+      
+      set({ fadeTimer: fadeOutInterval });
+    } else {
+      // Not playing, just switch tracks immediately
+      if (currentMusic) {
+        currentMusic.pause();
+        currentMusic.currentTime = 0;
+      }
+      
+      // Ensure new track starts at volume 0
+      nextTrack.audio.volume = 0;
+      nextTrack.audio.loop = true;
+      
+      set({ 
+        menuMusic: nextTrack.audio, 
+        currentTrackIndex: nextIndex,
+        isMenuMusicPlaying: false,
+        isTransitioning: false
+      });
+    }
+    
+    console.log(`Switched to track: ${nextTrack.name}`);
+  },
+  
+  getCurrentTrackName: () => {
+    const { musicTracks, currentTrackIndex } = get();
+    if (musicTracks.length > 0 && musicTracks[currentTrackIndex]) {
+      return musicTracks[currentTrackIndex].name;
+    }
+    return 'Unknown Track';
   }
 }));
