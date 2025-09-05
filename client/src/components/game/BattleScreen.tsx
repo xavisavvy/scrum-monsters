@@ -16,14 +16,14 @@ export function BattleScreen() {
   const handleBossAttack = () => {
     const damage = Math.floor(Math.random() * 50) + 10;
     
-    // Add visual attack animation
+    // Add visual attack animation with consistent coordinate system (percentages)
     addAttackAnimation({
       id: Math.random().toString(36).substring(2, 15),
       playerId: 'current',
       damage,
       timestamp: Date.now(),
-      x: Math.random() * 100,
-      y: Math.random() * 100
+      x: Math.random() * 80 + 10, // 10-90% of viewport width
+      y: Math.random() * 80 + 10  // 10-90% of viewport height
     });
     
     // Emit attack to server
@@ -40,12 +40,15 @@ export function BattleScreen() {
       case 'battle':
         if (!currentBoss) return null;
         return (
-          <div className="grid lg:grid-cols-3 gap-6 p-6">
-            <div className="lg:col-span-2">
-              <BossDisplay boss={currentBoss} onAttack={handleBossAttack} />
-            </div>
-            <div>
-              <ScoreSubmission />
+          <div className="relative">
+            {/* Fullscreen Boss Background */}
+            <BossDisplay boss={currentBoss} onAttack={handleBossAttack} fullscreen />
+            
+            {/* UI Overlay */}
+            <div className="relative z-30 min-h-screen flex items-center justify-end p-6">
+              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600">
+                <ScoreSubmission />
+              </div>
             </div>
           </div>
         );
@@ -154,9 +157,11 @@ export function BattleScreen() {
   }, [currentLobby?.gamePhase, playSuccess]);
 
   return (
-    <div className="battle-screen">
+    <div className="battle-screen relative">
       {renderGamePhase()}
-      <PlayerHUD />
+      <div className="relative z-40">
+        <PlayerHUD />
+      </div>
     </div>
   );
 }
