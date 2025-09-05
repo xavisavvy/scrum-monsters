@@ -79,6 +79,16 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    socket.on('change_own_team', ({ team }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.changeOwnTeam(playerId, team);
+      if (lobby) {
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
     socket.on('start_battle', ({ tickets }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
@@ -131,6 +141,17 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       const lobby = gameState.proceedNextLevel(playerId);
       if (lobby) {
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
+    socket.on('abandon_quest', () => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.abandonQuest(playerId);
+      if (lobby) {
+        io.to(lobby.id).emit('quest_abandoned', { lobby });
         io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });

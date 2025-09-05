@@ -61,11 +61,13 @@ export interface ClientEvents {
   'join_lobby': { lobbyId: string; playerName: string };
   'select_avatar': { avatarClass: AvatarClass };
   'assign_team': { playerId: string; team: TeamType };
+  'change_own_team': { team: TeamType };
   'start_battle': { tickets: JiraTicket[] };
   'submit_score': { score: number };
   'attack_boss': { damage: number };
   'proceed_next_level': {};
   'restart_game': {};
+  'abandon_quest': {};
 }
 
 export interface ServerEvents {
@@ -78,6 +80,7 @@ export interface ServerEvents {
   'scores_revealed': { scores: Record<string, number>; consensus: boolean };
   'boss_attacked': { playerId: string; damage: number; bossHealth: number };
   'boss_defeated': { lobby: Lobby };
+  'quest_abandoned': { lobby: Lobby };
   'game_error': { message: string };
   'player_disconnected': { playerId: string };
 }

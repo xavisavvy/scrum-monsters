@@ -97,6 +97,12 @@ function App() {
       console.log('Boss defeated!', lobby);
     });
 
+    socket.on('quest_abandoned', ({ lobby }) => {
+      console.log('Quest abandoned - returning to lobby');
+      setLobby(lobby);
+      setAppState('lobby');
+    });
+
     socket.on('game_error', ({ message }) => {
       setError(message);
       console.error('Game error:', message);
@@ -115,6 +121,7 @@ function App() {
       socket.off('scores_revealed');
       socket.off('boss_attacked');
       socket.off('boss_defeated');
+      socket.off('quest_abandoned');
       socket.off('game_error');
       socket.off('player_disconnected');
     };

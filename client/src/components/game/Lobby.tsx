@@ -49,6 +49,13 @@ export function Lobby() {
     emit('start_battle', { tickets });
   };
 
+  const changeTeam = (team: TeamType) => {
+    // Only allow team changes in lobby phase
+    if (currentLobby?.gamePhase !== 'lobby') return;
+    
+    emit('change_own_team', { team });
+  };
+
   const copyInviteLink = () => {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink);
@@ -89,7 +96,41 @@ export function Lobby() {
 
         <div className="grid md:grid-cols-2 gap-6">
           {/* Teams Section */}
-          <div>
+          <div className="space-y-4">
+            {/* Team Selection */}
+            <RetroCard title="Choose Your Team">
+              <div className="mb-4">
+                <p className="text-sm text-gray-400 mb-3">
+                  Select your role for this scrum session:
+                </p>
+                <div className="grid grid-cols-1 gap-2">
+                  {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
+                    const team = teamKey as TeamType;
+                    const isCurrentTeam = currentPlayer?.team === team;
+                    
+                    return (
+                      <button
+                        key={team}
+                        onClick={() => changeTeam(team)}
+                        className={`p-3 text-left rounded border-2 transition-all ${
+                          isCurrentTeam 
+                            ? 'border-blue-500 bg-blue-500 bg-opacity-20 text-blue-200' 
+                            : 'border-gray-600 bg-gray-800 hover:border-gray-500 hover:bg-gray-700'
+                        }`}
+                      >
+                        <div className="font-medium">{teamName}</div>
+                        <div className="text-xs text-gray-400 mt-1">
+                          {team === 'developers' && 'Estimate story points and develop features'}
+                          {team === 'qa' && 'Provide testing perspective and quality insights'}
+                          {team === 'spectators' && 'Observe the session without voting'}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </RetroCard>
+
             <RetroCard title="Battle Teams">
               {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
                 const team = teamKey as TeamType;
@@ -106,11 +147,14 @@ export function Lobby() {
                       {teamPlayers.map(player => (
                         <div
                           key={player.id}
-                          className={`player-chip ${player.isHost ? 'host' : ''}`}
+                          className={`player-chip ${player.isHost ? 'host' : ''} ${
+                            player.id === currentPlayer?.id ? 'border-blue-400' : ''
+                          }`}
                         >
                           {renderPlayerSprite(player.avatar)}
                           <span>{player.name}</span>
                           {player.isHost && <span className="text-xs">(HOST)</span>}
+                          {player.id === currentPlayer?.id && <span className="text-xs text-blue-400">(YOU)</span>}
                         </div>
                       ))}
                     </div>

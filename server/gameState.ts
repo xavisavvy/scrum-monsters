@@ -116,6 +116,30 @@ class GameStateManager {
     return lobby;
   }
 
+  // Allow players to change their own team
+  changeOwnTeam(playerId: string, team: TeamType): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player) return null;
+
+    // Don't allow changing team during active gameplay phases
+    if (lobby.gamePhase !== 'lobby') return null;
+
+    // Remove from current team
+    Object.keys(lobby.teams).forEach(teamKey => {
+      const teamType = teamKey as TeamType;
+      lobby.teams[teamType] = lobby.teams[teamType].filter(p => p.id !== playerId);
+    });
+
+    // Add to new team
+    player.team = team;
+    lobby.teams[team].push(player);
+
+    return lobby;
+  }
+
   startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
@@ -139,6 +163,29 @@ class GameStateManager {
     lobby.boss = boss;
 
     return { lobby, boss };
+  }
+
+  // Allow host to abandon quest and return to lobby
+  abandonQuest(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    // Reset lobby to initial state
+    lobby.gamePhase = 'lobby';
+    lobby.currentTicket = undefined;
+    lobby.boss = undefined;
+    lobby.completedTickets = [];
+
+    // Reset all player scores and submission status
+    lobby.players.forEach(p => {
+      p.hasSubmittedScore = false;
+      p.currentScore = undefined;
+    });
+
+    return lobby;
   }
 
   submitScore(playerId: string, score: number): Lobby | null {

@@ -12,10 +12,17 @@ export function PlayerHUD() {
     emit('proceed_next_level', {});
   };
 
+  const handleAbandonQuest = () => {
+    if (confirm('Are you sure you want to abandon the quest and return to the lobby? All progress will be lost.')) {
+      emit('abandon_quest', {});
+    }
+  };
+
   if (!currentLobby || !currentPlayer) return null;
 
   const isHost = currentPlayer.isHost;
   const showProceedButton = isHost && currentLobby.gamePhase === 'next_level';
+  const showAbandonButton = isHost && currentLobby.gamePhase !== 'lobby';
 
   return (
     <div className="player-hud">
@@ -48,7 +55,18 @@ export function PlayerHUD() {
         </div>
 
         {/* Host Controls */}
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
+          {showAbandonButton && (
+            <RetroButton
+              onClick={handleAbandonQuest}
+              variant="primary"
+              size="sm"
+              className="bg-red-600 hover:bg-red-700 border-red-500"
+            >
+              Abandon Quest
+            </RetroButton>
+          )}
+          
           {showProceedButton && (
             <RetroButton
               onClick={handleProceedNext}
