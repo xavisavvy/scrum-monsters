@@ -148,10 +148,20 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     
     // Don't shoot if clicking on UI elements
     const target = event.target as HTMLElement;
-    console.log('🔍 Target element:', target.tagName, target.className);
+    console.log('🔍 Target element:', target.tagName, target.className, target);
     
-    if (target.closest('.retro-card, .retro-button, button, input, .team-scoreboard, .performance-tracker')) {
+    // Only ignore clicks on interactive UI elements marked with data-no-shoot
+    if (target.closest('[data-no-shoot]')) {
       console.log('⛔ Click on UI element, ignoring');
+      return;
+    }
+    
+    // Allow clicks on player controller or its direct children (like character)
+    const isValidTarget = target === event.currentTarget || 
+                         event.currentTarget.contains(target);
+    
+    if (!isValidTarget) {
+      console.log('⛔ Click outside controller container, ignoring');
       return;
     }
 

@@ -58,11 +58,28 @@ interface BossDisplayProps {
   fullscreen?: boolean;
 }
 
+interface DamageEffect {
+  id: string;
+  damage: number;
+  x: number;
+  y: number;
+  timestamp: number;
+}
+
 export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayProps) {
   const [isDamaged, setIsDamaged] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [damageEffects, setDamageEffects] = useState<DamageEffect[]>([]);
+  const [explosionSound, setExplosionSound] = useState<HTMLAudioElement | null>(null);
   const { attackAnimations } = useGameState();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Load explosion sound effect
+  useEffect(() => {
+    const audio = new Audio('/sounds/explosion.mp3');
+    audio.volume = 0.6;
+    setExplosionSound(audio);
+  }, []);
 
   // Cleanup timeout on unmount
   useEffect(() => {

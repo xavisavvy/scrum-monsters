@@ -67,13 +67,13 @@ export function BattleScreen() {
             
             {/* UI Overlay */}
             <div className="relative z-30 min-h-screen flex items-center justify-end p-6">
-              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600">
+              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600" data-no-shoot>
                 <ScoreSubmission />
               </div>
             </div>
 
             {/* Boss Music Controls - Top Right */}
-            <div className="absolute top-6 right-6 z-40">
+            <div className="absolute top-6 right-6 z-40" data-no-shoot>
               <BossMusicControls />
             </div>
 
@@ -86,7 +86,7 @@ export function BattleScreen() {
             </div>
 
             {/* Team Competition Display - Top Right Side */}
-            <div className="absolute top-6 right-80 z-30 max-w-sm">
+            <div className="absolute top-6 right-80 z-30 max-w-sm" data-no-shoot>
               <TeamScoreboard />
             </div>
 

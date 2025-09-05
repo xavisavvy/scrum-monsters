@@ -14,6 +14,7 @@ interface AudioState {
   hitSound: HTMLAudioElement | null;
   successSound: HTMLAudioElement | null;
   buttonSelectSound: HTMLAudioElement | null;
+  explosionSound: HTMLAudioElement | null;
   musicTracks: MusicTrack[];
   currentTrackIndex: number;
   isMuted: boolean;
@@ -42,6 +43,7 @@ interface AudioState {
   playHit: () => void;
   playSuccess: () => void;
   playButtonSelect: () => void;
+  playExplosion: () => void;
   playMenuMusic: () => void;
   fadeInMenuMusic: () => void;
   fadeOutMenuMusic: () => void;
