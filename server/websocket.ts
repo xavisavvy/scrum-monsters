@@ -210,6 +210,42 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    socket.on('youtube_play', ({ videoId, url }) => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      
+      if (!playerId || !lobbyId) return;
+
+      // Only allow host to control YouTube music
+      const lobby = gameState.getLobby(lobbyId);
+      if (!lobby || lobby.hostId !== playerId) {
+        socket.emit('game_error', { message: 'Only the host can control YouTube music' });
+        return;
+      }
+
+      // Broadcast to all players in the lobby
+      io.to(lobbyId).emit('youtube_play_synced', { videoId, url });
+      console.log(`Host ${playerId} started YouTube music: ${url}`);
+    });
+
+    socket.on('youtube_stop', () => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      
+      if (!playerId || !lobbyId) return;
+
+      // Only allow host to control YouTube music
+      const lobby = gameState.getLobby(lobbyId);
+      if (!lobby || lobby.hostId !== playerId) {
+        socket.emit('game_error', { message: 'Only the host can control YouTube music' });
+        return;
+      }
+
+      // Broadcast to all players in the lobby
+      io.to(lobbyId).emit('youtube_stop_synced', {});
+      console.log(`Host ${playerId} stopped YouTube music`);
+    });
+
     socket.on('disconnect', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;

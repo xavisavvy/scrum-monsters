@@ -101,6 +101,8 @@ export interface ClientEvents {
   };
   'abandon_quest': {};
   'force_reveal': {};
+  'youtube_play': { videoId: string; url: string };
+  'youtube_stop': {};
 }
 
 export interface TeamScores {
@@ -126,6 +128,8 @@ export interface ServerEvents {
   'quest_abandoned': { lobby: Lobby };
   'game_error': { message: string };
   'player_disconnected': { playerId: string };
+  'youtube_play_synced': { videoId: string; url: string };
+  'youtube_stop_synced': {};
 }
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];

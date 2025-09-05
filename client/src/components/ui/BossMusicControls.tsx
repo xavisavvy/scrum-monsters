@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useAudio } from '@/lib/stores/useAudio';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 
@@ -15,6 +16,7 @@ export function BossMusicControls() {
     setYoutubeUrl 
   } = useAudio();
   const { currentPlayer } = useGameState();
+  const { socket } = useWebSocket();
   const [showSettings, setShowSettings] = useState(false);
   const [tempUrl, setTempUrl] = useState(youtubeUrl);
 
@@ -28,19 +30,20 @@ export function BossMusicControls() {
 
   const handleYoutubeSubmit = () => {
     const videoId = extractVideoId(tempUrl);
-    if (videoId) {
-      setYoutubeUrl(tempUrl);
-      playYoutubeAudio(videoId);
+    if (videoId && socket) {
+      // Send WebSocket event to sync with all players
+      socket.emit('youtube_play', { videoId, url: tempUrl });
       setShowSettings(false);
-    } else {
+    } else if (!videoId) {
       alert('Please enter a valid YouTube URL');
     }
   };
 
   const handleStopYoutube = () => {
-    stopYoutubeAudio();
-    setYoutubeUrl('');
-    setTempUrl('');
+    if (socket) {
+      // Send WebSocket event to sync with all players
+      socket.emit('youtube_stop', {});
+    }
   };
 
   return (

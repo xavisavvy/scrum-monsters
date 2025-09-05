@@ -416,7 +416,14 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   fadeInBossMusic: () => {
-    const { bossMusic, isBossMusicMuted } = get();
+    const { bossMusic, isBossMusicMuted, isYoutubeAudioActive } = get();
+    
+    // Don't play boss music if YouTube music is already active
+    if (isYoutubeAudioActive) {
+      console.log("Boss music skipped - YouTube audio is active");
+      return;
+    }
+    
     if (bossMusic && !isBossMusicMuted) {
       bossMusic.volume = 0;
       bossMusic.loop = true;
@@ -469,27 +476,45 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   playYoutubeAudio: (videoId: string) => {
-    const { youtubePlayer, bossMusic, isBossMusicMuted } = get();
+    const { youtubePlayer, bossMusic, isBossMusicMuted, isBossMusicPlaying } = get();
     
     if (isBossMusicMuted) return;
     
-    // Stop regular boss music if playing
-    if (bossMusic && !bossMusic.paused) {
+    // Explicitly pause boss music if playing
+    if (bossMusic && isBossMusicPlaying) {
       bossMusic.pause();
       set({ isBossMusicPlaying: false });
+      console.log("🎵 Boss music paused for YouTube");
     }
     
     if (youtubePlayer && videoId) {
       youtubePlayer.loadVideoById(videoId);
       set({ isYoutubeAudioActive: true });
+      console.log("🎵 YouTube music started:", videoId);
     }
   },
 
   stopYoutubeAudio: () => {
-    const { youtubePlayer } = get();
+    const { youtubePlayer, bossMusic } = get();
     if (youtubePlayer) {
       youtubePlayer.stopVideo();
-      set({ isYoutubeAudioActive: false });
+      set({ isYoutubeAudioActive: false, youtubeUrl: '' }); // Clear URL here
+      console.log("🎵 YouTube music stopped");
+      
+      // Resume boss music only if we're in battle and music isn't muted
+      const { isBossMusicMuted, isBossMusicPlaying } = get();
+      
+      // Check if we're in battle phase (basic check - could be enhanced)
+      const currentLobby = document.querySelector('[data-game-phase="battle"]');
+      const isInBattle = !!currentLobby;
+      
+      if (bossMusic && !isBossMusicMuted && !isBossMusicPlaying && isInBattle) {
+        console.log("🎵 Resuming boss music after YouTube stop");
+        bossMusic.play().catch((error: any) => {
+          console.log("Boss music resume prevented:", error);
+        });
+        set({ isBossMusicPlaying: true });
+      }
     }
   }
 }));

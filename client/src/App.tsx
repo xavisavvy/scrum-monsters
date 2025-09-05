@@ -199,6 +199,19 @@ function App() {
       console.log(`Player ${playerId} disconnected`);
     });
 
+    socket.on('youtube_play_synced', ({ videoId, url }) => {
+      console.log('🎵 YouTube music synced:', url);
+      const { setYoutubeUrl, playYoutubeAudio } = useAudio.getState();
+      setYoutubeUrl(url);
+      playYoutubeAudio(videoId);
+    });
+
+    socket.on('youtube_stop_synced', () => {
+      console.log('🎵 YouTube music stopped (synced)');
+      const { stopYoutubeAudio } = useAudio.getState();
+      stopYoutubeAudio(); // This will now handle URL clearing internally
+    });
+
     socket.on('score_submitted', ({ playerId, team }) => {
       console.log(`Player ${playerId} from ${team} team submitted their score`);
       // Lobby will be updated via lobby_updated event which triggers re-render
@@ -216,6 +229,8 @@ function App() {
       socket.off('quest_abandoned');
       socket.off('game_error');
       socket.off('player_disconnected');
+      socket.off('youtube_play_synced');
+      socket.off('youtube_stop_synced');
     };
   }, [socket, currentPlayer, appState, setLobby, setPlayer, setBoss, setInviteLink, setError]);
 
