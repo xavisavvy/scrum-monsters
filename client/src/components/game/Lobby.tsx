@@ -9,6 +9,7 @@ import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket } from '@/lib/gameType
 export function Lobby() {
   const [tickets, setTickets] = useState<JiraTicket[]>([]);
   const [newTicketTitle, setNewTicketTitle] = useState('');
+  const [showQRCode, setShowQRCode] = useState(false);
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
 
@@ -108,23 +109,35 @@ export function Lobby() {
             Lobby Code: <span className="retro-text-glow text-xl font-mono">{currentLobby.id}</span>
           </p>
           {inviteLink && (
-            <div className="mt-4 space-y-4">
-              {/* QR Code for easy mobile sharing */}
-              <div className="bg-white p-4 rounded-lg inline-block">
-                <QRCode
-                  value={inviteLink}
-                  size={128}
-                  level="M"
-                />
-              </div>
-              <div className="text-xs text-gray-500">
-                📱 Scan QR code to join on mobile
-              </div>
-              <div>
+            <div className="mt-4 space-y-3">
+              <div className="flex gap-2 justify-center">
                 <RetroButton size="sm" onClick={copyInviteLink}>
                   Copy Invite Link
                 </RetroButton>
+                <RetroButton 
+                  size="sm" 
+                  variant="secondary"
+                  onClick={() => setShowQRCode(!showQRCode)}
+                >
+                  {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
+                </RetroButton>
               </div>
+              
+              {showQRCode && (
+                <div className="space-y-2">
+                  {/* QR Code for easy mobile sharing */}
+                  <div className="bg-white p-4 rounded-lg inline-block">
+                    <QRCode
+                      value={inviteLink}
+                      size={128}
+                      level="M"
+                    />
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    📱 Scan QR code to join on mobile
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
