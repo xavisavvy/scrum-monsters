@@ -2,18 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import classic NES-style pixel font */
+@font-face {
+  font-family: 'Press Start 2P';
+  src: url('/fonts/press-start-2p.woff2') format('woff2');
+  font-display: swap;
+  font-weight: 400;
+  font-style: normal;
+}
+
 @layer base {
   * {
     @apply border-border;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    image-rendering: pixelated;
+    -webkit-font-smoothing: none;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body {
-    @apply font-sans antialiased bg-background text-foreground;
+    @apply bg-background text-foreground;
     margin: 0;
     padding: 0;
     overflow: hidden;
     width: 100vw;
     height: 100vh;
+    font-family: 'Press Start 2P', 'Courier New', monospace;
+    line-height: 1.6;
   }
 }
 

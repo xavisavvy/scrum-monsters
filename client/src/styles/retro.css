@@ -15,7 +15,7 @@
   background: linear-gradient(135deg, var(--retro-bg) 0%, var(--retro-primary) 100%);
   min-height: 100vh;
   color: var(--retro-text);
-  font-family: 'Courier New', monospace;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
 }
 
 .retro-window {
@@ -33,7 +33,7 @@
   border: 2px solid var(--retro-border);
   color: var(--retro-text);
   padding: 12px 24px;
-  font-family: 'Courier New', monospace;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
   font-weight: bold;
   text-transform: uppercase;
   cursor: pointer;
@@ -64,7 +64,7 @@
   border: 2px solid var(--retro-border);
   color: var(--retro-text);
   padding: 12px;
-  font-family: 'Courier New', monospace;
+  font-family: 'Press Start 2P', 'Courier New', monospace;
   border-radius: 4px;
   width: 100%;
 }
