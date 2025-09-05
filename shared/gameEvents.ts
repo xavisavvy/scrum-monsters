@@ -10,6 +10,26 @@ export interface Player {
   hasSubmittedScore: boolean;
 }
 
+export interface TeamStats {
+  totalStoryPoints: number;
+  ticketsCompleted: number;
+  averageEstimationTime: number;
+  consensusRate: number;
+  accuracyScore: number;
+  participationRate: number;
+  achievements: string[];
+  currentStreak: number;
+  bestStreak: number;
+}
+
+export interface TeamCompetition {
+  developers: TeamStats;
+  qa: TeamStats;
+  currentRound: number;
+  winnerHistory: TeamType[];
+  seasonStart: string;
+}
+
 export interface Lobby {
   id: string;
   name: string;
@@ -21,6 +41,7 @@ export interface Lobby {
   gamePhase: GamePhase;
   boss?: Boss;
   completedTickets: CompletedTicket[];
+  teamCompetition: TeamCompetition;
 }
 
 export interface JiraTicket {
@@ -71,6 +92,13 @@ export interface ClientEvents {
   'attack_boss': { damage: number };
   'proceed_next_level': {};
   'restart_game': {};
+  'player_performance': { 
+    playerId: string; 
+    team: TeamType; 
+    estimationTime: number; 
+    score: number; 
+    ticketId?: string; 
+  };
   'abandon_quest': {};
   'force_reveal': {};
 }

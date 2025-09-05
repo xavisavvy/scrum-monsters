@@ -389,3 +389,9 @@
     transform: translateY(-80px) scale(1.2);
   }
 }
+
+/* Character animations */
+@keyframes character-bob {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-4px); }
+}

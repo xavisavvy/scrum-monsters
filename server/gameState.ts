@@ -1,11 +1,43 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats } from '../shared/gameEvents.js';
+import { TeamStatsManager } from './teamStatsManager.js';
 
 class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
   private playerToLobby: Map<string, string> = new Map();
+  private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number; team: TeamType }>> = new Map();
 
   generateLobbyId(): string {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  private initializeTeamCompetition(): TeamCompetition {
+    return {
+      developers: {
+        totalStoryPoints: 0,
+        ticketsCompleted: 0,
+        averageEstimationTime: 0,
+        consensusRate: 0,
+        accuracyScore: 0,
+        participationRate: 0,
+        achievements: [],
+        currentStreak: 0,
+        bestStreak: 0
+      },
+      qa: {
+        totalStoryPoints: 0,
+        ticketsCompleted: 0,
+        averageEstimationTime: 0,
+        consensusRate: 0,
+        accuracyScore: 0,
+        participationRate: 0,
+        achievements: [],
+        currentStreak: 0,
+        bestStreak: 0
+      },
+      currentRound: 1,
+      winnerHistory: [],
+      seasonStart: new Date().toISOString()
+    };
   }
 
   createLobby(hostName: string, lobbyName: string): { lobby: Lobby; inviteLink: string } {
@@ -33,7 +65,8 @@ class GameStateManager {
       },
       tickets: [],
       gamePhase: 'lobby',
-      completedTickets: []
+      completedTickets: [],
+      teamCompetition: this.initializeTeamCompetition()
     };
 
     this.lobbies.set(lobbyId, lobby);
@@ -278,6 +311,8 @@ class GameStateManager {
     }
 
     if (teamsAgree && lobby.boss && lobby.currentTicket) {
+      // Update team competition stats
+      this.updateTeamCompetitionStats(lobby);
       // Defeat current boss phase
       lobby.boss.currentHealth = 0;
       
@@ -326,6 +361,34 @@ class GameStateManager {
     }
 
     return { lobby, teamScores, teamConsensus };
+  }
+
+  trackPlayerPerformance(playerId: string, performanceData: {
+    estimationTime: number;
+    score: number;
+    team: TeamType;
+    ticketId?: string;
+  }): void {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) return;
+
+    if (!this.playerPerformanceMap.has(lobbyId)) {
+      this.playerPerformanceMap.set(lobbyId, new Map());
+    }
+
+    const lobbyPerformance = this.playerPerformanceMap.get(lobbyId)!;
+    lobbyPerformance.set(playerId, performanceData);
+  }
+
+  private updateTeamCompetitionStats(lobby: Lobby): void {
+    const lobbyPerformance = this.playerPerformanceMap.get(lobby.id);
+    if (!lobbyPerformance || !lobby.teamCompetition) return;
+
+    const performanceData = TeamStatsManager.calculatePerformanceData(lobby, lobbyPerformance);
+    TeamStatsManager.updateTeamCompetitionStats(lobby, performanceData);
+
+    // Clear performance data for this round
+    this.playerPerformanceMap.delete(lobby.id);
   }
 
   attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number } | null {

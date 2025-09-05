@@ -6,6 +6,9 @@ import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
 import { YoutubeAudioPlayer } from '@/components/ui/YoutubeAudioPlayer';
+import { PlayerController } from './PlayerController';
+import { TeamScoreboard } from './TeamScoreboard';
+import { TeamPerformanceTracker } from './TeamPerformanceTracker';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -73,6 +76,22 @@ export function BattleScreen() {
             <div className="absolute top-6 right-6 z-40">
               <BossMusicControls />
             </div>
+
+            {/* Player Character Controller */}
+            <div className="absolute inset-0 z-20">
+              <PlayerController 
+                containerWidth={window.innerWidth}
+                containerHeight={window.innerHeight}
+              />
+            </div>
+
+            {/* Team Competition Display - Top Left */}
+            <div className="absolute top-6 left-6 z-30 max-w-sm">
+              <TeamScoreboard />
+            </div>
+
+            {/* Live Performance Tracker */}
+            <TeamPerformanceTracker />
           </div>
         );
 
