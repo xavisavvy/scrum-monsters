@@ -35,6 +35,47 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         setIsJumping(true);
         setTimeout(() => setIsJumping(false), jumpDuration);
       }
+      
+      // Handle shooting with Ctrl keys
+      if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer) {
+        event.preventDefault();
+        console.log('⌨️ Ctrl key pressed for shooting!');
+        
+        // Shoot toward center of screen (boss area)
+        const targetX = containerWidth * 0.5; // Center X
+        const targetY = containerHeight * 0.4; // Slightly above center Y
+        
+        // Calculate character center position
+        const characterCenterX = playerPosition.x + characterSize / 2;
+        const characterCenterY = containerHeight - (playerPosition.y + characterSize / 2);
+        
+        console.log(`🎯 Keyboard shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
+        
+        // Create projectile from character to center of screen
+        const projectileData = {
+          startX: characterCenterX,
+          startY: characterCenterY,
+          targetX,
+          targetY,
+          emoji: getProjectileEmoji(currentPlayer.avatar)
+        };
+        
+        console.log('🚀 Keyboard projectile data:', projectileData);
+        
+        // Create projectile directly
+        const newProjectile = {
+          ...projectileData,
+          id: Math.random().toString(36).substring(2, 15),
+          progress: 0
+        };
+        
+        console.log('✨ Creating keyboard projectile:', newProjectile);
+        setProjectiles(prev => {
+          const updated = [...prev, newProjectile];
+          console.log('📦 Updated projectiles from keyboard:', updated);
+          return updated;
+        });
+      }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
@@ -52,7 +93,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isJumping, jumpDuration]);
+  }, [isJumping, jumpDuration, currentPlayer, containerWidth, containerHeight, playerPosition, characterSize]);
 
   // Handle movement based on pressed keys
   useEffect(() => {
@@ -103,10 +144,12 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const handleScreenClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('🖱️ Click detected!', event.clientX, event.clientY);
+    console.log('🖱️ Click detected!', event.clientX, event.clientY, 'Target:', event.target);
     
     // Don't shoot if clicking on UI elements
     const target = event.target as HTMLElement;
+    console.log('🔍 Target element:', target.tagName, target.className);
+    
     if (target.closest('.retro-card, .retro-button, button, input, .team-scoreboard, .performance-tracker')) {
       console.log('⛔ Click on UI element, ignoring');
       return;
@@ -236,6 +279,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         <div>🏃 Arrow Keys / WASD: Move</div>
         <div>🤸 Spacebar: Jump</div>
         <div>🎯 Click anywhere: Shoot</div>
+        <div>⌨️ Ctrl (L/R): Shoot at boss</div>
       </div>
     </div>
   );
