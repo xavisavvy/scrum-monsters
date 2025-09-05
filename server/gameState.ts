@@ -39,7 +39,11 @@ class GameStateManager {
     this.lobbies.set(lobbyId, lobby);
     this.playerToLobby.set(hostId, lobbyId);
 
-    const inviteLink = `${process.env.BASE_URL || 'http://localhost:5000'}/join/${lobbyId}`;
+    // Use Replit's public domain if available, otherwise fall back to BASE_URL or localhost
+    const baseUrl = process.env.REPLIT_DEV_DOMAIN 
+      ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
+      : (process.env.BASE_URL || 'http://localhost:5000');
+    const inviteLink = `${baseUrl}/join/${lobbyId}`;
     
     return { lobby, inviteLink };
   }
