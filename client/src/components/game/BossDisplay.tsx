@@ -161,7 +161,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
                 <div
                   className="absolute inset-0 border-4 border-orange-500 rounded-full pointer-events-none"
                   style={{
-                    animation: 'pulse 2s infinite',
+                    animation: 'pulse 8s infinite',
                     boxShadow: '0 0 30px rgba(255, 102, 0, 0.8)'
                   }}
                 />
@@ -231,7 +231,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
           <div
             className="absolute inset-0 border-4 border-orange-500 rounded-lg pointer-events-none"
             style={{
-              animation: 'glow 2s infinite alternate',
+              animation: 'glow 8s infinite alternate',
               boxShadow: '0 0 20px rgba(255, 102, 0, 0.6)'
             }}
           />
