@@ -37,6 +37,7 @@ function App() {
     setMenuMusic, 
     setBossMusic,
     setButtonSelectSound,
+    setExplosionSound,
     setMusicTracks,
     fadeInMenuMusic, 
     fadeOutMenuMusic, 
@@ -89,13 +90,18 @@ function App() {
     buttonSelectAudio.preload = 'auto';
     setButtonSelectSound(buttonSelectAudio);
 
+    // Load explosion sound
+    const explosionAudio = new Audio('/sounds/explosion.mp3');
+    explosionAudio.preload = 'auto';
+    setExplosionSound(explosionAudio);
+
     // Load boss music
     const bossAudio = new Audio('/sounds/boss-fight.mp3');
     bossAudio.preload = 'auto';
     setBossMusic(bossAudio);
     
     return () => disconnect();
-  }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setMusicTracks]);
+  }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setExplosionSound, setMusicTracks]);
 
   // Check for lobby join URL parameter
   useEffect(() => {

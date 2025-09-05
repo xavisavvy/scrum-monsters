@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useAudio } from '@/lib/stores/useAudio';
 import { Boss } from '@/lib/gameTypes';
 
 // Import boss images (transparent versions)
@@ -69,17 +70,12 @@ interface DamageEffect {
 export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayProps) {
   const [isDamaged, setIsDamaged] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [explosionSound, setExplosionSound] = useState<HTMLAudioElement | null>(null);
   const { attackAnimations } = useGameState();
+  const { playExplosion } = useAudio();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedAttackId = useRef<string | null>(null);
 
-  // Load explosion sound effect
-  useEffect(() => {
-    const audio = new Audio('/sounds/explosion.mp3');
-    audio.volume = 0.6;
-    setExplosionSound(audio);
-  }, []);
+  // No need to load explosion sound separately - using central audio store
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -102,13 +98,8 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
         lastProcessedAttackId.current = latestAttack.id;
         setIsDamaged(true);
         
-        // Play explosion sound
-        if (explosionSound) {
-          explosionSound.currentTime = 0;
-          explosionSound.play().catch(error => {
-            console.log("Explosion sound play prevented:", error);
-          });
-        }
+        // Play explosion sound using central audio store
+        playExplosion();
         
         // Clear any existing timeout
         if (timeoutRef.current) {
@@ -122,7 +113,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
         }, 300); // Slightly longer flash for projectile hits
       }
     }
-  }, [attackAnimations, explosionSound]);
+  }, [attackAnimations, playExplosion]);
 
   const healthPercentage = (boss.currentHealth / boss.maxHealth) * 100;
 
@@ -177,8 +168,8 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
                   objectFit: 'contain',
                   imageRendering: 'pixelated',
                   transition: 'all 0.3s ease',
-                  transform: isDamaged ? 'scale(1.1)' : 'scale(1)',
-                  filter: isDamaged ? 'brightness(1.5) contrast(1.2)' : 'none',
+                  transform: isDamaged ? 'scale(1.15)' : 'scale(1)',
+                  filter: isDamaged ? 'brightness(2.5) contrast(2) saturate(1.5) hue-rotate(15deg)' : 'none',
                   cursor: onAttack ? 'pointer' : 'default',
                   pointerEvents: 'auto'
                 }}

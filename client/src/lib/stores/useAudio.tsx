@@ -84,6 +84,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   setHitSound: (sound) => set({ hitSound: sound }),
   setSuccessSound: (sound) => set({ successSound: sound }),
   setButtonSelectSound: (sound) => set({ buttonSelectSound: sound }),
+  setExplosionSound: (sound) => set({ explosionSound: sound }),
   setMusicTracks: (tracks) => set({ musicTracks: tracks }),
   setYoutubeUrl: (url) => set({ youtubeUrl: url }),
   
@@ -170,6 +171,24 @@ export const useAudio = create<AudioState>((set, get) => ({
       soundClone.volume = 0.5;
       soundClone.play().catch(error => {
         console.log("Button select sound play prevented:", error);
+      });
+    }
+  },
+
+  playExplosion: () => {
+    const { explosionSound, isMuted } = get();
+    if (explosionSound) {
+      // If sound is muted, don't play anything
+      if (isMuted) {
+        console.log("Explosion sound skipped (muted)");
+        return;
+      }
+      
+      // Clone the sound to allow overlapping playback
+      const soundClone = explosionSound.cloneNode() as HTMLAudioElement;
+      soundClone.volume = 0.6;
+      soundClone.play().catch(error => {
+        console.log("Explosion sound play prevented:", error);
       });
     }
   },
