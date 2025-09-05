@@ -153,6 +153,8 @@ export function setupWebSocket(httpServer: HTTPServer) {
       if (result) {
         const { lobby, bossHealth } = result;
         io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
+        // Send updated lobby state so clients get the new boss health
+        io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });
 

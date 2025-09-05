@@ -69,10 +69,10 @@ interface DamageEffect {
 export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayProps) {
   const [isDamaged, setIsDamaged] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [damageEffects, setDamageEffects] = useState<DamageEffect[]>([]);
   const [explosionSound, setExplosionSound] = useState<HTMLAudioElement | null>(null);
   const { attackAnimations } = useGameState();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProcessedAttackId = useRef<string | null>(null);
 
   // Load explosion sound effect
   useEffect(() => {
@@ -90,6 +90,39 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       }
     };
   }, []);
+
+  // Watch for NEW attack animations to trigger damage flash effects
+  useEffect(() => {
+    if (attackAnimations.length > 0) {
+      const latestAttack = attackAnimations[attackAnimations.length - 1];
+      
+      // Only trigger flicker for new attacks, not repeated renders
+      if (latestAttack.id !== lastProcessedAttackId.current) {
+        console.log('🎨 Boss damage effect triggered for NEW attack:', latestAttack.id);
+        lastProcessedAttackId.current = latestAttack.id;
+        setIsDamaged(true);
+        
+        // Play explosion sound
+        if (explosionSound) {
+          explosionSound.currentTime = 0;
+          explosionSound.play().catch(error => {
+            console.log("Explosion sound play prevented:", error);
+          });
+        }
+        
+        // Clear any existing timeout
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+        
+        // Set new timeout and store reference for flickering effect
+        timeoutRef.current = setTimeout(() => {
+          setIsDamaged(false);
+          timeoutRef.current = null;
+        }, 300); // Slightly longer flash for projectile hits
+      }
+    }
+  }, [attackAnimations, explosionSound]);
 
   const healthPercentage = (boss.currentHealth / boss.maxHealth) * 100;
 
