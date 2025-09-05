@@ -68,6 +68,7 @@ export interface ClientEvents {
   'proceed_next_level': {};
   'restart_game': {};
   'abandon_quest': {};
+  'force_reveal': {};
 }
 
 export interface TeamScores {

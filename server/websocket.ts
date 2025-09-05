@@ -111,6 +111,9 @@ export function setupWebSocket(httpServer: HTTPServer) {
           socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
         }
         
+        // Emit lobby_updated after each score submission for real-time UI updates
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        
         // Check if all scores submitted and reveal
         if (lobby.gamePhase === 'reveal') {
           const result = gameState.revealScores(lobby.id);
@@ -119,12 +122,22 @@ export function setupWebSocket(httpServer: HTTPServer) {
             io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
             io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
             
-            // Check if both teams agreed and boss is defeated
-            const bothTeamsAgree = teamConsensus.developers.hasConsensus && 
-                                 teamConsensus.qa.hasConsensus &&
-                                 teamConsensus.developers.score === teamConsensus.qa.score;
+            // Check if teams agreed using same logic as gameState
+            const devTeamExists = updatedLobby.teams.developers.length > 0;
+            const qaTeamExists = updatedLobby.teams.qa.length > 0;
             
-            if (bothTeamsAgree && updatedLobby.boss?.defeated) {
+            let teamsAgree = false;
+            if (devTeamExists && qaTeamExists) {
+              teamsAgree = teamConsensus.developers.hasConsensus && 
+                          teamConsensus.qa.hasConsensus &&
+                          teamConsensus.developers.score === teamConsensus.qa.score;
+            } else if (devTeamExists && !qaTeamExists) {
+              teamsAgree = teamConsensus.developers.hasConsensus;
+            } else if (!devTeamExists && qaTeamExists) {
+              teamsAgree = teamConsensus.qa.hasConsensus;
+            }
+            
+            if (teamsAgree && updatedLobby.boss?.defeated) {
               io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
             }
           }
@@ -161,6 +174,37 @@ export function setupWebSocket(httpServer: HTTPServer) {
       if (lobby) {
         io.to(lobby.id).emit('quest_abandoned', { lobby });
         io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
+    socket.on('force_reveal', () => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const result = gameState.forceRevealScores(playerId);
+      if (result) {
+        const { lobby: updatedLobby, teamScores, teamConsensus } = result;
+        io.to(updatedLobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+        io.to(updatedLobby.id).emit('lobby_updated', { lobby: updatedLobby });
+        
+        // Check if teams agreed using same logic as gameState
+        const devTeamExists = updatedLobby.teams.developers.length > 0;
+        const qaTeamExists = updatedLobby.teams.qa.length > 0;
+        
+        let teamsAgree = false;
+        if (devTeamExists && qaTeamExists) {
+          teamsAgree = teamConsensus.developers.hasConsensus && 
+                      teamConsensus.qa.hasConsensus &&
+                      teamConsensus.developers.score === teamConsensus.qa.score;
+        } else if (devTeamExists && !qaTeamExists) {
+          teamsAgree = teamConsensus.developers.hasConsensus;
+        } else if (!devTeamExists && qaTeamExists) {
+          teamsAgree = teamConsensus.qa.hasConsensus;
+        }
+        
+        if (teamsAgree && updatedLobby.boss?.defeated) {
+          io.to(updatedLobby.id).emit('boss_defeated', { lobby: updatedLobby });
+        }
       }
     });
 

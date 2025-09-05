@@ -255,16 +255,34 @@ class GameStateManager {
       }
     };
 
-    // Check if both teams have consensus and agree on the same score
-    const bothTeamsHaveConsensus = devConsensus && qaConsensus;
-    const teamsAgree = bothTeamsHaveConsensus && devScoreValues[0] === qaScoreValues[0];
+    // Handle cases where one or both teams are empty - check actual team membership
+    const devTeamExists = lobby.teams.developers.length > 0;
+    const qaTeamExists = lobby.teams.qa.length > 0;
+    
+    // Check if teams have consensus and agree on the same score
+    let teamsAgree = false;
+    
+    if (devTeamExists && qaTeamExists) {
+      // Both teams exist - require both to have consensus and agree
+      const bothTeamsHaveConsensus = devConsensus && qaConsensus;
+      teamsAgree = bothTeamsHaveConsensus && devScoreValues[0] === qaScoreValues[0];
+    } else if (devTeamExists && !qaTeamExists) {
+      // Only developers exist - just need dev consensus
+      teamsAgree = devConsensus;
+    } else if (!devTeamExists && qaTeamExists) {
+      // Only QA exists - just need QA consensus
+      teamsAgree = qaConsensus;
+    } else {
+      // No teams exist - no consensus possible
+      teamsAgree = false;
+    }
 
     if (teamsAgree && lobby.boss && lobby.currentTicket) {
       // Defeat current boss phase
       lobby.boss.currentHealth = 0;
       
       // Store completed ticket with agreed story points
-      const storyPoints = devScoreValues[0]; // Both teams agree on this score
+      const storyPoints = devTeamExists ? devScoreValues[0] : qaScoreValues[0];
       const completedTicket: CompletedTicket = {
         id: lobby.currentTicket.id,
         title: lobby.currentTicket.title,
@@ -279,6 +297,8 @@ class GameStateManager {
         lobby.boss.defeated = true;
       } else {
         lobby.gamePhase = 'next_level';
+        // Set boss as defeated for current phase
+        lobby.boss.defeated = true;
         // Progress to next phase/ticket
         lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
         lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
@@ -325,6 +345,20 @@ class GameStateManager {
     }
 
     return lobby;
+  }
+
+  forceRevealScores(playerId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    // Force transition to reveal phase
+    lobby.gamePhase = 'reveal';
+    
+    // Use the same reveal logic as normal reveal
+    return this.revealScores(lobby.id);
   }
 
   removePlayer(playerId: string): Lobby | null {

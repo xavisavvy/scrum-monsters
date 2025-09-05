@@ -148,7 +148,10 @@ export function ScoreSubmission() {
             </div>
             {submittedCount < totalPlayers && (
               <div className="text-xs text-gray-500 mt-2">
-                Both teams must submit estimates to reveal scores...
+                {devPlayers.length > 0 && qaPlayers.length > 0 
+                  ? 'Both teams must submit estimates to reveal scores...'
+                  : 'All team members must submit estimates to reveal scores...'
+                }
               </div>
             )}
           </div>
@@ -157,6 +160,23 @@ export function ScoreSubmission() {
             <p className="text-center text-green-400 text-sm">
               ✓ Your estimate has been submitted!
             </p>
+          )}
+
+          {/* Host Force Reveal Button */}
+          {currentPlayer?.isHost && submittedCount > 0 && currentLobby?.gamePhase === 'battle' && (
+            <div className="text-center mt-4 pt-4 border-t border-gray-600">
+              <RetroButton
+                onClick={() => emit('force_reveal', {})}
+                variant="secondary"
+                size="sm"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                🚨 Force Reveal Scores
+              </RetroButton>
+              <div className="text-xs text-gray-500 mt-1">
+                Host only: Reveal scores without waiting for all votes
+              </div>
+            </div>
           )}
         </div>
       </RetroCard>

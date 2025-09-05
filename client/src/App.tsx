@@ -187,6 +187,11 @@ function App() {
       console.log(`Player ${playerId} disconnected`);
     });
 
+    socket.on('score_submitted', ({ playerId, team }) => {
+      console.log(`Player ${playerId} from ${team} team submitted their score`);
+      // Lobby will be updated via lobby_updated event which triggers re-render
+    });
+
     return () => {
       socket.off('lobby_created');
       socket.off('lobby_joined');
