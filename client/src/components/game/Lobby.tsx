@@ -66,11 +66,32 @@ export function Lobby() {
 
   const renderPlayerSprite = (avatarClass: string) => {
     const avatar = AVATAR_CLASSES[avatarClass as keyof typeof AVATAR_CLASSES];
+    
+    const getClassIcon = (avatarClass: string): string => {
+      const icons: Record<string, string> = {
+        ranger: '🏹',
+        rogue: '🗡️', 
+        bard: '🎵',
+        sorcerer: '🔥',
+        wizard: '🧙',
+        warrior: '⚔️',
+        paladin: '🛡️',
+        cleric: '✨'
+      };
+      return icons[avatarClass] || '⚔️';
+    };
+
     return (
       <div
-        className="w-6 h-6 rounded border border-gray-500"
-        style={{ backgroundColor: avatar?.color || '#666' }}
-      />
+        className="w-8 h-8 rounded-lg border-2 flex items-center justify-center text-lg"
+        style={{ 
+          borderColor: avatar?.color || '#666',
+          backgroundColor: `${avatar?.color || '#666'}20`
+        }}
+        title={avatar?.name || avatarClass}
+      >
+        {getClassIcon(avatarClass)}
+      </div>
     );
   };
 
@@ -94,7 +115,6 @@ export function Lobby() {
                   value={inviteLink}
                   size={128}
                   level="M"
-                  includeMargin={true}
                 />
               </div>
               <div className="text-xs text-gray-500">
