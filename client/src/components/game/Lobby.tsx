@@ -16,13 +16,27 @@ export function Lobby() {
   const addTicket = () => {
     if (!newTicketTitle.trim()) return;
     
-    const newTicket: JiraTicket = {
-      id: Math.random().toString(36).substring(2, 15),
-      title: newTicketTitle.trim(),
-      description: 'Jira ticket to be estimated by the team'
-    };
+    // Split by comma and create multiple tickets
+    const ticketTitles = newTicketTitle
+      .split(',')
+      .map(title => title.trim())
+      .filter(title => title.length > 0);
     
-    setTickets([...tickets, newTicket]);
+    // Don't proceed if no valid tickets parsed
+    if (ticketTitles.length === 0) return;
+    
+    // Filter out duplicates (case-insensitive)
+    const existingTitles = new Set(tickets.map(t => t.title.toLowerCase()));
+    const uniqueTitles = ticketTitles.filter(title => !existingTitles.has(title.toLowerCase()));
+    
+    const newTickets: JiraTicket[] = uniqueTitles.map(title => ({
+      id: Math.random().toString(36).substring(2, 15),
+      title,
+      description: 'Jira ticket to be estimated by the team'
+    }));
+    
+    // Use functional update to avoid race conditions
+    setTickets(prev => [...prev, ...newTickets]);
     setNewTicketTitle('');
   };
 
@@ -117,13 +131,21 @@ export function Lobby() {
                       value={newTicketTitle}
                       onChange={(e) => setNewTicketTitle(e.target.value)}
                       className="retro-input flex-1"
-                      placeholder="Add Jira ticket..."
-                      onKeyPress={(e) => e.key === 'Enter' && addTicket()}
+                      placeholder="Add tickets (use commas for multiple: JIRA-123, JIRA-456)..."
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTicket();
+                        }
+                      }}
                     />
                     <RetroButton onClick={addTicket} disabled={!newTicketTitle.trim()}>
                       Add
                     </RetroButton>
                   </div>
+                  <p className="text-xs text-gray-300 mb-2">
+                    💡 Tip: Enter multiple tickets separated by commas to add them all at once
+                  </p>
                 </div>
               )}
               
