@@ -12,23 +12,16 @@ const BOSS_LAIR_IMAGES = [
   '/images/lairs/Scope_Creep_Beast_Void_bd13cec0.png',
 ];
 
-// Timing constants
+// Timing constants for smooth cinematic experience
 const DISPLAY_DURATION = 5000; // 5 seconds per image
-const TRANSITION_DURATION = 1000; // 1 second fade transition
+const CROSSFADE_DURATION = 2000; // 2 second smooth crossfade
 
 export function CinematicBackground({ className = '' }: CinematicBackgroundProps) {
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [nextImageIndex, setNextImageIndex] = useState(1);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [prevIndex, setPrevIndex] = useState(-1);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [panDirections, setPanDirections] = useState<boolean[]>([]);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Generate random pan directions for each image
-  useEffect(() => {
-    const directions = BOSS_LAIR_IMAGES.map(() => Math.random() > 0.5);
-    setPanDirections(directions);
-  }, []);
 
   // Cleanup function
   const cleanup = useCallback(() => {
@@ -42,70 +35,72 @@ export function CinematicBackground({ className = '' }: CinematicBackgroundProps
     }
   }, []);
 
-  // Handle image cycling with stable intervals
-  useEffect(() => {
-    const startTransition = () => {
-      setIsTransitioning(true);
-      
-      transitionTimeoutRef.current = setTimeout(() => {
-        setCurrentImageIndex(nextImageIndex);
-        setNextImageIndex((nextImageIndex + 1) % BOSS_LAIR_IMAGES.length);
-        setIsTransitioning(false);
-      }, TRANSITION_DURATION);
-    };
-
-    // Start first cycle after component mounts
-    intervalRef.current = setInterval(startTransition, DISPLAY_DURATION);
-
-    return cleanup;
-  }, [nextImageIndex, cleanup]);
-
-  const getAnimationStyle = (imageIndex: number, isNext = false) => {
-    const panLeft = panDirections[imageIndex];
-    const animationName = panLeft ? 'cinematic-pan-left' : 'cinematic-pan-right';
+  // Handle smooth crossfade cycling
+  const startCrossfade = useCallback(() => {
+    setIsTransitioning(true);
+    const nextIndex = (activeIndex + 1) % BOSS_LAIR_IMAGES.length;
+    setPrevIndex(activeIndex);
     
-    let opacity: number;
-    if (isNext) {
-      opacity = isTransitioning ? 1 : 0;
-    } else {
-      opacity = isTransitioning ? 0 : 1;
+    // After crossfade completes, update active index
+    transitionTimeoutRef.current = setTimeout(() => {
+      setActiveIndex(nextIndex);
+      setPrevIndex(-1);
+      setIsTransitioning(false);
+    }, CROSSFADE_DURATION);
+  }, [activeIndex]);
+
+  // Setup cycling with seamless timing
+  useEffect(() => {
+    intervalRef.current = setInterval(startCrossfade, DISPLAY_DURATION);
+    return cleanup;
+  }, [startCrossfade, cleanup]);
+
+  // Get seamless animation style for each layer
+  const getLayerStyle = (imageIndex: number): React.CSSProperties => {
+    // Alternating pan directions: even indices pan left, odd indices pan right
+    const isEven = imageIndex % 2 === 0;
+    const animationName = isEven ? 'cinematic-pan-left' : 'cinematic-pan-right';
+    
+    // Determine opacity for smooth crossfading
+    let opacity = 0;
+    if (imageIndex === activeIndex) {
+      opacity = 1; // Currently active image
+    } else if (imageIndex === prevIndex && isTransitioning) {
+      opacity = 0; // Previous image fades out (CSS transition handles this)
+    } else if (imageIndex === (activeIndex + 1) % BOSS_LAIR_IMAGES.length && isTransitioning) {
+      opacity = 1; // Next image fades in
     }
     
     return {
+      backgroundImage: `url(${BOSS_LAIR_IMAGES[imageIndex]})`,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundRepeat: 'no-repeat',
       opacity,
-      transition: `opacity ${TRANSITION_DURATION}ms ease-in-out`,
-      animationName: isNext && !isTransitioning ? 'none' : animationName,
-      animationDuration: '20s',
-      animationTimingFunction: 'linear' as const,
-      animationIterationCount: 'infinite' as const,
-      animationPlayState: (isNext && !isTransitioning) ? 'paused' : 'running',
+      transition: `opacity ${CROSSFADE_DURATION}ms ease-in-out`,
+      animationName,
+      animationDuration: '28s', // Longer duration for seamless looping
+      animationTimingFunction: 'linear',
+      animationIterationCount: 'infinite',
+      animationDirection: 'alternate', // Prevents jarring position resets
+      transform: 'scale(1.1)',
+      willChange: 'transform, opacity',
+      pointerEvents: 'none',
     } as React.CSSProperties;
   };
 
 
   return (
     <div className={`fixed inset-0 z-0 overflow-hidden ${className}`}>
-      {/* Current background image */}
-      <div
-        className={`absolute inset-0 bg-cover bg-center bg-no-repeat ${currentImageIndex === 0 ? 'cinematic-fade-in' : ''}`}
-        style={{
-          backgroundImage: `url(${BOSS_LAIR_IMAGES[currentImageIndex]})`,
-          pointerEvents: 'none',
-          ...getAnimationStyle(currentImageIndex),
-        }}
-        aria-hidden="true"
-      />
-      
-      {/* Next background image for crossfade */}
-      <div
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
-        style={{
-          backgroundImage: `url(${BOSS_LAIR_IMAGES[nextImageIndex]})`,
-          pointerEvents: 'none',
-          ...getAnimationStyle(nextImageIndex, true),
-        }}
-        aria-hidden="true"
-      />
+      {/* Render all boss lair layers for seamless looping */}
+      {BOSS_LAIR_IMAGES.map((image, index) => (
+        <div
+          key={index}
+          className={`absolute inset-0 ${index === 0 && activeIndex === 0 ? 'cinematic-fade-in' : ''}`}
+          style={getLayerStyle(index)}
+          aria-hidden="true"
+        />
+      ))}
       
       {/* Dark overlay for better text readability */}
       <div 
