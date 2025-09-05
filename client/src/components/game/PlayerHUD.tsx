@@ -43,7 +43,7 @@ export function PlayerHUD() {
         <div className="text-center">
           <div className="text-sm text-gray-400">Battle Progress</div>
           <div className="font-bold">
-            {currentLobby.completedTickets} / {currentLobby.tickets.length} Objectives
+            {Array.isArray(currentLobby.completedTickets) ? currentLobby.completedTickets.length : 0} / {currentLobby.tickets.length} Objectives
           </div>
         </div>
 

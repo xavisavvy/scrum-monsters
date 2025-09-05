@@ -20,7 +20,7 @@ export interface Lobby {
   tickets: JiraTicket[];
   gamePhase: GamePhase;
   boss?: Boss;
-  completedTickets: number;
+  completedTickets: CompletedTicket[];
 }
 
 export interface JiraTicket {
@@ -28,6 +28,14 @@ export interface JiraTicket {
   title: string;
   description: string;
   storyPoints?: number;
+}
+
+export interface CompletedTicket {
+  id: string;
+  title: string;
+  description: string;
+  storyPoints: number;
+  completedAt: string; // ISO 8601 date string for JSON serialization
 }
 
 export interface Boss {

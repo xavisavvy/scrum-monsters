@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, GamePhase, TeamType, AvatarClass } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass } from '../shared/gameEvents.js';
 
 class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
@@ -33,7 +33,7 @@ class GameStateManager {
       },
       tickets: [],
       gamePhase: 'lobby',
-      completedTickets: 0
+      completedTickets: []
     };
 
     this.lobbies.set(lobbyId, lobby);
@@ -122,7 +122,7 @@ class GameStateManager {
     lobby.tickets = tickets;
     lobby.currentTicket = tickets[0];
     lobby.gamePhase = 'battle';
-    lobby.completedTickets = 0;
+    lobby.completedTickets = [];
 
     // Reset player scores
     lobby.players.forEach(p => {
@@ -175,19 +175,29 @@ class GameStateManager {
     const scoreValues = Object.values(scores);
     const consensus = scoreValues.length > 0 && scoreValues.every(score => score === scoreValues[0]);
 
-    if (consensus && lobby.boss) {
+    if (consensus && lobby.boss && lobby.currentTicket) {
       // Defeat current boss phase
       lobby.boss.currentHealth = 0;
-      lobby.completedTickets++;
       
-      if (lobby.completedTickets >= lobby.tickets.length) {
+      // Store completed ticket with story points
+      const storyPoints = scoreValues[0]; // Consensus score
+      const completedTicket: CompletedTicket = {
+        id: lobby.currentTicket.id,
+        title: lobby.currentTicket.title,
+        description: lobby.currentTicket.description,
+        storyPoints,
+        completedAt: new Date().toISOString()
+      };
+      lobby.completedTickets.push(completedTicket);
+      
+      if (lobby.completedTickets.length >= lobby.tickets.length) {
         lobby.gamePhase = 'victory';
         lobby.boss.defeated = true;
       } else {
         lobby.gamePhase = 'next_level';
         // Progress to next phase/ticket
-        lobby.currentTicket = lobby.tickets[lobby.completedTickets];
-        lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets));
+        lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
+        lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
       }
     } else {
       // Reset for another round
