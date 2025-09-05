@@ -32,9 +32,11 @@ function App() {
     toggleMute, 
     isMuted, 
     setMenuMusic, 
+    setButtonSelectSound,
     fadeInMenuMusic, 
     fadeOutMenuMusic, 
     stopMenuMusic,
+    playButtonSelect,
     isMenuMusicPlaying 
   } = useAudio();
 
@@ -47,8 +49,13 @@ function App() {
     menuAudio.preload = 'auto';
     setMenuMusic(menuAudio);
     
+    // Load button select sound
+    const buttonSelectAudio = new Audio('/sounds/button-select.mp3');
+    buttonSelectAudio.preload = 'auto';
+    setButtonSelectSound(buttonSelectAudio);
+    
     return () => disconnect();
-  }, [connect, disconnect, setMenuMusic]);
+  }, [connect, disconnect, setMenuMusic, setButtonSelectSound]);
 
   // Check for lobby join URL parameter
   useEffect(() => {
@@ -197,6 +204,7 @@ function App() {
                 <div className="space-y-4">
                   <RetroButton
                     onClick={() => {
+                      playButtonSelect();
                       fadeOutMenuMusic();
                       setAppState('create_lobby');
                     }}
@@ -207,6 +215,7 @@ function App() {
                   
                   <RetroButton
                     onClick={() => {
+                      playButtonSelect();
                       fadeOutMenuMusic();
                       setAppState('join_lobby');
                     }}

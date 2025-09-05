@@ -5,6 +5,7 @@ interface AudioState {
   menuMusic: HTMLAudioElement | null;
   hitSound: HTMLAudioElement | null;
   successSound: HTMLAudioElement | null;
+  buttonSelectSound: HTMLAudioElement | null;
   isMuted: boolean;
   isMenuMusicPlaying: boolean;
   fadeTimer: NodeJS.Timeout | null;
@@ -14,11 +15,13 @@ interface AudioState {
   setMenuMusic: (music: HTMLAudioElement) => void;
   setHitSound: (sound: HTMLAudioElement) => void;
   setSuccessSound: (sound: HTMLAudioElement) => void;
+  setButtonSelectSound: (sound: HTMLAudioElement) => void;
   
   // Control functions
   toggleMute: () => void;
   playHit: () => void;
   playSuccess: () => void;
+  playButtonSelect: () => void;
   playMenuMusic: () => void;
   fadeInMenuMusic: () => void;
   fadeOutMenuMusic: () => void;
@@ -30,6 +33,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   menuMusic: null,
   hitSound: null,
   successSound: null,
+  buttonSelectSound: null,
   isMuted: true, // Start muted by default
   isMenuMusicPlaying: false,
   fadeTimer: null,
@@ -38,6 +42,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   setMenuMusic: (music) => set({ menuMusic: music }),
   setHitSound: (sound) => set({ hitSound: sound }),
   setSuccessSound: (sound) => set({ successSound: sound }),
+  setButtonSelectSound: (sound) => set({ buttonSelectSound: sound }),
   
   toggleMute: () => {
     const { isMuted, menuMusic, fadeTimer } = get();
@@ -104,6 +109,24 @@ export const useAudio = create<AudioState>((set, get) => ({
       successSound.currentTime = 0;
       successSound.play().catch(error => {
         console.log("Success sound play prevented:", error);
+      });
+    }
+  },
+  
+  playButtonSelect: () => {
+    const { buttonSelectSound, isMuted } = get();
+    if (buttonSelectSound) {
+      // If sound is muted, don't play anything
+      if (isMuted) {
+        console.log("Button select sound skipped (muted)");
+        return;
+      }
+      
+      // Clone the sound to allow overlapping playback
+      const soundClone = buttonSelectSound.cloneNode() as HTMLAudioElement;
+      soundClone.volume = 0.5;
+      soundClone.play().catch(error => {
+        console.log("Button select sound play prevented:", error);
       });
     }
   },
