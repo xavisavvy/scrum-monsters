@@ -103,9 +103,9 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           targetY = containerHeight * 0.4; // Slightly above center Y
         }
         
-        // Calculate character center position
+        // Calculate character center position (use bottom-based Y coordinate system)
         const characterCenterX = playerPosition.x + characterSize / 2;
-        const characterCenterY = containerHeight - (playerPosition.y + characterSize / 2);
+        const characterCenterY = playerPosition.y + characterSize / 2;
         
         console.log(`🎯 Keyboard shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
         
@@ -265,9 +265,9 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     const targetX = event.clientX - rect.left;
     const targetY = event.clientY - rect.top;
     
-    // Calculate character center position (convert bottom-based Y to top-based Y for projectiles)
+    // Calculate character center position (use bottom-based Y coordinate system)
     const characterCenterX = playerPosition.x + characterSize / 2;
-    const characterCenterY = containerHeight - (playerPosition.y + characterSize / 2);
+    const characterCenterY = playerPosition.y + characterSize / 2;
     
     console.log(`🎯 Preparing to shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
     
