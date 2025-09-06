@@ -12,13 +12,14 @@ import { SupportPage } from '@/components/marketing/SupportPage';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { CheatMenu } from '@/components/ui/CheatMenu';
+import { CharacterTools } from '@/components/utils/CharacterTools';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import '@/styles/retro.css';
 
-type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
+type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools';
 
 function App() {
   const [appState, setAppState] = useState<AppState>('landing');
@@ -482,6 +483,11 @@ function App() {
       case 'battle':
         return <BattleScreen />;
 
+      case 'character_tools':
+        return (
+          <CharacterTools onBack={() => setAppState('menu')} />
+        );
+
       default:
         return null;
     }
@@ -490,7 +496,7 @@ function App() {
   return (
     <div className="retro-container">
       {/* Back button (except on landing and menu) */}
-      {appState !== 'landing' && appState !== 'menu' && appState !== 'battle' && (
+      {appState !== 'landing' && appState !== 'menu' && appState !== 'battle' && appState !== 'character_tools' && (
         <div className="absolute top-4 left-4 z-50">
           <RetroButton
             onClick={handleBackToMenu}

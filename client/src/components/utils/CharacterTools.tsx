@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { RetroButton } from '../ui/retro-button';
 import { RetroCard } from '../ui/retro-card';
 import { SpriteRenderer } from '../game/SpriteRenderer';
-import { AVATAR_CLASSES } from '@/lib/gameTypes';
-import type { SpriteAnimation, SpriteDirection, AvatarClass } from '@/hooks/useSpriteAnimation';
+import { AVATAR_CLASSES, AvatarClass } from '@/lib/gameTypes';
+import type { SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
 
 interface CharacterToolsProps {
   onBack: () => void;
@@ -158,7 +158,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   onChange={(e) => setSelectedAvatarClass(e.target.value as AvatarClass)}
                   className="w-full p-2 bg-gray-800 border border-gray-600 rounded text-white"
                 >
-                  {AVATAR_CLASSES.map(avatarClass => (
+                  {Object.keys(AVATAR_CLASSES).map((avatarClass) => (
                     <option key={avatarClass} value={avatarClass}>
                       {avatarClass.charAt(0).toUpperCase() + avatarClass.slice(1)}
                     </option>
@@ -336,7 +336,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
               <h2 className="text-xl font-bold mb-4 retro-text-glow-light">All Characters</h2>
               
               <div className="grid grid-cols-3 gap-4 mb-6">
-                {AVATAR_CLASSES.map(avatarClass => (
+                {Object.keys(AVATAR_CLASSES).map((avatarClass) => (
                   <div 
                     key={avatarClass}
                     className={`p-2 rounded border-2 cursor-pointer transition-all ${
@@ -344,11 +344,11 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                         ? 'border-cyan-400 bg-cyan-400/20' 
                         : 'border-gray-600 hover:border-gray-400'
                     }`}
-                    onClick={() => setSelectedAvatarClass(avatarClass)}
+                    onClick={() => setSelectedAvatarClass(avatarClass as AvatarClass)}
                   >
                     <div className="flex justify-center mb-2">
                       <SpriteRenderer
-                        avatarClass={avatarClass}
+                        avatarClass={avatarClass as AvatarClass}
                         animation={selectedAnimation}
                         direction={selectedDirection}
                         isMoving={isMoving}
