@@ -688,7 +688,7 @@ class GameStateManager {
     const sessionKey = `${reviverId}:${targetId}`;
     
     // Cancel any existing session for this reviver
-    for (const [key, session] of this.revivalSessions.entries()) {
+    for (const [key, session] of this.revivalSessions) {
       if (session.reviverId === reviverId) {
         this.cancelRevivalSession(key);
       }
