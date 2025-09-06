@@ -30,7 +30,8 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
     socket.on('create_lobby', ({ lobbyName, hostName }) => {
       try {
-        const { lobby, inviteLink } = gameState.createLobby(hostName, lobbyName);
+        const lobby = gameState.createLobby(hostName, lobbyName);
+        const inviteLink = `${process.env.BASE_URL || 'http://localhost:5000'}/lobby/${lobby.id}`;
         
         // Store player-socket mapping
         socket.data.playerId = lobby.hostId;
@@ -42,6 +43,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
         socket.emit('lobby_created', { lobby, inviteLink });
         console.log(`Lobby created: ${lobby.id} by ${hostName}`);
       } catch (error) {
+        console.error('Error creating lobby:', error);
         socket.emit('game_error', { message: 'Failed to create lobby' });
       }
     });
