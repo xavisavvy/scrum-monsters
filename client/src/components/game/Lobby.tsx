@@ -190,6 +190,11 @@ export function Lobby() {
     emit('update_timer_settings', { timerSettings });
   };
 
+  // Helper function to safely get avatar class from player
+  const getAvatarClass = (player: any) => {
+    return player?.avatarClass ?? player?.avatar ?? 'warrior';
+  };
+
   const renderPlayerSprite = (avatarClass: string) => {
     const avatar = AVATAR_CLASSES[avatarClass as keyof typeof AVATAR_CLASSES];
     
@@ -499,8 +504,8 @@ export function Lobby() {
                 }}
               >
                 <SpriteRenderer
-                  avatarClass={currentPlayer.avatarClass}
-                  animation="walk"
+                  avatarClass={getAvatarClass(currentPlayer)}
+                  animation={keys.size > 0 ? 'walk' : 'idle'}
                   direction={myPosition.direction}
                   isMoving={keys.size > 0}
                   size={characterSize}
@@ -530,8 +535,8 @@ export function Lobby() {
                     }}
                   >
                     <SpriteRenderer
-                      avatarClass={player.avatarClass}
-                      animation="walk"
+                      avatarClass={getAvatarClass(player)}
+                      animation={position.isMoving ? 'walk' : 'idle'}
                       direction={position.direction}
                       isMoving={position.isMoving}
                       size={characterSize}
