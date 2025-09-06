@@ -4,6 +4,7 @@ import { LobbyJoin } from '@/components/game/LobbyJoin';
 import { Lobby } from '@/components/game/Lobby';
 import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
+import { LandingPage } from '@/components/marketing/LandingPage';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { CheatMenu } from '@/components/ui/CheatMenu';
@@ -13,10 +14,10 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import '@/styles/retro.css';
 
-type AppState = 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
+type AppState = 'landing' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
 
 function App() {
-  const [appState, setAppState] = useState<AppState>('menu');
+  const [appState, setAppState] = useState<AppState>('landing');
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   
@@ -103,22 +104,27 @@ function App() {
     return () => disconnect();
   }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setExplosionSound, setMusicTracks]);
 
-  // Check for lobby join URL parameter
+  // Check for URL parameters and routing
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const lobbyParam = urlParams.get('join');
+    const gameParam = urlParams.get('game');
+    
     if (lobbyParam) {
       setJoinLobbyId(lobbyParam);
       setAppState('join_lobby');
+    } else if (gameParam === 'menu') {
+      setAppState('menu');
     }
+    // Default stays on landing page
   }, []);
 
   // Handle menu music based on app state
   useEffect(() => {
-    if (appState === 'menu' && !isMuted && !isMenuMusicPlaying) {
+    if ((appState === 'menu' || appState === 'landing') && !isMuted && !isMenuMusicPlaying) {
       // Small delay to ensure audio is loaded
       setTimeout(() => fadeInMenuMusic(), 500);
-    } else if (appState !== 'menu' && isMenuMusicPlaying) {
+    } else if (appState !== 'menu' && appState !== 'landing' && isMenuMusicPlaying) {
       fadeOutMenuMusic();
     }
   }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
@@ -264,6 +270,11 @@ function App() {
     }
 
     switch (appState) {
+      case 'landing':
+        return (
+          <LandingPage onStartGame={() => setAppState('menu')} />
+        );
+
       case 'menu':
         return (
           <>
@@ -392,8 +403,8 @@ function App() {
 
   return (
     <div className="retro-container">
-      {/* Back button (except on menu) */}
-      {appState !== 'menu' && appState !== 'battle' && (
+      {/* Back button (except on landing and menu) */}
+      {appState !== 'landing' && appState !== 'menu' && appState !== 'battle' && (
         <div className="absolute top-4 left-4 z-50">
           <RetroButton
             onClick={handleBackToMenu}

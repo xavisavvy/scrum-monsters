@@ -1,0 +1,89 @@
+Scrum Monsters is a lightweight web game that turns sprint planning and estimation into a quick, fun ritual. Your team assigns story points while battling cheeky pixel bosses like the Bug Hydra, Scope Creep Beast, and Technical Debt Golem. It plays in a browser, takes seconds to start, and keeps ceremonies lively without getting in the way of real work.
+
+What it does
+
+Runs a fast planning poker flow with a built-in mini game
+
+Lets players join via a share link, vote, reveal, and discuss
+
+Rewards the team with small animations and boss reactions
+
+Stores optional team stats for later export
+
+Why teams use it
+
+It lowers meeting fatigue and keeps focus on the ticket
+
+It creates a repeatable ritual that is easy to facilitate
+
+It is memorable, which increases attendance and engagement
+
+Core features
+
+Free starter bosses and a simple host flow
+
+Optional Pro features you can toggle on later
+
+Clean UI with accessible keyboard controls
+
+Works on desktop and mobile
+
+Monetization options
+
+Boss Packs as small one-time purchases
+
+Pro Tier subscription for integrations and reports
+
+Enterprise or Coach toolkit that bundles all bosses, slide decks, and white-label options
+
+Optional merch and community “Monster of the Month” to keep content fresh
+
+Tech notes
+
+Web app using React and Tailwind on the client
+
+Simple Node or serverless API for rooms and results
+
+Asset pack lives under /public/assets with transparent PNGs and backgrounds
+
+Works on Replit out of the box. One click run for dev preview
+
+Replit run instructions
+
+Click Run to launch the dev server.
+
+Open the webview link.
+
+Share the room link with your team.
+
+Start a round, let players vote, then reveal and discuss.
+
+Future hooks
+
+Slack, Jira, and Trello integration toggles
+
+CSV and PDF exports with boss-themed charts
+
+Community Boss Builder so anyone can contribute new monsters and mini games
+
+Contributing
+
+Fork, branch, and open a PR. Short issues and good first tasks are tagged.
+
+Artists and writers are welcome. Drop pixel art, animations, or flavor text.
+
+Contributors are credited in the in-game Monster Manual.
+
+Tone and branding
+
+Lighthearted fantasy meets developer in-jokes
+
+Tagline: “Slay the beasts of bad software development”
+
+Use the provided pixel art for marketing, thumbnails, and social posts
+
+License
+
+Open core. Commercial features are reserved for paid tiers. See LICENSE for details.
+
+Start a room. Fight a boss. Estimate faster.
