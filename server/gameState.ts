@@ -334,6 +334,184 @@ class GameStateManager {
     return lobby;
   }
 
+  startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss } | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
+
+    if (tickets.length === 0) return null;
+
+    // Initialize game state
+    lobby.gamePhase = 'battle';
+    lobby.currentTicket = tickets[0];
+    lobby.boss = this.createBossFromTickets(tickets);
+
+    // Reset player states for battle
+    lobby.players.forEach(p => {
+      if (p.team !== 'spectators') {
+        p.hasSubmittedScore = false;
+        p.currentScore = undefined;
+      }
+      // Reset combat states
+      if (lobby.playerCombatStates[p.id]) {
+        lobby.playerCombatStates[p.id].hp = lobby.playerCombatStates[p.id].maxHp;
+        lobby.playerCombatStates[p.id].isDowned = false;
+      }
+    });
+
+    return { lobby, boss: lobby.boss };
+  }
+
+  proceedNextLevel(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
+
+    if (lobby.gamePhase !== 'next_level') return null;
+
+    // Move to next ticket
+    const nextTicketIndex = lobby.completedTickets.length;
+    if (nextTicketIndex < lobby.tickets.length) {
+      lobby.currentTicket = lobby.tickets[nextTicketIndex];
+      lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex));
+      lobby.gamePhase = 'battle';
+      
+      // Reset player states for new battle
+      lobby.players.forEach(p => {
+        if (p.team !== 'spectators') {
+          p.hasSubmittedScore = false;
+          p.currentScore = undefined;
+        }
+        // Reset combat states
+        if (lobby.playerCombatStates[p.id]) {
+          lobby.playerCombatStates[p.id].hp = lobby.playerCombatStates[p.id].maxHp;
+          lobby.playerCombatStates[p.id].isDowned = false;
+        }
+      });
+    } else {
+      lobby.gamePhase = 'victory';
+    }
+
+    return lobby;
+  }
+
+  abandonQuest(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
+
+    // Reset to lobby state
+    lobby.gamePhase = 'lobby';
+    lobby.currentTicket = undefined;
+    lobby.boss = undefined;
+    lobby.completedTickets = [];
+
+    // Reset all player states
+    lobby.players.forEach(p => {
+      p.hasSubmittedScore = false;
+      p.currentScore = undefined;
+      if (lobby.playerCombatStates[p.id]) {
+        lobby.playerCombatStates[p.id].hp = lobby.playerCombatStates[p.id].maxHp;
+        lobby.playerCombatStates[p.id].isDowned = false;
+      }
+    });
+
+    return lobby;
+  }
+
+  forceRevealScores(playerId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
+
+    // Force reveal by changing phase to reveal
+    lobby.gamePhase = 'reveal';
+    return this.revealScores(lobby.id);
+  }
+
+  attackPlayer(attackerId: string, targetId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
+    const lobby = this.getLobbyByPlayerId(attackerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const attacker = lobby.players.find(p => p.id === attackerId);
+    const target = lobby.players.find(p => p.id === targetId);
+    if (!attacker || !target) return null;
+
+    // Only spectators can attack players (boss role)
+    if (attacker.team !== 'spectators') return null;
+
+    const targetState = lobby.playerCombatStates[targetId];
+    if (!targetState || targetState.isDowned) return null;
+
+    targetState.hp = Math.max(0, targetState.hp - damage);
+    targetState.lastDamagedBy = attackerId;
+
+    if (targetState.hp <= 0) {
+      targetState.isDowned = true;
+    }
+
+    return { lobby, targetHealth: targetState.hp };
+  }
+
+  findNearestTarget(playerId: string): string | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const attackerPos = lobby.playerPositions[playerId];
+    if (!attackerPos) return null;
+
+    let nearestTarget: string | null = null;
+    let nearestDistance = Infinity;
+
+    // Find nearest non-spectator, non-downed player
+    for (const player of lobby.players) {
+      if (player.id === playerId || player.team === 'spectators') continue;
+      
+      const playerState = lobby.playerCombatStates[player.id];
+      if (playerState?.isDowned) continue;
+
+      const playerPos = lobby.playerPositions[player.id];
+      if (!playerPos) continue;
+
+      const distance = Math.sqrt(
+        Math.pow(attackerPos.x - playerPos.x, 2) + 
+        Math.pow(attackerPos.y - playerPos.y, 2)
+      );
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestTarget = player.id;
+      }
+    }
+
+    return nearestTarget;
+  }
+
+  bossDamagePlayer(playerId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const targetState = lobby.playerCombatStates[playerId];
+    if (!targetState || targetState.isDowned) return null;
+
+    targetState.hp = Math.max(0, targetState.hp - damage);
+    targetState.lastDamagedBy = 'boss';
+
+    if (targetState.hp <= 0) {
+      targetState.isDowned = true;
+    }
+
+    return { lobby, targetHealth: targetState.hp };
+  }
+
   addTickets(playerId: string, tickets: JiraTicket[]): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
