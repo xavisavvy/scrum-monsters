@@ -33,7 +33,7 @@ class GameStateManager {
     const now = Date.now();
     const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
     
-    for (const [sessionKey, session] of Array.from(this.revivalSessions.entries())) {
+    for (const [sessionKey, session] of this.revivalSessions) {
       const lobby = this.lobbies.get(session.lobbyId);
       if (!lobby) {
         this.cancelRevivalSession(sessionKey);
@@ -46,334 +46,332 @@ class GameStateManager {
         continue;
       }
 
-      // Check if revival is complete
-      if (now >= session.startedAt + 3000) {
-        const completed = this.completeRevivalSession(sessionKey);
-        if (completed) {
-          completedRevivals.push(completed);
-        }
+      // Check if enough time has passed for completion (3 seconds)
+      if (now - session.startedAt >= 3000) {
+        this.completeRevival(sessionKey);
+        completedRevivals.push({
+          lobbyId: session.lobbyId,
+          targetId: session.targetId,
+          reviverId: session.reviverId
+        });
       }
     }
     
     return completedRevivals;
   }
 
-  private cancelRevivalSession(sessionKey: string) {
+  private cancelRevivalSession(sessionKey: string): void {
     const session = this.revivalSessions.get(sessionKey);
     if (session) {
       clearTimeout(session.timeoutHandle);
-      const lobby = this.lobbies.get(session.lobbyId);
-      if (lobby) {
-        const targetState = lobby.playerCombatStates[session.targetId];
-        if (targetState) {
-          targetState.revivedBy = undefined;
-          targetState.reviveEndsAt = undefined;
-        }
-      }
       this.revivalSessions.delete(sessionKey);
     }
   }
 
-  private completeRevivalSession(sessionKey: string): { lobbyId: string; targetId: string; reviverId: string } | null {
+  private completeRevival(sessionKey: string): void {
     const session = this.revivalSessions.get(sessionKey);
-    if (session) {
-      const lobby = this.lobbies.get(session.lobbyId);
-      if (lobby) {
-        const targetState = lobby.playerCombatStates[session.targetId];
-        if (targetState && targetState.revivedBy === session.reviverId) {
-          targetState.hp = targetState.maxHp;
-          targetState.isDowned = false;
-          targetState.revivedBy = undefined;
-          targetState.reviveEndsAt = undefined;
-          
-          this.cancelRevivalSession(sessionKey);
-          return { lobbyId: session.lobbyId, targetId: session.targetId, reviverId: session.reviverId };
-        }
-      }
+    if (!session) return;
+
+    const lobby = this.lobbies.get(session.lobbyId);
+    if (!lobby) {
       this.cancelRevivalSession(sessionKey);
+      return;
     }
-    return null;
+
+    // Find target player and revive them
+    const targetState = lobby.playerCombatStates[session.targetId];
+    if (targetState && targetState.isDowned) {
+      targetState.isDowned = false;
+      targetState.hp = Math.min(targetState.maxHp, targetState.hp + 50); // Heal on revive
+      targetState.revivedBy = session.reviverId;
+    }
+
+    this.cancelRevivalSession(sessionKey);
   }
 
-  private initializeTeamCompetition(): TeamCompetition {
-    return {
-      developers: {
-        totalStoryPoints: 0,
-        ticketsCompleted: 0,
-        averageEstimationTime: 0,
-        consensusRate: 0,
-        accuracyScore: 0,
-        participationRate: 0,
-        achievements: [],
-        currentStreak: 0,
-        bestStreak: 0
-      },
-      qa: {
-        totalStoryPoints: 0,
-        ticketsCompleted: 0,
-        averageEstimationTime: 0,
-        consensusRate: 0,
-        accuracyScore: 0,
-        participationRate: 0,
-        achievements: [],
-        currentStreak: 0,
-        bestStreak: 0
-      },
-      currentRound: 1,
-      winnerHistory: [],
-      seasonStart: new Date().toISOString()
-    };
-  }
-
-  createLobby(hostName: string, lobbyName: string): { lobby: Lobby; inviteLink: string } {
+  createLobby(hostId: string, name: string): Lobby {
     const lobbyId = this.generateLobbyId();
-    const hostId = this.generatePlayerId();
     
-    const host: Player = {
-      id: hostId,
-      name: hostName,
-      avatar: 'wizard',
-      team: 'developers',
-      isHost: true,
-      hasSubmittedScore: false
-    };
-
     const lobby: Lobby = {
       id: lobbyId,
-      name: lobbyName,
+      name,
       hostId,
-      players: [host],
+      players: [],
       teams: {
-        developers: [host],
+        developers: [],
         qa: [],
         spectators: []
       },
       tickets: [],
       gamePhase: 'lobby',
       completedTickets: [],
-      teamCompetition: this.initializeTeamCompetition(),
-      playerCombatStates: {
-        [hostId]: {
-          maxHp: 100,
-          hp: 100,
-          isDowned: false
-        }
+      teamCompetition: {
+        developers: {
+          totalStoryPoints: 0,
+          ticketsCompleted: 0,
+          averageEstimationTime: 0,
+          consensusRate: 0,
+          accuracyScore: 0,
+          participationRate: 0,
+          achievements: [],
+          currentStreak: 0,
+          bestStreak: 0
+        },
+        qa: {
+          totalStoryPoints: 0,
+          ticketsCompleted: 0,
+          averageEstimationTime: 0,
+          consensusRate: 0,
+          accuracyScore: 0,
+          participationRate: 0,
+          achievements: [],
+          currentStreak: 0,
+          bestStreak: 0
+        },
+        currentRound: 0,
+        winnerHistory: [],
+        seasonStart: new Date().toISOString()
       },
-      playerPositions: {
-        [hostId]: { x: 25, y: 80 }
-      },
-      timerSettings: {
-        enabled: false,
-        durationMinutes: 5
-      }
+      playerCombatStates: {},
+      playerPositions: {}
     };
 
     this.lobbies.set(lobbyId, lobby);
-    this.playerToLobby.set(hostId, lobbyId);
-
-    // Use Replit's public domain if available, otherwise fall back to BASE_URL or localhost
-    const baseUrl = process.env.REPLIT_DEV_DOMAIN 
-      ? `https://${process.env.REPLIT_DEV_DOMAIN}` 
-      : (process.env.BASE_URL || 'http://localhost:5000');
-    const inviteLink = `${baseUrl}/join/${lobbyId}`;
-    
-    return { lobby, inviteLink };
+    return lobby;
   }
 
-  joinLobby(lobbyId: string, playerName: string): { lobby: Lobby; player: Player } | null {
+  joinLobby(lobbyId: string, player: Player): Lobby | null {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) return null;
 
-    if (lobby.players.length >= 32) {
-      throw new Error('Lobby is full (32 players maximum)');
+    // Check if player is already in the lobby
+    const existingPlayer = lobby.players.find(p => p.id === player.id);
+    if (existingPlayer) {
+      // Update existing player info
+      Object.assign(existingPlayer, player);
+    } else {
+      // Add new player
+      lobby.players.push(player);
     }
 
-    const playerId = this.generatePlayerId();
-    const player: Player = {
-      id: playerId,
-      name: playerName,
-      avatar: 'warrior',
-      team: 'developers',
-      isHost: false,
-      hasSubmittedScore: false
-    };
-
-    lobby.players.push(player);
-    lobby.teams.developers.push(player);
-    this.playerToLobby.set(playerId, lobbyId);
+    // Update team assignments
+    this.updateTeamAssignments(lobby);
+    this.playerToLobby.set(player.id, lobbyId);
 
     // Initialize combat state for new player
-    lobby.playerCombatStates[playerId] = {
-      maxHp: 100,
-      hp: 100,
-      isDowned: false
-    };
-    // Spread new players across the bottom area
-    const playerCount = lobby.players.length;
-    const xSpacing = 80 / Math.max(playerCount, 1); // Spread across 80% of width
-    const baseX = 10; // Start 10% from left edge
-    const playerX = baseX + ((playerCount - 1) * xSpacing);
-    lobby.playerPositions[playerId] = { x: Math.min(playerX, 85), y: 80 }; // Keep within bounds
+    if (!lobby.playerCombatStates[player.id]) {
+      lobby.playerCombatStates[player.id] = {
+        maxHp: 100,
+        hp: 100,
+        isDowned: false
+      };
+    }
 
-    return { lobby, player };
+    // Initialize position for new player (random position along bottom)
+    if (!lobby.playerPositions[player.id]) {
+      lobby.playerPositions[player.id] = {
+        x: Math.random() * 80 + 10, // 10-90% from left
+        y: 80 // Fixed at bottom 80% from top
+      };
+    }
+
+    return lobby;
   }
 
-  getLobby(lobbyId: string): Lobby | undefined {
-    return this.lobbies.get(lobbyId);
+  removePlayer(playerId: string): Lobby | null {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) return null;
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) return null;
+
+    // Remove player from lobby
+    lobby.players = lobby.players.filter(p => p.id !== playerId);
+    
+    // Update team assignments
+    this.updateTeamAssignments(lobby);
+    
+    // Remove from player mapping
+    this.playerToLobby.delete(playerId);
+
+    // Clean up combat state and position
+    delete lobby.playerCombatStates[playerId];
+    delete lobby.playerPositions[playerId];
+
+    // If no players left, remove lobby
+    if (lobby.players.length === 0) {
+      this.lobbies.delete(lobbyId);
+      return null;
+    }
+
+    // Transfer host if needed
+    if (lobby.hostId === playerId && lobby.players.length > 0) {
+      lobby.hostId = lobby.players[0].id;
+      lobby.players[0].isHost = true;
+    }
+
+    return lobby;
+  }
+
+  private updateTeamAssignments(lobby: Lobby): void {
+    lobby.teams = {
+      developers: lobby.players.filter(p => p.team === 'developers'),
+      qa: lobby.players.filter(p => p.team === 'qa'),
+      spectators: lobby.players.filter(p => p.team === 'spectators')
+    };
+  }
+
+  getLobby(lobbyId: string): Lobby | null {
+    return this.lobbies.get(lobbyId) || null;
   }
 
   getLobbyByPlayerId(playerId: string): Lobby | null {
     const lobbyId = this.playerToLobby.get(playerId);
-    return lobbyId ? this.lobbies.get(lobbyId) || null : null;
+    if (!lobbyId) return null;
+    return this.lobbies.get(lobbyId) || null;
   }
 
-  selectAvatar(playerId: string, avatarClass: AvatarClass): Lobby | null {
+  updatePlayerTeam(playerId: string, team: TeamType): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
     const player = lobby.players.find(p => p.id === playerId);
     if (!player) return null;
 
-    player.avatar = avatarClass;
-    return lobby;
-  }
-
-  assignTeam(playerId: string, targetPlayerId: string, team: TeamType): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    const targetPlayer = lobby.players.find(p => p.id === targetPlayerId);
-    if (!targetPlayer) return null;
-
-    // Remove from current team
-    Object.keys(lobby.teams).forEach(teamKey => {
-      const teamType = teamKey as TeamType;
-      lobby.teams[teamType] = lobby.teams[teamType].filter(p => p.id !== targetPlayerId);
-    });
-
-    // Add to new team
-    targetPlayer.team = team;
-    lobby.teams[team].push(targetPlayer);
-
-    return lobby;
-  }
-
-  // Allow players to change their own team
-  changeOwnTeam(playerId: string, team: TeamType): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const player = lobby.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    // Don't allow changing team during active gameplay phases
-    if (lobby.gamePhase !== 'lobby') return null;
-
-    // Remove from current team
-    Object.keys(lobby.teams).forEach(teamKey => {
-      const teamType = teamKey as TeamType;
-      lobby.teams[teamType] = lobby.teams[teamType].filter(p => p.id !== playerId);
-    });
-
-    // Add to new team
     player.team = team;
-    lobby.teams[team].push(player);
+    this.updateTeamAssignments(lobby);
 
     return lobby;
   }
 
-  addTicketsToLobby(playerId: string, tickets: JiraTicket[]): Lobby | null {
+  updatePlayerAvatar(playerId: string, avatar: AvatarClass): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player) return null;
 
-    // Only allow adding tickets during lobby phase
-    if (lobby.gamePhase !== 'lobby') return null;
+    player.avatar = avatar;
+    player.avatarClass = avatar; // Keep both for compatibility
 
-    // Filter out duplicates (case-insensitive)
-    const existingTitles = new Set(lobby.tickets.map(t => t.title.toLowerCase()));
-    const uniqueTickets = tickets.filter(ticket => !existingTitles.has(ticket.title.toLowerCase()));
-
-    // Add new unique tickets
-    lobby.tickets.push(...uniqueTickets);
-    
     return lobby;
   }
 
-  removeTicketFromLobby(playerId: string, ticketId: string): Lobby | null {
+  addTickets(playerId: string, tickets: JiraTicket[]): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
 
-    // Only allow removing tickets during lobby phase
-    if (lobby.gamePhase !== 'lobby') return null;
-
-    // Remove the ticket
-    lobby.tickets = lobby.tickets.filter(ticket => ticket.id !== ticketId);
-    
+    lobby.tickets.push(...tickets);
     return lobby;
   }
 
-  startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss; timerState?: TimerState } | null {
+  removeTicket(playerId: string, ticketId: string): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
 
-    lobby.tickets = tickets;
-    lobby.currentTicket = tickets[0];
-    lobby.gamePhase = 'battle';
-    lobby.completedTickets = [];
+    lobby.tickets = lobby.tickets.filter(t => t.id !== ticketId);
+    return lobby;
+  }
 
-    // Reset player scores
-    lobby.players.forEach(p => {
-      p.hasSubmittedScore = false;
-      p.currentScore = undefined;
-    });
+  startGame(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
 
-    // Create boss based on tickets
-    const boss: Boss = this.createBossFromTickets(tickets);
-    lobby.boss = boss;
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
 
-    // Start timer if enabled
-    let timerState: TimerState | undefined;
-    if (lobby.timerSettings?.enabled) {
-      const timerResult = this.startTimer(lobby.id);
-      if (timerResult) {
-        timerState = timerResult.timerState;
-      }
+    if (lobby.tickets.length === 0) return null;
+
+    // Initialize game state
+    lobby.gamePhase = 'avatar_selection';
+    lobby.currentTicket = lobby.tickets[0];
+    lobby.boss = this.createBossFromTickets(lobby.tickets);
+
+    return lobby;
+  }
+
+  proceedToNextPhase(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
+
+    switch (lobby.gamePhase) {
+      case 'avatar_selection':
+        lobby.gamePhase = 'battle';
+        break;
+      case 'next_level':
+        // Move to next ticket
+        const nextTicketIndex = lobby.completedTickets.length;
+        if (nextTicketIndex < lobby.tickets.length) {
+          lobby.currentTicket = lobby.tickets[nextTicketIndex];
+          lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex));
+          lobby.gamePhase = 'battle';
+          
+          // Reset player states for new battle
+          lobby.players.forEach(p => {
+            if (p.team !== 'spectators') {
+              p.hasSubmittedScore = false;
+              p.currentScore = undefined;
+            }
+            // Reset combat states
+            if (lobby.playerCombatStates[p.id]) {
+              lobby.playerCombatStates[p.id].hp = lobby.playerCombatStates[p.id].maxHp;
+              lobby.playerCombatStates[p.id].isDowned = false;
+            }
+          });
+        } else {
+          lobby.gamePhase = 'victory';
+        }
+        break;
     }
 
-    return { lobby, boss, timerState };
+    return lobby;
   }
 
-  // Allow host to abandon quest and return to lobby
-  abandonQuest(playerId: string): Lobby | null {
+  private createBossFromTickets(tickets: JiraTicket[]): Boss {
+    const totalComplexity = tickets.length * 100;
+    
+    return {
+      id: Math.random().toString(36).substring(2, 15),
+      name: `Epic Boss of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''}`,
+      maxHealth: totalComplexity,
+      currentHealth: totalComplexity,
+      phase: 1,
+      maxPhases: tickets.length,
+      sprite: 'boss_default',
+      defeated: false
+    };
+  }
+
+  updatePlayerPosition(playerId: string, position: { x: number; y: number }): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
+    // Store position as percentages (0-100)
+    lobby.playerPositions[playerId] = {
+      x: Math.max(0, Math.min(100, position.x)),
+      y: Math.max(0, Math.min(100, position.y))
+    };
 
-    // Reset lobby to initial state
-    lobby.gamePhase = 'lobby';
-    lobby.currentTicket = undefined;
-    lobby.boss = undefined;
-    lobby.completedTickets = [];
+    return lobby;
+  }
 
-    // Reset all player scores and submission status
-    lobby.players.forEach(p => {
-      p.hasSubmittedScore = false;
-      p.currentScore = undefined;
-    });
+  setPlayerJumping(playerId: string, isJumping: boolean): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const combatState = lobby.playerCombatStates[playerId];
+    if (combatState) {
+      combatState.isJumping = isJumping;
+    }
 
     return lobby;
   }
@@ -383,19 +381,16 @@ class GameStateManager {
     if (!lobby || lobby.gamePhase !== 'battle') return null;
 
     const player = lobby.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    // Prevent spectators from submitting scores
-    if (player.team === 'spectators') return null;
+    if (!player || player.team === 'spectators') return null;
 
     player.currentScore = score;
     player.hasSubmittedScore = true;
 
-    // Check if all non-spectator players have submitted
+    // Check if all non-spectator players have submitted scores
     const nonSpectatorPlayers = lobby.players.filter(p => p.team !== 'spectators');
-    const allSubmitted = nonSpectatorPlayers.every(p => p.hasSubmittedScore);
+    const submittedPlayers = nonSpectatorPlayers.filter(p => p.hasSubmittedScore);
 
-    if (allSubmitted) {
+    if (submittedPlayers.length === nonSpectatorPlayers.length && nonSpectatorPlayers.length > 0) {
       lobby.gamePhase = 'reveal';
     }
 
@@ -405,6 +400,60 @@ class GameStateManager {
   revealScores(lobbyId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'reveal') return null;
+
+    const teamScores = {
+      developers: {} as Record<string, number | '?'>,
+      qa: {} as Record<string, number | '?'>
+    };
+
+    // Separate scores by team
+    const developerPlayers = lobby.players.filter(p => p.team === 'developers' && p.currentScore !== undefined);
+    const qaPlayers = lobby.players.filter(p => p.team === 'qa' && p.currentScore !== undefined);
+    
+    developerPlayers.forEach(p => {
+      if (p.currentScore !== undefined) {
+        teamScores.developers[p.id] = p.currentScore;
+      }
+    });
+
+    qaPlayers.forEach(p => {
+      if (p.currentScore !== undefined) {
+        teamScores.qa[p.id] = p.currentScore;
+      }
+    });
+
+    // Check for consensus within each team (excluding "?" votes)
+    const devScoreValues = Object.values(teamScores.developers).filter(score => typeof score === 'number');
+    const qaScoreValues = Object.values(teamScores.qa).filter(score => typeof score === 'number');
+    
+    const devConsensus = devScoreValues.length > 0 && devScoreValues.every(score => score === devScoreValues[0]);
+    const qaConsensus = qaScoreValues.length > 0 && qaScoreValues.every(score => score === qaScoreValues[0]);
+
+    const teamConsensus = {
+      developers: { 
+        hasConsensus: devConsensus, 
+        score: devConsensus ? (devScoreValues[0] as number) : undefined 
+      },
+      qa: { 
+        hasConsensus: qaConsensus, 
+        score: qaConsensus ? (qaScoreValues[0] as number) : undefined 
+      }
+    };
+
+    // Handle cases where one or both teams are empty - check actual team membership
+    const devTeamExists = lobby.teams.developers.length > 0;
+    const qaTeamExists = lobby.teams.qa.length > 0;
+    
+    // Transition to discussion phase to allow players to see individual votes and update them
+    lobby.gamePhase = 'discussion';
+
+    return { lobby, teamScores, teamConsensus };
+  }
+
+  // New method to check consensus and advance from discussion phase
+  checkDiscussionConsensus(lobbyId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby || lobby.gamePhase !== 'discussion') return null;
 
     const teamScores = {
       developers: {} as Record<string, number | '?'>,
@@ -505,16 +554,6 @@ class GameStateManager {
         lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
         lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
       }
-    } else {
-      // Reset for another round if no consensus or teams disagree
-      lobby.gamePhase = 'battle';
-      // Reset all non-spectator players' voting state
-      lobby.players.forEach(p => {
-        if (p.team !== 'spectators') {
-          p.hasSubmittedScore = false;
-          p.currentScore = undefined;
-        }
-      });
     }
 
     return { lobby, teamScores, teamConsensus };
@@ -552,374 +591,131 @@ class GameStateManager {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
 
-    // Cosmetic damage during voting phase
+    // Damage the boss
     lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - damage);
-    
-    // Check if boss should perform ring attack (60% chance, max once per 4 seconds) 
-    const now = Date.now();
-    const shouldRingAttack = Math.random() < 0.6 && 
-                            (!lobby.boss.lastRingAttack || now - lobby.boss.lastRingAttack > 4000);
-    
-    if (shouldRingAttack) {
-      lobby.boss.lastRingAttack = now;
-      const ringAttack = this.createBossRingAttack(lobby);
-      console.log('💀 Boss performs ring attack!');
-      return { lobby, bossHealth: lobby.boss.currentHealth, ringAttack };
+
+    // Check if boss should perform ring attack (every ~10 attacks or when health is low)
+    const shouldRingAttack = Math.random() < 0.15 || lobby.boss.currentHealth < lobby.boss.maxHealth * 0.3;
+    let ringAttack = null;
+
+    if (shouldRingAttack && lobby.boss.currentHealth > 0) {
+      const now = Date.now();
+      // Rate limit ring attacks to every 2 seconds
+      if (!lobby.boss.lastRingAttack || now - lobby.boss.lastRingAttack > 2000) {
+        lobby.boss.lastRingAttack = now;
+        ringAttack = this.createRingAttack(lobby);
+      }
     }
-    
-    return { lobby, bossHealth: lobby.boss.currentHealth };
+
+    return {
+      lobby,
+      bossHealth: lobby.boss.currentHealth,
+      ringAttack
+    };
   }
 
-  private createBossRingAttack(lobby: Lobby) {
-    // Boss position (center of screen)
-    const bossX = 50; // 50% of screen width
-    const bossY = 40; // 40% of screen height
-    
-    const projectiles: Array<{ id: string; x: number; y: number; targetX: number; targetY: number; emoji: string; }> = [];
-    const maxProjectiles = 6; // Cap for performance
-    
-    // Get active dev/qa players only (exclude spectators from targeting)
-    const activePlayers = lobby.players.filter(player => {
-      const combatState = lobby.playerCombatStates[player.id];
-      return player.team !== 'spectators' && combatState && !combatState.isDowned;
-    });
-    
-    if (activePlayers.length === 0) {
-      // Fallback: target bottom area where players usually are
-      const fallbackTargets = [
-        { x: 25, y: 80 }, { x: 50, y: 80 }, { x: 75, y: 80 }
-      ];
-      
-      fallbackTargets.forEach(target => {
+  private createRingAttack(lobby: Lobby): any {
+    // Get all active (non-downed) non-spectator players
+    const targets = lobby.players
+      .filter(p => p.team !== 'spectators' && !lobby.playerCombatStates[p.id]?.isDowned)
+      .map(p => ({
+        playerId: p.id,
+        position: lobby.playerPositions[p.id] || { x: 50, y: 80 }
+      }));
+
+    if (targets.length === 0) return null;
+
+    // Create 6 projectiles in a ring pattern around each player
+    const projectiles: Array<{
+      id: string;
+      startX: number;
+      startY: number;
+      targetX: number;
+      targetY: number;
+      progress: number;
+      emoji: string;
+    }> = [];
+    const projectileCount = 6;
+
+    targets.forEach(target => {
+      for (let i = 0; i < projectileCount; i++) {
+        const angle = (i / projectileCount) * 2 * Math.PI;
+        const radius = 5 + Math.random() * 3; // 5-8% radius
+        
+        const targetX = target.position.x + Math.cos(angle) * radius;
+        const targetY = target.position.y + Math.sin(angle) * radius;
+        
         projectiles.push({
           id: Math.random().toString(36).substring(2, 15),
-          x: bossX,
-          y: bossY,
-          targetX: target.x + (Math.random() - 0.5) * 10, // Small spread
-          targetY: target.y + (Math.random() - 0.5) * 10,
+          startX: 50, // Boss center
+          startY: 40, // Boss center
+          targetX: Math.max(5, Math.min(95, targetX)), // Keep within bounds
+          targetY: Math.max(5, Math.min(95, targetY)), // Keep within bounds
+          progress: 0,
           emoji: '💥'
         });
-      });
-    } else {
-      // Target actual player positions with some prediction/spread
-      const numProjectilesPerPlayer = Math.max(1, Math.floor(maxProjectiles / activePlayers.length));
-      
-      activePlayers.forEach(player => {
-        const playerPos = lobby.playerPositions[player.id];
-        if (!playerPos) return;
-        
-        // Fire multiple projectiles at each player with spread for better hit chance
-        for (let i = 0; i < numProjectilesPerPlayer && projectiles.length < maxProjectiles; i++) {
-          // Add predictive spread around player position (they might move)
-          const spreadX = (Math.random() - 0.5) * 20; // -10 to +10% spread
-          const spreadY = (Math.random() - 0.5) * 15; // -7.5 to +7.5% spread
-          
-          projectiles.push({
-            id: Math.random().toString(36).substring(2, 15),
-            x: bossX,
-            y: bossY,
-            targetX: Math.max(5, Math.min(95, playerPos.x + spreadX)),
-            targetY: Math.max(5, Math.min(95, playerPos.y + spreadY)),
-            emoji: '💥'
-          });
-        }
-      });
-      
-      console.log(`💀 Boss targeting ${activePlayers.length} players with ${projectiles.length} projectiles`);
-    }
-    
-    return { bossX, bossY, projectiles };
-  }
-
-  proceedNextLevel(playerId: string): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    if (lobby.gamePhase === 'next_level') {
-      lobby.gamePhase = 'battle';
-      // Reset player scores
-      lobby.players.forEach(p => {
-        p.hasSubmittedScore = false;
-        p.currentScore = undefined;
-      });
-    }
-
-    return lobby;
-  }
-
-  forceRevealScores(playerId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby || lobby.gamePhase !== 'battle') return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    // Force transition to reveal phase
-    lobby.gamePhase = 'reveal';
-    
-    // Use the same reveal logic as normal reveal
-    return this.revealScores(lobby.id);
-  }
-
-  bossDamagePlayer(playerId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby || lobby.gamePhase !== 'battle') return null;
-
-    const targetCombatState = lobby.playerCombatStates[playerId];
-    if (!targetCombatState || targetCombatState.isDowned) return null;
-    
-    // Check jumping invincibility (same as player attacks)
-    if (targetCombatState.isJumping) {
-      console.log(`🛡️ ${playerId} is jumping - invincible to boss damage!`);
-      return null;
-    }
-
-    // Apply boss damage (2-4 damage)
-    const actualDamage = Math.max(2, Math.min(4, damage));
-    targetCombatState.hp = Math.max(0, targetCombatState.hp - actualDamage);
-    targetCombatState.lastDamagedBy = 'boss';
-    
-    if (targetCombatState.hp <= 0) {
-      targetCombatState.isDowned = true;
-    }
-
-    console.log(`💀 Boss hit ${playerId} for ${actualDamage} damage! HP: ${targetCombatState.hp}`);
-    return { lobby, targetHealth: targetCombatState.hp };
-  }
-
-  setPlayerJumping(playerId: string, isJumping: boolean): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const playerCombatState = lobby.playerCombatStates[playerId];
-    if (playerCombatState) {
-      playerCombatState.isJumping = isJumping;
-      console.log(`🦘 Player ${playerId} jumping state: ${isJumping}`);
-    }
-
-    return lobby;
-  }
-
-  removePlayer(playerId: string): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    // Cancel any revival sessions involving this player
-    for (const [sessionKey, session] of Array.from(this.revivalSessions.entries())) {
-      if (session.reviverId === playerId || session.targetId === playerId) {
-        this.cancelRevivalSession(sessionKey);
       }
-    }
-
-    // Remove player from lobby
-    lobby.players = lobby.players.filter(p => p.id !== playerId);
-    
-    // Remove from teams
-    Object.keys(lobby.teams).forEach(teamKey => {
-      const teamType = teamKey as TeamType;
-      lobby.teams[teamType] = lobby.teams[teamType].filter(p => p.id !== playerId);
     });
 
-    // Clean up combat state and position
-    delete lobby.playerCombatStates[playerId];
-    delete lobby.playerPositions[playerId];
-
-    this.playerToLobby.delete(playerId);
-
-    // If host left, assign new host or delete lobby
-    if (lobby.hostId === playerId) {
-      if (lobby.players.length > 0) {
-        const newHost = lobby.players[0];
-        newHost.isHost = true;
-        lobby.hostId = newHost.id;
-      } else {
-        this.lobbies.delete(lobby.id);
-        return null;
-      }
-    }
-
-    return lobby;
-  }
-
-  private generatePlayerId(): string {
-    return Math.random().toString(36).substring(2, 15);
-  }
-
-  private createBossFromTickets(tickets: JiraTicket[]): Boss {
-    const ticketCount = tickets.length;
-    const phases = Math.min(ticketCount, 5); // Max 5 phases
-    
-    const bosses = [
-      { name: 'Bug Hydra', sprite: 'Bug_Hydra_Boss_8b867e3e.png' },
-      { name: 'Sprint Demon', sprite: 'Sprint_Demon_Boss_a43a8439.png' },
-      { name: 'Deadline Dragon', sprite: 'Deadline_Dragon_Boss_transparent.png' },
-      { name: 'Technical Debt Golem', sprite: 'Technical_Debt_Golem_882e6943.png' },
-      { name: 'Scope Creep Beast', sprite: 'Scope_Creep_Beast_3a9ec6b7.png' }
-    ];
-    
-    const selectedBoss = bosses[Math.floor(Math.random() * bosses.length)];
-    
-    const boss: Boss = {
-      id: Math.random().toString(36).substring(2, 15),
-      name: selectedBoss.name,
-      maxHealth: ticketCount * 100,
-      currentHealth: ticketCount * 100,
-      phase: 1,
-      maxPhases: phases,
-      sprite: selectedBoss.sprite,
-      defeated: false
+    return {
+      type: 'ring',
+      projectiles,
+      targetCount: targets.length
     };
-
-    return boss;
   }
 
-  // Combat system methods
-  updatePlayerPosition(playerId: string, position: { x: number; y: number }): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    // Validate position bounds (0-100%)
-    const x = Math.max(0, Math.min(100, position.x));
-    const y = Math.max(0, Math.min(100, position.y));
-    
-    lobby.playerPositions[playerId] = { x, y };
-    return lobby;
-  }
-
-  attackPlayer(attackerId: string, targetId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
-    const lobby = this.getLobbyByPlayerId(attackerId);
-    if (!lobby || lobby.gamePhase !== 'battle') return null;
-
-    const attacker = lobby.players.find(p => p.id === attackerId);
-    const target = lobby.players.find(p => p.id === targetId);
-    
-    if (!attacker || !target) return null;
-    
-    // Validate attack rules: spectators can only attack dev/qa
-    if (attacker.team === 'spectators' && target.team === 'spectators') return null;
-    if (attacker.team !== 'spectators') return null; // Only spectators can attack players
-    
-    const targetCombatState = lobby.playerCombatStates[targetId];
-    if (!targetCombatState || targetCombatState.isDowned) return null;
-    
-    // Check jumping invincibility
-    if (targetCombatState.isJumping) {
-      console.log(`🛡️ ${targetId} is jumping - invincible to damage!`);
-      return null;
-    }
-
-    // Apply damage (clamp between 1-10)
-    const actualDamage = Math.max(1, Math.min(10, damage));
-    targetCombatState.hp = Math.max(0, targetCombatState.hp - actualDamage);
-    targetCombatState.lastDamagedBy = attackerId;
-    
-    if (targetCombatState.hp <= 0) {
-      targetCombatState.isDowned = true;
-    }
-
-    return { lobby, targetHealth: targetCombatState.hp };
-  }
-
-  findNearestTarget(spectatorId: string): string | null {
-    const lobby = this.getLobbyByPlayerId(spectatorId);
-    if (!lobby) return null;
-
-    const spectatorPos = lobby.playerPositions[spectatorId];
-    if (!spectatorPos) return null;
-
-    let nearestTarget: string | null = null;
-    let nearestDistance = Infinity;
-
-    // Find nearest non-spectator, non-downed player
-    lobby.players.forEach(player => {
-      if (player.team === 'spectators' || player.id === spectatorId) return;
-      
-      const combatState = lobby.playerCombatStates[player.id];
-      if (combatState?.isDowned) return;
-
-      const playerPos = lobby.playerPositions[player.id];
-      if (!playerPos) return;
-
-      const distance = Math.sqrt(
-        Math.pow(spectatorPos.x - playerPos.x, 2) + 
-        Math.pow(spectatorPos.y - playerPos.y, 2)
-      );
-
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearestTarget = player.id;
-      }
-    });
-
-    return nearestTarget;
-  }
-
-  startRevive(reviverId: string, targetId: string): { lobby: Lobby; canRevive: boolean; sessionKey?: string } | null {
+  // Player revival system
+  startRevive(reviverId: string, targetId: string): boolean {
     const lobby = this.getLobbyByPlayerId(reviverId);
-    if (!lobby || lobby.gamePhase !== 'battle') return null;
+    if (!lobby) return false;
 
-    const reviver = lobby.players.find(p => p.id === reviverId);
-    const target = lobby.players.find(p => p.id === targetId);
-    
-    if (!reviver || !target) return null;
-    
     const reviverState = lobby.playerCombatStates[reviverId];
     const targetState = lobby.playerCombatStates[targetId];
-    
-    if (!reviverState || !targetState) return null;
-    if (reviverState.isDowned || !targetState.isDowned) return null;
-    
-    // Check distance (must be within 10% of screen)
     const reviverPos = lobby.playerPositions[reviverId];
     const targetPos = lobby.playerPositions[targetId];
-    
-    if (!reviverPos || !targetPos) return null;
-    
+
+    if (!reviverState || !targetState || !reviverPos || !targetPos) return false;
+    if (reviverState.isDowned || !targetState.isDowned) return false;
+
+    // Check distance
     const distance = Math.sqrt(
       Math.pow(reviverPos.x - targetPos.x, 2) + 
       Math.pow(reviverPos.y - targetPos.y, 2)
     );
-    
-    if (distance > 10) return { lobby, canRevive: false };
-    
-    // Create revival session
+
+    if (distance > 10) return false; // Must be within 10% distance
+
     const sessionKey = `${reviverId}:${targetId}`;
-    const now = Date.now();
     
     // Cancel any existing session for this reviver
-    for (const [key, session] of Array.from(this.revivalSessions.entries())) {
+    for (const [key, session] of this.revivalSessions.entries()) {
       if (session.reviverId === reviverId) {
         this.cancelRevivalSession(key);
       }
     }
-    
-    const revivalSession: RevivalSession = {
+
+    const now = Date.now();
+    const timeoutHandle = setTimeout(() => {
+      // Auto-complete after 3 seconds if no cancellation
+      this.completeRevival(sessionKey);
+    }, 3000);
+
+    this.revivalSessions.set(sessionKey, {
       reviverId,
       targetId,
       lobbyId: lobby.id,
       startedAt: now,
       lastTick: now,
-      timeoutHandle: setTimeout(() => {
-        this.cancelRevivalSession(sessionKey);
-      }, 3500) // 3.5s timeout for safety
-    };
-    
-    this.revivalSessions.set(sessionKey, revivalSession);
-    
-    // Start revival
-    targetState.revivedBy = reviverId;
-    targetState.reviveEndsAt = now + 3000; // 3 seconds
-    
-    return { lobby, canRevive: true, sessionKey };
+      timeoutHandle
+    });
+
+    return true;
   }
 
-  cancelRevive(reviverId: string, targetId: string): Lobby | null {
+  cancelRevive(reviverId: string, targetId: string): boolean {
     const sessionKey = `${reviverId}:${targetId}`;
     this.cancelRevivalSession(sessionKey);
-    return this.getLobbyByPlayerId(reviverId);
+    return true;
   }
 
   tickRevive(reviverId: string, targetId: string): boolean {
@@ -927,20 +723,19 @@ class GameStateManager {
     const session = this.revivalSessions.get(sessionKey);
     
     if (!session) return false;
-    
-    // Update last tick time for keep-alive
-    session.lastTick = Date.now();
-    
-    // Validate distance and states
+
     const lobby = this.lobbies.get(session.lobbyId);
-    if (!lobby) return false;
-    
-    const reviverPos = lobby.playerPositions[reviverId];
-    const targetPos = lobby.playerPositions[targetId];
+    if (!lobby) {
+      this.cancelRevivalSession(sessionKey);
+      return false;
+    }
+
     const reviverState = lobby.playerCombatStates[reviverId];
     const targetState = lobby.playerCombatStates[targetId];
-    
-    if (!reviverPos || !targetPos || !reviverState || !targetState) {
+    const reviverPos = lobby.playerPositions[reviverId];
+    const targetPos = lobby.playerPositions[targetId];
+
+    if (!reviverState || !targetState || !reviverPos || !targetPos) {
       this.cancelRevivalSession(sessionKey);
       return false;
     }
@@ -960,6 +755,8 @@ class GameStateManager {
       return false;
     }
     
+    // Update last tick
+    session.lastTick = Date.now();
     return true;
   }
 
@@ -1029,21 +826,42 @@ class GameStateManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'battle') return;
 
-    // Auto-transition to reveal phase when timer expires
+    // Force reveal phase if timer expires
     lobby.gamePhase = 'reveal';
     lobby.currentTimer = undefined;
     this.timerIntervals.delete(lobbyId);
-
-    console.log(`⏰ Timer expired for lobby ${lobbyId}, auto-revealing scores`);
   }
 
-  getRemainingTime(lobbyId: string): number | null {
-    const lobby = this.lobbies.get(lobbyId);
-    if (!lobby?.currentTimer?.isActive) return null;
+  forceReveal(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
 
-    const elapsed = Date.now() - lobby.currentTimer.startedAt;
-    const remaining = lobby.currentTimer.durationMs - elapsed;
-    return Math.max(0, remaining);
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    // Clear any active timer
+    this.clearTimer(lobby.id);
+
+    // Force transition to reveal phase
+    lobby.gamePhase = 'reveal';
+    return lobby;
+  }
+
+  handlePlayerDamage(playerId: string, damage: number, attackerId?: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const playerState = lobby.playerCombatStates[playerId];
+    if (!playerState || playerState.isDowned) return null;
+
+    playerState.hp = Math.max(0, playerState.hp - damage);
+    playerState.lastDamagedBy = attackerId;
+
+    if (playerState.hp <= 0) {
+      playerState.isDowned = true;
+    }
+
+    return lobby;
   }
 }
 

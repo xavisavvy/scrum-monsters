@@ -112,7 +112,7 @@ export interface Boss {
   lastRingAttack?: number;
 }
 
-export type GamePhase = 'lobby' | 'avatar_selection' | 'battle' | 'scoring' | 'reveal' | 'victory' | 'next_level';
+export type GamePhase = 'lobby' | 'avatar_selection' | 'battle' | 'scoring' | 'reveal' | 'discussion' | 'victory' | 'next_level';
 
 export type TeamType = 'developers' | 'qa' | 'spectators';
 
