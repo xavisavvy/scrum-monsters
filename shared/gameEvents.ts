@@ -60,6 +60,19 @@ export interface Lobby {
   teamCompetition: TeamCompetition;
   playerCombatStates: Record<string, PlayerCombatState>;
   playerPositions: Record<string, Position>;
+  timerSettings?: TimerSettings;
+  currentTimer?: TimerState;
+}
+
+export interface TimerSettings {
+  enabled: boolean;
+  durationMinutes: number;
+}
+
+export interface TimerState {
+  startedAt: number; // timestamp when timer started
+  durationMs: number; // timer duration in milliseconds
+  isActive: boolean;
 }
 
 export interface JiraTicket {
@@ -99,6 +112,9 @@ export type TeamType = 'developers' | 'qa' | 'spectators';
 
 export type AvatarClass = 'ranger' | 'rogue' | 'bard' | 'sorcerer' | 'wizard' | 'warrior' | 'paladin' | 'cleric';
 
+// Export timer interfaces at module level
+export { TimerSettings, TimerState };
+
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
   create_lobby: (data: { lobbyName: string; hostName: string }) => void;
@@ -120,6 +136,7 @@ export interface ClientToServerEvents {
   }) => void;
   abandon_quest: () => void;
   force_reveal: () => void;
+  update_timer_settings: (data: { timerSettings: TimerSettings }) => void;
   youtube_play: (data: { videoId: string; url: string }) => void;
   youtube_stop: () => void;
   player_pos: (data: { x: number; y: number }) => void;
@@ -154,6 +171,7 @@ export interface ServerToClientEvents {
   quest_abandoned: (data: { lobby: Lobby }) => void;
   game_error: (data: { message: string }) => void;
   player_disconnected: (data: { playerId: string }) => void;
+  timer_updated: (data: { timerState: TimerState | null }) => void;
   youtube_play_synced: (data: { videoId: string; url: string }) => void;
   youtube_stop_synced: () => void;
   players_pos: (data: { positions: Record<string, Position> }) => void;

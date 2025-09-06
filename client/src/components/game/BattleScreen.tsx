@@ -11,6 +11,7 @@ import { PlayerController } from './PlayerController';
 import { TeamScoreboard } from './TeamScoreboard';
 import { TeamPerformanceTracker } from './TeamPerformanceTracker';
 import { TeamCelebration } from './TeamCelebration';
+import { TimerDisplay } from './TimerDisplay';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -77,6 +78,9 @@ export function BattleScreen() {
               </div>
             </div>
 
+            {/* Timer Display - Top Left */}
+            <TimerDisplay />
+            
             {/* Boss Music Controls - Top Right */}
             <div className="absolute top-6 right-6 z-40" data-no-shoot>
               <BossMusicControls />

@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, TimerState } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 
 interface RevivalSession {
@@ -16,6 +16,7 @@ class GameStateManager {
   private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
   private revivalWatchdog: NodeJS.Timeout;
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number; team: TeamType }>> = new Map();
+  private timerIntervals = new Map<string, NodeJS.Timeout>();
 
   constructor() {
     // Start revival watchdog timer
@@ -160,6 +161,10 @@ class GameStateManager {
       },
       playerPositions: {
         [hostId]: { x: 50, y: 50 }
+      },
+      timerSettings: {
+        enabled: false,
+        durationMinutes: 5
       }
     };
 
@@ -275,7 +280,7 @@ class GameStateManager {
     return lobby;
   }
 
-  startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss } | null {
+  startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss; timerState?: TimerState } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
@@ -297,7 +302,16 @@ class GameStateManager {
     const boss: Boss = this.createBossFromTickets(tickets);
     lobby.boss = boss;
 
-    return { lobby, boss };
+    // Start timer if enabled
+    let timerState: TimerState | undefined;
+    if (lobby.timerSettings?.enabled) {
+      const timerResult = this.startTimer(lobby.id);
+      if (timerResult) {
+        timerState = timerResult.timerState;
+      }
+    }
+
+    return { lobby, boss, timerState };
   }
 
   // Allow host to abandon quest and return to lobby
@@ -910,6 +924,78 @@ class GameStateManager {
     }
     
     return true;
+  }
+
+  // Timer management methods
+  updateTimerSettings(playerId: string, timerSettings: TimerSettings): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    lobby.timerSettings = timerSettings;
+    return lobby;
+  }
+
+  startTimer(lobbyId: string): { lobby: Lobby; timerState: TimerState } | null {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby || !lobby.timerSettings?.enabled) return null;
+
+    // Clear any existing timer
+    this.clearTimer(lobbyId);
+
+    const durationMs = lobby.timerSettings.durationMinutes * 60 * 1000;
+    const timerState: TimerState = {
+      startedAt: Date.now(),
+      durationMs,
+      isActive: true
+    };
+
+    lobby.currentTimer = timerState;
+
+    // Set up auto-reveal timer
+    const timeoutId = setTimeout(() => {
+      this.autoRevealOnTimerExpiry(lobbyId);
+    }, durationMs);
+
+    this.timerIntervals.set(lobbyId, timeoutId);
+
+    return { lobby, timerState };
+  }
+
+  clearTimer(lobbyId: string): void {
+    const timeoutId = this.timerIntervals.get(lobbyId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+      this.timerIntervals.delete(lobbyId);
+    }
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (lobby) {
+      lobby.currentTimer = undefined;
+    }
+  }
+
+  private autoRevealOnTimerExpiry(lobbyId: string): void {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby || lobby.gamePhase !== 'battle') return;
+
+    // Auto-transition to reveal phase when timer expires
+    lobby.gamePhase = 'reveal';
+    lobby.currentTimer = undefined;
+    this.timerIntervals.delete(lobbyId);
+
+    console.log(`⏰ Timer expired for lobby ${lobbyId}, auto-revealing scores`);
+  }
+
+  getRemainingTime(lobbyId: string): number | null {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby?.currentTimer?.isActive) return null;
+
+    const elapsed = Date.now() - lobby.currentTimer.startedAt;
+    const remaining = lobby.currentTimer.durationMs - elapsed;
+    return Math.max(0, remaining);
   }
 }
 

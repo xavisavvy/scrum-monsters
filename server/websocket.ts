@@ -383,6 +383,18 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Timer settings update
+    socket.on('update_timer_settings', ({ timerSettings }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.updateTimerSettings(playerId, timerSettings);
+      if (lobby) {
+        // Broadcast updated lobby settings to all players
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
     socket.on('disconnect', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;

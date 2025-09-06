@@ -4,7 +4,7 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
-import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket } from '@/lib/gameTypes';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings } from '@/lib/gameTypes';
 
 export function Lobby() {
   const [tickets, setTickets] = useState<JiraTicket[]>([]);
@@ -69,6 +69,10 @@ export function Lobby() {
         setShowCopiedNotification(false);
       }, 2000);
     }
+  };
+
+  const updateTimerSettings = (timerSettings: TimerSettings) => {
+    emit('update_timer_settings', { timerSettings });
   };
 
   const renderPlayerSprite = (avatarClass: string) => {
@@ -229,6 +233,54 @@ export function Lobby() {
                 );
               })}
             </RetroCard>
+
+            {/* Timer Settings */}
+            {isHost && (
+              <RetroCard title="Estimation Timer">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                        checked={currentLobby.timerSettings?.enabled || false}
+                        onChange={(e) => updateTimerSettings({
+                          enabled: e.target.checked,
+                          durationMinutes: currentLobby.timerSettings?.durationMinutes || 5
+                        })}
+                      />
+                      <span className="text-sm font-medium">Enable estimation timer</span>
+                    </label>
+                  </div>
+                  
+                  {currentLobby.timerSettings?.enabled && (
+                    <div className="space-y-2">
+                      <label className="block text-sm font-medium text-gray-300">
+                        Timer Duration
+                      </label>
+                      <select
+                        className="retro-input w-full"
+                        value={currentLobby.timerSettings?.durationMinutes || 5}
+                        onChange={(e) => updateTimerSettings({
+                          enabled: true,
+                          durationMinutes: parseInt(e.target.value)
+                        })}
+                      >
+                        <option value={1}>1 minute</option>
+                        <option value={2}>2 minutes</option>
+                        <option value={3}>3 minutes</option>
+                        <option value={5}>5 minutes</option>
+                        <option value={10}>10 minutes</option>
+                        <option value={15}>15 minutes</option>
+                      </select>
+                      <p className="text-xs text-gray-400">
+                        ⏰ Scores will auto-reveal when timer expires
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </RetroCard>
+            )}
           </div>
 
           {/* Tickets Section */}
