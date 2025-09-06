@@ -13,7 +13,7 @@ interface PlayerControllerProps {
 
 export function PlayerController({ containerWidth, containerHeight }: PlayerControllerProps) {
   const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
-  const { emit } = useWebSocket();
+  const { emit, socket } = useWebSocket();
   const { playHit } = useAudio();
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 50 });
   const [isJumping, setIsJumping] = useState(false);
