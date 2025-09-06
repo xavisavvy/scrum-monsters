@@ -292,9 +292,14 @@ export function BattleScreen() {
           : null;
         
         return (
-          <div className="text-center p-6">
-            <RetroCard title="Objective Complete!">
-              <div className="space-y-4">
+          <div className="relative">
+            {/* Cinematic Background - same as start screen */}
+            <CinematicBackground />
+            
+            <div className="relative z-20 p-6">
+              <div className="text-center">
+                <RetroCard title="Objective Complete!">
+                  <div className="space-y-4">
                 <div className="flex justify-center mb-4">
                   <img 
                     src={victoryImage} 
@@ -360,8 +365,10 @@ export function BattleScreen() {
                 <p className="text-sm text-gray-400">
                   Waiting for host to proceed to next level...
                 </p>
+                  </div>
+                </RetroCard>
               </div>
-            </RetroCard>
+            </div>
           </div>
         );
 
