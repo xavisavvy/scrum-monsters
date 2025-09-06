@@ -357,6 +357,13 @@ class GameStateManager {
     const player = lobby.players.find(p => p.id === playerId);
     if (!player || player.team === 'spectators') return null;
 
+    // Validate score is from allowed values
+    const validScores = [1, 2, 3, 5, 8, 13, 21, '?'];
+    if (!validScores.includes(score)) return null;
+
+    // Check if score is actually changing (idempotency)
+    if (player.currentScore === score) return null;
+
     player.currentScore = score;
     player.hasSubmittedScore = true;
 

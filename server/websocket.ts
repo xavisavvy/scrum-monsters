@@ -232,6 +232,47 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    socket.on('update_discussion_vote', ({ score }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.updateDiscussionVote(playerId, score);
+      if (lobby) {
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        
+        // Check for consensus and auto-advance
+        const result = gameState.checkDiscussionConsensus(lobby.id);
+        if (result) {
+          const { lobby: updatedLobby, teamScores, teamConsensus } = result;
+          
+          // Check if teams agreed using same logic as gameState
+          const devTeamExists = updatedLobby.teams.developers.length > 0;
+          const qaTeamExists = updatedLobby.teams.qa.length > 0;
+          
+          let teamsAgree = false;
+          if (devTeamExists && qaTeamExists) {
+            teamsAgree = teamConsensus.developers.hasConsensus && 
+                        teamConsensus.qa.hasConsensus &&
+                        teamConsensus.developers.score === teamConsensus.qa.score;
+          } else if (devTeamExists && !qaTeamExists) {
+            teamsAgree = teamConsensus.developers.hasConsensus;
+          } else if (!devTeamExists && qaTeamExists) {
+            teamsAgree = teamConsensus.qa.hasConsensus;
+          }
+          
+          if (teamsAgree) {
+            // Auto-advance after a brief delay for players to see the consensus
+            setTimeout(() => {
+              io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+              if (updatedLobby.boss?.defeated) {
+                io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
+              }
+            }, 2000);
+          }
+        }
+      }
+    });
+
     socket.on('attack_boss', ({ damage }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
@@ -433,10 +474,10 @@ export function setupWebSocket(httpServer: HTTPServer) {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const result = gameState.startRevive(playerId, targetId);
-      if (result) {
-        const { lobby, canRevive } = result;
-        if (canRevive) {
+      const success = gameState.startRevive(playerId, targetId);
+      if (success) {
+        const lobby = gameState.getLobbyByPlayerId(playerId);
+        if (lobby) {
           io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
         }
       }
@@ -446,9 +487,12 @@ export function setupWebSocket(httpServer: HTTPServer) {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.cancelRevive(playerId, targetId);
-      if (lobby) {
-        io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+      const success = gameState.cancelRevive(playerId, targetId);
+      if (success) {
+        const lobby = gameState.getLobbyByPlayerId(playerId);
+        if (lobby) {
+          io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+        }
       }
     });
 
