@@ -348,10 +348,10 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       Math.pow(playerPixelY - projectile.targetY, 2)
     );
     
-    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 80)`);
+    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 150)`);
     
-    // If hit (within 80 pixels - reasonable collision area)
-    if (distance < 80) {
+    // If hit (within 150 pixels - larger collision area for boss projectiles)
+    if (distance < 150) {
       const damage = Math.floor(Math.random() * 3) + 2; // 2-4 damage
       
       // Play hit sound

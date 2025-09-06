@@ -84,14 +84,15 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
         return (
           <div
             key={projectile.id}
-            className="absolute text-4xl"
+            className="absolute text-6xl"
             style={{
-              left: x - 20,
-              top: y - 20,
+              left: x - 30,
+              top: y - 30,
               transform: `rotate(${rotation}deg)`,
               transition: 'none',
-              textShadow: '2px 2px 4px rgba(0,0,0,0.8)',
-              zIndex: 25
+              textShadow: '3px 3px 6px rgba(0,0,0,0.9)',
+              zIndex: 25,
+              filter: 'drop-shadow(0 0 8px rgba(255,0,0,0.5))'
             }}
           >
             {projectile.emoji}
