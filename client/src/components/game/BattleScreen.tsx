@@ -6,6 +6,7 @@ import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
 import { YoutubeAudioPlayer } from '@/components/ui/YoutubeAudioPlayer';
+import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { PlayerController } from './PlayerController';
 // Team competition components for enhanced multiplayer experience
 import { TeamScoreboard } from './TeamScoreboard';
@@ -128,7 +129,11 @@ export function BattleScreen() {
         );
         
         return (
-          <div className="p-6">
+          <div className="relative">
+            {/* Cinematic Background - same as start screen */}
+            <CinematicBackground />
+            
+            <div className="relative z-20 p-6">
             <div className="text-center mb-6">
               <RetroCard title="Victory!">
                 <div className="space-y-4">
@@ -234,6 +239,7 @@ export function BattleScreen() {
                 </div>
               </div>
             </RetroCard>
+            </div>
           </div>
         );
 
