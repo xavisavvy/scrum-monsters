@@ -54,25 +54,25 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
+    <div className="relative">
       <CinematicBackground />
       
-      <div className="relative z-20 min-h-screen">
+      <div className="relative z-20">
         {/* Hero Section */}
-        <div className="flex flex-col items-center justify-center min-h-screen px-6 text-center">
+        <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 text-center">
           <div className="max-w-4xl mx-auto">
             {/* Main Title */}
-            <h1 className="text-6xl md:text-8xl font-bold retro-text-glow mb-6">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold retro-text-glow mb-6">
               SCRUM MONSTERS
             </h1>
             
             {/* Tagline */}
-            <h2 className="text-2xl md:text-3xl text-gray-300 mb-4">
+            <h2 className="text-xl sm:text-2xl md:text-3xl text-gray-300 mb-4">
               Slay the beasts of bad software development
             </h2>
             
             {/* Description */}
-            <p className="text-lg md:text-xl text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
+            <p className="text-base sm:text-lg md:text-xl text-gray-400 mb-8 max-w-3xl mx-auto leading-relaxed">
               Turn sprint planning and estimation into a quick, fun ritual. Your team assigns story points 
               while battling cheeky pixel bosses in this lightweight web game that takes seconds to start.
             </p>
@@ -118,7 +118,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         </div>
 
         {/* Features Section */}
-        <div id="features" className="px-6 py-16 bg-black bg-opacity-60">
+        <div id="features" className="px-4 py-12 sm:py-16 bg-black bg-opacity-60">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 retro-text-glow">
               Why Teams Love It
@@ -141,7 +141,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         </div>
 
         {/* Boss Gallery */}
-        <div className="px-6 py-16">
+        <div className="px-4 py-12 sm:py-16">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-4 retro-text-glow">
               Meet the Bosses
@@ -170,7 +170,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         </div>
 
         {/* How It Works */}
-        <div className="px-6 py-16 bg-black bg-opacity-60">
+        <div className="px-4 py-12 sm:py-16 bg-black bg-opacity-60">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-bold text-center mb-12 retro-text-glow">
               How It Works
@@ -213,7 +213,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         </div>
 
         {/* Final CTA */}
-        <div className="px-6 py-16 text-center">
+        <div className="px-4 py-12 sm:py-16 text-center">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 retro-text-glow">
               Ready to Transform Your Sprint Planning?
@@ -239,7 +239,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-8 border-t border-gray-700 bg-black bg-opacity-80">
+        <div className="px-4 py-8 border-t border-gray-700 bg-black bg-opacity-80">
           <div className="max-w-4xl mx-auto text-center">
             <p className="text-gray-400 text-sm mb-4">
               Built with ❤️ for agile teams who love games
