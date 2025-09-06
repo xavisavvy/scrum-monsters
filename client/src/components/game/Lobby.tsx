@@ -785,46 +785,45 @@ export function Lobby() {
               className="absolute top-0 right-1/2 h-full"
               style={{
                 width: '50vw',
-                background: `
-                  linear-gradient(to right, 
-                    #8B4513 0%, #8B4513 20%, 
-                    #D4AF8C 20%, #D4AF8C 22%, 
-                    #654321 22%, #654321 40%,
-                    #D4AF8C 40%, #D4AF8C 42%,
-                    #8B4513 42%, #8B4513 100%
-                  ),
-                  repeating-linear-gradient(
-                    0deg,
-                    #8B4513 0px, #8B4513 16px,
-                    #A0522D 16px, #A0522D 32px
-                  )
-                `,
+                background: '#8B4513',
                 imageRendering: 'pixelated',
                 transform: 'translateX(-200px)',
                 position: 'relative'
               }}
             >
+              {/* Stone Texture Pattern */}
+              <div style={{
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                right: '0',
+                bottom: '15%',
+                background: `
+                  repeating-linear-gradient(0deg, #654321 0px, #654321 2px, #8B4513 2px, #8B4513 20px),
+                  repeating-linear-gradient(90deg, #654321 0px, #654321 2px, #8B4513 2px, #8B4513 30px)
+                `,
+                opacity: 0.3
+              }} />
+              
               {/* Pixel Art Window */}
               <div 
-                className="absolute z-10"
                 style={{
-                  top: '25%',
-                  right: '15%',
-                  width: '80px',
-                  height: '60px',
+                  position: 'absolute',
+                  top: '20%',
+                  right: '8%',
+                  width: '100px',
+                  height: '80px',
                   background: '#87CEEB',
-                  border: '4px solid #654321',
-                  imageRendering: 'pixelated',
-                  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.3)'
+                  border: '6px solid #654321',
+                  zIndex: 20
                 }}
               >
-                {/* Window cross */}
                 <div style={{
                   position: 'absolute',
                   top: '50%',
                   left: '0',
                   right: '0',
-                  height: '4px',
+                  height: '6px',
                   background: '#654321',
                   transform: 'translateY(-50%)'
                 }} />
@@ -833,7 +832,7 @@ export function Lobby() {
                   top: '0',
                   bottom: '0',
                   left: '50%',
-                  width: '4px',
+                  width: '6px',
                   background: '#654321',
                   transform: 'translateX(-50%)'
                 }} />
@@ -841,33 +840,31 @@ export function Lobby() {
               
               {/* Mounted Crossbow */}
               <div 
-                className="absolute z-10"
                 style={{
-                  top: '65%',
-                  right: '25%',
-                  width: '50px',
-                  height: '30px',
-                  background: '#8B4513',
-                  imageRendering: 'pixelated'
+                  position: 'absolute',
+                  top: '70%',
+                  right: '20%',
+                  width: '80px',
+                  height: '40px',
+                  background: '#654321',
+                  zIndex: 20
                 }}
               >
-                {/* Crossbow string */}
                 <div style={{
                   position: 'absolute',
-                  top: '10px',
-                  left: '5px',
-                  right: '5px',
-                  height: '2px',
+                  top: '15px',
+                  left: '10px',
+                  right: '10px',
+                  height: '3px',
                   background: '#FFFF99'
                 }} />
-                {/* Crossbow bolt */}
                 <div style={{
                   position: 'absolute',
-                  top: '14px',
-                  left: '20px',
-                  width: '20px',
-                  height: '2px',
-                  background: '#654321'
+                  top: '18px',
+                  left: '30px',
+                  width: '30px',
+                  height: '4px',
+                  background: '#8B4513'
                 }} />
               </div>
             </div>
@@ -877,119 +874,106 @@ export function Lobby() {
               className="absolute top-0 left-1/2 h-full"
               style={{
                 width: '50vw',
-                background: `
-                  linear-gradient(to left, 
-                    #8B4513 0%, #8B4513 20%, 
-                    #D4AF8C 20%, #D4AF8C 22%, 
-                    #654321 22%, #654321 40%,
-                    #D4AF8C 40%, #D4AF8C 42%,
-                    #8B4513 42%, #8B4513 100%
-                  ),
-                  repeating-linear-gradient(
-                    0deg,
-                    #8B4513 0px, #8B4513 16px,
-                    #A0522D 16px, #A0522D 32px
-                  )
-                `,
+                background: '#8B4513',
                 imageRendering: 'pixelated',
                 transform: 'translateX(200px)',
                 position: 'relative'
               }}
             >
+              {/* Stone Texture Pattern */}
+              <div style={{
+                position: 'absolute',
+                top: '0',
+                left: '0',
+                right: '0',
+                bottom: '15%',
+                background: `
+                  repeating-linear-gradient(0deg, #654321 0px, #654321 2px, #8B4513 2px, #8B4513 20px),
+                  repeating-linear-gradient(90deg, #654321 0px, #654321 2px, #8B4513 2px, #8B4513 30px)
+                `,
+                opacity: 0.3
+              }} />
+              
               {/* Mounted Deer Head */}
               <div 
-                className="absolute z-10"
                 style={{
-                  top: '20%',
-                  left: '15%',
-                  width: '60px',
-                  height: '50px',
+                  position: 'absolute',
+                  top: '15%',
+                  left: '8%',
+                  width: '80px',
+                  height: '60px',
                   background: '#8B6914',
-                  borderRadius: '50% 50% 40% 40%',
-                  imageRendering: 'pixelated',
-                  boxShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                  zIndex: 20
                 }}
               >
-                {/* Eyes */}
                 <div style={{
                   position: 'absolute',
-                  top: '15px',
-                  left: '15px',
-                  width: '6px',
-                  height: '6px',
-                  background: '#000',
-                  borderRadius: '50%'
+                  top: '20px',
+                  left: '20px',
+                  width: '8px',
+                  height: '8px',
+                  background: '#000'
                 }} />
                 <div style={{
                   position: 'absolute',
-                  top: '15px',
-                  right: '15px',
-                  width: '6px',
-                  height: '6px',
-                  background: '#000',
-                  borderRadius: '50%'
+                  top: '20px',
+                  right: '20px',
+                  width: '8px',
+                  height: '8px',
+                  background: '#000'
                 }} />
-                {/* Nose */}
                 <div style={{
                   position: 'absolute',
                   bottom: '15px',
                   left: '50%',
-                  width: '8px',
-                  height: '6px',
+                  width: '10px',
+                  height: '8px',
                   background: '#654321',
                   transform: 'translateX(-50%)'
                 }} />
               </div>
               
               {/* Antlers */}
-              <div 
-                className="absolute z-10"
-                style={{
-                  top: '10%',
-                  left: '5%',
-                  width: '12px',
-                  height: '35px',
-                  background: '#A0522D',
-                  transform: 'rotate(-25deg)',
-                  imageRendering: 'pixelated'
-                }}
-              />
-              <div 
-                className="absolute z-10"
-                style={{
-                  top: '10%',
-                  left: '65%',
-                  width: '12px',
-                  height: '35px',
-                  background: '#A0522D',
-                  transform: 'rotate(25deg)',
-                  imageRendering: 'pixelated'
-                }}
-              />
+              <div style={{
+                position: 'absolute',
+                top: '5%',
+                left: '5%',
+                width: '15px',
+                height: '40px',
+                background: '#A0522D',
+                transform: 'rotate(-20deg)',
+                zIndex: 20
+              }} />
+              <div style={{
+                position: 'absolute',
+                top: '5%',
+                left: '75%',
+                width: '15px',
+                height: '40px',
+                background: '#A0522D',
+                transform: 'rotate(20deg)',
+                zIndex: 20
+              }} />
               
               {/* Heraldic Tapestry */}
-              <div 
-                className="absolute z-10"
-                style={{
-                  top: '60%',
-                  left: '20%',
-                  width: '50px',
-                  height: '25px',
-                  background: '#8B0000',
-                  border: '3px solid #654321',
-                  imageRendering: 'pixelated'
-                }}
-              >
-                {/* Gold symbol */}
+              <div style={{
+                position: 'absolute',
+                top: '65%',
+                left: '15%',
+                width: '70px',
+                height: '30px',
+                background: '#8B0000',
+                border: '4px solid #654321',
+                zIndex: 20
+              }}>
                 <div style={{
                   position: 'absolute',
                   top: '50%',
                   left: '50%',
-                  width: '16px',
-                  height: '16px',
+                  width: '20px',
+                  height: '20px',
                   background: '#FFD700',
-                  transform: 'translate(-50%, -50%) rotate(45deg)',
-                  imageRendering: 'pixelated'
+                  transform: 'translate(-50%, -50%) rotate(45deg)'
                 }} />
               </div>
             </div>
