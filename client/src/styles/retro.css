@@ -39,6 +39,50 @@
     animation: none;
     --retro-glow: #ff0080; /* Fixed magenta color */
   }
+  
+  .retro-text-glow {
+    /* Simplified static glow for reduced motion */
+    text-shadow: 
+      /* Dark outline shadows for readability */
+      -1px -1px 0 #000000,
+      1px -1px 0 #000000,
+      -1px 1px 0 #000000,
+      1px 1px 0 #000000,
+      /* Subtle static glow */
+      0 0 8px var(--retro-glow),
+      0 0 16px var(--retro-glow);
+  }
+}
+
+/* High contrast mode support for accessibility */
+@media (prefers-contrast: high) {
+  .retro-text-glow {
+    color: #ffffff !important;
+    background-color: #000000;
+    -webkit-text-stroke: 2px #000000;
+    text-stroke: 2px #000000;
+    text-shadow: 
+      -2px -2px 0 #000000,
+      2px -2px 0 #000000,
+      -2px 2px 0 #000000,
+      2px 2px 0 #000000,
+      0 0 4px #ffffff;
+    padding: 0.2em 0.4em;
+    border: 2px solid #ffffff;
+  }
+}
+
+/* Windows High Contrast Mode */
+@media (forced-colors: active) {
+  .retro-text-glow {
+    color: WindowText !important;
+    background-color: Window;
+    -webkit-text-stroke: none;
+    text-stroke: none;
+    text-shadow: none;
+    border: 2px solid WindowText;
+    padding: 0.2em 0.4em;
+  }
 }
 
 .retro-container {
@@ -129,11 +173,31 @@
 }
 
 .retro-text-glow {
+  /* Base text color with good contrast */
+  color: #ffffff;
+  
+  /* Text outline for readability - creates a dark border */
+  -webkit-text-stroke: 1px #000000;
+  text-stroke: 1px #000000;
+  
+  /* Enhanced multi-layer glow effect */
   text-shadow: 
-    0 0 5px var(--retro-glow),
-    0 0 10px var(--retro-glow),
-    0 0 15px var(--retro-glow);
-  color: var(--retro-glow);
+    /* Dark outline shadows for better definition */
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000,
+    /* Inner glow - closer to text */
+    0 0 3px var(--retro-glow),
+    0 0 6px var(--retro-glow),
+    /* Outer glow - creates the neon effect */
+    0 0 12px var(--retro-glow),
+    0 0 20px var(--retro-glow),
+    0 0 30px var(--retro-glow);
+  
+  /* Improve text rendering */
+  font-weight: bold;
+  letter-spacing: 0.1em;
 }
 
 .retro-pixel-border {
