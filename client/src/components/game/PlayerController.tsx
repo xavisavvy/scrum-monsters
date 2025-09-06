@@ -15,7 +15,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
   const { emit, socket } = useWebSocket();
   const { playHit } = useAudio();
-  const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 50 });
+  const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 100 });
   const [isJumping, setIsJumping] = useState(false);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [bossProjectiles, setBossProjectiles] = useState<Projectile[]>([]);
@@ -26,6 +26,19 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const characterSize = 64;
   const moveSpeed = 5;
   const jumpDuration = 600; // Jump duration in ms
+
+  // Sync player position from server lobby data
+  useEffect(() => {
+    if (currentPlayer && currentLobby?.playerPositions?.[currentPlayer.id]) {
+      const serverPos = currentLobby.playerPositions[currentPlayer.id];
+      // Convert server percentage coordinates (0-100) to pixel coordinates
+      const pixelX = (serverPos.x / 100) * (containerWidth - characterSize);
+      const pixelY = (serverPos.y / 100) * (containerHeight - characterSize - 100); // Keep bottom margin
+      
+      setPlayerPosition({ x: pixelX, y: pixelY });
+      console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${pixelX}px, ${pixelY}px)`);
+    }
+  }, [currentPlayer, currentLobby?.playerPositions, containerWidth, containerHeight, characterSize]);
 
   // Handle keyboard input
   useEffect(() => {

@@ -160,7 +160,7 @@ class GameStateManager {
         }
       },
       playerPositions: {
-        [hostId]: { x: 50, y: 50 }
+        [hostId]: { x: 25, y: 80 }
       },
       timerSettings: {
         enabled: false,
@@ -208,7 +208,12 @@ class GameStateManager {
       hp: 100,
       isDowned: false
     };
-    lobby.playerPositions[playerId] = { x: 50, y: 50 };
+    // Spread new players across the bottom area
+    const playerCount = lobby.players.length;
+    const xSpacing = 80 / Math.max(playerCount, 1); // Spread across 80% of width
+    const baseX = 10; // Start 10% from left edge
+    const playerX = baseX + ((playerCount - 1) * xSpacing);
+    lobby.playerPositions[playerId] = { x: Math.min(playerX, 85), y: 80 }; // Keep within bounds
 
     return { lobby, player };
   }
