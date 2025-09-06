@@ -1,5 +1,6 @@
 import React from 'react';
 import { AVATAR_CLASSES, AvatarClass, CharacterStats } from '@/lib/gameTypes';
+import { getAvatarImage } from '@/lib/avatarImages';
 
 interface CharacterDetailsPanelProps {
   selectedClass: AvatarClass;
@@ -30,6 +31,36 @@ export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelPr
   };
 
   const renderCharacterPortrait = () => {
+    const avatarImage = getAvatarImage(selectedClass);
+    
+    if (avatarImage) {
+      return (
+        <div 
+          className="w-32 h-32 mx-auto mb-4 rounded-lg border-4 overflow-hidden relative"
+          style={{ 
+            borderColor: classData.color,
+            backgroundColor: `${classData.color}15`
+          }}
+        >
+          <img
+            src={avatarImage}
+            alt={selectedClass}
+            className="w-full h-full object-cover"
+            style={{ imageRendering: 'pixelated' }}
+          />
+          
+          {/* Decorative border effect */}
+          <div 
+            className="absolute inset-0 rounded-lg opacity-20 pointer-events-none"
+            style={{ 
+              background: `linear-gradient(45deg, ${classData.color}40, transparent, ${classData.color}40)`
+            }}
+          />
+        </div>
+      );
+    }
+    
+    // Fallback for classes without images
     return (
       <div 
         className="w-32 h-32 mx-auto mb-4 rounded-lg border-4 flex items-center justify-center relative overflow-hidden"

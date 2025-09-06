@@ -5,6 +5,7 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { AVATAR_CLASSES, AvatarClass } from '@/lib/gameTypes';
 import { CharacterDetailsPanel } from './CharacterDetailsPanel';
+import { getAvatarImage } from '@/lib/avatarImages';
 
 export function AvatarSelection() {
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarClass>('warrior');
@@ -17,6 +18,22 @@ export function AvatarSelection() {
 
   const renderAvatarSprite = (avatarClass: AvatarClass) => {
     const { color } = AVATAR_CLASSES[avatarClass];
+    const avatarImage = getAvatarImage(avatarClass);
+    
+    if (avatarImage) {
+      return (
+        <div className="w-16 h-16 mx-auto mb-2 rounded border-2 border-gray-600 overflow-hidden retro-pixel-border">
+          <img
+            src={avatarImage}
+            alt={avatarClass}
+            className="w-full h-full object-cover"
+            style={{ imageRendering: 'pixelated' }}
+          />
+        </div>
+      );
+    }
+    
+    // Fallback for classes without images (like rogue)
     return (
       <div
         className="w-16 h-16 mx-auto mb-2 rounded border-2 border-gray-600 flex items-center justify-center retro-pixel-border"
