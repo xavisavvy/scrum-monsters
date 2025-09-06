@@ -71,8 +71,8 @@ export function ScoreSubmission() {
         </RetroCard>
       )}
 
-      {/* Score Selection */}
-      {currentPlayer.team !== 'spectators' && !hasSubmitted && (
+      {/* Score Selection - Only for developers and QA */}
+      {(currentPlayer.team === 'developers' || currentPlayer.team === 'qa') && !hasSubmitted && (
         <RetroCard title="Submit Your Estimate">
           <div className="space-y-4">
             <p className="text-center text-sm">
@@ -104,6 +104,24 @@ export function ScoreSubmission() {
                 Submit Score: {selectedScore ?? '?'}
               </RetroButton>
             </div>
+          </div>
+        </RetroCard>
+      )}
+
+      {/* Submitted Score Status - Only for developers and QA */}
+      {(currentPlayer.team === 'developers' || currentPlayer.team === 'qa') && hasSubmitted && (
+        <RetroCard title="Estimate Submitted">
+          <div className="text-center space-y-4">
+            <div className="text-2xl">✅</div>
+            <div className="text-lg font-bold text-green-400">
+              Estimate Submitted!
+            </div>
+            <p className="text-sm">
+              Your estimate: <span className="text-yellow-400 font-bold">{selectedScore}</span>
+            </p>
+            <p className="text-xs text-gray-400">
+              Waiting for other team members...
+            </p>
           </div>
         </RetroCard>
       )}
@@ -156,7 +174,7 @@ export function ScoreSubmission() {
             )}
           </div>
 
-          {hasSubmitted && (
+          {(currentPlayer.team === 'developers' || currentPlayer.team === 'qa') && hasSubmitted && (
             <p className="text-center text-green-400 text-sm">
               ✓ Your estimate has been submitted!
             </p>
