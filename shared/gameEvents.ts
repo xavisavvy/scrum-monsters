@@ -133,6 +133,7 @@ export interface ClientToServerEvents {
   lobby_player_jump: (data: { isJumping: boolean }) => void;
   start_battle: () => void;
   submit_score: (data: { score: number | '?' }) => void;
+  update_discussion_vote: (data: { score: number | '?' }) => void;
   attack_boss: (data: { damage: number }) => void;
   proceed_next_level: () => void;
   restart_game: () => void;

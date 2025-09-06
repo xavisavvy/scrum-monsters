@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { BossDisplay } from './BossDisplay';
 import { ScoreSubmission } from './ScoreSubmission';
+import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
@@ -113,6 +114,35 @@ export function BattleScreen() {
                 <p>Calculating team consensus...</p>
               </div>
             </RetroCard>
+          </div>
+        );
+
+      case 'discussion':
+        if (!currentLobby?.boss) return null;
+        return (
+          <div className="relative">
+            {/* Fullscreen Boss Background */}
+            <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
+            
+            {/* UI Overlay */}
+            <div className="relative z-30 min-h-screen flex items-center justify-center p-6">
+              <div className="w-full max-w-6xl bg-black bg-opacity-90 rounded-lg border-2 border-gray-600 p-6" data-no-shoot>
+                <Discussion />
+              </div>
+            </div>
+
+            {/* Timer Display - Top Left */}
+            <TimerDisplay />
+            
+            {/* Boss Music Controls - Top Right */}
+            <div className="absolute top-6 right-6 z-40" data-no-shoot>
+              <BossMusicControls />
+            </div>
+
+            {/* Team Competition Components */}
+            <TeamScoreboard />
+            <TeamPerformanceTracker />
+            <TeamCelebration />
           </div>
         );
 

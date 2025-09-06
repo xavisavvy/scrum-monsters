@@ -257,6 +257,83 @@ class GameStateManager {
     return lobby;
   }
 
+  selectAvatar(playerId: string, avatarClass: AvatarClass): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player) return null;
+
+    player.avatar = avatarClass;
+    player.avatarClass = avatarClass; // Keep both for compatibility
+
+    return lobby;
+  }
+
+  assignTeam(assignerId: string, targetPlayerId: string, team: TeamType): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(assignerId);
+    if (!lobby) return null;
+
+    const assigner = lobby.players.find(p => p.id === assignerId);
+    if (!assigner || !assigner.isHost) return null; // Only host can assign teams
+
+    const targetPlayer = lobby.players.find(p => p.id === targetPlayerId);
+    if (!targetPlayer) return null;
+
+    targetPlayer.team = team;
+    this.updateTeamAssignments(lobby);
+
+    return lobby;
+  }
+
+  changeOwnTeam(playerId: string, team: TeamType): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player) return null;
+
+    player.team = team;
+    this.updateTeamAssignments(lobby);
+
+    return lobby;
+  }
+
+  addTicketsToLobby(playerId: string, tickets: JiraTicket[]): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null; // Only host can add tickets
+
+    lobby.tickets.push(...tickets);
+    return lobby;
+  }
+
+  removeTicketFromLobby(playerId: string, ticketId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null; // Only host can remove tickets
+
+    lobby.tickets = lobby.tickets.filter(t => t.id !== ticketId);
+    return lobby;
+  }
+
+  updateDiscussionVote(playerId: string, score: number | '?'): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby || lobby.gamePhase !== 'discussion') return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player || player.team === 'spectators') return null;
+
+    player.currentScore = score;
+    player.hasSubmittedScore = true;
+
+    return lobby;
+  }
+
   addTickets(playerId: string, tickets: JiraTicket[]): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
