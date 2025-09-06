@@ -313,6 +313,21 @@ function App() {
         return (
           <>
             <CinematicBackground />
+            
+            {/* Back Button */}
+            <div className="absolute top-4 left-4 z-[100]">
+              <RetroButton
+                onClick={() => {
+                  playButtonSelect();
+                  setAppState('landing');
+                }}
+                size="sm"
+                variant="secondary"
+              >
+                ← Back to Home
+              </RetroButton>
+            </div>
+            
             <div className="flex items-center justify-center min-h-screen p-6 relative z-20">
               <div className="retro-card text-center max-w-md w-full">
                 <h1 className="text-4xl font-bold retro-text-glow mb-2">

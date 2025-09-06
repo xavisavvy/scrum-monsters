@@ -21,7 +21,7 @@ export function FeaturesPage({ onBackToHome }: FeaturesPageProps) {
       <CinematicBackground />
       
       {/* Back Button */}
-      <div className="absolute top-4 left-4 z-50">
+      <div className="absolute top-4 left-4 z-[100]">
         <RetroButton
           onClick={handleBackClick}
           size="sm"
