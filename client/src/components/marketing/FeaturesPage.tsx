@@ -6,9 +6,10 @@ import { useAudio } from '@/lib/stores/useAudio';
 
 interface FeaturesPageProps {
   onBackToHome: () => void;
+  onNavigate: (page: 'landing' | 'about' | 'features' | 'pricing' | 'support') => void;
 }
 
-export function FeaturesPage({ onBackToHome }: FeaturesPageProps) {
+export function FeaturesPage({ onBackToHome, onNavigate }: FeaturesPageProps) {
   const { playButtonSelect } = useAudio();
 
   const handleBackClick = () => {
@@ -186,7 +187,7 @@ export function FeaturesPage({ onBackToHome }: FeaturesPageProps) {
         </div>
         
         {/* Footer */}
-        <FooterSection />
+        <FooterSection onNavigate={onNavigate} />
       </div>
     </div>
   );

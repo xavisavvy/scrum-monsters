@@ -6,9 +6,10 @@ import { useAudio } from '@/lib/stores/useAudio';
 
 interface PricingPageProps {
   onBackToHome: () => void;
+  onNavigate: (page: 'landing' | 'about' | 'features' | 'pricing' | 'support') => void;
 }
 
-export function PricingPage({ onBackToHome }: PricingPageProps) {
+export function PricingPage({ onBackToHome, onNavigate }: PricingPageProps) {
   const { playButtonSelect } = useAudio();
 
   const handleBackClick = () => {
@@ -248,7 +249,7 @@ export function PricingPage({ onBackToHome }: PricingPageProps) {
         </div>
         
         {/* Footer */}
-        <FooterSection />
+        <FooterSection onNavigate={onNavigate} />
       </div>
     </div>
   );

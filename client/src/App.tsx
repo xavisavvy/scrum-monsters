@@ -294,27 +294,42 @@ function App() {
     switch (appState) {
       case 'landing':
         return (
-          <LandingPage onStartGame={() => setAppState('menu')} />
+          <LandingPage 
+            onStartGame={() => setAppState('menu')} 
+            onNavigate={(page) => setAppState(page)}
+          />
         );
 
       case 'about':
         return (
-          <AboutPage onBackToHome={() => setAppState('landing')} />
+          <AboutPage 
+            onBackToHome={() => setAppState('landing')} 
+            onNavigate={(page) => setAppState(page)}
+          />
         );
 
       case 'features':
         return (
-          <FeaturesPage onBackToHome={() => setAppState('landing')} />
+          <FeaturesPage 
+            onBackToHome={() => setAppState('landing')} 
+            onNavigate={(page) => setAppState(page)}
+          />
         );
 
       case 'pricing':
         return (
-          <PricingPage onBackToHome={() => setAppState('landing')} />
+          <PricingPage 
+            onBackToHome={() => setAppState('landing')} 
+            onNavigate={(page) => setAppState(page)}
+          />
         );
 
       case 'support':
         return (
-          <SupportPage onBackToHome={() => setAppState('landing')} />
+          <SupportPage 
+            onBackToHome={() => setAppState('landing')} 
+            onNavigate={(page) => setAppState(page)}
+          />
         );
 
       case 'menu':

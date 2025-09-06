@@ -13,9 +13,10 @@ import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_transparent.pn
 
 interface LandingPageProps {
   onStartGame: () => void;
+  onNavigate?: (page: 'landing' | 'about' | 'features' | 'pricing' | 'support') => void;
 }
 
-export function LandingPage({ onStartGame }: LandingPageProps) {
+export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
   const { playButtonSelect } = useAudio();
 
   const handleGetStarted = () => {
@@ -254,7 +255,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         </div>
 
         {/* Footer */}
-        <FooterSection />
+        <FooterSection onNavigate={onNavigate} />
       </div>
     </div>
   );
