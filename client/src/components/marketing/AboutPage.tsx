@@ -53,6 +53,14 @@ export function AboutPage({ onBackToHome }: AboutPageProps) {
               
               <div className="grid md:grid-cols-2 gap-8 items-start">
                 <div>
+                  <div className="mb-6">
+                    <img 
+                      src="/images/victory-1.png" 
+                      alt="Preston Farr" 
+                      className="w-24 h-24 pixelated object-contain"
+                      style={{ imageRendering: 'pixelated' }}
+                    />
+                  </div>
                   <h3 className="text-xl font-bold text-cyan-400 mb-4">Preston Farr</h3>
                   <p className="text-lg text-gray-300 mb-2">Technical Manager of Software Engineering</p>
                   <p className="text-sm text-gray-400 mb-6">Based in Clearfield, Utah</p>
