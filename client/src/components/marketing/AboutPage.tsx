@@ -1,6 +1,7 @@
 import React from 'react';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
+import { FooterSection } from '@/components/marketing/FooterSection';
 import { useAudio } from '@/lib/stores/useAudio';
 
 interface AboutPageProps {
@@ -289,6 +290,9 @@ export function AboutPage({ onBackToHome }: AboutPageProps) {
           </div>
           
         </div>
+        
+        {/* Footer */}
+        <FooterSection />
       </div>
     </div>
   );

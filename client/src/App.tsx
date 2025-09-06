@@ -6,6 +6,9 @@ import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
 import { LandingPage } from '@/components/marketing/LandingPage';
 import { AboutPage } from '@/components/marketing/AboutPage';
+import { FeaturesPage } from '@/components/marketing/FeaturesPage';
+import { PricingPage } from '@/components/marketing/PricingPage';
+import { SupportPage } from '@/components/marketing/SupportPage';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { CheatMenu } from '@/components/ui/CheatMenu';
@@ -15,7 +18,7 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import '@/styles/retro.css';
 
-type AppState = 'landing' | 'about' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
+type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
 
 function App() {
   const [appState, setAppState] = useState<AppState>('landing');
@@ -119,16 +122,23 @@ function App() {
       setAppState('menu');
     } else if (pageParam === 'about') {
       setAppState('about');
+    } else if (pageParam === 'features') {
+      setAppState('features');
+    } else if (pageParam === 'pricing') {
+      setAppState('pricing');
+    } else if (pageParam === 'support') {
+      setAppState('support');
     }
     // Default stays on landing page
   }, []);
 
   // Handle menu music based on app state
   useEffect(() => {
-    if ((appState === 'menu' || appState === 'landing' || appState === 'about') && !isMuted && !isMenuMusicPlaying) {
+    const marketingPages = ['menu', 'landing', 'about', 'features', 'pricing', 'support'];
+    if (marketingPages.includes(appState) && !isMuted && !isMenuMusicPlaying) {
       // Small delay to ensure audio is loaded
       setTimeout(() => fadeInMenuMusic(), 500);
-    } else if (appState !== 'menu' && appState !== 'landing' && appState !== 'about' && isMenuMusicPlaying) {
+    } else if (!marketingPages.includes(appState) && isMenuMusicPlaying) {
       fadeOutMenuMusic();
     }
   }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
@@ -282,6 +292,21 @@ function App() {
       case 'about':
         return (
           <AboutPage onBackToHome={() => setAppState('landing')} />
+        );
+
+      case 'features':
+        return (
+          <FeaturesPage onBackToHome={() => setAppState('landing')} />
+        );
+
+      case 'pricing':
+        return (
+          <PricingPage onBackToHome={() => setAppState('landing')} />
+        );
+
+      case 'support':
+        return (
+          <SupportPage onBackToHome={() => setAppState('landing')} />
         );
 
       case 'menu':
