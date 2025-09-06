@@ -30,8 +30,17 @@ export function Lobby() {
   
   // Movement constants
   const moveSpeed = 3;
-  const characterSize = 60;
+  const characterSize = 64; // Match PlayerController
   const movementAreaRef = React.useRef<HTMLDivElement>(null);
+  
+  // State for dropping avatar animations
+  const [droppingAvatars, setDroppingAvatars] = React.useState<Array<{
+    id: string;
+    avatar: string;
+    x: number;
+    startTime: number;
+  }>>([]);
+  const [doorAnimation, setDoorAnimation] = React.useState({ isOpen: false, isOpening: false });
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
   
@@ -88,25 +97,37 @@ export function Lobby() {
         let direction: SpriteDirection = prev.direction;
         let moving = false;
         
-        // Get actual movement area width from DOM element
-        const movementAreaWidth = movementAreaRef.current?.clientWidth || 1200;
+        // Get movement area width with proper fallback and safety checks
+        const movementArea = movementAreaRef.current;
+        if (!movementArea) return prev; // Don't move if area not available yet
+        
+        const movementAreaWidth = movementArea.clientWidth;
+        if (movementAreaWidth <= characterSize) return prev; // Safety check
+        
+        const maxX = movementAreaWidth - characterSize;
+
+        // Use percent-based movement for consistency across screen sizes
+        const movePercentage = (moveSpeed / maxX) * 100;
+        const currentPercent = (prev.x / maxX) * 100;
 
         // Only allow left/right movement
         if (keys.has('ArrowLeft') || keys.has('KeyA')) {
-          newX = Math.max(0, prev.x - moveSpeed);
+          const newPercent = Math.max(0, currentPercent - movePercentage);
+          newX = (newPercent / 100) * maxX;
           direction = 'left';
           moving = true;
         }
         if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          newX = Math.min(movementAreaWidth - characterSize, prev.x + moveSpeed);
+          const newPercent = Math.min(100, currentPercent + movePercentage);
+          newX = (newPercent / 100) * maxX;
           direction = 'right';
           moving = true;
         }
 
         // Emit position to server for other players to see
         if (moving) {
-          const percentX = (newX / (movementAreaWidth - characterSize)) * 100;
-          emit('lobby_player_pos', { x: percentX, y: 85, direction }); // y: 85% to put players at bottom
+          const percentX = (newX / maxX) * 100;
+          emit('lobby_player_pos', { x: percentX, y: 85, direction });
         }
 
         return { x: newX, direction };
@@ -125,13 +146,16 @@ export function Lobby() {
       if (playerId === currentPlayer?.id) return; // Skip own updates
 
       setPlayerPositions(prev => {
-        // Get actual movement area width from DOM element
-        const movementAreaWidth = movementAreaRef.current?.clientWidth || 1200;
+        const movementArea = movementAreaRef.current;
+        if (!movementArea) return prev;
+        
+        const movementAreaWidth = movementArea.clientWidth;
+        const maxX = Math.max(0, movementAreaWidth - characterSize);
         
         return {
           ...prev,
           [playerId]: {
-            x: (x / 100) * (movementAreaWidth - characterSize),
+            x: Math.max(0, Math.min(maxX, (x / 100) * maxX)),
             direction: direction || 'right',
             isMoving: true
           }
@@ -139,10 +163,43 @@ export function Lobby() {
       });
     };
 
+    // Handle new player joining - trigger dropping avatar animation
+    const handlePlayerJoined = ({ player }: { player: any }) => {
+      if (player.id === currentPlayer?.id) return; // Skip own joins
+      
+      // Trigger door opening animation
+      setDoorAnimation({ isOpen: false, isOpening: true });
+      
+      // After door opens, drop the avatar
+      setTimeout(() => {
+        setDoorAnimation({ isOpen: true, isOpening: false });
+        
+        const dropX = Math.random() * 60 + 20; // Random position between 20-80%
+        setDroppingAvatars(prev => [...prev, {
+          id: player.id,
+          avatar: player.avatarClass || 'warrior',
+          x: dropX,
+          startTime: Date.now()
+        }]);
+        
+        // Close door after avatar drops
+        setTimeout(() => {
+          setDoorAnimation({ isOpen: false, isOpening: false });
+        }, 800);
+        
+        // Remove dropping animation after 2 seconds
+        setTimeout(() => {
+          setDroppingAvatars(prev => prev.filter(a => a.id !== player.id));
+        }, 2000);
+      }, 300);
+    };
+
     socket.on('lobby_player_pos', handleLobbyPlayerPos);
+    socket.on('player_joined', handlePlayerJoined);
 
     return () => {
       socket.off('lobby_player_pos', handleLobbyPlayerPos);
+      socket.off('player_joined', handlePlayerJoined);
     };
   }, [socket, currentLobby?.gamePhase, currentPlayer?.id]);
 
@@ -581,6 +638,58 @@ export function Lobby() {
             ref={movementAreaRef}
             className="absolute bottom-4 left-0 right-0 h-24 overflow-hidden"
           >
+            {/* Pixelated Door Animation (Center Top) */}
+            <div 
+              className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20"
+              style={{ 
+                width: '80px', 
+                height: '60px',
+                background: doorAnimation.isOpen || doorAnimation.isOpening 
+                  ? 'linear-gradient(45deg, #4a5568 25%, transparent 25%, transparent 75%, #4a5568 75%), linear-gradient(45deg, #4a5568 25%, transparent 25%, transparent 75%, #4a5568 75%)'
+                  : '#2d3748',
+                backgroundSize: doorAnimation.isOpen || doorAnimation.isOpening ? '8px 8px' : '0px 0px',
+                backgroundPosition: '0 0, 4px 4px',
+                border: '2px solid #1a202c',
+                borderRadius: '4px',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                transform: `translateX(-50%) ${doorAnimation.isOpening ? 'scaleY(1.1)' : 'scaleY(1)'}`,
+                filter: doorAnimation.isOpen ? 'brightness(1.2)' : 'brightness(0.8)'
+              }}
+            >
+              {(doorAnimation.isOpen || doorAnimation.isOpening) && (
+                <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/20 to-cyan-500/40 animate-pulse" />
+              )}
+            </div>
+            
+            {/* Dropping Avatars */}
+            {droppingAvatars.map(avatar => {
+              const elapsed = Date.now() - avatar.startTime;
+              const progress = Math.min(elapsed / 1500, 1); // 1.5 second drop
+              const dropY = -80 + (progress * 100); // Start above door, drop to bottom
+              const bounce = progress > 0.8 ? Math.sin((progress - 0.8) * 20) * 5 : 0;
+              
+              return (
+                <div
+                  key={`dropping-${avatar.id}`}
+                  className="absolute z-10 transition-all duration-100"
+                  style={{
+                    left: `${avatar.x}%`,
+                    bottom: `${-dropY + bounce}px`,
+                    transform: 'translateX(-50%)',
+                    opacity: progress < 0.9 ? 1 : 1 - ((progress - 0.9) / 0.1),
+                    filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))'
+                  }}
+                >
+                  <SpriteRenderer
+                    avatarClass={avatar.avatar as any}
+                    animation="idle"
+                    direction="right"
+                    size={characterSize}
+                  />
+                </div>
+              );
+            })}
+            
             {/* My Player Character */}
             {currentPlayer && (
               <div

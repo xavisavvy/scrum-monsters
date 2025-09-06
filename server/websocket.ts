@@ -66,6 +66,10 @@ export function setupWebSocket(httpServer: HTTPServer) {
         socket.join(lobby.id);
         
         socket.emit('lobby_joined', { lobby, player });
+        
+        // Notify other players about the new player joining (for dropping animation)
+        socket.to(lobby.id).emit('player_joined', { player, lobby });
+        
         socket.to(lobby.id).emit('lobby_updated', { lobby });
         
         console.log(`Player ${playerName} joined lobby ${lobbyId}`);
