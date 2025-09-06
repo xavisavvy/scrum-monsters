@@ -221,17 +221,18 @@ export function PlayerController({}: PlayerControllerProps) {
     const handlePlayersPos = ({ positions }) => {
       if (!currentPlayer || !positions) return;
       
-      // Convert server percentage positions to pixel positions for all other players
+      // Convert server percentage positions to screen coordinates for all other players
       const otherPositions: Record<string, { x: number; y: number }> = {};
       
       Object.entries(positions).forEach(([playerId, serverPos]) => {
         // Skip our own position
         if (playerId === currentPlayer.id) return;
         
-        const pixelX = ((serverPos as any).x / 100) * (containerWidth - characterSize);
-        const pixelY = ((serverPos as any).y / 100) * (containerHeight - characterSize - 100);
+        const worldX = ((serverPos as any).x / 100) * viewport.worldWidth;
+        const worldY = ((serverPos as any).y / 100) * viewport.worldHeight;
+        const screenPos = viewport.worldToScreen(worldX, worldY);
         
-        otherPositions[playerId] = { x: pixelX, y: pixelY };
+        otherPositions[playerId] = { x: screenPos.x, y: screenPos.y };
       });
       
       setOtherPlayersPositions(otherPositions);
@@ -241,18 +242,18 @@ export function PlayerController({}: PlayerControllerProps) {
     const handlePlayerProjectileFired = ({ playerId, playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }) => {
       if (playerId === currentPlayer?.id) return; // Skip own projectiles
       
-      // Convert percentage coordinates to pixel coordinates
-      const pixelStartX = (startX / 100) * containerWidth;
-      const pixelStartY = (startY / 100) * containerHeight;
-      const pixelTargetX = (targetX / 100) * containerWidth;
-      const pixelTargetY = (targetY / 100) * containerHeight;
+      // Convert percentage coordinates to world coordinates, then to screen coordinates
+      const startWorld = { x: (startX / 100) * viewport.worldWidth, y: (startY / 100) * viewport.worldHeight };
+      const targetWorld = { x: (targetX / 100) * viewport.worldWidth, y: (targetY / 100) * viewport.worldHeight };
+      const startScreen = viewport.worldToScreen(startWorld.x, startWorld.y);
+      const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
       
       const newProjectile = {
         id: projectileId,
-        startX: pixelStartX,
-        startY: pixelStartY,
-        targetX: pixelTargetX,
-        targetY: pixelTargetY,
+        startX: startScreen.x,
+        startY: startScreen.y,
+        targetX: targetScreen.x,
+        targetY: targetScreen.y,
         emoji,
         targetPlayerId,
         progress: 0
@@ -272,7 +273,7 @@ export function PlayerController({}: PlayerControllerProps) {
       socket.off('players_pos', handlePlayersPos);
       socket.off('player_projectile_fired', handlePlayerProjectileFired);
     };
-  }, [socket, containerWidth, containerHeight, characterSize, currentPlayer?.id]);
+  }, [socket, viewport, characterSize, currentPlayer?.id]);
 
   useEffect(() => {
     const movePlayer = () => {
@@ -288,12 +289,12 @@ export function PlayerController({}: PlayerControllerProps) {
           moving = true;
         }
         if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          newX = Math.min(containerWidth - characterSize, prev.x + moveSpeed);
+          newX = Math.min(viewport.viewportWidth - characterSize, prev.x + moveSpeed);
           direction = 'right';
           moving = true;
         }
         if (keys.has('ArrowUp') || keys.has('KeyW')) {
-          newY = Math.min(containerHeight - characterSize - 100, prev.y + moveSpeed); // Keep some bottom margin
+          newY = Math.min(viewport.viewportHeight - characterSize - 100, prev.y + moveSpeed); // Keep some bottom margin
           direction = 'up';
           moving = true;
         }
