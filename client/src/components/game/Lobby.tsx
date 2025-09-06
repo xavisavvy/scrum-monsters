@@ -765,21 +765,60 @@ export function Lobby() {
           className="fixed bottom-0 left-0 right-0 h-40 overflow-hidden"
           style={{ zIndex: 1 }}
         >
-          {/* Layer 1: Tavern Background (Furthest Back) */}
+          {/* Layer 1: Pixel Art Tavern Background (Furthest Back) */}
           <div className="absolute inset-0" style={{ zIndex: 1 }}>
-            <Canvas
-              camera={{ position: [0, 2, 10], fov: 50 }}
-              style={{ width: '100%', height: '100%' }}
-              gl={{ antialias: true, alpha: true }}
-            >
-              <ambientLight intensity={0.3} />
-              <directionalLight position={[5, 5, 5]} intensity={0.8} />
-              <pointLight position={[-5, 3, 0]} intensity={1} color="#ff6600" />
-              <pointLight position={[5, 3, 0]} intensity={1} color="#ff6600" />
-              <Suspense fallback={null}>
-                <TavernBackground />
-              </Suspense>
-            </Canvas>
+            {/* Center Door Section */}
+            <div 
+              className="absolute top-0 left-1/2 transform -translate-x-1/2 h-full"
+              style={{
+                width: '400px', // Approximate width of the center image
+                backgroundImage: 'url(/textures/tavern/center.png)',
+                backgroundSize: 'cover',
+                backgroundPosition: 'center',
+                backgroundRepeat: 'no-repeat',
+                imageRendering: 'pixelated'
+              }}
+            />
+            
+            {/* Left Extension - Repeating Pattern */}
+            <div 
+              className="absolute top-0 right-1/2 h-full"
+              style={{
+                width: '50vw',
+                backgroundImage: 'url(/textures/tavern/center.png)',
+                backgroundSize: '200px 100%',
+                backgroundPosition: 'right',
+                backgroundRepeat: 'repeat-x',
+                imageRendering: 'pixelated',
+                transform: 'translateX(-200px)', // Offset to seamlessly connect
+                filter: 'hue-rotate(10deg) brightness(0.9)' // Subtle variation
+              }}
+            />
+            
+            {/* Right Extension - Repeating Pattern */}
+            <div 
+              className="absolute top-0 left-1/2 h-full"
+              style={{
+                width: '50vw',
+                backgroundImage: 'url(/textures/tavern/center.png)',
+                backgroundSize: '200px 100%',
+                backgroundPosition: 'left',
+                backgroundRepeat: 'repeat-x',
+                imageRendering: 'pixelated',
+                transform: 'translateX(200px)', // Offset to seamlessly connect
+                filter: 'hue-rotate(-10deg) brightness(0.9)' // Subtle variation
+              }}
+            />
+            
+            {/* Wooden Floor Extension */}
+            <div 
+              className="absolute bottom-0 left-0 right-0"
+              style={{
+                height: '30%',
+                background: 'repeating-linear-gradient(90deg, #8B4513 0px, #8B4513 8px, #A0522D 8px, #A0522D 16px)',
+                imageRendering: 'pixelated'
+              }}
+            />
           </div>
           
           {/* Layer 2: Particle Lighting Effects */}
@@ -909,19 +948,23 @@ export function Lobby() {
           </div>
           </div>
           
-          {/* Layer 4: Foreground Furniture */}
+          {/* Layer 4: Pixel Art Foreground Elements */}
           <div className="absolute inset-0" style={{ zIndex: 15 }}>
-            <Canvas
-              camera={{ position: [0, 1, 6], fov: 50 }}
-              style={{ width: '100%', height: '100%' }}
-              gl={{ antialias: true, alpha: true }}
-            >
-              <ambientLight intensity={0.4} />
-              <directionalLight position={[5, 5, 5]} intensity={0.6} />
-              <Suspense fallback={null}>
-                <TavernFurniture />
-              </Suspense>
-            </Canvas>
+            {/* Simple pixel art shadows and depth elements */}
+            <div 
+              className="absolute bottom-8 left-1/4 w-16 h-8 opacity-30"
+              style={{
+                background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
+                imageRendering: 'pixelated'
+              }}
+            />
+            <div 
+              className="absolute bottom-8 right-1/4 w-20 h-10 opacity-30"
+              style={{
+                background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
+                imageRendering: 'pixelated'
+              }}
+            />
           </div>
         </div>
       )}
