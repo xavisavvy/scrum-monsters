@@ -18,6 +18,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 50 });
   const [isJumping, setIsJumping] = useState(false);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
+  const [bossProjectiles, setBossProjectiles] = useState<Projectile[]>([]);
   const [keys, setKeys] = useState<Set<string>>(new Set());
   const [showDebugModal, setShowDebugModal] = useState(false);
 
@@ -133,6 +134,32 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   }, [isJumping, jumpDuration, currentPlayer, containerWidth, containerHeight, playerPosition, characterSize]);
 
   // Handle movement based on pressed keys
+  // Boss ring attack WebSocket listener
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on('boss_ring_attack', ({ bossX, bossY, projectiles: ringProjectiles }) => {
+      console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
+      
+      // Convert percentage coordinates to pixel coordinates and add to boss projectiles
+      const convertedProjectiles = ringProjectiles.map(proj => ({
+        id: proj.id,
+        startX: (bossX / 100) * containerWidth,
+        startY: (bossY / 100) * containerHeight,
+        targetX: (proj.targetX / 100) * containerWidth,
+        targetY: (proj.targetY / 100) * containerHeight,
+        progress: 0,
+        emoji: proj.emoji
+      }));
+      
+      setBossProjectiles(convertedProjectiles);
+    });
+
+    return () => {
+      socket.off('boss_ring_attack');
+    };
+  }, [socket, containerWidth, containerHeight]);
+
   useEffect(() => {
     const movePlayer = () => {
       setPlayerPosition(prev => {
@@ -276,6 +303,49 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     return nearestPlayer;
   }, [currentLobby, currentPlayer, playerPosition]);
 
+  // Boss projectile collision handler
+  const handleBossProjectileComplete = useCallback((projectile: Projectile) => {
+    // Remove the boss projectile
+    setBossProjectiles(prev => prev.filter(p => p.id !== projectile.id));
+    
+    if (!currentPlayer) return;
+    
+    // Check if boss projectile hits any player (including current player)
+    const currentPlayerPos = {
+      x: playerPosition.x + characterSize / 2,
+      y: containerHeight - (playerPosition.y + characterSize / 2)
+    };
+    
+    // Check collision with projectile target
+    const distance = Math.sqrt(
+      Math.pow(currentPlayerPos.x - projectile.targetX, 2) + 
+      Math.pow(currentPlayerPos.y - projectile.targetY, 2)
+    );
+    
+    // If hit (within 30 pixels)
+    if (distance < 30) {
+      const damage = Math.floor(Math.random() * 3) + 2; // 2-4 damage
+      
+      // Play hit sound
+      playHit();
+      
+      // Add attack animation
+      addAttackAnimation({
+        id: projectile.id,
+        playerId: 'boss',
+        damage,
+        timestamp: Date.now(),
+        x: projectile.targetX,
+        y: projectile.targetY
+      });
+      
+      // Emit boss damage to server
+      emit('boss_damage_player', { playerId: currentPlayer.id, damage });
+      
+      console.log(`💀 Boss ring attack hit ${currentPlayer.name} for ${damage} damage!`);
+    }
+  }, [currentPlayer, playerPosition, characterSize, containerHeight, playHit, addAttackAnimation, emit]);
+
   const handleProjectileComplete = useCallback((projectile: Projectile) => {
     // Remove the projectile from the list
     setProjectiles(prev => prev.filter(p => p.id !== projectile.id));
@@ -374,6 +444,12 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       <ProjectileSystem
         projectiles={projectiles}
         onProjectileComplete={handleProjectileComplete}
+      />
+      
+      {/* Boss Ring Attack Projectiles */}
+      <ProjectileSystem
+        projectiles={bossProjectiles}
+        onProjectileComplete={handleBossProjectileComplete}
       />
       
       {/* Movement Instructions */}

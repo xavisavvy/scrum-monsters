@@ -165,9 +165,37 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       const result = gameState.attackBoss(playerId, damage);
       if (result) {
-        const { lobby, bossHealth } = result;
+        const { lobby, bossHealth, ringAttack } = result;
         io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
+        
+        // If boss performs ring attack, broadcast it
+        if (ringAttack) {
+          io.to(lobby.id).emit('boss_ring_attack', ringAttack);
+        }
+        
         // Send updated lobby state so clients get the new boss health
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+    
+    // Boss damage to player
+    socket.on('boss_damage_player', ({ playerId, damage }: { playerId: string; damage: number }) => {
+      const attackerId = socket.data.playerId;
+      if (!attackerId) return;
+
+      const result = gameState.bossDamagePlayer(playerId, damage);
+      if (result) {
+        const { lobby, targetHealth } = result;
+        
+        // Broadcast boss damage to room
+        io.to(lobby.id).emit('player_attacked', { 
+          attackerId: 'boss', 
+          targetId: playerId, 
+          damage, 
+          targetHealth 
+        });
+        
+        // Update lobby state
         io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });

@@ -207,6 +207,11 @@ function App() {
       console.log(`Player ${playerId} disconnected`);
     });
 
+    socket.on('boss_ring_attack', ({ bossX, bossY, projectiles }) => {
+      console.log('💀 Boss ring attack received!', projectiles.length, 'projectiles');
+      // Handle boss ring attack visual effects
+    });
+
     socket.on('youtube_play_synced', ({ videoId, url }) => {
       console.log('🎵 YouTube music synced:', url);
       const { setYoutubeUrl, playYoutubeAudio } = useAudio.getState();

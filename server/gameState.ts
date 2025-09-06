@@ -493,14 +493,54 @@ class GameStateManager {
     this.playerPerformanceMap.delete(lobby.id);
   }
 
-  attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number } | null {
+  attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
 
     // Cosmetic damage during voting phase
     lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - damage);
     
+    // Check if boss should perform ring attack (25% chance, max once per 8 seconds)
+    const now = Date.now();
+    const shouldRingAttack = Math.random() < 0.25 && 
+                            (!lobby.boss.lastRingAttack || now - lobby.boss.lastRingAttack > 8000);
+    
+    if (shouldRingAttack) {
+      lobby.boss.lastRingAttack = now;
+      const ringAttack = this.createBossRingAttack();
+      console.log('💀 Boss performs ring attack!');
+      return { lobby, bossHealth: lobby.boss.currentHealth, ringAttack };
+    }
+    
     return { lobby, bossHealth: lobby.boss.currentHealth };
+  }
+
+  private createBossRingAttack() {
+    // Boss position (center of screen)
+    const bossX = 50; // 50% of screen width
+    const bossY = 40; // 40% of screen height
+    
+    // Create 12 projectiles in a ring pattern
+    const projectiles = [];
+    const numProjectiles = 12;
+    const radius = 15; // Percentage of screen
+    
+    for (let i = 0; i < numProjectiles; i++) {
+      const angle = (i / numProjectiles) * 2 * Math.PI;
+      const targetX = bossX + Math.cos(angle) * radius;
+      const targetY = bossY + Math.sin(angle) * radius;
+      
+      projectiles.push({
+        id: Math.random().toString(36).substring(2, 15),
+        x: bossX,
+        y: bossY,
+        targetX,
+        targetY,
+        emoji: '💥'
+      });
+    }
+    
+    return { bossX, bossY, projectiles };
   }
 
   proceedNextLevel(playerId: string): Lobby | null {
@@ -534,6 +574,32 @@ class GameStateManager {
     
     // Use the same reveal logic as normal reveal
     return this.revealScores(lobby.id);
+  }
+
+  bossDamagePlayer(playerId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const targetCombatState = lobby.playerCombatStates[playerId];
+    if (!targetCombatState || targetCombatState.isDowned) return null;
+    
+    // Check jumping invincibility (same as player attacks)
+    if (targetCombatState.isJumping) {
+      console.log(`🛡️ ${playerId} is jumping - invincible to boss damage!`);
+      return null;
+    }
+
+    // Apply boss damage (2-4 damage)
+    const actualDamage = Math.max(2, Math.min(4, damage));
+    targetCombatState.hp = Math.max(0, targetCombatState.hp - actualDamage);
+    targetCombatState.lastDamagedBy = 'boss';
+    
+    if (targetCombatState.hp <= 0) {
+      targetCombatState.isDowned = true;
+    }
+
+    console.log(`💀 Boss hit ${playerId} for ${actualDamage} damage! HP: ${targetCombatState.hp}`);
+    return { lobby, targetHealth: targetCombatState.hp };
   }
 
   setPlayerJumping(playerId: string, isJumping: boolean): Lobby | null {

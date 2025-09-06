@@ -90,6 +90,7 @@ export interface Boss {
   maxPhases: number;
   sprite: string;
   defeated: boolean;
+  lastRingAttack?: number;
 }
 
 export type GamePhase = 'lobby' | 'avatar_selection' | 'battle' | 'scoring' | 'reveal' | 'victory' | 'next_level';
@@ -127,6 +128,7 @@ export interface ClientToServerEvents {
   revive_cancel: (data: { targetId: string }) => void;
   revive_tick: (data: { targetId: string }) => void;
   player_jump: (data: { isJumping: boolean }) => void;
+  boss_damage_player: (data: { playerId: string; damage: number }) => void;
 }
 
 export interface TeamScores {
@@ -160,6 +162,18 @@ export interface ServerToClientEvents {
   revive_progress: (data: { targetId: string; reviverId: string; progress: number }) => void;
   revive_complete: (data: { targetId: string; reviverId: string }) => void;
   revive_cancelled: (data: { targetId: string; reviverId: string }) => void;
+  boss_ring_attack: (data: { 
+    bossX: number; 
+    bossY: number; 
+    projectiles: Array<{ 
+      id: string; 
+      x: number; 
+      y: number; 
+      targetX: number; 
+      targetY: number; 
+      emoji: string; 
+    }> 
+  }) => void;
 }
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
