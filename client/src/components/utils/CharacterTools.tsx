@@ -57,6 +57,11 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
   const [animationSpeed, setAnimationSpeed] = useState(200);
   const [currentRow, setCurrentRow] = useState(0);
   const [frameCount, setFrameCount] = useState(4);
+  
+  // Scale and positioning controls
+  const [spriteScale, setSpriteScale] = useState(1.0);
+  const [offsetX, setOffsetX] = useState(0);
+  const [offsetY, setOffsetY] = useState(0);
 
   useEffect(() => {
     const config = spriteConfig.animations[selectedAnimation];
@@ -119,15 +124,23 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
               {/* Large character display */}
               <div className="flex justify-center mb-6">
                 <div 
-                  className="bg-gray-800 rounded-lg p-8 relative"
+                  className="bg-gray-800 rounded-lg p-12 relative overflow-hidden"
                   style={{ 
+                    width: '280px',
+                    height: '280px',
                     backgroundImage: showingGrid ? 
                       'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)' : 
                       'none',
                     backgroundSize: showingGrid ? '20px 20px' : 'none'
                   }}
                 >
-                  <div style={{ transform: 'scale(3)' }}>
+                  <div 
+                    className="absolute left-1/2 top-1/2"
+                    style={{ 
+                      transform: `translate(-50%, -50%) translate(${offsetX}px, ${offsetY}px) scale(${spriteScale * 3})`,
+                      transformOrigin: 'center center'
+                    }}
+                  >
                     <SpriteRenderer
                       avatarClass={selectedAvatarClass}
                       animation={selectedAnimation}
@@ -136,6 +149,10 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                       size={1}
                     />
                   </div>
+                  
+                  {/* Center crosshair */}
+                  <div className="absolute left-1/2 top-1/2 w-0.5 h-8 bg-red-500/50 transform -translate-x-0.5 -translate-y-4"></div>
+                  <div className="absolute left-1/2 top-1/2 w-8 h-0.5 bg-red-500/50 transform -translate-x-4 -translate-y-0.5"></div>
                 </div>
               </div>
 
@@ -217,9 +234,62 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
             <RetroCard className="mb-6">
               <h2 className="text-xl font-bold mb-4 retro-text-glow-light">Animation Settings</h2>
               
+              {/* Scale Control */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" title="Adjust overall sprite size - use this to prevent cutoff">
+                  Scale: {spriteScale.toFixed(2)}x
+                </label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2.0"
+                  step="0.05"
+                  value={spriteScale}
+                  onChange={(e) => setSpriteScale(parseFloat(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-400 mt-1">Shrink sprite if bottom/sides are cut off</p>
+              </div>
+
+              {/* Position Offset X */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" title="Move sprite left/right to fix centering">
+                  X Offset: {offsetX}px
+                </label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="1"
+                  value={offsetX}
+                  onChange={(e) => setOffsetX(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-400 mt-1">Adjust horizontal position</p>
+              </div>
+
+              {/* Position Offset Y */}
+              <div className="mb-4">
+                <label className="block text-sm font-medium mb-2" title="Move sprite up/down to fix vertical alignment">
+                  Y Offset: {offsetY}px
+                </label>
+                <input
+                  type="range"
+                  min="-50"
+                  max="50"
+                  step="1"
+                  value={offsetY}
+                  onChange={(e) => setOffsetY(parseInt(e.target.value))}
+                  className="w-full"
+                />
+                <p className="text-xs text-gray-400 mt-1">Adjust vertical position (+ moves down)</p>
+              </div>
+
               {/* Animation speed */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Animation Speed (ms): {animationSpeed}</label>
+                <label className="block text-sm font-medium mb-2" title="How fast the animation plays">
+                  Animation Speed: {animationSpeed}ms
+                </label>
                 <input
                   type="range"
                   min="50"
@@ -233,11 +303,14 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   }}
                   className="w-full"
                 />
+                <p className="text-xs text-gray-400 mt-1">Lower = faster animation</p>
               </div>
 
               {/* Row selection */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Sprite Sheet Row: {currentRow}</label>
+                <label className="block text-sm font-medium mb-2" title="Which row of the sprite sheet to use (0=top, 3=bottom)">
+                  Sprite Sheet Row: {currentRow}
+                </label>
                 <input
                   type="range"
                   min="0"
@@ -251,11 +324,14 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   }}
                   className="w-full"
                 />
+                <p className="text-xs text-gray-400 mt-1">Row 0=down, 1=left, 2=right, 3=up directions</p>
               </div>
 
               {/* Frame count */}
               <div className="mb-4">
-                <label className="block text-sm font-medium mb-2">Frame Count: {frameCount}</label>
+                <label className="block text-sm font-medium mb-2" title="How many frames to use from the sprite sheet">
+                  Frame Count: {frameCount}
+                </label>
                 <input
                   type="range"
                   min="1"
@@ -269,6 +345,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   }}
                   className="w-full"
                 />
+                <p className="text-xs text-gray-400 mt-1">Use fewer frames for static poses</p>
               </div>
 
               {/* Loop toggle */}
@@ -285,6 +362,35 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                 </RetroButton>
               </div>
 
+              {/* Reset Controls */}
+              <div className="mb-4">
+                <h3 className="text-lg font-bold mb-2">Quick Fixes:</h3>
+                <div className="grid grid-cols-2 gap-2 mb-2">
+                  <RetroButton
+                    onClick={() => {
+                      setSpriteScale(0.85);
+                      setOffsetY(5);
+                      setOffsetX(0);
+                    }}
+                    size="sm"
+                    variant="accent"
+                  >
+                    Fix Cutoff
+                  </RetroButton>
+                  <RetroButton
+                    onClick={() => {
+                      setSpriteScale(1.0);
+                      setOffsetY(0);
+                      setOffsetX(0);
+                    }}
+                    size="sm"
+                    variant="secondary"
+                  >
+                    Reset Position
+                  </RetroButton>
+                </div>
+              </div>
+
               {/* Quick animation test buttons */}
               <div className="mb-4">
                 <h3 className="text-lg font-bold mb-2">Quick Tests:</h3>
@@ -296,7 +402,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                     }}
                     size="sm"
                   >
-                    Test Walk
+                    Walk Cycle
                   </RetroButton>
                   <RetroButton
                     onClick={() => {
@@ -305,7 +411,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                     }}
                     size="sm"
                   >
-                    Test Attack
+                    Attack
                   </RetroButton>
                   <RetroButton
                     onClick={() => {
@@ -314,16 +420,16 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                     }}
                     size="sm"
                   >
-                    Test Cast
+                    Cast Spell
                   </RetroButton>
                   <RetroButton
                     onClick={() => {
-                      setSelectedAnimation('death');
+                      setSelectedAnimation('idle');
                       setIsMoving(false);
                     }}
                     size="sm"
                   >
-                    Test Death
+                    Idle Pose
                   </RetroButton>
                 </div>
               </div>
@@ -394,10 +500,40 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
 
             {/* Current config display */}
             <RetroCard>
-              <h3 className="text-lg font-bold mb-2">Current Animation Config:</h3>
-              <pre className="text-xs bg-gray-800 p-2 rounded overflow-auto max-h-32">
-                {JSON.stringify(spriteConfig.animations[selectedAnimation], null, 2)}
-              </pre>
+              <h3 className="text-lg font-bold mb-2">Current Settings:</h3>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span>Animation:</span>
+                  <span className="text-cyan-400">{selectedAnimation}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Direction:</span>
+                  <span className="text-cyan-400">{selectedDirection}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Scale:</span>
+                  <span className="text-cyan-400">{spriteScale.toFixed(2)}x</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Offset:</span>
+                  <span className="text-cyan-400">{offsetX}, {offsetY}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Speed:</span>
+                  <span className="text-cyan-400">{animationSpeed}ms</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Frames:</span>
+                  <span className="text-cyan-400">{frameCount}</span>
+                </div>
+              </div>
+              
+              <div className="mt-4 pt-3 border-t border-gray-600">
+                <h4 className="text-sm font-bold mb-2">Animation Config:</h4>
+                <pre className="text-xs bg-gray-800 p-2 rounded overflow-auto max-h-24">
+                  {JSON.stringify(spriteConfig.animations[selectedAnimation], null, 2)}
+                </pre>
+              </div>
             </RetroCard>
           </div>
         </div>
