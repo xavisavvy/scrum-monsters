@@ -103,11 +103,36 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
-    socket.on('start_battle', ({ tickets }) => {
+    socket.on('add_tickets', ({ tickets }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const result = gameState.startBattle(playerId, tickets);
+      const lobby = gameState.addTicketsToLobby(playerId, tickets);
+      if (lobby) {
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
+      }
+    });
+
+    socket.on('remove_ticket', ({ ticketId }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.removeTicketFromLobby(playerId, ticketId);
+      if (lobby) {
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
+      }
+    });
+
+    socket.on('start_battle', () => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.getLobbyByPlayerId(playerId);
+      if (!lobby) return;
+
+      const result = gameState.startBattle(playerId, lobby.tickets);
       if (result) {
         const { lobby, boss } = result;
         

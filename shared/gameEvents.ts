@@ -120,7 +120,9 @@ export interface ClientToServerEvents {
   select_avatar: (data: { avatarClass: AvatarClass }) => void;
   assign_team: (data: { playerId: string; team: TeamType }) => void;
   change_own_team: (data: { team: TeamType }) => void;
-  start_battle: (data: { tickets: JiraTicket[] }) => void;
+  add_tickets: (data: { tickets: JiraTicket[] }) => void;
+  remove_ticket: (data: { ticketId: string }) => void;
+  start_battle: () => void;
   submit_score: (data: { score: number | '?' }) => void;
   attack_boss: (data: { damage: number }) => void;
   proceed_next_level: () => void;

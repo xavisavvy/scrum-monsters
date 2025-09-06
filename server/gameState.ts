@@ -285,6 +285,42 @@ class GameStateManager {
     return lobby;
   }
 
+  addTicketsToLobby(playerId: string, tickets: JiraTicket[]): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    // Only allow adding tickets during lobby phase
+    if (lobby.gamePhase !== 'lobby') return null;
+
+    // Filter out duplicates (case-insensitive)
+    const existingTitles = new Set(lobby.tickets.map(t => t.title.toLowerCase()));
+    const uniqueTickets = tickets.filter(ticket => !existingTitles.has(ticket.title.toLowerCase()));
+
+    // Add new unique tickets
+    lobby.tickets.push(...uniqueTickets);
+    
+    return lobby;
+  }
+
+  removeTicketFromLobby(playerId: string, ticketId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    // Only allow removing tickets during lobby phase
+    if (lobby.gamePhase !== 'lobby') return null;
+
+    // Remove the ticket
+    lobby.tickets = lobby.tickets.filter(ticket => ticket.id !== ticketId);
+    
+    return lobby;
+  }
+
   startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss; timerState?: TimerState } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;

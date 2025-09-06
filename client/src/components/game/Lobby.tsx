@@ -7,12 +7,14 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings } from '@/lib/gameTypes';
 
 export function Lobby() {
-  const [tickets, setTickets] = useState<JiraTicket[]>([]);
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
+
+  // Use tickets from server state instead of local state
+  const tickets = currentLobby?.tickets || [];
 
   const isHost = currentPlayer?.isHost;
 
@@ -28,28 +30,26 @@ export function Lobby() {
     // Don't proceed if no valid tickets parsed
     if (ticketTitles.length === 0) return;
     
-    // Filter out duplicates (case-insensitive)
-    const existingTitles = new Set(tickets.map(t => t.title.toLowerCase()));
-    const uniqueTitles = ticketTitles.filter(title => !existingTitles.has(title.toLowerCase()));
-    
-    const newTickets: JiraTicket[] = uniqueTitles.map(title => ({
+    const newTickets: JiraTicket[] = ticketTitles.map(title => ({
       id: Math.random().toString(36).substring(2, 15),
       title,
       description: 'Jira ticket to be estimated by the team'
     }));
     
-    // Use functional update to avoid race conditions
-    setTickets(prev => [...prev, ...newTickets]);
+    // Send tickets to server for real-time synchronization
+    emit('add_tickets', { tickets: newTickets });
     setNewTicketTitle('');
   };
 
   const removeTicket = (ticketId: string) => {
-    setTickets(tickets.filter(t => t.id !== ticketId));
+    // Send remove event to server for real-time synchronization  
+    emit('remove_ticket', { ticketId });
   };
 
   const startBattle = () => {
-    if (tickets.length === 0) return;
-    emit('start_battle', { tickets });
+    const lobbyTickets = currentLobby?.tickets || [];
+    if (lobbyTickets.length === 0) return;
+    emit('start_battle');
   };
 
   const changeTeam = (team: TeamType) => {
