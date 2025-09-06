@@ -404,6 +404,18 @@ function App() {
                   <RetroButton
                     onClick={() => {
                       playButtonSelect();
+                      setAppState('character_tools');
+                    }}
+                    size="sm"
+                    variant="accent"
+                    className="w-full"
+                  >
+                    🎨 Character Tools
+                  </RetroButton>
+                  
+                  <RetroButton
+                    onClick={() => {
+                      playButtonSelect();
                       switchToNextTrack();
                     }}
                     size="sm"
