@@ -431,6 +431,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       }}>
         <PlayerCharacter
           avatarClass={currentPlayer.avatar}
+          playerName={currentPlayer.name}
           position={playerPosition}
           onPositionChange={setPlayerPosition}
           onShoot={handleShoot}

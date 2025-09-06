@@ -18,6 +18,7 @@ export interface Projectile {
 
 interface PlayerCharacterProps {
   avatarClass: AvatarClass;
+  playerName: string;
   position: PlayerPosition;
   onPositionChange: (position: PlayerPosition) => void;
   onShoot: (projectile: Omit<Projectile, 'id' | 'progress'>) => void;
@@ -31,6 +32,7 @@ type AnimationState = 'idle' | 'walk' | 'jump' | 'death';
 
 export function PlayerCharacter({
   avatarClass,
+  playerName,
   position,
   onPositionChange,
   onShoot,
@@ -159,7 +161,7 @@ export function PlayerCharacter({
         className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white bg-black bg-opacity-70 px-2 py-1 rounded whitespace-nowrap"
         style={{ color: character.color }}
       >
-        {character.name}
+        {playerName}
       </div>
       
       {/* Health Bar */}
