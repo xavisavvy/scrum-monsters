@@ -92,10 +92,7 @@ export function BattleScreen() {
 
             {/* Player Character Controller */}
             <div className="absolute inset-0 z-20" style={{ pointerEvents: 'auto' }}>
-              <PlayerController 
-                containerWidth={window.innerWidth}
-                containerHeight={window.innerHeight}
-              />
+              <PlayerController />
             </div>
 
             {/* Team Competition Components */}

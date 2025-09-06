@@ -6,16 +6,17 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
+import { useViewport } from '@/lib/hooks/useViewport';
 
 interface PlayerControllerProps {
-  containerWidth: number;
-  containerHeight: number;
+  // Remove containerWidth/Height - viewport system handles this
 }
 
-export function PlayerController({ containerWidth, containerHeight }: PlayerControllerProps) {
+export function PlayerController({}: PlayerControllerProps) {
   const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
   const { emit, socket } = useWebSocket();
   const { playHit } = useAudio();
+  const viewport = useViewport();
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 100 });
   const [isJumping, setIsJumping] = useState(false);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
@@ -37,19 +38,20 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     if (currentPlayer && currentLobby?.playerPositions?.[currentPlayer.id]) {
       const serverPos = currentLobby.playerPositions[currentPlayer.id];
       
-      // Only sync if we don't have a position yet (initial spawn) or if we're significantly different
-      const pixelX = (serverPos.x / 100) * (containerWidth - characterSize);
-      const pixelY = (serverPos.y / 100) * (containerHeight - characterSize - 100); // Keep bottom margin
+      // Convert server position (percentage) to world coordinates, then to screen pixels
+      const worldX = (serverPos.x / 100) * viewport.worldWidth;
+      const worldY = (serverPos.y / 100) * viewport.worldHeight;
+      const screenPos = viewport.worldToScreen(worldX, worldY);
       
       const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
-      const isSignificantDifference = Math.abs(playerPosition.x - pixelX) > 50 || Math.abs(playerPosition.y - pixelY) > 50;
+      const isSignificantDifference = Math.abs(playerPosition.x - screenPos.x) > 50 || Math.abs(playerPosition.y - screenPos.y) > 50;
       
       if (isInitialSync || isSignificantDifference) {
-        setPlayerPosition({ x: pixelX, y: pixelY });
-        console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${pixelX}px, ${pixelY}px)`);
+        setPlayerPosition({ x: screenPos.x, y: screenPos.y });
+        console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${screenPos.x}px, ${screenPos.y}px)`);
       }
     }
-  }, [currentPlayer?.id, currentLobby?.id, containerWidth, containerHeight, characterSize]); // Only trigger on player/lobby change
+  }, [currentPlayer?.id, currentLobby?.id, viewport, characterSize]); // Only trigger on player/lobby change
 
   // Handle keyboard input
   useEffect(() => {
@@ -97,15 +99,17 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
             targetPlayerId = nearestPlayer.id;
             console.log(`🎯 Spectator targeting nearest player: ${nearestPlayer.id} at (${targetX}, ${targetY})`);
           } else {
-            // Fallback to center if no targets found
-            targetX = containerWidth * 0.5;
-            targetY = containerHeight * 0.4;
+            // Fallback to center if no targets found - use world coordinates
+            const centerWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
+            targetX = centerWorld.x;
+            targetY = centerWorld.y;
             console.log('🎯 No target players found, shooting center');
           }
         } else {
-          // Dev/QA players shoot toward boss
-          targetX = containerWidth * 0.5; // Center X
-          targetY = containerHeight * 0.4; // Slightly above center Y
+          // Dev/QA players shoot toward boss - use world coordinates
+          const bossWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
+          targetX = bossWorld.x;
+          targetY = bossWorld.y;
         }
         
         // Calculate character center position (use bottom-based Y coordinate system)
@@ -140,11 +144,13 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           return updated;
         });
         
-        // Convert pixel coordinates to percentages before emitting
-        const percentStartX = (characterCenterX / containerWidth) * 100;
-        const percentStartY = (characterCenterY / containerHeight) * 100;
-        const percentTargetX = (targetX / containerWidth) * 100;
-        const percentTargetY = (targetY / containerHeight) * 100;
+        // Convert screen coordinates to world coordinates, then to percentages
+        const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
+        const targetWorld = viewport.screenToWorld(targetX, targetY);
+        const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
+        const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
+        const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
+        const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
         
         // Emit projectile event for multiplayer visibility with percentage coordinates
         emit('player_projectile', {
@@ -178,7 +184,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [isJumping, jumpDuration, currentPlayer, containerWidth, containerHeight, playerPosition, characterSize]);
+  }, [isJumping, jumpDuration, currentPlayer, viewport, playerPosition, characterSize]);
 
   // Handle movement based on pressed keys
   // WebSocket listeners for multiplayer features
@@ -189,18 +195,21 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     const handleBossRingAttack = ({ bossX, bossY, projectiles: ringProjectiles }) => {
       console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
       
-      // Convert percentage coordinates to pixel coordinates and add to boss projectiles
+      // Convert percentage coordinates to world coordinates, then to screen coordinates
       const convertedProjectiles = ringProjectiles.map(proj => {
-        const targetX = (proj.targetX / 100) * containerWidth;
-        const targetY = (proj.targetY / 100) * containerHeight;
-        console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetX}px, ${targetY}px)`);
+        const targetWorld = { x: (proj.targetX / 100) * viewport.worldWidth, y: (proj.targetY / 100) * viewport.worldHeight };
+        const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
+        console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetScreen.x}px, ${targetScreen.y}px)`);
+        
+        const bossWorld = { x: (bossX / 100) * viewport.worldWidth, y: (bossY / 100) * viewport.worldHeight };
+        const bossScreen = viewport.worldToScreen(bossWorld.x, bossWorld.y);
         
         return {
           id: proj.id,
-          startX: (bossX / 100) * containerWidth,
-          startY: (bossY / 100) * containerHeight,
-          targetX,
-          targetY,
+          startX: bossScreen.x,
+          startY: bossScreen.y,
+          targetX: targetScreen.x,
+          targetY: targetScreen.y,
           progress: 0,
           emoji: proj.emoji
         };

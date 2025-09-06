@@ -23,7 +23,7 @@ export interface Player {
   avatarClass: AvatarClass; // Alias for compatibility
   team: TeamType;
   isHost: boolean;
-  currentScore?: number | '?';
+  currentScore?: number | "?";
   hasSubmittedScore: boolean;
 }
 
@@ -72,7 +72,7 @@ export interface TimerSettings {
 }
 
 export interface JiraSettings {
-  baseUrl?: string; // e.g. "https://vivint.atlassian.net/browse/"
+  baseUrl?: string; // e.g. "https://yourcompany.atlassian.net/browse/"
 }
 
 export interface TimerState {
@@ -112,12 +112,28 @@ export interface Boss {
   lastRingAttack?: number;
 }
 
-export type GamePhase = 'lobby' | 'avatar_selection' | 'battle' | 'scoring' | 'reveal' | 'discussion' | 'victory' | 'next_level';
+export type GamePhase =
+  | "lobby"
+  | "avatar_selection"
+  | "battle"
+  | "scoring"
+  | "reveal"
+  | "discussion"
+  | "victory"
+  | "next_level";
 
-export type TeamType = 'developers' | 'qa' | 'spectators';
+export type TeamType = "developers" | "qa" | "spectators";
 
-export type AvatarClass = 'ranger' | 'rogue' | 'bard' | 'sorcerer' | 'wizard' | 'warrior' | 'paladin' | 'cleric' | 'oathbreaker';
-
+export type AvatarClass =
+  | "ranger"
+  | "rogue"
+  | "bard"
+  | "sorcerer"
+  | "wizard"
+  | "warrior"
+  | "paladin"
+  | "cleric"
+  | "oathbreaker";
 
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
@@ -129,20 +145,24 @@ export interface ClientToServerEvents {
   add_tickets: (data: { tickets: JiraTicket[] }) => void;
   remove_ticket: (data: { ticketId: string }) => void;
   update_jira_settings: (data: { jiraSettings: JiraSettings }) => void;
-  lobby_player_pos: (data: { x: number; y: number; direction?: string }) => void;
+  lobby_player_pos: (data: {
+    x: number;
+    y: number;
+    direction?: string;
+  }) => void;
   lobby_player_jump: (data: { isJumping: boolean }) => void;
   start_battle: () => void;
-  submit_score: (data: { score: number | '?' }) => void;
-  update_discussion_vote: (data: { score: number | '?' }) => void;
+  submit_score: (data: { score: number | "?" }) => void;
+  update_discussion_vote: (data: { score: number | "?" }) => void;
   attack_boss: (data: { damage: number }) => void;
   proceed_next_level: () => void;
   restart_game: () => void;
-  player_performance: (data: { 
-    playerId: string; 
-    team: TeamType; 
-    estimationTime: number; 
-    score: number; 
-    ticketId?: string; 
+  player_performance: (data: {
+    playerId: string;
+    team: TeamType;
+    estimationTime: number;
+    score: number;
+    ticketId?: string;
   }) => void;
   abandon_quest: () => void;
   force_reveal: () => void;
@@ -156,19 +176,19 @@ export interface ClientToServerEvents {
   revive_tick: (data: { targetId: string }) => void;
   player_jump: (data: { isJumping: boolean }) => void;
   boss_damage_player: (data: { playerId: string; damage: number }) => void;
-  player_projectile: (data: { 
-    startX: number; 
-    startY: number; 
-    targetX: number; 
-    targetY: number; 
-    emoji: string; 
+  player_projectile: (data: {
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+    emoji: string;
     targetPlayerId?: string;
   }) => void;
 }
 
 export interface TeamScores {
-  developers: Record<string, number | '?'>;
-  qa: Record<string, number | '?'>;
+  developers: Record<string, number | "?">;
+  qa: Record<string, number | "?">;
 }
 
 export interface TeamConsensus {
@@ -181,12 +201,24 @@ export interface ServerToClientEvents {
   lobby_joined: (data: { lobby: Lobby; player: Player }) => void;
   lobby_updated: (data: { lobby: Lobby }) => void;
   avatar_selected: (data: { playerId: string; avatar: AvatarClass }) => void;
-  lobby_player_pos: (data: { playerId: string; x: number; y: number; direction?: string }) => void;
+  lobby_player_pos: (data: {
+    playerId: string;
+    x: number;
+    y: number;
+    direction?: string;
+  }) => void;
   lobby_player_jump: (data: { playerId: string; isJumping: boolean }) => void;
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
   score_submitted: (data: { playerId: string; team: TeamType }) => void;
-  scores_revealed: (data: { teamScores: TeamScores; teamConsensus: TeamConsensus }) => void;
-  boss_attacked: (data: { playerId: string; damage: number; bossHealth: number }) => void;
+  scores_revealed: (data: {
+    teamScores: TeamScores;
+    teamConsensus: TeamConsensus;
+  }) => void;
+  boss_attacked: (data: {
+    playerId: string;
+    damage: number;
+    bossHealth: number;
+  }) => void;
   boss_defeated: (data: { lobby: Lobby }) => void;
   quest_abandoned: (data: { lobby: Lobby }) => void;
   game_error: (data: { message: string }) => void;
@@ -195,31 +227,43 @@ export interface ServerToClientEvents {
   youtube_play_synced: (data: { videoId: string; url: string }) => void;
   youtube_stop_synced: () => void;
   players_pos: (data: { positions: Record<string, Position> }) => void;
-  player_state_updated: (data: { playerId: string; combatState: PlayerCombatState }) => void;
-  player_attacked: (data: { attackerId: string; targetId: string; damage: number; targetHealth: number }) => void;
-  revive_progress: (data: { targetId: string; reviverId: string; progress: number }) => void;
+  player_state_updated: (data: {
+    playerId: string;
+    combatState: PlayerCombatState;
+  }) => void;
+  player_attacked: (data: {
+    attackerId: string;
+    targetId: string;
+    damage: number;
+    targetHealth: number;
+  }) => void;
+  revive_progress: (data: {
+    targetId: string;
+    reviverId: string;
+    progress: number;
+  }) => void;
   revive_complete: (data: { targetId: string; reviverId: string }) => void;
   revive_cancelled: (data: { targetId: string; reviverId: string }) => void;
-  boss_ring_attack: (data: { 
-    bossX: number; 
-    bossY: number; 
-    projectiles: Array<{ 
-      id: string; 
-      x: number; 
-      y: number; 
-      targetX: number; 
-      targetY: number; 
-      emoji: string; 
-    }> 
+  boss_ring_attack: (data: {
+    bossX: number;
+    bossY: number;
+    projectiles: Array<{
+      id: string;
+      x: number;
+      y: number;
+      targetX: number;
+      targetY: number;
+      emoji: string;
+    }>;
   }) => void;
-  player_projectile_fired: (data: { 
+  player_projectile_fired: (data: {
     playerId: string;
     playerName: string;
-    startX: number; 
-    startY: number; 
-    targetX: number; 
-    targetY: number; 
-    emoji: string; 
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+    emoji: string;
     targetPlayerId?: string;
     projectileId: string;
   }) => void;
@@ -236,80 +280,83 @@ export interface CharacterStats {
   cha: number; // Charisma - Team buffs, leadership bonuses
 }
 
-export const AVATAR_CLASSES: Record<AvatarClass, { 
-  name: string; 
-  description: string; 
-  color: string; 
-  stats: CharacterStats;
-  specialties: string[];
-}> = {
-  ranger: { 
-    name: 'Ranger', 
-    description: 'Swift archer with keen eyes', 
-    color: '#228B22',
+export const AVATAR_CLASSES: Record<
+  AvatarClass,
+  {
+    name: string;
+    description: string;
+    color: string;
+    stats: CharacterStats;
+    specialties: string[];
+  }
+> = {
+  ranger: {
+    name: "Ranger",
+    description: "Swift archer with keen eyes",
+    color: "#228B22",
     stats: { str: 12, dex: 16, con: 10, wis: 14, int: 12, cha: 14 },
-    specialties: ['Ranged Combat', 'Tracking', 'Nature Magic']
+    specialties: ["Ranged Combat", "Tracking", "Nature Magic"],
   },
-  rogue: { 
-    name: 'Rogue', 
-    description: 'Stealthy assassin', 
-    color: '#2F4F4F',
+  rogue: {
+    name: "Rogue",
+    description: "Stealthy assassin",
+    color: "#2F4F4F",
     stats: { str: 10, dex: 18, con: 8, wis: 12, int: 14, cha: 16 },
-    specialties: ['Stealth', 'Critical Strikes', 'Lockpicking']
+    specialties: ["Stealth", "Critical Strikes", "Lockpicking"],
   },
-  bard: { 
-    name: 'Bard', 
-    description: 'Musical storyteller', 
-    color: '#9370DB',
+  bard: {
+    name: "Bard",
+    description: "Musical storyteller",
+    color: "#9370DB",
     stats: { str: 6, dex: 12, con: 10, wis: 12, int: 16, cha: 22 },
-    specialties: ['Support Magic', 'Inspiration', 'Versatility']
+    specialties: ["Support Magic", "Inspiration", "Versatility"],
   },
-  sorcerer: { 
-    name: 'Sorcerer', 
-    description: 'Raw magic wielder', 
-    color: '#FF4500',
+  sorcerer: {
+    name: "Sorcerer",
+    description: "Raw magic wielder",
+    color: "#FF4500",
     stats: { str: 6, dex: 10, con: 12, wis: 8, int: 22, cha: 20 },
-    specialties: ['Elemental Magic', 'Raw Power', 'Metamagic']
+    specialties: ["Elemental Magic", "Raw Power", "Metamagic"],
   },
-  wizard: { 
-    name: 'Wizard', 
-    description: 'Learned spellcaster', 
-    color: '#4169E1',
+  wizard: {
+    name: "Wizard",
+    description: "Learned spellcaster",
+    color: "#4169E1",
     stats: { str: 6, dex: 8, con: 10, wis: 16, int: 22, cha: 16 },
-    specialties: ['Arcane Knowledge', 'Spell Variety', 'Research']
+    specialties: ["Arcane Knowledge", "Spell Variety", "Research"],
   },
-  warrior: { 
-    name: 'Warrior', 
-    description: 'Brave melee fighter', 
-    color: '#B22222',
+  warrior: {
+    name: "Warrior",
+    description: "Brave melee fighter",
+    color: "#B22222",
     stats: { str: 20, dex: 10, con: 16, wis: 8, int: 6, cha: 18 },
-    specialties: ['Melee Combat', 'Defense', 'Leadership']
+    specialties: ["Melee Combat", "Defense", "Leadership"],
   },
-  paladin: { 
-    name: 'Paladin', 
-    description: 'Holy knight', 
-    color: '#FFD700',
+  paladin: {
+    name: "Paladin",
+    description: "Holy knight",
+    color: "#FFD700",
     stats: { str: 16, dex: 8, con: 14, wis: 12, int: 10, cha: 18 },
-    specialties: ['Divine Magic', 'Protection', 'Healing']
+    specialties: ["Divine Magic", "Protection", "Healing"],
   },
-  cleric: { 
-    name: 'Cleric', 
-    description: 'Divine healer', 
-    color: '#F0F8FF',
+  cleric: {
+    name: "Cleric",
+    description: "Divine healer",
+    color: "#F0F8FF",
     stats: { str: 10, dex: 6, con: 12, wis: 20, int: 12, cha: 18 },
-    specialties: ['Healing Magic', 'Divine Power', 'Support']
+    specialties: ["Healing Magic", "Divine Power", "Support"],
   },
   oathbreaker: {
-    name: 'Oathbreaker',
-    description: 'Fallen paladin wielding dark power',
-    color: '#8A2BE2',
+    name: "Oathbreaker",
+    description: "Fallen paladin wielding dark power",
+    color: "#8A2BE2",
     stats: { str: 16, dex: 10, con: 14, wis: 8, int: 12, cha: 18 },
-    specialties: ['Dark Magic', 'Corruption', 'Fear Aura']
-  }
+    specialties: ["Dark Magic", "Corruption", "Fear Aura"],
+  },
 };
 
 export const TEAM_NAMES: Record<TeamType, string> = {
-  developers: 'Developers',
-  qa: 'QA Engineers',
-  spectators: 'Spectators'
+  developers: "Developers",
+  qa: "QA Engineers",
+  spectators: "Spectators",
 };
