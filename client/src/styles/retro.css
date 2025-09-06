@@ -54,6 +54,13 @@
       0 0 8px var(--retro-glow),
       0 0 16px var(--retro-glow);
   }
+  
+  .retro-text-glow-light {
+    /* Simplified static glow for small text */
+    text-shadow: 
+      0 0 1px rgba(0, 0, 0, 0.8),
+      0 0 4px var(--retro-glow);
+  }
 }
 
 /* High contrast mode support for accessibility */
@@ -200,6 +207,28 @@
   /* Improve text rendering */
   font-weight: bold;
   letter-spacing: 0.1em;
+}
+
+/* Lighter glow variant for smaller text */
+.retro-text-glow-light {
+  /* Base text color - lighter version of current glow */
+  color: var(--retro-glow-light);
+  
+  /* No text stroke for small text - keeps it clean */
+  -webkit-text-stroke: none;
+  text-stroke: none;
+  
+  /* Simplified glow effect for readability */
+  text-shadow: 
+    /* Very subtle outline for definition */
+    0 0 1px rgba(0, 0, 0, 0.8),
+    /* Gentle glow - closer to text */
+    0 0 4px var(--retro-glow),
+    0 0 8px var(--retro-glow);
+  
+  /* Keep text readable */
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 .retro-pixel-border {

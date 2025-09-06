@@ -259,7 +259,7 @@ export function Lobby() {
             {currentLobby.name}
           </h1>
           <p className="text-gray-400">
-            Lobby Code: <span className="retro-text-glow text-xl font-mono">{currentLobby.id}</span>
+            Lobby Code: <span className="retro-text-glow-light text-xl font-mono">{currentLobby.id}</span>
           </p>
           {inviteLink && (
             <div className="mt-4 space-y-3">

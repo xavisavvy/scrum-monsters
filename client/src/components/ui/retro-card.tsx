@@ -11,7 +11,7 @@ export function RetroCard({ children, className, title }: RetroCardProps) {
   return (
     <div className={cn('retro-card', className)}>
       {title && (
-        <h3 className="text-lg font-bold mb-4 retro-text-glow">
+        <h3 className="text-lg font-bold mb-4 retro-text-glow-light">
           {title}
         </h3>
       )}

@@ -55,7 +55,7 @@ export function AvatarSelection() {
             <div className="space-y-6">
               <div className="text-center">
                 <p className="text-lg">
-                  Welcome, <span className="retro-text-glow">{currentPlayer?.name}</span>!
+                  Welcome, <span className="retro-text-glow-light">{currentPlayer?.name}</span>!
                 </p>
                 <p className="text-sm text-gray-400 mt-2">
                   Choose your avatar class for the upcoming battle
