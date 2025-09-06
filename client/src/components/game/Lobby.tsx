@@ -10,6 +10,7 @@ export function Lobby() {
   const [tickets, setTickets] = useState<JiraTicket[]>([]);
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
+  const [showCopiedNotification, setShowCopiedNotification] = useState(false);
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
 
@@ -61,7 +62,12 @@ export function Lobby() {
   const copyInviteLink = () => {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink);
-      // Could add a toast notification here
+      setShowCopiedNotification(true);
+      
+      // Auto-hide notification after 2 seconds
+      setTimeout(() => {
+        setShowCopiedNotification(false);
+      }, 2000);
     }
   };
 
@@ -110,17 +116,30 @@ export function Lobby() {
           </p>
           {inviteLink && (
             <div className="mt-4 space-y-3">
-              <div className="flex gap-2 justify-center">
-                <RetroButton size="sm" onClick={copyInviteLink}>
-                  Copy Invite Link
-                </RetroButton>
-                <RetroButton 
-                  size="sm" 
-                  variant="secondary"
-                  onClick={() => setShowQRCode(!showQRCode)}
-                >
-                  {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
-                </RetroButton>
+              <div className="relative">
+                <div className="flex gap-2 justify-center">
+                  <RetroButton size="sm" onClick={copyInviteLink}>
+                    Copy Invite Link
+                  </RetroButton>
+                  <RetroButton 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => setShowQRCode(!showQRCode)}
+                  >
+                    {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
+                  </RetroButton>
+                </div>
+                
+                {/* Copy notification */}
+                {showCopiedNotification && (
+                  <div className={`
+                    absolute top-full left-1/2 transform -translate-x-1/2 mt-2 z-50
+                    bg-green-600 text-white px-3 py-1 rounded-lg text-sm font-medium
+                    animate-pulse shadow-lg border border-green-500
+                  `}>
+                    ✓ Link copied to clipboard!
+                  </div>
+                )}
               </div>
               
               {showQRCode && (
