@@ -132,7 +132,7 @@ function App() {
       setInviteLink(inviteLink);
       const host = lobby.players.find(p => p.isHost);
       if (host) setPlayer(host);
-      setAppState('lobby');
+      setAppState('avatar_selection'); // Host also goes through avatar selection
     });
 
     socket.on('lobby_joined', ({ lobby, player }) => {
