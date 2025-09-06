@@ -300,7 +300,7 @@
 .player-list {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   margin-top: 12px;
 }
 
@@ -308,11 +308,32 @@
   background: var(--retro-bg);
   border: 1px solid var(--retro-border);
   border-radius: 16px;
-  padding: 4px 12px;
+  padding: 4px 8px;
   font-size: 12px;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 640px) {
+  .player-chip {
+    font-size: 10px;
+    padding: 3px 6px;
+    gap: 4px;
+  }
+  
+  .team-section {
+    padding: 12px;
+    margin: 6px 0;
+  }
+  
+  .player-list {
+    gap: 4px;
+    margin-top: 8px;
+  }
 }
 
 .player-chip.host {

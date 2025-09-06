@@ -238,8 +238,8 @@ export function Lobby() {
   if (!currentLobby) return null;
 
   return (
-    <div className="retro-container relative">
-      <div className="max-w-6xl mx-auto">        
+    <div className="retro-container relative overflow-x-hidden">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
@@ -294,9 +294,9 @@ export function Lobby() {
           )}
         </div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Teams Section */}
-          <div className="space-y-4">
+          <div className="space-y-4 min-w-0">
             {/* Team Selection */}
             <RetroCard title="Choose Your Team">
               <div className="mb-4">
@@ -332,35 +332,39 @@ export function Lobby() {
             </RetroCard>
 
             <RetroCard title="Battle Teams">
-              {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
-                const team = teamKey as TeamType;
-                const teamPlayers = currentLobby.teams[team] || [];
-                
-                return (
-                  <div key={team} className="team-section">
-                    <h4 className="font-bold text-lg mb-2">{teamName}</h4>
-                    <p className="text-sm text-gray-400 mb-3">
-                      {teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}
-                    </p>
-                    
-                    <div className="player-list">
-                      {teamPlayers.map(player => (
-                        <div
-                          key={player.id}
-                          className={`player-chip ${player.isHost ? 'host' : ''} ${
-                            player.id === currentPlayer?.id ? 'border-blue-400' : ''
-                          }`}
-                        >
-                          {renderPlayerSprite(player.avatar)}
-                          <span>{player.name}</span>
-                          {player.isHost && <span className="text-xs">(HOST)</span>}
-                          {player.id === currentPlayer?.id && <span className="text-xs text-blue-400">(YOU)</span>}
-                        </div>
-                      ))}
+              <div className="space-y-4">
+                {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
+                  const team = teamKey as TeamType;
+                  const teamPlayers = currentLobby.teams[team] || [];
+                  
+                  return (
+                    <div key={team} className="team-section">
+                      <h4 className="font-bold text-sm sm:text-lg mb-2 break-words">{teamName}</h4>
+                      <p className="text-xs sm:text-sm text-gray-400 mb-3">
+                        {teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}
+                      </p>
+                      
+                      <div className="player-list">
+                        {teamPlayers.map(player => (
+                          <div
+                            key={player.id}
+                            className={`player-chip ${player.isHost ? 'host' : ''} ${
+                              player.id === currentPlayer?.id ? 'border-blue-400' : ''
+                            }`}
+                          >
+                            <div className="flex-shrink-0">
+                              {renderPlayerSprite(player.avatar)}
+                            </div>
+                            <span className="min-w-0 truncate text-xs sm:text-sm">{player.name}</span>
+                            {player.isHost && <span className="text-xs whitespace-nowrap">(HOST)</span>}
+                            {player.id === currentPlayer?.id && <span className="text-xs text-blue-400 whitespace-nowrap">(YOU)</span>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })}
+              </div>
             </RetroCard>
 
             {/* Timer Settings */}
@@ -413,7 +417,7 @@ export function Lobby() {
           </div>
 
           {/* Tickets Section */}
-          <div>
+          <div className="min-w-0">
             <RetroCard title="Battle Objectives">
               {isHost && (
                 <div className="mb-4">
@@ -447,9 +451,9 @@ export function Lobby() {
                     key={ticket.id}
                     className="bg-gray-800 border border-gray-600 rounded p-3 flex justify-between items-center"
                   >
-                    <div>
+                    <div className="flex-1 min-w-0">
                       <span className="font-mono text-sm text-blue-400">#{index + 1}</span>
-                      <span className="ml-2">{ticket.title}</span>
+                      <span className="ml-2 min-w-0 truncate inline-block max-w-full">{ticket.title}</span>
                     </div>
                     {isHost && (
                       <RetroButton
