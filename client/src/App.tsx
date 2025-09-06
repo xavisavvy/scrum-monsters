@@ -5,6 +5,7 @@ import { Lobby } from '@/components/game/Lobby';
 import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
 import { LandingPage } from '@/components/marketing/LandingPage';
+import { AboutPage } from '@/components/marketing/AboutPage';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { CheatMenu } from '@/components/ui/CheatMenu';
@@ -14,7 +15,7 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import '@/styles/retro.css';
 
-type AppState = 'landing' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
+type AppState = 'landing' | 'about' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle';
 
 function App() {
   const [appState, setAppState] = useState<AppState>('landing');
@@ -109,22 +110,25 @@ function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const lobbyParam = urlParams.get('join');
     const gameParam = urlParams.get('game');
+    const pageParam = urlParams.get('page');
     
     if (lobbyParam) {
       setJoinLobbyId(lobbyParam);
       setAppState('join_lobby');
     } else if (gameParam === 'menu') {
       setAppState('menu');
+    } else if (pageParam === 'about') {
+      setAppState('about');
     }
     // Default stays on landing page
   }, []);
 
   // Handle menu music based on app state
   useEffect(() => {
-    if ((appState === 'menu' || appState === 'landing') && !isMuted && !isMenuMusicPlaying) {
+    if ((appState === 'menu' || appState === 'landing' || appState === 'about') && !isMuted && !isMenuMusicPlaying) {
       // Small delay to ensure audio is loaded
       setTimeout(() => fadeInMenuMusic(), 500);
-    } else if (appState !== 'menu' && appState !== 'landing' && isMenuMusicPlaying) {
+    } else if (appState !== 'menu' && appState !== 'landing' && appState !== 'about' && isMenuMusicPlaying) {
       fadeOutMenuMusic();
     }
   }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
@@ -273,6 +277,11 @@ function App() {
       case 'landing':
         return (
           <LandingPage onStartGame={() => setAppState('menu')} />
+        );
+
+      case 'about':
+        return (
+          <AboutPage onBackToHome={() => setAppState('landing')} />
         );
 
       case 'menu':
