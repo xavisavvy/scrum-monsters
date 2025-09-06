@@ -20,10 +20,10 @@ interface SpriteConfig {
   };
 }
 
-// Configuration for sprite sheet layout
+// Configuration for sprite sheet layout (actual images are 1024x1024 with 4x4 grid)
 const SPRITE_CONFIG: SpriteConfig = {
-  frameWidth: 24, // Each frame is 24px wide
-  frameHeight: 24, // Each frame is 24px tall
+  frameWidth: 256, // Each frame is 256px wide (1024/4)
+  frameHeight: 256, // Each frame is 256px tall (1024/4)
   animations: {
     idle: { row: 0, frames: 1, speed: 1000, loop: true }, // Use first frame of down walk
     walk: { row: 0, frames: 4, speed: 200, loop: true }, // Will be overridden by direction
@@ -35,8 +35,8 @@ const SPRITE_CONFIG: SpriteConfig = {
   directions: {
     down: 0,  // Row 0: Walk down
     left: 1,  // Row 1: Walk left  
-    right: 1, // Row 1: Walk left (we'll flip horizontally)
-    up: 1     // Row 1: Walk left (placeholder, could be row 3 if available)
+    right: 2, // Row 2: Walk right (if available, otherwise we'll flip left)
+    up: 3     // Row 3: Walk up (if available)
   }
 };
 

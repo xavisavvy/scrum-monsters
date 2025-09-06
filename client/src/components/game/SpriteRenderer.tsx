@@ -1,5 +1,6 @@
 import React from 'react';
 import { useSpriteAnimation, SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
+import { useImageDimensions } from '@/hooks/useImageDimensions';
 import { AvatarClass } from '@/lib/gameTypes';
 
 interface SpriteRendererProps {
@@ -33,7 +34,29 @@ export function SpriteRenderer({
     isMoving
   });
 
-  const displaySize = frameSize.width * size;
+  const imageDimensions = useImageDimensions(spriteSheetUrl);
+  
+  // Configuration
+  const cols = 4;
+  const rows = 4; // Changed from 3 to 4 since images are 1024x1024 (square)
+  
+  // Calculate actual frame size based on image dimensions  
+  const actualFrameWidth = imageDimensions.loaded ? imageDimensions.width / cols : frameSize.width;
+  const actualFrameHeight = imageDimensions.loaded ? imageDimensions.height / rows : frameSize.height;
+  
+  // Fixed display size for consistency
+  const displaySize = 60;
+  
+  // Calculate scaling factor to fit frame into display size
+  const scale = imageDimensions.loaded ? displaySize / actualFrameWidth : size;
+  
+  // Calculate current frame position in actual pixels
+  const frameCol = Math.floor(spriteFrame.x / frameSize.width);
+  const frameRow = Math.floor(spriteFrame.y / frameSize.height);
+  
+  // Position in display coordinates (scaled to fit displaySize)
+  const displayFrameX = frameCol * displaySize;
+  const displayFrameY = frameRow * displaySize;
 
   return (
     <div
@@ -42,8 +65,10 @@ export function SpriteRenderer({
         width: displaySize,
         height: displaySize,
         backgroundImage: `url(${spriteSheetUrl})`,
-        backgroundPosition: `-${spriteFrame.x * size}px -${spriteFrame.y * size}px`,
-        backgroundSize: `${frameSize.width * 4 * size}px ${frameSize.height * 3 * size}px`, // 4 columns x 3 rows minimum
+        backgroundPosition: `-${displayFrameX}px -${displayFrameY}px`,
+        backgroundSize: imageDimensions.loaded ? 
+          `${imageDimensions.width * scale}px ${imageDimensions.height * scale}px` :
+          `${frameSize.width * cols * scale}px ${frameSize.height * rows * scale}px`, // Fallback to 4x4
         backgroundRepeat: 'no-repeat',
         transform: shouldFlip ? 'scaleX(-1)' : 'scaleX(1)',
         imageRendering: 'pixelated', // Maintain pixel art sharpness
