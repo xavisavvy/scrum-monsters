@@ -836,28 +836,6 @@ export function Lobby() {
           
           {/* Layer 3: Player Movement Area */}
           <div className="absolute inset-0" style={{ zIndex: 10 }}>
-          {/* Pixelated Door Animation (Center Top) */}
-          <div 
-            className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20"
-            style={{ 
-              width: '80px', 
-              height: '60px',
-              background: doorAnimation.isOpen || doorAnimation.isOpening 
-                ? 'linear-gradient(45deg, #4a5568 25%, transparent 25%, transparent 75%, #4a5568 75%), linear-gradient(45deg, #4a5568 25%, transparent 25%, transparent 75%, #4a5568 75%)'
-                : '#2d3748',
-              backgroundSize: doorAnimation.isOpen || doorAnimation.isOpening ? '8px 8px' : '0px 0px',
-              backgroundPosition: '0 0, 4px 4px',
-              border: '2px solid #1a202c',
-              borderRadius: '4px',
-              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-              transform: `translateX(-50%) ${doorAnimation.isOpening ? 'scaleY(1.1)' : 'scaleY(1)'}`,
-              filter: doorAnimation.isOpen ? 'brightness(1.2)' : 'brightness(0.8)'
-            }}
-          >
-            {(doorAnimation.isOpen || doorAnimation.isOpening) && (
-              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/20 to-cyan-500/40 animate-pulse" />
-            )}
-          </div>
           
           {/* Dropping Avatars */}
           {droppingAvatars.map(avatar => {
