@@ -100,7 +100,7 @@ export function Lobby() {
       });
     };
 
-    const interval = setInterval(movePlayer, 16); // ~60 FPS
+    const interval = setInterval(movePlayer, 50); // ~20 FPS to reduce server load
     return () => clearInterval(interval);
   }, [keys, currentLobby?.gamePhase, emit, screenWidth]);
 
