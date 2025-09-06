@@ -338,6 +338,18 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Jumping state sync
+    socket.on('player_jump', ({ isJumping }: { isJumping: boolean }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.setPlayerJumping(playerId, isJumping);
+      if (lobby) {
+        // Broadcast to all players in the lobby
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
     socket.on('disconnect', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;

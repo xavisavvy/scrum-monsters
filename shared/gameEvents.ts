@@ -13,6 +13,7 @@ export interface PlayerCombatState {
   revivedBy?: string;
   reviveEndsAt?: number;
   position?: Position;
+  isJumping?: boolean;
 }
 
 export interface Player {
@@ -125,6 +126,7 @@ export interface ClientToServerEvents {
   revive_start: (data: { targetId: string }) => void;
   revive_cancel: (data: { targetId: string }) => void;
   revive_tick: (data: { targetId: string }) => void;
+  player_jump: (data: { isJumping: boolean }) => void;
 }
 
 export interface TeamScores {

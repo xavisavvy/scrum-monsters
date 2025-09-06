@@ -536,6 +536,19 @@ class GameStateManager {
     return this.revealScores(lobby.id);
   }
 
+  setPlayerJumping(playerId: string, isJumping: boolean): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const playerCombatState = lobby.playerCombatStates[playerId];
+    if (playerCombatState) {
+      playerCombatState.isJumping = isJumping;
+      console.log(`🦘 Player ${playerId} jumping state: ${isJumping}`);
+    }
+
+    return lobby;
+  }
+
   removePlayer(playerId: string): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
@@ -637,6 +650,12 @@ class GameStateManager {
     
     const targetCombatState = lobby.playerCombatStates[targetId];
     if (!targetCombatState || targetCombatState.isDowned) return null;
+    
+    // Check jumping invincibility
+    if (targetCombatState.isJumping) {
+      console.log(`🛡️ ${targetId} is jumping - invincible to damage!`);
+      return null;
+    }
 
     // Apply damage (clamp between 1-10)
     const actualDamage = Math.max(1, Math.min(10, damage));

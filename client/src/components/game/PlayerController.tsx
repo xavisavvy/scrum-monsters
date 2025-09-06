@@ -34,7 +34,17 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       if (event.code === 'Space' && !isJumping) {
         event.preventDefault();
         setIsJumping(true);
-        setTimeout(() => setIsJumping(false), jumpDuration);
+        
+        // Send jumping state to server
+        emit('player_jump', { isJumping: true });
+        console.log('🦘 Started jumping - invincible to damage!');
+        
+        setTimeout(() => {
+          setIsJumping(false);
+          // Send jumping state to server
+          emit('player_jump', { isJumping: false });
+          console.log('🦘 Stopped jumping - vulnerable to damage again!');
+        }, jumpDuration);
       }
       
       // Handle debug modal toggle with Tab
