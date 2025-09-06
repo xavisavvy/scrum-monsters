@@ -780,35 +780,159 @@ export function Lobby() {
               }}
             />
             
-            {/* Left Extension - Repeating Pattern */}
+            {/* Left Extension - Window & Weapons Section */}
             <div 
               className="absolute top-0 right-1/2 h-full"
               style={{
                 width: '50vw',
-                backgroundImage: 'url(/textures/tavern/center.png)',
-                backgroundSize: '200px 100%',
-                backgroundPosition: 'right',
-                backgroundRepeat: 'repeat-x',
+                background: `
+                  linear-gradient(to right, 
+                    #8B4513 0%, #8B4513 20%, 
+                    #D4AF8C 20%, #D4AF8C 22%, 
+                    #654321 22%, #654321 40%,
+                    #D4AF8C 40%, #D4AF8C 42%,
+                    #8B4513 42%, #8B4513 100%
+                  ),
+                  repeating-linear-gradient(
+                    0deg,
+                    #8B4513 0px, #8B4513 16px,
+                    #A0522D 16px, #A0522D 32px
+                  )
+                `,
                 imageRendering: 'pixelated',
-                transform: 'translateX(-200px)', // Offset to seamlessly connect
-                filter: 'hue-rotate(10deg) brightness(0.9)' // Subtle variation
+                transform: 'translateX(-200px)',
+                position: 'relative'
               }}
-            />
+            >
+              {/* Pixel Art Window */}
+              <div 
+                className="absolute"
+                style={{
+                  top: '20%',
+                  right: '30%',
+                  width: '60px',
+                  height: '80px',
+                  background: `
+                    linear-gradient(45deg, #4A90E2 25%, transparent 25%),
+                    linear-gradient(-45deg, #4A90E2 25%, transparent 25%),
+                    linear-gradient(45deg, transparent 75%, #4A90E2 75%),
+                    linear-gradient(-45deg, transparent 75%, #4A90E2 75%)
+                  `,
+                  backgroundSize: '8px 8px',
+                  backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
+                  border: '3px solid #654321',
+                  imageRendering: 'pixelated'
+                }}
+              />
+              {/* Mounted Weapons */}
+              <div 
+                className="absolute"
+                style={{
+                  top: '60%',
+                  right: '20%',
+                  width: '40px',
+                  height: '8px',
+                  background: '#8B4513',
+                  imageRendering: 'pixelated'
+                }}
+              />
+              <div 
+                className="absolute"
+                style={{
+                  top: '55%',
+                  right: '35%',
+                  width: '8px',
+                  height: '20px',
+                  background: '#C0C0C0',
+                  imageRendering: 'pixelated'
+                }}
+              />
+            </div>
             
-            {/* Right Extension - Repeating Pattern */}
+            {/* Right Extension - Trophy & Decorations Section */}
             <div 
               className="absolute top-0 left-1/2 h-full"
               style={{
                 width: '50vw',
-                backgroundImage: 'url(/textures/tavern/center.png)',
-                backgroundSize: '200px 100%',
-                backgroundPosition: 'left',
-                backgroundRepeat: 'repeat-x',
+                background: `
+                  linear-gradient(to left, 
+                    #8B4513 0%, #8B4513 20%, 
+                    #D4AF8C 20%, #D4AF8C 22%, 
+                    #654321 22%, #654321 40%,
+                    #D4AF8C 40%, #D4AF8C 42%,
+                    #8B4513 42%, #8B4513 100%
+                  ),
+                  repeating-linear-gradient(
+                    0deg,
+                    #8B4513 0px, #8B4513 16px,
+                    #A0522D 16px, #A0522D 32px
+                  )
+                `,
                 imageRendering: 'pixelated',
-                transform: 'translateX(200px)', // Offset to seamlessly connect
-                filter: 'hue-rotate(-10deg) brightness(0.9)' // Subtle variation
+                transform: 'translateX(200px)',
+                position: 'relative'
               }}
-            />
+            >
+              {/* Mounted Trophy Head */}
+              <div 
+                className="absolute"
+                style={{
+                  top: '25%',
+                  left: '20%',
+                  width: '50px',
+                  height: '40px',
+                  background: `
+                    radial-gradient(ellipse at center, #8B6914 30%, #654321 70%)
+                  `,
+                  borderRadius: '50% 50% 30% 30%',
+                  imageRendering: 'pixelated'
+                }}
+              />
+              {/* Antlers */}
+              <div 
+                className="absolute"
+                style={{
+                  top: '15%',
+                  left: '15%',
+                  width: '8px',
+                  height: '25px',
+                  background: '#8B6914',
+                  transform: 'rotate(-20deg)',
+                  imageRendering: 'pixelated'
+                }}
+              />
+              <div 
+                className="absolute"
+                style={{
+                  top: '15%',
+                  left: '50%',
+                  width: '8px',
+                  height: '25px',
+                  background: '#8B6914',
+                  transform: 'rotate(20deg)',
+                  imageRendering: 'pixelated'
+                }}
+              />
+              {/* Wall Tapestry */}
+              <div 
+                className="absolute"
+                style={{
+                  top: '55%',
+                  left: '25%',
+                  width: '40px',
+                  height: '30px',
+                  background: `
+                    repeating-linear-gradient(
+                      45deg,
+                      #8B0000 0px, #8B0000 4px,
+                      #FFD700 4px, #FFD700 8px
+                    )
+                  `,
+                  border: '2px solid #654321',
+                  imageRendering: 'pixelated'
+                }}
+              />
+            </div>
             
             {/* Wooden Floor Extension */}
             <div 
