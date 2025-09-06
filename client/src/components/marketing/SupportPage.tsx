@@ -173,6 +173,24 @@ export function SupportPage({ onBackToHome }: SupportPageProps) {
                   <h3 className="text-lg font-bold text-yellow-400 mb-2">Can I use this for remote teams?</h3>
                   <p className="text-gray-300">Yes! Scrum Monsters was designed with remote and hybrid teams in mind. Share a link and everyone can join from anywhere.</p>
                 </div>
+                
+                <div>
+                  <h3 className="text-lg font-bold text-yellow-400 mb-2">How can I support development, I love this tool!</h3>
+                  <p className="text-gray-300 mb-3">
+                    Thank you! Your support means everything to me. If Scrum Monsters has made your team's planning sessions more enjoyable, 
+                    you can help keep development going by making a small donation.
+                  </p>
+                  <RetroButton
+                    onClick={() => window.open('https://account.venmo.com/u/preston_farr', '_blank')}
+                    size="sm"
+                    className="inline-flex items-center gap-2"
+                  >
+                    💳 Donate via Venmo
+                  </RetroButton>
+                  <p className="text-sm text-gray-400 mt-2">
+                    Even a coffee-sized donation helps fund new features, boss packs, and server costs!
+                  </p>
+                </div>
               </div>
             </section>
 
