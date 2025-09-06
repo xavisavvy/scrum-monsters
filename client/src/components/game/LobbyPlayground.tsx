@@ -44,12 +44,22 @@ export function LobbyPlayground() {
     if (currentLobby?.gamePhase !== 'lobby') return;
     
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore input if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
       // Only handle movement if we're in lobby phase
       setKeys(prev => new Set(prev).add(event.code));
       
+      // Prevent default for movement keys to avoid page scrolling
+      if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'KeyA', 'KeyD', 'KeyW', 'KeyS', 'Space'].includes(event.code)) {
+        event.preventDefault();
+      }
+
       // Handle jump - Mario-style jumping
       if (event.code === 'Space' && !isJumping && playerPosition.y >= groundLevel) {
-        event.preventDefault();
         setIsJumping(true);
         
         // Animate jump
@@ -86,6 +96,12 @@ export function LobbyPlayground() {
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      // Ignore input if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
       setKeys(prev => {
         const newKeys = new Set(prev);
         newKeys.delete(event.code);
@@ -158,7 +174,7 @@ export function LobbyPlayground() {
       setOtherPlayers(prev => ({
         ...prev,
         [playerId]: {
-          ...prev[playerId],
+          ...(prev[playerId] || {}),
           id: playerId,
           position: {
             x: (x / 100) * (playgroundWidth - characterSize),
@@ -176,7 +192,7 @@ export function LobbyPlayground() {
       setOtherPlayers(prev => ({
         ...prev,
         [playerId]: {
-          ...prev[playerId],
+          ...(prev[playerId] || {}),
           isJumping: true
         }
       }));
@@ -186,7 +202,7 @@ export function LobbyPlayground() {
         setOtherPlayers(prev => ({
           ...prev,
           [playerId]: {
-            ...prev[playerId],
+            ...(prev[playerId] || {}),
             isJumping: false
           }
         }));

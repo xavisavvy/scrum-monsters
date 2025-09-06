@@ -131,6 +131,13 @@ export function setupWebSocket(httpServer: HTTPServer) {
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
 
+      // Validate that player is in lobby phase
+      const lobby = gameState.findLobbyById(lobbyId);
+      if (!lobby || lobby.gamePhase !== 'lobby') {
+        console.log(`Player ${playerId} tried to move but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
+        return;
+      }
+
       // Broadcast position to other players in the same lobby
       socket.to(lobbyId).emit('lobby_player_pos', { 
         playerId, 
@@ -144,6 +151,13 @@ export function setupWebSocket(httpServer: HTTPServer) {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
+
+      // Validate that player is in lobby phase
+      const lobby = gameState.findLobbyById(lobbyId);
+      if (!lobby || lobby.gamePhase !== 'lobby') {
+        console.log(`Player ${playerId} tried to jump but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
+        return;
+      }
 
       // Broadcast jump state to other players in the same lobby
       socket.to(lobbyId).emit('lobby_player_jump', { 
