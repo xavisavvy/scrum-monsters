@@ -107,61 +107,6 @@ export function TeamPerformanceTracker() {
     };
   };
 
-  if (!currentLobby || currentLobby.gamePhase !== 'battle') {
-    return null;
-  }
-
-  const devPerformance = getTeamPerformance('developers');
-  const qaPerformance = getTeamPerformance('qa');
-
-  return (
-    <div className="performance-tracker fixed top-20 left-4 z-30 pointer-events-none">
-      <div className="bg-black bg-opacity-70 rounded-lg p-3 text-white text-sm">
-        <div className="font-bold mb-2 text-center">⚡ Live Performance</div>
-        
-        {/* Developers */}
-        {devPerformance && (
-          <div className="mb-2">
-            <div className="text-blue-400 font-bold">👨‍💻 Developers</div>
-            <div className="text-xs space-y-1">
-              <div>Submissions: {devPerformance.submittedCount}/{devPerformance.totalMembers}</div>
-              <div>Avg Time: {(devPerformance.averageTime / 1000).toFixed(1)}s</div>
-              <div className={devPerformance.hasConsensus ? 'text-green-400' : 'text-yellow-400'}>
-                {devPerformance.hasConsensus ? '✅ Consensus' : '⏳ Estimating...'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* QA */}
-        {qaPerformance && (
-          <div>
-            <div className="text-green-400 font-bold">🧪 QA Engineers</div>
-            <div className="text-xs space-y-1">
-              <div>Submissions: {qaPerformance.submittedCount}/{qaPerformance.totalMembers}</div>
-              <div>Avg Time: {(qaPerformance.averageTime / 1000).toFixed(1)}s</div>
-              <div className={qaPerformance.hasConsensus ? 'text-green-400' : 'text-yellow-400'}>
-                {qaPerformance.hasConsensus ? '✅ Consensus' : '⏳ Testing...'}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Competition indicator */}
-        {devPerformance && qaPerformance && (
-          <div className="mt-2 pt-2 border-t border-gray-600">
-            <div className="text-xs text-center">
-              {devPerformance.averageTime < qaPerformance.averageTime ? (
-                <span className="text-blue-400">👨‍💻 Faster Estimation</span>
-              ) : qaPerformance.averageTime < devPerformance.averageTime ? (
-                <span className="text-green-400">🧪 Faster Estimation</span>
-              ) : (
-                <span className="text-yellow-400">⚡ Tied Speed</span>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Hide Live Performance section as requested
+  return null;
 }
