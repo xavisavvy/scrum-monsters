@@ -276,6 +276,14 @@ function App() {
       return (
         <div className="flex items-center justify-center min-h-screen p-6">
           <div className="retro-card text-center">
+            <div className="flex justify-center mb-4">
+              <img 
+                src="/scrum-monster-icon.png" 
+                alt="Scrum Monster" 
+                className="w-16 h-16 pixelated object-contain animate-pulse"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
             <h2 className="text-xl font-bold mb-4">Connecting to Server...</h2>
             <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
           </div>
@@ -330,9 +338,23 @@ function App() {
             
             <div className="flex items-center justify-center min-h-screen p-6 relative z-20">
               <div className="retro-card text-center max-w-md w-full">
-                <h1 className="text-4xl font-bold retro-text-glow mb-2">
-                  SCRUM QUEST
-                </h1>
+                <div className="flex items-center justify-center gap-4 mb-2">
+                  <img 
+                    src="/scrum-monster-icon.png" 
+                    alt="Scrum Monster" 
+                    className="w-12 h-12 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  <h1 className="text-4xl font-bold retro-text-glow">
+                    SCRUM QUEST
+                  </h1>
+                  <img 
+                    src="/scrum-monster-icon.png" 
+                    alt="Scrum Monster" 
+                    className="w-12 h-12 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </div>
                 <p className="text-lg text-gray-400 mb-8">
                   Battle Jira Tickets in Epic JRPG Style!
                 </p>

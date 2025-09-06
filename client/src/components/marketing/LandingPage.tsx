@@ -63,9 +63,23 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 text-center">
           <div className="max-w-4xl mx-auto">
             {/* Main Title */}
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold retro-text-glow mb-6">
-              SCRUM MONSTERS
-            </h1>
+            <div className="flex items-center justify-center gap-6 mb-6">
+              <img 
+                src="/scrum-monster-icon.png" 
+                alt="Scrum Monster" 
+                className="w-16 sm:w-24 md:w-32 h-16 sm:h-24 md:h-32 pixelated object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+              <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold retro-text-glow">
+                SCRUM MONSTERS
+              </h1>
+              <img 
+                src="/scrum-monster-icon.png" 
+                alt="Scrum Monster" 
+                className="w-16 sm:w-24 md:w-32 h-16 sm:h-24 md:h-32 pixelated object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+            </div>
             
             {/* Tagline */}
             <h2 className="text-xl sm:text-2xl md:text-3xl text-gray-300 mb-4">
