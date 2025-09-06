@@ -94,6 +94,11 @@ export function useSpriteAnimation({
     const row = animConfig.row;
     const col = currentFrame;
     
+    // Simplified frame calculation debug
+    if (col > 3 || row > 3) {
+      console.warn(`⚠️ Frame out of bounds: ${avatarClass} col=${col} row=${row}`);
+    }
+    
     return {
       x: col * frameWidth,
       y: row * frameHeight,

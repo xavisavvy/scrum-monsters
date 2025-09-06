@@ -36,28 +36,42 @@ export function SpriteRenderer({
 
   const imageDimensions = useImageDimensions(spriteSheetUrl);
   
-  // Configuration
-  const cols = 4;
-  const rows = 4; // Changed from 3 to 4 since images are 1024x1024 (square)
-  
-  // Calculate actual frame size based on image dimensions  
-  const actualFrameWidth = imageDimensions.loaded ? imageDimensions.width / cols : frameSize.width;
-  const actualFrameHeight = imageDimensions.loaded ? imageDimensions.height / rows : frameSize.height;
-  
-  // Fixed display size for consistency
+  // Fixed display size
   const displaySize = 60;
   
-  // Calculate scaling factor to fit frame into display size
-  const scale = imageDimensions.loaded ? displaySize / actualFrameWidth : size;
-  
-  // Calculate current frame position in actual pixels
-  const frameCol = Math.floor(spriteFrame.x / frameSize.width);
-  const frameRow = Math.floor(spriteFrame.y / frameSize.height);
-  
-  // Position in display coordinates (scaled to fit displaySize)
-  const displayFrameX = frameCol * displaySize;
-  const displayFrameY = frameRow * displaySize;
+  if (imageDimensions.loaded) {
+    // For 1024x1024 images with 4x4 grid: each frame is 256x256
+    const actualFrameWidth = imageDimensions.width / 4;
+    const actualFrameHeight = imageDimensions.height / 4;
+    
+    // Calculate which frame we want (column and row)
+    const frameCol = Math.floor(spriteFrame.x / frameSize.width);
+    const frameRow = Math.floor(spriteFrame.y / frameSize.height);
+    
+    console.log(`🎯 ${avatarClass}: frame(${frameCol},${frameRow}) size=${actualFrameWidth}x${actualFrameHeight}`);
+    
+    // Scale to fit our display size
+    const scale = displaySize / actualFrameWidth;
+    
+    return (
+      <div
+        className={`sprite-renderer ${className}`}
+        style={{
+          width: displaySize,
+          height: displaySize,
+          backgroundImage: `url(${spriteSheetUrl})`,
+          backgroundPosition: `-${frameCol * displaySize}px -${frameRow * displaySize}px`,
+          backgroundSize: `${imageDimensions.width * scale}px ${imageDimensions.height * scale}px`,
+          backgroundRepeat: 'no-repeat',
+          transform: shouldFlip ? 'scaleX(-1)' : 'scaleX(1)',
+          imageRendering: 'pixelated',
+          ...style
+        }}
+      />
+    );
+  }
 
+  // Fallback for when image hasn't loaded yet
   return (
     <div
       className={`sprite-renderer ${className}`}
@@ -65,13 +79,11 @@ export function SpriteRenderer({
         width: displaySize,
         height: displaySize,
         backgroundImage: `url(${spriteSheetUrl})`,
-        backgroundPosition: `-${displayFrameX}px -${displayFrameY}px`,
-        backgroundSize: imageDimensions.loaded ? 
-          `${imageDimensions.width * scale}px ${imageDimensions.height * scale}px` :
-          `${frameSize.width * cols * scale}px ${frameSize.height * rows * scale}px`, // Fallback to 4x4
+        backgroundPosition: `-${spriteFrame.x * size / frameSize.width * displaySize}px -${spriteFrame.y * size / frameSize.height * displaySize}px`,
+        backgroundSize: `${displaySize * 4}px ${displaySize * 4}px`, // 4x4 grid fallback
         backgroundRepeat: 'no-repeat',
         transform: shouldFlip ? 'scaleX(-1)' : 'scaleX(1)',
-        imageRendering: 'pixelated', // Maintain pixel art sharpness
+        imageRendering: 'pixelated',
         ...style
       }}
     />
