@@ -241,17 +241,36 @@
   gap: 12px;
 }
 
-@media (max-width: 768px) {
+/* Horizontal carousel for screens less than 700px */
+@media (max-width: 699px) {
   .avatar-selection-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 8px;
+    display: flex;
+    overflow-x: auto;
+    overflow-y: hidden;
+    gap: 16px;
+    padding: 8px 4px 16px 4px;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: var(--retro-accent) var(--retro-primary);
   }
-}
 
-@media (max-width: 480px) {
-  .avatar-selection-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+  .avatar-selection-grid::-webkit-scrollbar {
+    height: 6px;
+  }
+
+  .avatar-selection-grid::-webkit-scrollbar-track {
+    background: var(--retro-primary);
+    border-radius: 3px;
+  }
+
+  .avatar-selection-grid::-webkit-scrollbar-thumb {
+    background: var(--retro-accent);
+    border-radius: 3px;
+  }
+
+  .avatar-selection-grid::-webkit-scrollbar-thumb:hover {
+    background: var(--retro-glow);
   }
 }
 
@@ -268,6 +287,16 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+/* Mobile carousel: make cards have fixed width and snap to position */
+@media (max-width: 699px) {
+  .avatar-card {
+    flex-shrink: 0;
+    min-width: 140px;
+    width: 140px;
+    scroll-snap-align: center;
+  }
 }
 
 .avatar-card:hover {
