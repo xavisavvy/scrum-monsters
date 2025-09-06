@@ -5,6 +5,7 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
+import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 
 interface PlayerControllerProps {
   containerWidth: number;
@@ -24,6 +25,8 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const [keys, setKeys] = useState<Set<string>>(new Set());
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [ctrlPressed, setCtrlPressed] = useState(false);
+  const [currentDirection, setCurrentDirection] = useState<SpriteDirection>('down');
+  const [isMoving, setIsMoving] = useState(false);
 
   const characterSize = 64;
   const moveSpeed = 5;
@@ -267,18 +270,34 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       setPlayerPosition(prev => {
         let newX = prev.x;
         let newY = prev.y;
+        let moving = false;
+        let direction: SpriteDirection = currentDirection;
 
         if (keys.has('ArrowLeft') || keys.has('KeyA')) {
           newX = Math.max(0, prev.x - moveSpeed);
+          direction = 'left';
+          moving = true;
         }
         if (keys.has('ArrowRight') || keys.has('KeyD')) {
           newX = Math.min(containerWidth - characterSize, prev.x + moveSpeed);
+          direction = 'right';
+          moving = true;
         }
         if (keys.has('ArrowUp') || keys.has('KeyW')) {
           newY = Math.min(containerHeight - characterSize - 100, prev.y + moveSpeed); // Keep some bottom margin
+          direction = 'up';
+          moving = true;
         }
         if (keys.has('ArrowDown') || keys.has('KeyS')) {
           newY = Math.max(0, prev.y - moveSpeed);
+          direction = 'down';
+          moving = true;
+        }
+
+        // Update movement state and direction
+        setIsMoving(moving);
+        if (moving) {
+          setCurrentDirection(direction);
         }
 
         // Send position update to server if position changed
@@ -296,8 +315,11 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     if (keys.size > 0) {
       const interval = setInterval(movePlayer, 16); // ~60 FPS
       return () => clearInterval(interval);
+    } else {
+      // No keys pressed, not moving
+      setIsMoving(false);
     }
-  }, [keys, containerWidth, containerHeight, characterSize, moveSpeed, emit]);
+  }, [keys, containerWidth, containerHeight, characterSize, moveSpeed, emit, currentDirection]);
 
   const handleShoot = useCallback((projectileData: Omit<Projectile, 'id' | 'progress'>) => {
     const newProjectile: Projectile = {
@@ -569,6 +591,8 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           containerWidth={containerWidth}
           containerHeight={containerHeight}
           playerId={currentPlayer.id}
+          isMoving={isMoving}
+          direction={currentDirection}
         />
       </div>
 
@@ -593,6 +617,8 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
               containerWidth={containerWidth}
               containerHeight={containerHeight}
               playerId={playerId}
+              isMoving={false} // TODO: sync movement state
+              direction="down" // TODO: sync direction
             />
           </div>
         );
