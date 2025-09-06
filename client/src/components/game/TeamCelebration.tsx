@@ -1,13 +1,15 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { TeamType } from '@/lib/gameTypes';
+import { getRandomVictoryImage } from '@/lib/victoryImages';
 
 interface CelebrationEvent {
   id: string;
   team: TeamType;
   type: 'achievement' | 'victory' | 'streak' | 'milestone';
   message: string;
-  emoji: string;
+  emoji?: string;
+  image?: string;
   timestamp: number;
 }
 
@@ -38,7 +40,7 @@ export function TeamCelebration() {
             team: 'developers',
             type: 'achievement',
             message: latestAchievement,
-            emoji: '🎉',
+            image: getRandomVictoryImage(),
             timestamp: Date.now()
           });
         }
@@ -55,7 +57,7 @@ export function TeamCelebration() {
             team: 'qa',
             type: 'achievement',
             message: latestAchievement,
-            emoji: '🎊',
+            image: getRandomVictoryImage(),
             timestamp: Date.now()
           });
         }
@@ -159,8 +161,19 @@ export function TeamCelebration() {
           `}
         >
           <div className="flex items-center space-x-2">
-            <div className="text-2xl animate-pulse">
-              {celebration.emoji}
+            <div className="animate-pulse">
+              {celebration.image ? (
+                <img 
+                  src={celebration.image} 
+                  alt="Celebration"
+                  className="w-8 h-8 pixelated"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              ) : (
+                <div className="text-2xl">
+                  {celebration.emoji}
+                </div>
+              )}
             </div>
             <div>
               <div className={`font-bold text-sm ${getTeamColor(celebration.team)}`}>

@@ -15,11 +15,13 @@ import { TimerDisplay } from './TimerDisplay';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
+import { usePhaseVictoryImage } from '@/lib/victoryImages';
 
 export function BattleScreen() {
   const { currentLobby, addAttackAnimation } = useGameState();
   const { emit } = useWebSocket();
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
+  const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
 
   // Handle boss music when entering/leaving battle
   useEffect(() => {
@@ -130,7 +132,14 @@ export function BattleScreen() {
             <div className="text-center mb-6">
               <RetroCard title="Victory!">
                 <div className="space-y-4">
-                  <div className="text-6xl">🎉</div>
+                  <div className="flex justify-center mb-4">
+                    <img 
+                      src={victoryImage} 
+                      alt="Victory!"
+                      className="w-32 h-32 pixelated"
+                      style={{ imageRendering: 'pixelated' }}
+                    />
+                  </div>
                   <h2 className="text-2xl font-bold retro-text-glow">
                     All Objectives Complete!
                   </h2>
@@ -237,7 +246,14 @@ export function BattleScreen() {
           <div className="text-center p-6">
             <RetroCard title="Objective Complete!">
               <div className="space-y-4">
-                <div className="text-4xl">✅</div>
+                <div className="flex justify-center mb-4">
+                  <img 
+                    src={victoryImage} 
+                    alt="Boss Defeated!"
+                    className="w-24 h-24 pixelated"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                </div>
                 <h2 className="text-xl font-bold text-green-400">
                   Boss Defeated!
                 </h2>
