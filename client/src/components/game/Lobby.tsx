@@ -20,8 +20,8 @@ export function Lobby() {
   
   // Movement constants
   const moveSpeed = 3;
-  const movementAreaWidth = 1200; // Use fixed width for consistent movement area
   const characterSize = 60;
+  const movementAreaRef = React.useRef<HTMLDivElement>(null);
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
   
@@ -77,6 +77,9 @@ export function Lobby() {
         let newX = prev.x;
         let direction: SpriteDirection = prev.direction;
         let moving = false;
+        
+        // Get actual movement area width from DOM element
+        const movementAreaWidth = movementAreaRef.current?.clientWidth || 1200;
 
         // Only allow left/right movement
         if (keys.has('ArrowLeft') || keys.has('KeyA')) {
@@ -111,14 +114,19 @@ export function Lobby() {
     const handleLobbyPlayerPos = ({ playerId, x, direction }: { playerId: string; x: number; direction?: SpriteDirection }) => {
       if (playerId === currentPlayer?.id) return; // Skip own updates
 
-      setPlayerPositions(prev => ({
-        ...prev,
-        [playerId]: {
-          x: (x / 100) * (movementAreaWidth - characterSize),
-          direction: direction || 'right',
-          isMoving: true
-        }
-      }));
+      setPlayerPositions(prev => {
+        // Get actual movement area width from DOM element
+        const movementAreaWidth = movementAreaRef.current?.clientWidth || 1200;
+        
+        return {
+          ...prev,
+          [playerId]: {
+            x: (x / 100) * (movementAreaWidth - characterSize),
+            direction: direction || 'right',
+            isMoving: true
+          }
+        };
+      });
     };
 
     socket.on('lobby_player_pos', handleLobbyPlayerPos);
@@ -491,7 +499,10 @@ export function Lobby() {
         
         {/* Player Movement Area - Bottom of Screen */}
         {currentLobby?.gamePhase === 'lobby' && (
-          <div className="absolute bottom-4 left-0 right-0 h-24 overflow-hidden">
+          <div 
+            ref={movementAreaRef}
+            className="absolute bottom-4 left-0 right-0 h-24 overflow-hidden"
+          >
             {/* My Player Character */}
             {currentPlayer && (
               <div
