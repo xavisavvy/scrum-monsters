@@ -806,47 +806,70 @@ export function Lobby() {
             >
               {/* Pixel Art Window */}
               <div 
-                className="absolute"
+                className="absolute z-10"
                 style={{
-                  top: '20%',
-                  right: '30%',
-                  width: '60px',
-                  height: '80px',
-                  background: `
-                    linear-gradient(45deg, #4A90E2 25%, transparent 25%),
-                    linear-gradient(-45deg, #4A90E2 25%, transparent 25%),
-                    linear-gradient(45deg, transparent 75%, #4A90E2 75%),
-                    linear-gradient(-45deg, transparent 75%, #4A90E2 75%)
-                  `,
-                  backgroundSize: '8px 8px',
-                  backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px',
-                  border: '3px solid #654321',
-                  imageRendering: 'pixelated'
+                  top: '25%',
+                  right: '15%',
+                  width: '80px',
+                  height: '60px',
+                  background: '#87CEEB',
+                  border: '4px solid #654321',
+                  imageRendering: 'pixelated',
+                  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.3)'
                 }}
-              />
-              {/* Mounted Weapons */}
+              >
+                {/* Window cross */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '0',
+                  right: '0',
+                  height: '4px',
+                  background: '#654321',
+                  transform: 'translateY(-50%)'
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '0',
+                  bottom: '0',
+                  left: '50%',
+                  width: '4px',
+                  background: '#654321',
+                  transform: 'translateX(-50%)'
+                }} />
+              </div>
+              
+              {/* Mounted Crossbow */}
               <div 
-                className="absolute"
+                className="absolute z-10"
                 style={{
-                  top: '60%',
-                  right: '20%',
-                  width: '40px',
-                  height: '8px',
+                  top: '65%',
+                  right: '25%',
+                  width: '50px',
+                  height: '30px',
                   background: '#8B4513',
                   imageRendering: 'pixelated'
                 }}
-              />
-              <div 
-                className="absolute"
-                style={{
-                  top: '55%',
-                  right: '35%',
-                  width: '8px',
-                  height: '20px',
-                  background: '#C0C0C0',
-                  imageRendering: 'pixelated'
-                }}
-              />
+              >
+                {/* Crossbow string */}
+                <div style={{
+                  position: 'absolute',
+                  top: '10px',
+                  left: '5px',
+                  right: '5px',
+                  height: '2px',
+                  background: '#FFFF99'
+                }} />
+                {/* Crossbow bolt */}
+                <div style={{
+                  position: 'absolute',
+                  top: '14px',
+                  left: '20px',
+                  width: '20px',
+                  height: '2px',
+                  background: '#654321'
+                }} />
+              </div>
             </div>
             
             {/* Right Extension - Trophy & Decorations Section */}
@@ -873,72 +896,109 @@ export function Lobby() {
                 position: 'relative'
               }}
             >
-              {/* Mounted Trophy Head */}
+              {/* Mounted Deer Head */}
               <div 
-                className="absolute"
+                className="absolute z-10"
                 style={{
-                  top: '25%',
-                  left: '20%',
-                  width: '50px',
-                  height: '40px',
-                  background: `
-                    radial-gradient(ellipse at center, #8B6914 30%, #654321 70%)
-                  `,
-                  borderRadius: '50% 50% 30% 30%',
-                  imageRendering: 'pixelated'
-                }}
-              />
-              {/* Antlers */}
-              <div 
-                className="absolute"
-                style={{
-                  top: '15%',
+                  top: '20%',
                   left: '15%',
-                  width: '8px',
-                  height: '25px',
+                  width: '60px',
+                  height: '50px',
                   background: '#8B6914',
-                  transform: 'rotate(-20deg)',
-                  imageRendering: 'pixelated'
+                  borderRadius: '50% 50% 40% 40%',
+                  imageRendering: 'pixelated',
+                  boxShadow: '2px 2px 4px rgba(0,0,0,0.3)'
                 }}
-              />
-              <div 
-                className="absolute"
-                style={{
-                  top: '15%',
+              >
+                {/* Eyes */}
+                <div style={{
+                  position: 'absolute',
+                  top: '15px',
+                  left: '15px',
+                  width: '6px',
+                  height: '6px',
+                  background: '#000',
+                  borderRadius: '50%'
+                }} />
+                <div style={{
+                  position: 'absolute',
+                  top: '15px',
+                  right: '15px',
+                  width: '6px',
+                  height: '6px',
+                  background: '#000',
+                  borderRadius: '50%'
+                }} />
+                {/* Nose */}
+                <div style={{
+                  position: 'absolute',
+                  bottom: '15px',
                   left: '50%',
                   width: '8px',
-                  height: '25px',
-                  background: '#8B6914',
-                  transform: 'rotate(20deg)',
-                  imageRendering: 'pixelated'
-                }}
-              />
-              {/* Wall Tapestry */}
+                  height: '6px',
+                  background: '#654321',
+                  transform: 'translateX(-50%)'
+                }} />
+              </div>
+              
+              {/* Antlers */}
               <div 
-                className="absolute"
+                className="absolute z-10"
                 style={{
-                  top: '55%',
-                  left: '25%',
-                  width: '40px',
-                  height: '30px',
-                  background: `
-                    repeating-linear-gradient(
-                      45deg,
-                      #8B0000 0px, #8B0000 4px,
-                      #FFD700 4px, #FFD700 8px
-                    )
-                  `,
-                  border: '2px solid #654321',
+                  top: '10%',
+                  left: '5%',
+                  width: '12px',
+                  height: '35px',
+                  background: '#A0522D',
+                  transform: 'rotate(-25deg)',
                   imageRendering: 'pixelated'
                 }}
               />
+              <div 
+                className="absolute z-10"
+                style={{
+                  top: '10%',
+                  left: '65%',
+                  width: '12px',
+                  height: '35px',
+                  background: '#A0522D',
+                  transform: 'rotate(25deg)',
+                  imageRendering: 'pixelated'
+                }}
+              />
+              
+              {/* Heraldic Tapestry */}
+              <div 
+                className="absolute z-10"
+                style={{
+                  top: '60%',
+                  left: '20%',
+                  width: '50px',
+                  height: '25px',
+                  background: '#8B0000',
+                  border: '3px solid #654321',
+                  imageRendering: 'pixelated'
+                }}
+              >
+                {/* Gold symbol */}
+                <div style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  width: '16px',
+                  height: '16px',
+                  background: '#FFD700',
+                  transform: 'translate(-50%, -50%) rotate(45deg)',
+                  imageRendering: 'pixelated'
+                }} />
+              </div>
             </div>
             
             {/* Wooden Floor Extension */}
             <div 
               className="absolute bottom-0 left-0 right-0"
               style={{
-                height: '30%',
+                height: '15%',
                 background: 'repeating-linear-gradient(90deg, #8B4513 0px, #8B4513 8px, #A0522D 8px, #A0522D 16px)',
                 imageRendering: 'pixelated'
               }}
