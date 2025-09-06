@@ -89,14 +89,24 @@ class GameStateManager {
     this.cancelRevivalSession(sessionKey);
   }
 
-  createLobby(hostId: string, name: string): Lobby {
+  createLobby(hostName: string, lobbyName: string): Lobby {
     const lobbyId = this.generateLobbyId();
+    const hostId = Math.random().toString(36).substring(2, 15);
     
     const lobby: Lobby = {
       id: lobbyId,
-      name,
+      name: lobbyName,
       hostId,
-      players: [],
+      players: [{
+        id: hostId,
+        name: hostName,
+        team: 'developers',
+        isHost: true,
+        avatar: 'warrior',
+        avatarClass: 'warrior',
+        hasSubmittedScore: false,
+        currentScore: undefined
+      }],
       teams: {
         developers: [],
         qa: [],
@@ -132,25 +142,44 @@ class GameStateManager {
         winnerHistory: [],
         seasonStart: new Date().toISOString()
       },
-      playerCombatStates: {},
-      playerPositions: {}
+      playerCombatStates: {
+        [hostId]: {
+          maxHp: 100,
+          hp: 100,
+          isDowned: false
+        }
+      },
+      playerPositions: {
+        [hostId]: {
+          x: Math.random() * 80 + 10,
+          y: 80
+        }
+      }
     };
 
+    this.updateTeamAssignments(lobby);
     this.lobbies.set(lobbyId, lobby);
+    this.playerToLobby.set(hostId, lobbyId);
     return lobby;
   }
 
-  joinLobby(lobbyId: string, player: Player): Lobby | null {
+  joinLobby(lobbyId: string, playerName: string): { lobby: Lobby; player: Player } | null {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby) return null;
 
-    // Check if player is already in the lobby
-    const existingPlayer = lobby.players.find(p => p.id === player.id);
-    if (existingPlayer) {
-      // Update existing player info
-      Object.assign(existingPlayer, player);
-    } else {
-      // Add new player
+    // Create or get existing player
+    let player = lobby.players.find(p => p.name === playerName);
+    if (!player) {
+      player = {
+        id: Math.random().toString(36).substring(2, 15),
+        name: playerName,
+        team: 'developers',
+        isHost: false,
+        avatar: 'warrior',
+        avatarClass: 'warrior',
+        hasSubmittedScore: false,
+        currentScore: undefined
+      };
       lobby.players.push(player);
     }
 
@@ -175,7 +204,7 @@ class GameStateManager {
       };
     }
 
-    return lobby;
+    return { lobby, player };
   }
 
   removePlayer(playerId: string): Lobby | null {
