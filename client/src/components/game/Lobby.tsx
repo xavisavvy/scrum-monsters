@@ -318,7 +318,7 @@ export function Lobby() {
 
   return (
     <div className="retro-container relative overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-36">        
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-44">        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
@@ -647,7 +647,7 @@ export function Lobby() {
       {currentLobby?.gamePhase === 'lobby' && (
         <div 
           ref={movementAreaRef}
-          className="fixed bottom-0 left-0 right-0 h-32 overflow-hidden bg-gradient-to-b from-gray-900/50 to-gray-800/50 border-t border-gray-700"
+          className="fixed bottom-0 left-0 right-0 h-40 overflow-hidden bg-gradient-to-b from-gray-900/50 to-gray-800/50 border-t border-gray-700"
           style={{ zIndex: 1 }}
         >
           {/* Pixelated Door Animation (Center Top) */}
