@@ -21,6 +21,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const [bossProjectiles, setBossProjectiles] = useState<Projectile[]>([]);
   const [keys, setKeys] = useState<Set<string>>(new Set());
   const [showDebugModal, setShowDebugModal] = useState(false);
+  const [ctrlPressed, setCtrlPressed] = useState(false);
 
   const characterSize = 64;
   const moveSpeed = 5;
@@ -55,8 +56,9 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         return;
       }
       
-      // Handle shooting with Ctrl keys
-      if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer) {
+      // Handle shooting with Ctrl keys (single shot per keydown, not continuous)
+      if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer && !ctrlPressed) {
+        setCtrlPressed(true); // Prevent multiple shots while held
         event.preventDefault();
         console.log('⌨️ Ctrl key pressed for shooting!');
         
@@ -122,6 +124,11 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         newKeys.delete(event.code);
         return newKeys;
       });
+      
+      // Reset Ctrl key state when released to allow next shot
+      if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+        setCtrlPressed(false);
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
