@@ -46,7 +46,18 @@ export function ScoreSubmission() {
       <RetroCard title="Current Objective">
         <div className="space-y-2">
           <h3 className="text-lg font-bold text-yellow-400">
-            {currentTicket.title}
+            {currentLobby.jiraSettings?.baseUrl ? (
+              <a
+                href={`${currentLobby.jiraSettings.baseUrl}${currentTicket.title}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-yellow-400 hover:text-yellow-300 hover:underline"
+              >
+                {currentTicket.title}
+              </a>
+            ) : (
+              currentTicket.title
+            )}
           </h3>
           <p className="text-sm text-gray-400">
             {currentTicket.description}

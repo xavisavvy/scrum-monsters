@@ -185,7 +185,20 @@ export function BattleScreen() {
                         <span className="text-green-400 text-xl">✅</span>
                         <div>
                           <div className="font-mono text-sm text-blue-400">#{index + 1}</div>
-                          <div className="font-bold">{ticket.title}</div>
+                          <div className="font-bold">
+                            {currentLobby.jiraSettings?.baseUrl ? (
+                              <a
+                                href={`${currentLobby.jiraSettings.baseUrl}${ticket.title}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-white hover:text-blue-300 hover:underline"
+                              >
+                                {ticket.title}
+                              </a>
+                            ) : (
+                              ticket.title
+                            )}
+                          </div>
                           <div className="text-sm text-gray-400">{ticket.description}</div>
                         </div>
                       </div>
