@@ -22,13 +22,16 @@ export function SpriteRenderer({
   className = '',
   style = {}
 }: SpriteRendererProps) {
+  // Defensive check for valid avatarClass
+  const safeAvatarClass = avatarClass || 'warrior';
+  
   const {
     spriteSheetUrl,
     spriteFrame,
     shouldFlip,
     frameSize
   } = useSpriteAnimation({
-    avatarClass,
+    avatarClass: safeAvatarClass,
     animation,
     direction,
     isMoving
@@ -71,7 +74,13 @@ export function SpriteRenderer({
     );
   }
 
-  // Fallback for when image hasn't loaded yet
+  // Add error handling for missing sprites
+  const handleImageError = (e: any) => {
+    console.warn(`⚠️ Failed to load sprite: ${spriteSheetUrl}`);
+    e.target.style.display = 'none';
+  };
+
+  // Fallback for when image hasn't loaded yet or fails to load
   return (
     <div
       className={`sprite-renderer ${className}`}
@@ -86,6 +95,33 @@ export function SpriteRenderer({
         imageRendering: 'pixelated',
         ...style
       }}
-    />
+      onError={handleImageError}
+    >
+      {/* Fallback emoji display if sprite fails to load */}
+      <div 
+        className="absolute inset-0 flex items-center justify-center text-2xl"
+        style={{ 
+          display: 'none' // Will be shown by error handler
+        }}
+      >
+        {getClassIcon(safeAvatarClass)}
+      </div>
+    </div>
   );
+  
+  // Helper function for class icons
+  function getClassIcon(avatarClass: string): string {
+    const icons: Record<string, string> = {
+      ranger: '🏹',
+      rogue: '🗡️', 
+      bard: '🎵',
+      sorcerer: '🔥',
+      wizard: '🧙',
+      warrior: '⚔️',
+      paladin: '🛡️',
+      cleric: '✨',
+      oathbreaker: '⚡'
+    };
+    return icons[avatarClass] || '⚔️';
+  }
 }
