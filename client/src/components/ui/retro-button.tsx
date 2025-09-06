@@ -6,13 +6,13 @@ interface RetroButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
   size?: 'sm' | 'md' | 'lg';
 }
 
-export function RetroButton({ 
+export const RetroButton = React.forwardRef<HTMLButtonElement, RetroButtonProps>(({ 
   className, 
   variant = 'primary', 
   size = 'md', 
   children, 
   ...props 
-}: RetroButtonProps) {
+}, ref) => {
   const sizeClasses = {
     sm: 'px-3 py-1 text-sm',
     md: 'px-6 py-3 text-base',
@@ -27,6 +27,7 @@ export function RetroButton({
 
   return (
     <button
+      ref={ref}
       className={cn(
         variantClasses[variant],
         sizeClasses[size],
@@ -37,4 +38,6 @@ export function RetroButton({
       {children}
     </button>
   );
-}
+});
+
+RetroButton.displayName = "RetroButton";

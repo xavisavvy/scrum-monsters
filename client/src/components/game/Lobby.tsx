@@ -2,6 +2,15 @@ import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger,
+  DialogClose,
+  DialogDescription
+} from '@/components/ui/dialog';
 import { SpriteRenderer } from './SpriteRenderer';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
@@ -12,6 +21,7 @@ export function Lobby() {
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   // Player movement state for lobby walking
   const [keys, setKeys] = useState<Set<string>>(new Set());
@@ -261,6 +271,78 @@ export function Lobby() {
                   >
                     {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
                   </RetroButton>
+                  {isHost && (
+                    <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
+                      <DialogTrigger asChild>
+                        <RetroButton size="sm" variant="secondary">
+                          ⚙️ Settings
+                        </RetroButton>
+                      </DialogTrigger>
+                      <DialogContent className="bg-gray-900 border-gray-600 text-white max-w-md w-[95vw] sm:w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6">
+                        <DialogHeader>
+                          <DialogTitle className="text-xl font-bold retro-text-glow">⚙️ Lobby Settings</DialogTitle>
+                          <DialogDescription className="text-gray-400">
+                            Configure settings for this lobby session
+                          </DialogDescription>
+                        </DialogHeader>
+                        
+                        {/* Estimation Timer Section */}
+                        <div className="space-y-6">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-200 mb-4">Estimation Timer</h3>
+                            <div className="space-y-4">
+                              <div className="flex items-center gap-3">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                                    checked={currentLobby.timerSettings?.enabled || false}
+                                    onChange={(e) => updateTimerSettings({
+                                      enabled: e.target.checked,
+                                      durationMinutes: currentLobby.timerSettings?.durationMinutes || 5
+                                    })}
+                                  />
+                                  <span className="text-sm font-medium">Enable estimation timer</span>
+                                </label>
+                              </div>
+                              
+                              {currentLobby.timerSettings?.enabled && (
+                                <div className="space-y-2">
+                                  <label className="block text-sm font-medium text-gray-300">
+                                    Timer Duration
+                                  </label>
+                                  <select
+                                    className="retro-input w-full"
+                                    value={currentLobby.timerSettings?.durationMinutes || 5}
+                                    onChange={(e) => updateTimerSettings({
+                                      enabled: true,
+                                      durationMinutes: parseInt(e.target.value)
+                                    })}
+                                  >
+                                    <option value={1}>1 minute</option>
+                                    <option value={2}>2 minutes</option>
+                                    <option value={3}>3 minutes</option>
+                                    <option value={5}>5 minutes</option>
+                                    <option value={10}>10 minutes</option>
+                                    <option value={15}>15 minutes</option>
+                                  </select>
+                                  <p className="text-xs text-gray-400">
+                                    ⏰ Scores will auto-reveal when timer expires
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Future Settings Section - placeholder for expansion */}
+                          <div className="border-t border-gray-700 pt-4">
+                            <h3 className="text-lg font-semibold text-gray-200 mb-2">More Settings</h3>
+                            <p className="text-sm text-gray-400">Additional settings will appear here in future updates.</p>
+                          </div>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
                 
                 {/* Copy notification */}
@@ -367,53 +449,6 @@ export function Lobby() {
               </div>
             </RetroCard>
 
-            {/* Timer Settings */}
-            {isHost && (
-              <RetroCard title="Estimation Timer">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                        checked={currentLobby.timerSettings?.enabled || false}
-                        onChange={(e) => updateTimerSettings({
-                          enabled: e.target.checked,
-                          durationMinutes: currentLobby.timerSettings?.durationMinutes || 5
-                        })}
-                      />
-                      <span className="text-sm font-medium">Enable estimation timer</span>
-                    </label>
-                  </div>
-                  
-                  {currentLobby.timerSettings?.enabled && (
-                    <div className="space-y-2">
-                      <label className="block text-sm font-medium text-gray-300">
-                        Timer Duration
-                      </label>
-                      <select
-                        className="retro-input w-full"
-                        value={currentLobby.timerSettings?.durationMinutes || 5}
-                        onChange={(e) => updateTimerSettings({
-                          enabled: true,
-                          durationMinutes: parseInt(e.target.value)
-                        })}
-                      >
-                        <option value={1}>1 minute</option>
-                        <option value={2}>2 minutes</option>
-                        <option value={3}>3 minutes</option>
-                        <option value={5}>5 minutes</option>
-                        <option value={10}>10 minutes</option>
-                        <option value={15}>15 minutes</option>
-                      </select>
-                      <p className="text-xs text-gray-400">
-                        ⏰ Scores will auto-reveal when timer expires
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </RetroCard>
-            )}
           </div>
 
           {/* Tickets Section */}
@@ -564,6 +599,7 @@ export function Lobby() {
               })}
           </div>
         )}
+        
       </div>
     </div>
   );
