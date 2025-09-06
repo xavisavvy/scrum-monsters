@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
@@ -16,6 +16,121 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings } from '@/lib/gameTypes';
+import { Canvas } from '@react-three/fiber';
+import { useGLTF } from '@react-three/drei';
+import * as THREE from 'three';
+
+// 3D Tavern Background Components
+function TavernBackground() {
+  const { scene } = useGLTF('/models/tavern-background.glb');
+  
+  const clonedScene1 = scene.clone();
+  const clonedScene2 = scene.clone();
+  const clonedScene3 = scene.clone();
+  
+  return (
+    <>
+      <primitive 
+        object={clonedScene1} 
+        position={[-15, 0, -5]} 
+        scale={[2.5, 2.5, 2.5]}
+      />
+      <primitive 
+        object={clonedScene2} 
+        position={[0, 0, -5]} 
+        scale={[2.5, 2.5, 2.5]}
+      />
+      <primitive 
+        object={clonedScene3} 
+        position={[15, 0, -5]} 
+        scale={[2.5, 2.5, 2.5]}
+      />
+    </>
+  );
+}
+
+function TavernFurniture() {
+  const { scene } = useGLTF('/models/tavern-furniture.glb');
+  
+  const table1 = scene.clone();
+  const table2 = scene.clone();
+  const table3 = scene.clone();
+  
+  return (
+    <>
+      <primitive 
+        object={table1} 
+        position={[-8, 0, 2]} 
+        scale={[2.5, 2.5, 2.5]}
+      />
+      <primitive 
+        object={table2} 
+        position={[0, 0, 2]} 
+        scale={[2.5, 2.5, 2.5]}
+      />
+      <primitive 
+        object={table3} 
+        position={[8, 0, 2]} 
+        scale={[2.5, 2.5, 2.5]}
+      />
+    </>
+  );
+}
+
+// Particle Lighting Effects Component
+function TavernLighting() {
+  const particlesRef = React.useRef<THREE.Points>(null);
+  
+  const particles = React.useMemo(() => {
+    const particleCount = 50;
+    const positions = new Float32Array(particleCount * 3);
+    
+    for (let i = 0; i < particleCount; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 20; // X
+      positions[i * 3 + 1] = Math.random() * 8; // Y
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 10; // Z
+    }
+    
+    return positions;
+  }, []);
+  
+  React.useEffect(() => {
+    const animateParticles = () => {
+      if (particlesRef.current) {
+        const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
+        
+        for (let i = 0; i < positions.length; i += 3) {
+          positions[i + 1] += Math.sin(Date.now() * 0.001 + positions[i]) * 0.01;
+        }
+        
+        particlesRef.current.geometry.attributes.position.needsUpdate = true;
+      }
+      requestAnimationFrame(animateParticles);
+    };
+    
+    animateParticles();
+  }, []);
+  
+  return (
+    <points ref={particlesRef}>
+      <bufferGeometry>
+        <bufferAttribute
+          attach="attributes-position"
+          count={particles.length / 3}
+          array={particles}
+          itemSize={3}
+        />
+      </bufferGeometry>
+      <pointsMaterial
+        color="#ffaa44"
+        size={0.1}
+        transparent
+        opacity={0.6}
+        alphaTest={0.1}
+      />
+    </points>
+  );
+}
 
 export function Lobby() {
   const [newTicketTitle, setNewTicketTitle] = useState('');
@@ -247,7 +362,7 @@ export function Lobby() {
   const startBattle = () => {
     const lobbyTickets = currentLobby?.tickets || [];
     if (lobbyTickets.length === 0) return;
-    emit('start_battle');
+    emit('start_battle', {});
   };
 
   const changeTeam = (team: TeamType) => {
@@ -643,13 +758,45 @@ export function Lobby() {
         
       </div>
       
-      {/* Player Movement Area - Sticky Bottom */}
+      {/* 4-Layer Tavern Background System */}
       {currentLobby?.gamePhase === 'lobby' && (
         <div 
           ref={movementAreaRef}
-          className="fixed bottom-0 left-0 right-0 h-40 overflow-hidden bg-gradient-to-b from-gray-900/50 to-gray-800/50 border-t border-gray-700"
+          className="fixed bottom-0 left-0 right-0 h-40 overflow-hidden"
           style={{ zIndex: 1 }}
         >
+          {/* Layer 1: Tavern Background (Furthest Back) */}
+          <div className="absolute inset-0" style={{ zIndex: 1 }}>
+            <Canvas
+              camera={{ position: [0, 2, 10], fov: 50 }}
+              style={{ width: '100%', height: '100%' }}
+              gl={{ antialias: true, alpha: true }}
+            >
+              <ambientLight intensity={0.3} />
+              <directionalLight position={[5, 5, 5]} intensity={0.8} />
+              <pointLight position={[-5, 3, 0]} intensity={1} color="#ff6600" />
+              <pointLight position={[5, 3, 0]} intensity={1} color="#ff6600" />
+              <Suspense fallback={null}>
+                <TavernBackground />
+              </Suspense>
+            </Canvas>
+          </div>
+          
+          {/* Layer 2: Particle Lighting Effects */}
+          <div className="absolute inset-0" style={{ zIndex: 2 }}>
+            <Canvas
+              camera={{ position: [0, 2, 8], fov: 50 }}
+              style={{ width: '100%', height: '100%' }}
+              gl={{ antialias: true, alpha: true }}
+            >
+              <Suspense fallback={null}>
+                <TavernLighting />
+              </Suspense>
+            </Canvas>
+          </div>
+          
+          {/* Layer 3: Player Movement Area */}
+          <div className="absolute inset-0" style={{ zIndex: 10 }}>
           {/* Pixelated Door Animation (Center Top) */}
           <div 
             className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20"
@@ -759,6 +906,22 @@ export function Lobby() {
           {/* Instructions */}
           <div className="absolute bottom-1 left-4 text-xs text-gray-400">
             Use A/D or arrow keys to walk around!
+          </div>
+          </div>
+          
+          {/* Layer 4: Foreground Furniture */}
+          <div className="absolute inset-0" style={{ zIndex: 15 }}>
+            <Canvas
+              camera={{ position: [0, 1, 6], fov: 50 }}
+              style={{ width: '100%', height: '100%' }}
+              gl={{ antialias: true, alpha: true }}
+            >
+              <ambientLight intensity={0.4} />
+              <directionalLight position={[5, 5, 5]} intensity={0.6} />
+              <Suspense fallback={null}>
+                <TavernFurniture />
+              </Suspense>
+            </Canvas>
           </div>
         </div>
       )}
