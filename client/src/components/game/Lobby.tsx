@@ -494,13 +494,13 @@ export function Lobby() {
                 style={{
                   left: `${myPosition.x}px`,
                   bottom: '0px',
-                  transform: `scaleX(${myPosition.direction === 'left' ? -1 : 1})`,
+                  // Direction is handled by SpriteRenderer
                   zIndex: 10
                 }}
               >
                 <SpriteRenderer
                   avatarClass={currentPlayer.avatarClass}
-                  animation="idle"
+                  animation="walk"
                   direction={myPosition.direction}
                   isMoving={keys.size > 0}
                   size={characterSize}
@@ -525,13 +525,13 @@ export function Lobby() {
                     style={{
                       left: `${position.x}px`,
                       bottom: '0px',
-                      transform: `scaleX(${position.direction === 'left' ? -1 : 1})`,
+                      // Direction is handled by SpriteRenderer
                       zIndex: 9
                     }}
                   >
                     <SpriteRenderer
                       avatarClass={player.avatarClass}
-                      animation="idle"
+                      animation="walk"
                       direction={position.direction}
                       isMoving={position.isMoving}
                       size={characterSize}
