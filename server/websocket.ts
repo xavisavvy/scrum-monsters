@@ -125,6 +125,33 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Lobby movement events for 2D sidescroller playground
+    socket.on('lobby_player_pos', ({ x, y, direction }) => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
+
+      // Broadcast position to other players in the same lobby
+      socket.to(lobbyId).emit('lobby_player_pos', { 
+        playerId, 
+        x, 
+        y, 
+        direction 
+      });
+    });
+
+    socket.on('lobby_player_jump', ({ isJumping }) => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
+
+      // Broadcast jump state to other players in the same lobby
+      socket.to(lobbyId).emit('lobby_player_jump', { 
+        playerId,
+        isJumping 
+      });
+    });
+
     socket.on('start_battle', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;

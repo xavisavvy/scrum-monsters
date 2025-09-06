@@ -122,6 +122,8 @@ export interface ClientToServerEvents {
   change_own_team: (data: { team: TeamType }) => void;
   add_tickets: (data: { tickets: JiraTicket[] }) => void;
   remove_ticket: (data: { ticketId: string }) => void;
+  lobby_player_pos: (data: { x: number; y: number; direction?: string }) => void;
+  lobby_player_jump: (data: { isJumping: boolean }) => void;
   start_battle: () => void;
   submit_score: (data: { score: number | '?' }) => void;
   attack_boss: (data: { damage: number }) => void;
@@ -171,6 +173,8 @@ export interface ServerToClientEvents {
   lobby_joined: (data: { lobby: Lobby; player: Player }) => void;
   lobby_updated: (data: { lobby: Lobby }) => void;
   avatar_selected: (data: { playerId: string; avatar: AvatarClass }) => void;
+  lobby_player_pos: (data: { playerId: string; x: number; y: number; direction?: string }) => void;
+  lobby_player_jump: (data: { playerId: string; isJumping: boolean }) => void;
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
   score_submitted: (data: { playerId: string; team: TeamType }) => void;
   scores_revealed: (data: { teamScores: TeamScores; teamConsensus: TeamConsensus }) => void;

@@ -5,6 +5,7 @@ import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings } from '@/lib/gameTypes';
+import { LobbyPlayground } from './LobbyPlayground';
 
 export function Lobby() {
   const [newTicketTitle, setNewTicketTitle] = useState('');
@@ -111,6 +112,9 @@ export function Lobby() {
   return (
     <div className="retro-container">
       <div className="max-w-6xl mx-auto">
+        {/* Lobby Playground - 2D Mario-style movement area */}
+        <LobbyPlayground />
+        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
