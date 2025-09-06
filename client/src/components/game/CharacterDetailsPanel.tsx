@@ -111,7 +111,7 @@ export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelPr
   };
 
   return (
-    <div className="bg-gray-800 border-2 border-gray-600 rounded-lg p-6 w-full lg:w-80 max-w-md mx-auto">
+    <div className="bg-gray-800 border-2 border-gray-600 rounded-lg p-6 pb-8 w-full lg:w-80 max-w-md mx-auto">
       <div className="text-center mb-6">
         {renderCharacterPortrait()}
         
