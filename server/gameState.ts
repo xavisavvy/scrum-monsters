@@ -500,14 +500,14 @@ class GameStateManager {
     // Cosmetic damage during voting phase
     lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - damage);
     
-    // Check if boss should perform ring attack (25% chance, max once per 8 seconds)
+    // Check if boss should perform ring attack (60% chance, max once per 4 seconds) 
     const now = Date.now();
-    const shouldRingAttack = Math.random() < 0.25 && 
-                            (!lobby.boss.lastRingAttack || now - lobby.boss.lastRingAttack > 8000);
+    const shouldRingAttack = Math.random() < 0.6 && 
+                            (!lobby.boss.lastRingAttack || now - lobby.boss.lastRingAttack > 4000);
     
     if (shouldRingAttack) {
       lobby.boss.lastRingAttack = now;
-      const ringAttack = this.createBossRingAttack();
+      const ringAttack = this.createBossRingAttack(lobby);
       console.log('💀 Boss performs ring attack!');
       return { lobby, bossHealth: lobby.boss.currentHealth, ringAttack };
     }
@@ -515,41 +515,66 @@ class GameStateManager {
     return { lobby, bossHealth: lobby.boss.currentHealth };
   }
 
-  private createBossRingAttack() {
+  private createBossRingAttack(lobby: Lobby) {
     // Boss position (center of screen)
     const bossX = 50; // 50% of screen width
     const bossY = 40; // 40% of screen height
     
-    // Create fewer projectiles for better performance (8 instead of 12)
     const projectiles = [];
-    const numProjectiles = 8;
+    const maxProjectiles = 6; // Cap for performance
     
-    // Target areas around the screen edges (where players are likely to be)
-    const targetAreas = [
-      { x: 20, y: 80 }, // Bottom left
-      { x: 50, y: 85 }, // Bottom center  
-      { x: 80, y: 80 }, // Bottom right
-      { x: 85, y: 50 }, // Right center
-      { x: 80, y: 20 }, // Top right
-      { x: 50, y: 15 }, // Top center
-      { x: 20, y: 20 }, // Top left
-      { x: 15, y: 50 }, // Left center
+    // Get active dev/qa players only (exclude spectators from targeting)
+    const activePlayers = lobby.players.filter(player => {
+      const combatState = lobby.playerCombatStates[player.id];
+      return player.team !== 'spectators' && combatState && !combatState.isDowned;
+    });
+    
+    // Strategic targeting areas where players are likely to move during battle
+    const strategicAreas = [
+      { x: 15, y: 75, name: 'bottom-left' },    // Common hiding spot
+      { x: 85, y: 75, name: 'bottom-right' },   // Common hiding spot  
+      { x: 50, y: 85, name: 'bottom-center' },  // Direct boss approach
+      { x: 25, y: 50, name: 'left-side' },      // Side positioning
+      { x: 75, y: 50, name: 'right-side' },     // Side positioning
+      { x: 50, y: 20, name: 'top-center' },     // Flanking position
+      { x: 20, y: 25, name: 'top-left' },       // Corner positioning
+      { x: 80, y: 25, name: 'top-right' }       // Corner positioning
     ];
     
-    for (let i = 0; i < numProjectiles; i++) {
-      const targetArea = targetAreas[i];
-      // Add some randomness to make dodging possible
-      const targetX = targetArea.x + (Math.random() - 0.5) * 10;
-      const targetY = targetArea.y + (Math.random() - 0.5) * 10;
+    if (activePlayers.length === 0) {
+      // Fallback: target 4 key strategic areas
+      for (let i = 0; i < Math.min(4, strategicAreas.length); i++) {
+        const area = strategicAreas[i];
+        projectiles.push({
+          id: Math.random().toString(36).substring(2, 15),
+          x: bossX,
+          y: bossY,
+          targetX: area.x + (Math.random() - 0.5) * 8, // Small spread
+          targetY: area.y + (Math.random() - 0.5) * 8,
+          emoji: '💥'
+        });
+      }
+    } else {
+      // Target strategic areas based on player count for better coverage
+      const numTargets = Math.min(maxProjectiles, Math.max(activePlayers.length, 3));
+      const selectedAreas = strategicAreas.slice(0, numTargets);
       
-      projectiles.push({
-        id: Math.random().toString(36).substring(2, 15),
-        x: bossX,
-        y: bossY,
-        targetX: Math.max(5, Math.min(95, targetX)), // Clamp to screen bounds
-        targetY: Math.max(5, Math.min(95, targetY)),
-        emoji: '💥'
+      selectedAreas.forEach(area => {
+        // Add spread and unpredictability
+        const spreadX = (Math.random() - 0.5) * 12; // -6 to +6% spread
+        const spreadY = (Math.random() - 0.5) * 12;
+        
+        projectiles.push({
+          id: Math.random().toString(36).substring(2, 15),
+          x: bossX,
+          y: bossY,
+          targetX: Math.max(5, Math.min(95, area.x + spreadX)),
+          targetY: Math.max(5, Math.min(95, area.y + spreadY)),
+          emoji: '💥'
+        });
       });
+      
+      console.log(`💀 Boss targeting ${projectiles.length} strategic areas for ${activePlayers.length} active players`);
     }
     
     return { bossX, bossY, projectiles };
