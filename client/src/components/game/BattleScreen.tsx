@@ -119,10 +119,10 @@ export function BattleScreen() {
         
         // Calculate story points by team
         const devStoryPoints = completedTickets.reduce((sum, ticket) => 
-          ticket.teamBreakdown?.developers.participated ? sum + (ticket.teamBreakdown.developers.consensusScore || 0) : sum, 0
+          ticket.teamBreakdown?.developers?.participated ? sum + (ticket.teamBreakdown.developers.consensusScore ?? 0) : sum, 0
         );
         const qaStoryPoints = completedTickets.reduce((sum, ticket) => 
-          ticket.teamBreakdown?.qa.participated ? sum + (ticket.teamBreakdown.qa.consensusScore || 0) : sum, 0
+          ticket.teamBreakdown?.qa?.participated ? sum + (ticket.teamBreakdown.qa.consensusScore ?? 0) : sum, 0
         );
         
         return (
@@ -177,19 +177,40 @@ export function BattleScreen() {
                       </div>
                       <div className="text-right">
                         <div className="text-2xl font-bold text-yellow-400">{ticket.storyPoints}</div>
-                        <div className="text-xs text-gray-400">Story Points</div>
-                        {/* Team participation indicators */}
-                        <div className="flex gap-1 justify-end mt-1">
-                          {ticket.teamBreakdown?.developers.participated && (
-                            <span className="text-xs bg-blue-600 text-white px-1 rounded">
-                              Dev: {ticket.teamBreakdown.developers.consensusScore}
-                            </span>
-                          )}
-                          {ticket.teamBreakdown?.qa.participated && (
-                            <span className="text-xs bg-green-600 text-white px-1 rounded">
-                              QA: {ticket.teamBreakdown.qa.consensusScore}
-                            </span>
-                          )}
+                        <div className="text-xs text-gray-400">Total Story Points</div>
+                        
+                        {/* Team Score Breakdown */}
+                        <div className="mt-2 space-y-1">
+                          <div className="text-xs text-gray-400">Team Estimates:</div>
+                          <div className="flex gap-2 justify-end">
+                            {ticket.teamBreakdown?.developers?.participated ? (
+                              <div className="bg-blue-900/50 border border-blue-500/30 rounded px-2 py-1">
+                                <div className="text-xs text-blue-400 font-bold">👨‍💻 Dev</div>
+                                <div className="text-sm font-bold text-blue-300">
+                                  {ticket.teamBreakdown.developers.consensusScore ?? '—'}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-gray-800/50 border border-gray-600/30 rounded px-2 py-1">
+                                <div className="text-xs text-gray-500">👨‍💻 Dev</div>
+                                <div className="text-sm text-gray-500">N/A</div>
+                              </div>
+                            )}
+                            
+                            {ticket.teamBreakdown?.qa?.participated ? (
+                              <div className="bg-green-900/50 border border-green-500/30 rounded px-2 py-1">
+                                <div className="text-xs text-green-400 font-bold">🧪 QA</div>
+                                <div className="text-sm font-bold text-green-300">
+                                  {ticket.teamBreakdown.qa.consensusScore ?? '—'}
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="bg-gray-800/50 border border-gray-600/30 rounded px-2 py-1">
+                                <div className="text-xs text-gray-500">🧪 QA</div>
+                                <div className="text-sm text-gray-500">N/A</div>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -208,6 +229,10 @@ export function BattleScreen() {
         );
 
       case 'next_level':
+        const lastCompletedTicket = Array.isArray(currentLobby.completedTickets) && currentLobby.completedTickets.length > 0 
+          ? currentLobby.completedTickets[currentLobby.completedTickets.length - 1] 
+          : null;
+        
         return (
           <div className="text-center p-6">
             <RetroCard title="Objective Complete!">
@@ -216,6 +241,54 @@ export function BattleScreen() {
                 <h2 className="text-xl font-bold text-green-400">
                   Boss Defeated!
                 </h2>
+                
+                {/* Show the completed ticket details */}
+                {lastCompletedTicket && (
+                  <div className="bg-gray-800 border border-gray-600 rounded p-4 my-4">
+                    <div className="font-bold text-yellow-400 mb-2">{lastCompletedTicket.title}</div>
+                    <div className="text-sm text-gray-400 mb-3">{lastCompletedTicket.description}</div>
+                    
+                    {/* Team Score Breakdown for this ticket */}
+                    <div className="flex gap-4 justify-center">
+                      {lastCompletedTicket.teamBreakdown?.developers?.participated ? (
+                        <div className="bg-blue-900/50 border border-blue-500/30 rounded px-3 py-2">
+                          <div className="text-sm text-blue-400 font-bold">👨‍💻 Developers</div>
+                          <div className="text-xl font-bold text-blue-300">
+                            {lastCompletedTicket.teamBreakdown.developers.consensusScore ?? '—'}
+                          </div>
+                          <div className="text-xs text-gray-400">Story Points</div>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-800/50 border border-gray-600/30 rounded px-3 py-2">
+                          <div className="text-sm text-gray-500">👨‍💻 Developers</div>
+                          <div className="text-xl text-gray-500">N/A</div>
+                        </div>
+                      )}
+                      
+                      {lastCompletedTicket.teamBreakdown?.qa?.participated ? (
+                        <div className="bg-green-900/50 border border-green-500/30 rounded px-3 py-2">
+                          <div className="text-sm text-green-400 font-bold">🧪 QA Engineers</div>
+                          <div className="text-xl font-bold text-green-300">
+                            {lastCompletedTicket.teamBreakdown.qa.consensusScore ?? '—'}
+                          </div>
+                          <div className="text-xs text-gray-400">Story Points</div>
+                        </div>
+                      ) : (
+                        <div className="bg-gray-800/50 border border-gray-600/30 rounded px-3 py-2">
+                          <div className="text-sm text-gray-500">🧪 QA Engineers</div>
+                          <div className="text-xl text-gray-500">N/A</div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="mt-3 text-lg">
+                      <span className="text-gray-400">Final Score: </span>
+                      <span className="text-yellow-400 font-bold">{lastCompletedTicket.storyPoints}</span>
+                      <span className="text-gray-400"> Story Points</span>
+                    </div>
+                  </div>
+                )}
+                
                 <p>
                   Progress: {Array.isArray(currentLobby.completedTickets) ? currentLobby.completedTickets.length : 0} / {currentLobby.tickets.length}
                 </p>
