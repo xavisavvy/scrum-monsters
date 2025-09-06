@@ -58,7 +58,12 @@ export function Lobby() {
       // Prevent default for movement keys to avoid page scrolling
       if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
         event.preventDefault();
-        setKeys(prev => new Set(prev).add(event.code));
+        
+        // Only add key if it's not already pressed (prevents key repeat)
+        setKeys(prev => {
+          if (prev.has(event.code)) return prev; // Key already pressed
+          return new Set(prev).add(event.code);
+        });
       }
     };
 
@@ -69,11 +74,14 @@ export function Lobby() {
         return;
       }
 
-      setKeys(prev => {
-        const newKeys = new Set(prev);
-        newKeys.delete(event.code);
-        return newKeys;
-      });
+      // Always remove the key on keyup
+      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
+        setKeys(prev => {
+          const newKeys = new Set(prev);
+          newKeys.delete(event.code);
+          return newKeys;
+        });
+      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -134,7 +142,7 @@ export function Lobby() {
       });
     };
 
-    const interval = setInterval(movePlayer, 50); // ~20 FPS to reduce server load
+    const interval = setInterval(movePlayer, 16); // ~60 FPS for smooth movement
     return () => clearInterval(interval);
   }, [keys, currentLobby?.gamePhase, emit]);
 
