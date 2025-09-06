@@ -36,9 +36,17 @@ export function AboutPage({ onBackToHome }: AboutPageProps) {
           
           {/* Header Section */}
           <header className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-bold retro-text-glow mb-6">
-              About Scrum Monsters
-            </h1>
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <img 
+                src="/scrum-monster-icon.png" 
+                alt="Scrum Monster" 
+                className="w-12 md:w-16 h-12 md:h-16 pixelated object-contain"
+                style={{ imageRendering: 'pixelated' }}
+              />
+              <h1 className="text-4xl md:text-6xl font-bold retro-text-glow">
+                About Scrum Monsters
+              </h1>
+            </div>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
               Turning sprint planning from a slog into a focused, engaging ritual that teams actually enjoy.
             </p>
