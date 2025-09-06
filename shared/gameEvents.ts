@@ -20,6 +20,7 @@ export interface Player {
   id: string;
   name: string;
   avatar: AvatarClass;
+  avatarClass: AvatarClass; // Alias for compatibility
   team: TeamType;
   isHost: boolean;
   currentScore?: number | '?';

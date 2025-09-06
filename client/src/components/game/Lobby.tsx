@@ -1,18 +1,132 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
+import { SpriteRenderer } from './SpriteRenderer';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
+import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings } from '@/lib/gameTypes';
-import { LobbyPlayground } from './LobbyPlayground';
 
 export function Lobby() {
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
-  const { emit } = useWebSocket();
+  
+  // Player movement state for lobby walking
+  const [keys, setKeys] = useState<Set<string>>(new Set());
+  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean }>>({});
+  const [myPosition, setMyPosition] = useState({ x: 200, direction: 'right' as SpriteDirection });
+  
+  // Movement constants
+  const moveSpeed = 3;
+  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const characterSize = 60;
+  const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
+  
+  // Handle keyboard input for lobby movement
+  useEffect(() => {
+    if (currentLobby?.gamePhase !== 'lobby') return;
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ignore input if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
+      // Prevent default for movement keys to avoid page scrolling
+      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
+        event.preventDefault();
+        setKeys(prev => new Set(prev).add(event.code));
+      }
+    };
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      // Ignore input if user is typing in an input field
+      const target = event.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
+      setKeys(prev => {
+        const newKeys = new Set(prev);
+        newKeys.delete(event.code);
+        return newKeys;
+      });
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [currentLobby?.gamePhase]);
+
+  // Handle movement based on pressed keys
+  useEffect(() => {
+    if (currentLobby?.gamePhase !== 'lobby' || keys.size === 0) {
+      return;
+    }
+
+    const movePlayer = () => {
+      setMyPosition(prev => {
+        let newX = prev.x;
+        let direction: SpriteDirection = prev.direction;
+        let moving = false;
+
+        // Only allow left/right movement
+        if (keys.has('ArrowLeft') || keys.has('KeyA')) {
+          newX = Math.max(0, prev.x - moveSpeed);
+          direction = 'left';
+          moving = true;
+        }
+        if (keys.has('ArrowRight') || keys.has('KeyD')) {
+          newX = Math.min(screenWidth - characterSize, prev.x + moveSpeed);
+          direction = 'right';
+          moving = true;
+        }
+
+        // Emit position to server for other players to see
+        if (moving) {
+          const percentX = (newX / (screenWidth - characterSize)) * 100;
+          emit('lobby_player_pos', { x: percentX, y: 85, direction }); // y: 85% to put players at bottom
+        }
+
+        return { x: newX, direction };
+      });
+    };
+
+    const interval = setInterval(movePlayer, 16); // ~60 FPS
+    return () => clearInterval(interval);
+  }, [keys, currentLobby?.gamePhase, emit, screenWidth]);
+
+  // Listen for other players' positions in lobby
+  useEffect(() => {
+    if (!socket || currentLobby?.gamePhase !== 'lobby') return;
+
+    const handleLobbyPlayerPos = ({ playerId, x, direction }: { playerId: string; x: number; direction?: SpriteDirection }) => {
+      if (playerId === currentPlayer?.id) return; // Skip own updates
+
+      setPlayerPositions(prev => ({
+        ...prev,
+        [playerId]: {
+          x: (x / 100) * (screenWidth - characterSize),
+          direction: direction || 'right',
+          isMoving: true
+        }
+      }));
+    };
+
+    socket.on('lobby_player_pos', handleLobbyPlayerPos);
+
+    return () => {
+      socket.off('lobby_player_pos', handleLobbyPlayerPos);
+    };
+  }, [socket, currentLobby?.gamePhase, currentPlayer?.id, screenWidth]);
 
   // Use tickets from server state instead of local state
   const tickets = currentLobby?.tickets || [];
@@ -111,11 +225,8 @@ export function Lobby() {
   if (!currentLobby) return null;
 
   return (
-    <div className="retro-container">
-      <div className="max-w-6xl mx-auto">
-        {/* Lobby Playground - 2D Mario-style movement area */}
-        <LobbyPlayground />
-        
+    <div className="retro-container relative">
+      <div className="max-w-6xl mx-auto">        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
@@ -368,7 +479,71 @@ export function Lobby() {
               Waiting for host to start the battle...
             </p>
           )}
+          <p className="text-xs text-gray-500 mt-2">
+            Use A/D or arrow keys to walk around the lobby!
+          </p>
         </div>
+        
+        {/* Player Movement Area - Bottom of Screen */}
+        {currentLobby?.gamePhase === 'lobby' && (
+          <div className="absolute bottom-4 left-0 right-0 h-24 overflow-hidden">
+            {/* My Player Character */}
+            {currentPlayer && (
+              <div
+                className="absolute transition-transform duration-100 ease-linear"
+                style={{
+                  left: `${myPosition.x}px`,
+                  bottom: '0px',
+                  transform: `scaleX(${myPosition.direction === 'left' ? -1 : 1})`,
+                  zIndex: 10
+                }}
+              >
+                <SpriteRenderer
+                  avatarClass={currentPlayer.avatarClass}
+                  animation="idle"
+                  direction={myPosition.direction}
+                  isMoving={keys.size > 0}
+                  size={characterSize}
+                />
+                <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
+                  {currentPlayer.name}
+                </div>
+              </div>
+            )}
+            
+            {/* Other Players */}
+            {currentLobby.players
+              .filter(player => player.id !== currentPlayer?.id)
+              .map(player => {
+                const position = playerPositions[player.id];
+                if (!position) return null;
+                
+                return (
+                  <div
+                    key={player.id}
+                    className="absolute transition-transform duration-200 ease-out"
+                    style={{
+                      left: `${position.x}px`,
+                      bottom: '0px',
+                      transform: `scaleX(${position.direction === 'left' ? -1 : 1})`,
+                      zIndex: 9
+                    }}
+                  >
+                    <SpriteRenderer
+                      avatarClass={player.avatarClass}
+                      animation="idle"
+                      direction={position.direction}
+                      isMoving={position.isMoving}
+                      size={characterSize}
+                    />
+                    <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
+                      {player.name}
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
     </div>
   );
