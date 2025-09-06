@@ -548,52 +548,48 @@ class GameStateManager {
       return player.team !== 'spectators' && combatState && !combatState.isDowned;
     });
     
-    // Strategic targeting areas where players are likely to move during battle
-    const strategicAreas = [
-      { x: 15, y: 75, name: 'bottom-left' },    // Common hiding spot
-      { x: 85, y: 75, name: 'bottom-right' },   // Common hiding spot  
-      { x: 50, y: 85, name: 'bottom-center' },  // Direct boss approach
-      { x: 25, y: 50, name: 'left-side' },      // Side positioning
-      { x: 75, y: 50, name: 'right-side' },     // Side positioning
-      { x: 50, y: 20, name: 'top-center' },     // Flanking position
-      { x: 20, y: 25, name: 'top-left' },       // Corner positioning
-      { x: 80, y: 25, name: 'top-right' }       // Corner positioning
-    ];
-    
     if (activePlayers.length === 0) {
-      // Fallback: target 4 key strategic areas
-      for (let i = 0; i < Math.min(4, strategicAreas.length); i++) {
-        const area = strategicAreas[i];
-        projectiles.push({
-          id: Math.random().toString(36).substring(2, 15),
-          x: bossX,
-          y: bossY,
-          targetX: area.x + (Math.random() - 0.5) * 8, // Small spread
-          targetY: area.y + (Math.random() - 0.5) * 8,
-          emoji: '💥'
-        });
-      }
-    } else {
-      // Target strategic areas based on player count for better coverage
-      const numTargets = Math.min(maxProjectiles, Math.max(activePlayers.length, 3));
-      const selectedAreas = strategicAreas.slice(0, numTargets);
+      // Fallback: target bottom area where players usually are
+      const fallbackTargets = [
+        { x: 25, y: 80 }, { x: 50, y: 80 }, { x: 75, y: 80 }
+      ];
       
-      selectedAreas.forEach(area => {
-        // Add spread and unpredictability
-        const spreadX = (Math.random() - 0.5) * 12; // -6 to +6% spread
-        const spreadY = (Math.random() - 0.5) * 12;
-        
+      fallbackTargets.forEach(target => {
         projectiles.push({
           id: Math.random().toString(36).substring(2, 15),
           x: bossX,
           y: bossY,
-          targetX: Math.max(5, Math.min(95, area.x + spreadX)),
-          targetY: Math.max(5, Math.min(95, area.y + spreadY)),
+          targetX: target.x + (Math.random() - 0.5) * 10, // Small spread
+          targetY: target.y + (Math.random() - 0.5) * 10,
           emoji: '💥'
         });
       });
+    } else {
+      // Target actual player positions with some prediction/spread
+      const numProjectilesPerPlayer = Math.max(1, Math.floor(maxProjectiles / activePlayers.length));
       
-      console.log(`💀 Boss targeting ${projectiles.length} strategic areas for ${activePlayers.length} active players`);
+      activePlayers.forEach(player => {
+        const playerPos = lobby.playerPositions[player.id];
+        if (!playerPos) return;
+        
+        // Fire multiple projectiles at each player with spread for better hit chance
+        for (let i = 0; i < numProjectilesPerPlayer && projectiles.length < maxProjectiles; i++) {
+          // Add predictive spread around player position (they might move)
+          const spreadX = (Math.random() - 0.5) * 20; // -10 to +10% spread
+          const spreadY = (Math.random() - 0.5) * 15; // -7.5 to +7.5% spread
+          
+          projectiles.push({
+            id: Math.random().toString(36).substring(2, 15),
+            x: bossX,
+            y: bossY,
+            targetX: Math.max(5, Math.min(95, playerPos.x + spreadX)),
+            targetY: Math.max(5, Math.min(95, playerPos.y + spreadY)),
+            emoji: '💥'
+          });
+        }
+      });
+      
+      console.log(`💀 Boss targeting ${activePlayers.length} players with ${projectiles.length} projectiles`);
     }
     
     return { bossX, bossY, projectiles };
