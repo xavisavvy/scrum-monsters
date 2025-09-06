@@ -7,9 +7,10 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
 import { YoutubeAudioPlayer } from '@/components/ui/YoutubeAudioPlayer';
 import { PlayerController } from './PlayerController';
-// Temporarily removed for ephemeral levels - may re-enable later
-// import { TeamScoreboard } from './TeamScoreboard';
-// import { TeamPerformanceTracker } from './TeamPerformanceTracker';
+// Team competition components for enhanced multiplayer experience
+import { TeamScoreboard } from './TeamScoreboard';
+import { TeamPerformanceTracker } from './TeamPerformanceTracker';
+import { TeamCelebration } from './TeamCelebration';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -89,11 +90,10 @@ export function BattleScreen() {
               />
             </div>
 
-            {/* Team Competition Display - Removed for now (ephemeral levels) */}
-            {/* <TeamScoreboard /> */}
-
-            {/* Live Performance Tracker - Removed for now (ephemeral levels) */}
-            {/* <TeamPerformanceTracker /> */}
+            {/* Team Competition Components */}
+            <TeamScoreboard />
+            <TeamPerformanceTracker />
+            <TeamCelebration />
           </div>
         );
 

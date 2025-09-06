@@ -81,45 +81,86 @@ export class TeamStatsManager {
   }
 
   private static calculateTeamScore(stats: TeamStats): number {
-    return (
-      stats.totalStoryPoints * 1.0 +
-      stats.accuracyScore * 50 +
-      stats.consensusRate * 30 +
-      stats.participationRate * 20 +
-      stats.currentStreak * 10
-    );
+    // Enhanced competitive scoring algorithm
+    const baseScore = stats.totalStoryPoints * 1.0;
+    const accuracyBonus = stats.accuracyScore * 50;
+    const consensusBonus = stats.consensusRate * 30;
+    const participationBonus = stats.participationRate * 20;
+    const streakBonus = stats.currentStreak * 15; // Increased streak value
+    const speedBonus = stats.averageEstimationTime > 0 ? 
+      Math.max(0, (30 - stats.averageEstimationTime) * 2) : 0; // Bonus for faster estimation
+    const efficiencyBonus = stats.ticketsCompleted > 0 ? 
+      (stats.totalStoryPoints / stats.ticketsCompleted) * 5 : 0; // Points per ticket efficiency
+
+    return baseScore + accuracyBonus + consensusBonus + participationBonus + 
+           streakBonus + speedBonus + efficiencyBonus;
   }
 
   private static checkAndAwardAchievements(teamStats: TeamStats, data: any): void {
     const achievements = [];
 
-    // Speed achievements
-    if (data.estimationTime < 10000) { // Less than 10 seconds
-      achievements.push('Lightning Fast');
+    // Speed achievements (convert ms to seconds for comparison)
+    const estimationTimeSeconds = data.estimationTime / 1000;
+    if (estimationTimeSeconds < 5) { // Less than 5 seconds
+      achievements.push('⚡ Speed Demon');
+    } else if (estimationTimeSeconds < 10) { // Less than 10 seconds
+      achievements.push('💨 Lightning Fast');
     }
 
     // Accuracy achievements
-    if (data.accuracy >= 0.95) {
-      achievements.push('Precision Master');
+    if (data.accuracy >= 0.98) {
+      achievements.push('🎯 Perfect Shot');
+    } else if (data.accuracy >= 0.95) {
+      achievements.push('🔍 Precision Master');
+    } else if (data.accuracy >= 0.90) {
+      achievements.push('🎪 Sharp Shooter');
     }
 
-    // Streak achievements
-    if (teamStats.currentStreak === 5) {
-      achievements.push('Five in a Row');
+    // Streak achievements (more competitive tiers)
+    if (teamStats.currentStreak === 3) {
+      achievements.push('🔥 Hot Streak');
+    } else if (teamStats.currentStreak === 5) {
+      achievements.push('🌟 Five in a Row');
     } else if (teamStats.currentStreak === 10) {
-      achievements.push('Perfect Ten');
+      achievements.push('💫 Perfect Ten');
+    } else if (teamStats.currentStreak === 15) {
+      achievements.push('🚀 Unstoppable');
     }
 
     // Participation achievements
     if (data.participationRate === 1.0) {
-      achievements.push('Full Team Unity');
+      achievements.push('🤝 Full Team Unity');
     }
 
-    // Story point milestones
-    if (teamStats.totalStoryPoints >= 100) {
-      achievements.push('Century Club');
+    // Story point milestones (descending order for proper awarding)
+    if (teamStats.totalStoryPoints >= 1000) {
+      achievements.push('🌟 Legendary Estimator');
     } else if (teamStats.totalStoryPoints >= 500) {
-      achievements.push('Story Point Master');
+      achievements.push('👑 Story Point King');
+    } else if (teamStats.totalStoryPoints >= 250) {
+      achievements.push('🏆 Quarter Grand');
+    } else if (teamStats.totalStoryPoints >= 100) {
+      achievements.push('🎖️ Century Club');
+    } else if (teamStats.totalStoryPoints >= 50) {
+      achievements.push('🏅 First Milestone');
+    }
+
+    // Consensus achievements
+    if (teamStats.consensusRate >= 0.90) {
+      achievements.push('🎵 Perfect Harmony');
+    } else if (teamStats.consensusRate >= 0.75) {
+      achievements.push('🤝 Team Player');
+    }
+
+    // Competitive achievements
+    if (teamStats.ticketsCompleted >= 10) {
+      achievements.push('📈 Productivity Master');
+    }
+    if (teamStats.ticketsCompleted >= 25) {
+      achievements.push('🏭 Estimation Factory');
+    }
+    if (teamStats.bestStreak >= 20) {
+      achievements.push('🔥 Legendary Streak');
     }
 
     // Add new achievements (avoid duplicates)
@@ -129,9 +170,9 @@ export class TeamStatsManager {
       }
     });
 
-    // Keep only last 10 achievements
-    if (teamStats.achievements.length > 10) {
-      teamStats.achievements = teamStats.achievements.slice(-10);
+    // Keep only last 15 achievements to show more history
+    if (teamStats.achievements.length > 15) {
+      teamStats.achievements = teamStats.achievements.slice(-15);
     }
   }
 
@@ -150,7 +191,7 @@ export class TeamStatsManager {
 
       if (teamPerformances.length === 0) return;
 
-      const avgEstimationTime = teamPerformances.reduce((sum, p) => sum + p.estimationTime, 0) / teamPerformances.length;
+      const avgEstimationTime = teamPerformances.reduce((sum, p) => sum + p.estimationTime, 0) / teamPerformances.length / 1000; // Convert ms to seconds
       const participationRate = teamPerformances.length / Math.max(teamPlayers.length, 1);
       
       // Calculate accuracy based on final consensus vs individual estimates

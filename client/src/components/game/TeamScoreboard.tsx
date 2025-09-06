@@ -31,12 +31,34 @@ export function TeamScoreboard() {
   };
 
   const getLeadingTeam = () => {
-    const devScore = developers.totalStoryPoints + developers.accuracyScore * 10;
-    const qaScore = qa.totalStoryPoints + qa.accuracyScore * 10;
+    // Use enhanced competitive scoring algorithm
+    const devScore = calculateCompetitiveScore(developers);
+    const qaScore = calculateCompetitiveScore(qa);
     
     if (devScore > qaScore) return 'developers';
     if (qaScore > devScore) return 'qa';
     return null;
+  };
+
+  const calculateCompetitiveScore = (stats: any) => {
+    const baseScore = stats.totalStoryPoints * 1.0;
+    const accuracyBonus = stats.accuracyScore * 50;
+    const consensusBonus = stats.consensusRate * 30;
+    const participationBonus = stats.participationRate * 20;
+    const streakBonus = stats.currentStreak * 15;
+    const speedBonus = stats.averageEstimationTime > 0 ? 
+      Math.max(0, (30 - stats.averageEstimationTime) * 2) : 0;
+    const efficiencyBonus = stats.ticketsCompleted > 0 ? 
+      (stats.totalStoryPoints / stats.ticketsCompleted) * 5 : 0;
+
+    return baseScore + accuracyBonus + consensusBonus + participationBonus + 
+           streakBonus + speedBonus + efficiencyBonus;
+  };
+
+  const getScoreDifference = () => {
+    const devScore = calculateCompetitiveScore(developers);
+    const qaScore = calculateCompetitiveScore(qa);
+    return Math.abs(devScore - qaScore);
   };
 
   const leadingTeam = getLeadingTeam();
@@ -45,14 +67,43 @@ export function TeamScoreboard() {
     <div className="team-scoreboard">
       <RetroCard title="🏆 Team Competition">
       <div className="space-y-4">
-        {/* Overall Leader */}
-        {leadingTeam && (
-          <div className="text-center">
-            <div className={`text-lg font-bold ${getTeamColor(leadingTeam)}`}>
-              {getTeamIcon(leadingTeam)} {leadingTeam === 'developers' ? 'Developers' : 'QA Engineers'} Leading!
+        {/* Team Competition Header */}
+        <div className="text-center space-y-2">
+          <div className="text-lg font-bold text-yellow-400">⚔️ TEAM BATTLE ⚔️</div>
+          
+          {/* Score Comparison Bar */}
+          <div className="relative">
+            <div className="flex items-center justify-between bg-gray-800 rounded-lg p-2">
+              <div className={`font-bold ${getTeamColor('developers')}`}>
+                {getTeamIcon('developers')} DEV
+              </div>
+              <div className="text-center text-sm">
+                <div className="text-yellow-400">
+                  {Math.round(calculateCompetitiveScore(developers))} - {Math.round(calculateCompetitiveScore(qa))}
+                </div>
+                {leadingTeam ? (
+                  <div className={`text-xs ${getTeamColor(leadingTeam)}`}>
+                    +{Math.round(getScoreDifference())} ahead
+                  </div>
+                ) : (
+                  <div className="text-xs text-gray-400">TIED</div>
+                )}
+              </div>
+              <div className={`font-bold ${getTeamColor('qa')}`}>
+                QA {getTeamIcon('qa')}
+              </div>
             </div>
+            
+            {/* Leading Team Indicator */}
+            {leadingTeam && (
+              <div className={`absolute -top-1 ${leadingTeam === 'developers' ? 'left-2' : 'right-2'}`}>
+                <div className={`text-xs ${getTeamColor(leadingTeam)} animate-pulse`}>
+                  👑
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Team Stats Grid */}
         <div className="grid grid-cols-2 gap-4">
@@ -71,28 +122,28 @@ export function TeamScoreboard() {
             
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
-                <span>Story Points:</span>
-                <span className="font-bold">{developers.totalStoryPoints}</span>
+                <span>💎 Points:</span>
+                <span className="font-bold text-yellow-400">{developers.totalStoryPoints}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tickets Done:</span>
+                <span>🎫 Tickets:</span>
                 <span className="font-bold">{developers.ticketsCompleted}</span>
               </div>
               <div className="flex justify-between">
-                <span>Avg Time:</span>
+                <span>⚡ Speed:</span>
                 <span className="font-bold">{formatTime(developers.averageEstimationTime)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Consensus:</span>
+                <span>🤝 Consensus:</span>
                 <span className="font-bold">{formatPercentage(developers.consensusRate)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Accuracy:</span>
+                <span>🎯 Accuracy:</span>
                 <span className="font-bold">{formatPercentage(developers.accuracyScore)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Participation:</span>
-                <span className="font-bold">{formatPercentage(developers.participationRate)}</span>
+                <span>📊 Score:</span>
+                <span className="font-bold text-blue-400">{Math.round(calculateCompetitiveScore(developers))}</span>
               </div>
             </div>
           </div>
@@ -112,28 +163,28 @@ export function TeamScoreboard() {
             
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
-                <span>Story Points:</span>
-                <span className="font-bold">{qa.totalStoryPoints}</span>
+                <span>💎 Points:</span>
+                <span className="font-bold text-yellow-400">{qa.totalStoryPoints}</span>
               </div>
               <div className="flex justify-between">
-                <span>Tickets Done:</span>
+                <span>🎫 Tickets:</span>
                 <span className="font-bold">{qa.ticketsCompleted}</span>
               </div>
               <div className="flex justify-between">
-                <span>Avg Time:</span>
+                <span>⚡ Speed:</span>
                 <span className="font-bold">{formatTime(qa.averageEstimationTime)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Consensus:</span>
+                <span>🤝 Consensus:</span>
                 <span className="font-bold">{formatPercentage(qa.consensusRate)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Accuracy:</span>
+                <span>🎯 Accuracy:</span>
                 <span className="font-bold">{formatPercentage(qa.accuracyScore)}</span>
               </div>
               <div className="flex justify-between">
-                <span>Participation:</span>
-                <span className="font-bold">{formatPercentage(qa.participationRate)}</span>
+                <span>📊 Score:</span>
+                <span className="font-bold text-green-400">{Math.round(calculateCompetitiveScore(qa))}</span>
               </div>
             </div>
           </div>
@@ -166,21 +217,47 @@ export function TeamScoreboard() {
           </div>
         </div>
 
-        {/* Competition History */}
-        <div className="text-center">
-          <div className="text-sm font-bold mb-2">Season Progress</div>
-          <div className="text-xs text-gray-400">
-            Round {currentLobby.teamCompetition.currentRound}
-          </div>
-          {currentLobby.teamCompetition.winnerHistory.length > 0 && (
-            <div className="flex justify-center gap-1 mt-2">
-              {currentLobby.teamCompetition.winnerHistory.slice(-5).map((winner, index) => (
-                <span key={index} className={getTeamColor(winner)}>
-                  {getTeamIcon(winner)}
-                </span>
-              ))}
+        {/* Competition History & Season Stats */}
+        <div className="text-center space-y-3">
+          <div className="bg-gray-800 rounded-lg p-3">
+            <div className="text-sm font-bold mb-2 text-yellow-400">🏆 Season Progress</div>
+            <div className="grid grid-cols-3 gap-2 text-xs">
+              <div>
+                <div className="text-gray-400">Round</div>
+                <div className="font-bold">{currentLobby.teamCompetition.currentRound}</div>
+              </div>
+              <div>
+                <div className="text-gray-400">Wins</div>
+                <div className="flex justify-center gap-1 text-xs">
+                  <span className={getTeamColor('developers')}>
+                    {currentLobby.teamCompetition.winnerHistory.filter(w => w === 'developers').length}
+                  </span>
+                  <span className="text-gray-500">-</span>
+                  <span className={getTeamColor('qa')}>
+                    {currentLobby.teamCompetition.winnerHistory.filter(w => w === 'qa').length}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div className="text-gray-400">Streak</div>
+                <div className="font-bold">
+                  {Math.max(developers.currentStreak, qa.currentStreak)}
+                </div>
+              </div>
             </div>
-          )}
+            
+            {/* Recent Match History */}
+            {currentLobby.teamCompetition.winnerHistory.length > 0 && (
+              <div className="flex justify-center gap-1 mt-2">
+                <span className="text-xs text-gray-400 mr-1">Recent:</span>
+                {currentLobby.teamCompetition.winnerHistory.slice(-8).map((winner, index) => (
+                  <span key={index} className={`${getTeamColor(winner)} text-sm`}>
+                    {getTeamIcon(winner)}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </RetroCard>
