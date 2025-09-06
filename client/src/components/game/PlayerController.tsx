@@ -192,11 +192,11 @@ export function PlayerController({}: PlayerControllerProps) {
     if (!socket) return;
 
     // Create handler functions that can be properly removed
-    const handleBossRingAttack = ({ bossX, bossY, projectiles: ringProjectiles }) => {
+    const handleBossRingAttack = ({ bossX, bossY, projectiles: ringProjectiles }: any) => {
       console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
       
       // Convert percentage coordinates to world coordinates, then to screen coordinates
-      const convertedProjectiles = ringProjectiles.map(proj => {
+      const convertedProjectiles = ringProjectiles.map((proj: any) => {
         const targetWorld = { x: (proj.targetX / 100) * viewport.worldWidth, y: (proj.targetY / 100) * viewport.worldHeight };
         const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
         console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetScreen.x}px, ${targetScreen.y}px)`);
@@ -218,7 +218,7 @@ export function PlayerController({}: PlayerControllerProps) {
       setBossProjectiles(convertedProjectiles);
     };
 
-    const handlePlayersPos = ({ positions }) => {
+    const handlePlayersPos = ({ positions }: any) => {
       if (!currentPlayer || !positions) return;
       
       // Convert server percentage positions to screen coordinates for all other players
@@ -239,7 +239,7 @@ export function PlayerController({}: PlayerControllerProps) {
       console.log('👥 Updated other players positions:', Object.keys(otherPositions).length, 'players');
     };
 
-    const handlePlayerProjectileFired = ({ playerId, playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }) => {
+    const handlePlayerProjectileFired = ({ playerId, playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }: any) => {
       if (playerId === currentPlayer?.id) return; // Skip own projectiles
       
       // Convert percentage coordinates to world coordinates, then to screen coordinates
@@ -415,7 +415,7 @@ export function PlayerController({}: PlayerControllerProps) {
   }, [playerPosition, viewport.viewportHeight, characterSize, handleShoot, currentPlayer]);
 
   const getProjectileEmoji = (avatarClass: AvatarClass): string => {
-    const projectileEmojis = {
+    const projectileEmojis: Record<AvatarClass, string> = {
       ranger: '🏹',
       rogue: '🔪', 
       bard: '🎵',
@@ -423,7 +423,8 @@ export function PlayerController({}: PlayerControllerProps) {
       wizard: '⚡',
       warrior: '⚔️',
       paladin: '✨',
-      cleric: '💫'
+      cleric: '💫',
+      oathbreaker: '🖤'
     };
     
     return projectileEmojis[avatarClass];

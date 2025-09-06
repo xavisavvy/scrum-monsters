@@ -17,6 +17,7 @@ export interface Projectile {
   targetY: number;
   progress: number;
   emoji: string;
+  targetPlayerId?: string;
 }
 
 interface PlayerCharacterProps {
