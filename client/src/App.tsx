@@ -152,10 +152,7 @@ function App() {
         }
       }
       
-      // Transition to battle if game started
-      if (lobby.gamePhase === 'battle' && appState !== 'battle') {
-        setAppState('battle');
-      }
+      // Note: Removed auto-transition to battle - only transition on explicit battle_started event
     });
 
     socket.on('avatar_selected', ({ playerId, avatar }) => {
