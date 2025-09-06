@@ -246,8 +246,8 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
               (and hate boring meetings)
             </p>
             <div className="flex flex-wrap justify-center gap-6 text-sm">
-              <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">About</a>
-              <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Features</a>
+              <a href="/about" className="text-blue-400 hover:text-blue-300 transition-colors">About</a>
+              <a href="#features" className="text-blue-400 hover:text-blue-300 transition-colors">Features</a>
               <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Pricing</a>
               <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Support</a>
               <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Open Source</a>
