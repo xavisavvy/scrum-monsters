@@ -318,7 +318,7 @@ export function Lobby() {
 
   return (
     <div className="retro-container relative overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">        
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-36">        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
@@ -469,12 +469,7 @@ export function Lobby() {
           )}
         </div>
 
-        {/* Player Movement Area - Top of Lobby */}
-        {currentLobby?.gamePhase === 'lobby' && (
-          <div 
-            ref={movementAreaRef}
-            className="relative h-32 mb-6 overflow-hidden bg-gradient-to-b from-gray-900/50 to-gray-800/50 rounded-lg border border-gray-700"
-          >
+        <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
             {/* Pixelated Door Animation (Center Top) */}
             <div 
               className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20"
@@ -585,9 +580,8 @@ export function Lobby() {
             <div className="absolute bottom-1 left-4 text-xs text-gray-400">
               Use A/D or arrow keys to walk around!
             </div>
-          </div>
-        )}
-
+        </div>
+        
         <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
           {/* Teams Section */}
           <div className="space-y-4 min-w-0">
@@ -876,6 +870,126 @@ export function Lobby() {
         )}
         
       </div>
+      
+      {/* Player Movement Area - Sticky Bottom */}
+      {currentLobby?.gamePhase === 'lobby' && (
+        <div 
+          ref={movementAreaRef}
+          className="fixed bottom-0 left-0 right-0 h-32 overflow-hidden bg-gradient-to-b from-gray-900/50 to-gray-800/50 border-t border-gray-700"
+          style={{ zIndex: 1 }}
+        >
+          {/* Pixelated Door Animation (Center Top) */}
+          <div 
+            className="absolute top-0 left-1/2 transform -translate-x-1/2 z-20"
+            style={{ 
+              width: '80px', 
+              height: '60px',
+              background: doorAnimation.isOpen || doorAnimation.isOpening 
+                ? 'linear-gradient(45deg, #4a5568 25%, transparent 25%, transparent 75%, #4a5568 75%), linear-gradient(45deg, #4a5568 25%, transparent 25%, transparent 75%, #4a5568 75%)'
+                : '#2d3748',
+              backgroundSize: doorAnimation.isOpen || doorAnimation.isOpening ? '8px 8px' : '0px 0px',
+              backgroundPosition: '0 0, 4px 4px',
+              border: '2px solid #1a202c',
+              borderRadius: '4px',
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+              transform: `translateX(-50%) ${doorAnimation.isOpening ? 'scaleY(1.1)' : 'scaleY(1)'}`,
+              filter: doorAnimation.isOpen ? 'brightness(1.2)' : 'brightness(0.8)'
+            }}
+          >
+            {(doorAnimation.isOpen || doorAnimation.isOpening) && (
+              <div className="absolute inset-0 bg-gradient-to-b from-transparent via-cyan-500/20 to-cyan-500/40 animate-pulse" />
+            )}
+          </div>
+          
+          {/* Dropping Avatars */}
+          {droppingAvatars.map(avatar => {
+            const elapsed = Date.now() - avatar.startTime;
+            const progress = Math.min(elapsed / 1500, 1); // 1.5 second drop
+            const dropY = -80 + (progress * 100); // Start above door, drop to bottom
+            const bounce = progress > 0.8 ? Math.sin((progress - 0.8) * 20) * 5 : 0;
+            
+            return (
+              <div
+                key={`dropping-${avatar.id}`}
+                className="absolute z-10 transition-all duration-100"
+                style={{
+                  left: `${avatar.x}%`,
+                  bottom: `${-dropY + bounce}px`,
+                  transform: 'translateX(-50%)',
+                  opacity: progress < 0.9 ? 1 : 1 - ((progress - 0.9) / 0.1),
+                  filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.5))'
+                }}
+              >
+                <SpriteRenderer
+                  avatarClass={avatar.avatar as any}
+                  animation="idle"
+                  direction="right"
+                  size={characterSize}
+                />
+              </div>
+            );
+          })}
+          
+          {/* My Player Character */}
+          {currentPlayer && (
+            <div
+              className="absolute transition-transform duration-100 ease-linear"
+              style={{
+                left: `${myPosition.x}px`,
+                bottom: '0px',
+                zIndex: 10
+              }}
+            >
+              <SpriteRenderer
+                avatarClass={getAvatarClass(currentPlayer)}
+                animation={keys.size > 0 ? 'walk' : 'idle'}
+                direction={myPosition.direction}
+                isMoving={keys.size > 0}
+                size={characterSize}
+              />
+              <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
+                {currentPlayer.name}
+              </div>
+            </div>
+          )}
+          
+          {/* Other Players */}
+          {currentLobby.players
+            .filter(player => player.id !== currentPlayer?.id)
+            .map(player => {
+              const position = playerPositions[player.id];
+              if (!position) return null;
+              
+              return (
+                <div
+                  key={player.id}
+                  className="absolute transition-transform duration-200 ease-out"
+                  style={{
+                    left: `${position.x}px`,
+                    bottom: '0px',
+                    zIndex: 9
+                  }}
+                >
+                  <SpriteRenderer
+                    avatarClass={getAvatarClass(player)}
+                    animation={position.isMoving ? 'walk' : 'idle'}
+                    direction={position.direction}
+                    isMoving={position.isMoving}
+                    size={characterSize}
+                  />
+                  <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
+                    {player.name}
+                  </div>
+                </div>
+              );
+            })}
+          
+          {/* Instructions */}
+          <div className="absolute bottom-1 left-4 text-xs text-gray-400">
+            Use A/D or arrow keys to walk around!
+          </div>
+        </div>
+      )}
     </div>
   );
 }
