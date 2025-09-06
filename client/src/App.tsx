@@ -144,6 +144,14 @@ function App() {
     socket.on('lobby_updated', ({ lobby }) => {
       setLobby(lobby);
       
+      // Update currentPlayer with fresh data if they're still in the lobby
+      if (currentPlayer) {
+        const updatedPlayer = lobby.players.find(p => p.id === currentPlayer.id);
+        if (updatedPlayer) {
+          setPlayer(updatedPlayer);
+        }
+      }
+      
       // Transition to battle if game started
       if (lobby.gamePhase === 'battle' && appState !== 'battle') {
         setAppState('battle');

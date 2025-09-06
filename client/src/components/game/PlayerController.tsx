@@ -49,9 +49,27 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         event.preventDefault();
         console.log('⌨️ Ctrl key pressed for shooting!');
         
-        // Shoot toward center of screen (boss area)
-        const targetX = containerWidth * 0.5; // Center X
-        const targetY = containerHeight * 0.4; // Slightly above center Y
+        let targetX, targetY, targetPlayerId = null;
+        
+        if (currentPlayer.team === 'spectators') {
+          // Spectators target nearest dev/qa player
+          const nearestPlayer = findNearestTargetPlayer();
+          if (nearestPlayer) {
+            targetX = nearestPlayer.x;
+            targetY = nearestPlayer.y;
+            targetPlayerId = nearestPlayer.id;
+            console.log(`🎯 Spectator targeting nearest player: ${nearestPlayer.id} at (${targetX}, ${targetY})`);
+          } else {
+            // Fallback to center if no targets found
+            targetX = containerWidth * 0.5;
+            targetY = containerHeight * 0.4;
+            console.log('🎯 No target players found, shooting center');
+          }
+        } else {
+          // Dev/QA players shoot toward boss
+          targetX = containerWidth * 0.5; // Center X
+          targetY = containerHeight * 0.4; // Slightly above center Y
+        }
         
         // Calculate character center position
         const characterCenterX = playerPosition.x + characterSize / 2;
@@ -59,13 +77,14 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         
         console.log(`🎯 Keyboard shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
         
-        // Create projectile from character to center of screen
+        // Create projectile from character to target
         const projectileData = {
           startX: characterCenterX,
           startY: characterCenterY,
           targetX,
           targetY,
-          emoji: getProjectileEmoji(currentPlayer.avatar)
+          emoji: getProjectileEmoji(currentPlayer.avatar),
+          targetPlayerId // For spectator attacks
         };
         
         console.log('🚀 Keyboard projectile data:', projectileData);
@@ -213,23 +232,48 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     return projectileEmojis[avatarClass];
   };
 
+  const findNearestTargetPlayer = useCallback(() => {
+    if (!currentLobby || !currentPlayer) return null;
+    
+    // Get all dev/qa players with positions
+    const targetPlayers = currentLobby.players.filter(p => 
+      (p.team === 'developers' || p.team === 'qa') && currentLobby.playerPositions?.[p.id]
+    );
+    
+    if (targetPlayers.length === 0) return null;
+    
+    // Calculate distances using real positions from server
+    const currentX = playerPosition.x;
+    const currentY = playerPosition.y;
+    
+    let nearestPlayer = null;
+    let minDistance = Infinity;
+    
+    for (const player of targetPlayers) {
+      const serverPos = currentLobby.playerPositions[player.id];
+      if (!serverPos) continue;
+      
+      const distance = Math.sqrt(
+        Math.pow(serverPos.x - currentX, 2) + Math.pow(serverPos.y - currentY, 2)
+      );
+      
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestPlayer = { id: player.id, x: serverPos.x, y: serverPos.y };
+      }
+    }
+    
+    return nearestPlayer;
+  }, [currentLobby, currentPlayer, playerPosition]);
+
   const handleProjectileComplete = useCallback((projectile: Projectile) => {
     // Remove the projectile from the list
     setProjectiles(prev => prev.filter(p => p.id !== projectile.id));
     
-    // Check if projectile hit the boss area (center region of screen)
-    const bossAreaX = containerWidth * 0.3; // Boss takes up center area
-    const bossAreaY = containerHeight * 0.2;
-    const bossAreaWidth = containerWidth * 0.4;
-    const bossAreaHeight = containerHeight * 0.6;
+    if (!currentPlayer) return;
     
-    const hitBoss = projectile.targetX >= bossAreaX && 
-                   projectile.targetX <= bossAreaX + bossAreaWidth &&
-                   projectile.targetY >= bossAreaY && 
-                   projectile.targetY <= bossAreaY + bossAreaHeight;
-    
-    if (hitBoss && currentPlayer && currentLobby?.boss) {
-      // Calculate damage (story points scale)
+    if (currentPlayer.team === 'spectators' && projectile.targetPlayerId) {
+      // Spectator attacking player
       const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
       
       // Play hit sound
@@ -245,10 +289,44 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         y: projectile.targetY
       });
       
-      // Emit attack to server
-      emit('attack_boss', { damage });
+      // Emit player attack to server
+      emit('attack_player', { targetId: projectile.targetPlayerId, damage });
       
-      console.log(`💥 ${currentPlayer.name} hit boss for ${damage} damage with ${projectile.emoji}!`);
+      console.log(`💥 Spectator ${currentPlayer.name} hit player ${projectile.targetPlayerId} for ${damage} damage with ${projectile.emoji}!`);
+    } else {
+      // Dev/QA attacking boss
+      const bossAreaX = containerWidth * 0.3; // Boss takes up center area
+      const bossAreaY = containerHeight * 0.2;
+      const bossAreaWidth = containerWidth * 0.4;
+      const bossAreaHeight = containerHeight * 0.6;
+      
+      const hitBoss = projectile.targetX >= bossAreaX && 
+                     projectile.targetX <= bossAreaX + bossAreaWidth &&
+                     projectile.targetY >= bossAreaY && 
+                     projectile.targetY <= bossAreaY + bossAreaHeight;
+      
+      if (hitBoss && currentLobby?.boss) {
+        // Calculate damage (story points scale)
+        const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
+        
+        // Play hit sound
+        playHit();
+        
+        // Add attack animation
+        addAttackAnimation({
+          id: projectile.id,
+          playerId: currentPlayer.id,
+          damage,
+          timestamp: Date.now(),
+          x: projectile.targetX,
+          y: projectile.targetY
+        });
+        
+        // Emit attack to server
+        emit('attack_boss', { damage });
+        
+        console.log(`💥 ${currentPlayer.name} hit boss for ${damage} damage with ${projectile.emoji}!`);
+      }
     }
   }, [containerWidth, containerHeight, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
 
@@ -267,16 +345,21 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       className="absolute inset-0 pointer-events-auto cursor-crosshair"
       onClick={handleScreenClick}
     >
-      <PlayerCharacter
-        avatarClass={currentPlayer.avatar}
-        position={playerPosition}
-        onPositionChange={setPlayerPosition}
-        onShoot={handleShoot}
-        isJumping={isJumping}
-        isDead={false} // Could be tied to game state later
-        containerWidth={containerWidth}
-        containerHeight={containerHeight}
-      />
+      <div style={{ 
+        opacity: currentPlayer.team === 'spectators' ? 0.7 : 1,
+        filter: currentPlayer.team === 'spectators' ? 'saturate(0.9)' : 'none'
+      }}>
+        <PlayerCharacter
+          avatarClass={currentPlayer.avatar}
+          position={playerPosition}
+          onPositionChange={setPlayerPosition}
+          onShoot={handleShoot}
+          isJumping={isJumping}
+          isDead={false} // Could be tied to game state later
+          containerWidth={containerWidth}
+          containerHeight={containerHeight}
+        />
+      </div>
       
       <ProjectileSystem
         projectiles={projectiles}

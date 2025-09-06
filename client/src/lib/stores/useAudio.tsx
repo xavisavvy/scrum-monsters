@@ -378,7 +378,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   toggleBossMusicMute: () => {
-    const { isBossMusicMuted, bossMusic, youtubePlayer, isYoutubeAudioActive } = get();
+    const { isBossMusicMuted, bossMusic, youtubePlayer, isYoutubeAudioActive, isBossMusicPlaying } = get();
     const newMutedState = !isBossMusicMuted;
     
     if (isYoutubeAudioActive && youtubePlayer) {
@@ -392,10 +392,18 @@ export const useAudio = create<AudioState>((set, get) => ({
         bossMusic.pause();
         set({ isBossMusicPlaying: false });
       } else {
-        bossMusic.play().catch((error: any) => {
-          console.log("Boss music resume prevented:", error);
-        });
-        set({ isBossMusicPlaying: true });
+        // When unmuting, check if we're in battle and should start music
+        const isInBattle = document.querySelector('[data-game-phase="battle"]');
+        if (!isBossMusicPlaying && isInBattle) {
+          // Restart boss music since we're in battle
+          get().fadeInBossMusic();
+        } else if (isBossMusicPlaying) {
+          // Just resume if it was already playing
+          bossMusic.play().catch((error: any) => {
+            console.log("Boss music resume prevented:", error);
+          });
+          set({ isBossMusicPlaying: true });
+        }
       }
     }
     

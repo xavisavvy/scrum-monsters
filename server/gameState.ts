@@ -1,13 +1,97 @@
 import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 
+interface RevivalSession {
+  reviverId: string;
+  targetId: string;
+  lobbyId: string;
+  startedAt: number;
+  lastTick: number;
+  timeoutHandle: NodeJS.Timeout;
+}
+
 class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
   private playerToLobby: Map<string, string> = new Map();
+  private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
+  private revivalWatchdog: NodeJS.Timeout;
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number; team: TeamType }>> = new Map();
+
+  constructor() {
+    // Start revival watchdog timer
+    this.revivalWatchdog = setInterval(() => {
+      this.processRevivalSessions();
+    }, 100); // Check every 100ms
+  }
 
   generateLobbyId(): string {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
+  }
+
+  private processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
+    const now = Date.now();
+    const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
+    
+    for (const [sessionKey, session] of this.revivalSessions.entries()) {
+      const lobby = this.lobbies.get(session.lobbyId);
+      if (!lobby) {
+        this.cancelRevivalSession(sessionKey);
+        continue;
+      }
+
+      // Check if revive timed out (no keep-alive)
+      if (now - session.lastTick > 400) {
+        this.cancelRevivalSession(sessionKey);
+        continue;
+      }
+
+      // Check if revival is complete
+      if (now >= session.startedAt + 3000) {
+        const completed = this.completeRevivalSession(sessionKey);
+        if (completed) {
+          completedRevivals.push(completed);
+        }
+      }
+    }
+    
+    return completedRevivals;
+  }
+
+  private cancelRevivalSession(sessionKey: string) {
+    const session = this.revivalSessions.get(sessionKey);
+    if (session) {
+      clearTimeout(session.timeoutHandle);
+      const lobby = this.lobbies.get(session.lobbyId);
+      if (lobby) {
+        const targetState = lobby.playerCombatStates[session.targetId];
+        if (targetState) {
+          targetState.revivedBy = undefined;
+          targetState.reviveEndsAt = undefined;
+        }
+      }
+      this.revivalSessions.delete(sessionKey);
+    }
+  }
+
+  private completeRevivalSession(sessionKey: string): { lobbyId: string; targetId: string; reviverId: string } | null {
+    const session = this.revivalSessions.get(sessionKey);
+    if (session) {
+      const lobby = this.lobbies.get(session.lobbyId);
+      if (lobby) {
+        const targetState = lobby.playerCombatStates[session.targetId];
+        if (targetState && targetState.revivedBy === session.reviverId) {
+          targetState.hp = targetState.maxHp;
+          targetState.isDowned = false;
+          targetState.revivedBy = undefined;
+          targetState.reviveEndsAt = undefined;
+          
+          this.cancelRevivalSession(sessionKey);
+          return { lobbyId: session.lobbyId, targetId: session.targetId, reviverId: session.reviverId };
+        }
+      }
+      this.cancelRevivalSession(sessionKey);
+    }
+    return null;
   }
 
   private initializeTeamCompetition(): TeamCompetition {
@@ -66,7 +150,17 @@ class GameStateManager {
       tickets: [],
       gamePhase: 'lobby',
       completedTickets: [],
-      teamCompetition: this.initializeTeamCompetition()
+      teamCompetition: this.initializeTeamCompetition(),
+      playerCombatStates: {
+        [hostId]: {
+          maxHp: 100,
+          hp: 100,
+          isDowned: false
+        }
+      },
+      playerPositions: {
+        [hostId]: { x: 50, y: 50 }
+      }
     };
 
     this.lobbies.set(lobbyId, lobby);
@@ -102,6 +196,14 @@ class GameStateManager {
     lobby.players.push(player);
     lobby.teams.developers.push(player);
     this.playerToLobby.set(playerId, lobbyId);
+
+    // Initialize combat state for new player
+    lobby.playerCombatStates[playerId] = {
+      maxHp: 100,
+      hp: 100,
+      isDowned: false
+    };
+    lobby.playerPositions[playerId] = { x: 50, y: 50 };
 
     return { lobby, player };
   }
@@ -438,6 +540,13 @@ class GameStateManager {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
+    // Cancel any revival sessions involving this player
+    for (const [sessionKey, session] of this.revivalSessions.entries()) {
+      if (session.reviverId === playerId || session.targetId === playerId) {
+        this.cancelRevivalSession(sessionKey);
+      }
+    }
+
     // Remove player from lobby
     lobby.players = lobby.players.filter(p => p.id !== playerId);
     
@@ -446,6 +555,10 @@ class GameStateManager {
       const teamType = teamKey as TeamType;
       lobby.teams[teamType] = lobby.teams[teamType].filter(p => p.id !== playerId);
     });
+
+    // Clean up combat state and position
+    delete lobby.playerCombatStates[playerId];
+    delete lobby.playerPositions[playerId];
 
     this.playerToLobby.delete(playerId);
 
@@ -494,6 +607,187 @@ class GameStateManager {
     };
 
     return boss;
+  }
+
+  // Combat system methods
+  updatePlayerPosition(playerId: string, position: { x: number; y: number }): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    // Validate position bounds (0-100%)
+    const x = Math.max(0, Math.min(100, position.x));
+    const y = Math.max(0, Math.min(100, position.y));
+    
+    lobby.playerPositions[playerId] = { x, y };
+    return lobby;
+  }
+
+  attackPlayer(attackerId: string, targetId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
+    const lobby = this.getLobbyByPlayerId(attackerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const attacker = lobby.players.find(p => p.id === attackerId);
+    const target = lobby.players.find(p => p.id === targetId);
+    
+    if (!attacker || !target) return null;
+    
+    // Validate attack rules: spectators can only attack dev/qa
+    if (attacker.team === 'spectators' && target.team === 'spectators') return null;
+    if (attacker.team !== 'spectators') return null; // Only spectators can attack players
+    
+    const targetCombatState = lobby.playerCombatStates[targetId];
+    if (!targetCombatState || targetCombatState.isDowned) return null;
+
+    // Apply damage (clamp between 1-10)
+    const actualDamage = Math.max(1, Math.min(10, damage));
+    targetCombatState.hp = Math.max(0, targetCombatState.hp - actualDamage);
+    targetCombatState.lastDamagedBy = attackerId;
+    
+    if (targetCombatState.hp <= 0) {
+      targetCombatState.isDowned = true;
+    }
+
+    return { lobby, targetHealth: targetCombatState.hp };
+  }
+
+  findNearestTarget(spectatorId: string): string | null {
+    const lobby = this.getLobbyByPlayerId(spectatorId);
+    if (!lobby) return null;
+
+    const spectatorPos = lobby.playerPositions[spectatorId];
+    if (!spectatorPos) return null;
+
+    let nearestTarget: string | null = null;
+    let nearestDistance = Infinity;
+
+    // Find nearest non-spectator, non-downed player
+    lobby.players.forEach(player => {
+      if (player.team === 'spectators' || player.id === spectatorId) return;
+      
+      const combatState = lobby.playerCombatStates[player.id];
+      if (combatState?.isDowned) return;
+
+      const playerPos = lobby.playerPositions[player.id];
+      if (!playerPos) return;
+
+      const distance = Math.sqrt(
+        Math.pow(spectatorPos.x - playerPos.x, 2) + 
+        Math.pow(spectatorPos.y - playerPos.y, 2)
+      );
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestTarget = player.id;
+      }
+    });
+
+    return nearestTarget;
+  }
+
+  startRevive(reviverId: string, targetId: string): { lobby: Lobby; canRevive: boolean; sessionKey?: string } | null {
+    const lobby = this.getLobbyByPlayerId(reviverId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const reviver = lobby.players.find(p => p.id === reviverId);
+    const target = lobby.players.find(p => p.id === targetId);
+    
+    if (!reviver || !target) return null;
+    
+    const reviverState = lobby.playerCombatStates[reviverId];
+    const targetState = lobby.playerCombatStates[targetId];
+    
+    if (!reviverState || !targetState) return null;
+    if (reviverState.isDowned || !targetState.isDowned) return null;
+    
+    // Check distance (must be within 10% of screen)
+    const reviverPos = lobby.playerPositions[reviverId];
+    const targetPos = lobby.playerPositions[targetId];
+    
+    if (!reviverPos || !targetPos) return null;
+    
+    const distance = Math.sqrt(
+      Math.pow(reviverPos.x - targetPos.x, 2) + 
+      Math.pow(reviverPos.y - targetPos.y, 2)
+    );
+    
+    if (distance > 10) return { lobby, canRevive: false };
+    
+    // Create revival session
+    const sessionKey = `${reviverId}:${targetId}`;
+    const now = Date.now();
+    
+    // Cancel any existing session for this reviver
+    for (const [key, session] of this.revivalSessions.entries()) {
+      if (session.reviverId === reviverId) {
+        this.cancelRevivalSession(key);
+      }
+    }
+    
+    const revivalSession: RevivalSession = {
+      reviverId,
+      targetId,
+      lobbyId: lobby.id,
+      startedAt: now,
+      lastTick: now,
+      timeoutHandle: setTimeout(() => {
+        this.cancelRevivalSession(sessionKey);
+      }, 3500) // 3.5s timeout for safety
+    };
+    
+    this.revivalSessions.set(sessionKey, revivalSession);
+    
+    // Start revival
+    targetState.revivedBy = reviverId;
+    targetState.reviveEndsAt = now + 3000; // 3 seconds
+    
+    return { lobby, canRevive: true, sessionKey };
+  }
+
+  cancelRevive(reviverId: string, targetId: string): Lobby | null {
+    const sessionKey = `${reviverId}:${targetId}`;
+    this.cancelRevivalSession(sessionKey);
+    return this.getLobbyByPlayerId(reviverId);
+  }
+
+  tickRevive(reviverId: string, targetId: string): boolean {
+    const sessionKey = `${reviverId}:${targetId}`;
+    const session = this.revivalSessions.get(sessionKey);
+    
+    if (!session) return false;
+    
+    // Update last tick time for keep-alive
+    session.lastTick = Date.now();
+    
+    // Validate distance and states
+    const lobby = this.lobbies.get(session.lobbyId);
+    if (!lobby) return false;
+    
+    const reviverPos = lobby.playerPositions[reviverId];
+    const targetPos = lobby.playerPositions[targetId];
+    const reviverState = lobby.playerCombatStates[reviverId];
+    const targetState = lobby.playerCombatStates[targetId];
+    
+    if (!reviverPos || !targetPos || !reviverState || !targetState) {
+      this.cancelRevivalSession(sessionKey);
+      return false;
+    }
+    
+    if (reviverState.isDowned || !targetState.isDowned) {
+      this.cancelRevivalSession(sessionKey);
+      return false;
+    }
+    
+    const distance = Math.sqrt(
+      Math.pow(reviverPos.x - targetPos.x, 2) + 
+      Math.pow(reviverPos.y - targetPos.y, 2)
+    );
+    
+    if (distance > 10) {
+      this.cancelRevivalSession(sessionKey);
+      return false;
+    }
+    
+    return true;
   }
 }
 

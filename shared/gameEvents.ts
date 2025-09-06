@@ -1,5 +1,20 @@
 // Shared types and events for the multiplayer scrum poker game
 
+export interface Position {
+  x: number;
+  y: number;
+}
+
+export interface PlayerCombatState {
+  maxHp: number;
+  hp: number;
+  isDowned: boolean;
+  lastDamagedBy?: string;
+  revivedBy?: string;
+  reviveEndsAt?: number;
+  position?: Position;
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -42,6 +57,8 @@ export interface Lobby {
   boss?: Boss;
   completedTickets: CompletedTicket[];
   teamCompetition: TeamCompetition;
+  playerCombatStates: Record<string, PlayerCombatState>;
+  playerPositions: Record<string, Position>;
 }
 
 export interface JiraTicket {
@@ -80,29 +97,34 @@ export type TeamType = 'developers' | 'qa' | 'spectators';
 
 export type AvatarClass = 'ranger' | 'rogue' | 'bard' | 'sorcerer' | 'wizard' | 'warrior' | 'paladin' | 'cleric';
 
-// WebSocket Events
-export interface ClientEvents {
-  'create_lobby': { lobbyName: string; hostName: string };
-  'join_lobby': { lobbyId: string; playerName: string };
-  'select_avatar': { avatarClass: AvatarClass };
-  'assign_team': { playerId: string; team: TeamType };
-  'change_own_team': { team: TeamType };
-  'start_battle': { tickets: JiraTicket[] };
-  'submit_score': { score: number };
-  'attack_boss': { damage: number };
-  'proceed_next_level': {};
-  'restart_game': {};
-  'player_performance': { 
+// WebSocket Events (Socket.IO function signature format)
+export interface ClientToServerEvents {
+  create_lobby: (data: { lobbyName: string; hostName: string }) => void;
+  join_lobby: (data: { lobbyId: string; playerName: string }) => void;
+  select_avatar: (data: { avatarClass: AvatarClass }) => void;
+  assign_team: (data: { playerId: string; team: TeamType }) => void;
+  change_own_team: (data: { team: TeamType }) => void;
+  start_battle: (data: { tickets: JiraTicket[] }) => void;
+  submit_score: (data: { score: number }) => void;
+  attack_boss: (data: { damage: number }) => void;
+  proceed_next_level: () => void;
+  restart_game: () => void;
+  player_performance: (data: { 
     playerId: string; 
     team: TeamType; 
     estimationTime: number; 
     score: number; 
     ticketId?: string; 
-  };
-  'abandon_quest': {};
-  'force_reveal': {};
-  'youtube_play': { videoId: string; url: string };
-  'youtube_stop': {};
+  }) => void;
+  abandon_quest: () => void;
+  force_reveal: () => void;
+  youtube_play: (data: { videoId: string; url: string }) => void;
+  youtube_stop: () => void;
+  player_pos: (data: { x: number; y: number }) => void;
+  attack_player: (data: { targetId: string; damage: number }) => void;
+  revive_start: (data: { targetId: string }) => void;
+  revive_cancel: (data: { targetId: string }) => void;
+  revive_tick: (data: { targetId: string }) => void;
 }
 
 export interface TeamScores {
@@ -115,21 +137,27 @@ export interface TeamConsensus {
   qa: { hasConsensus: boolean; score?: number };
 }
 
-export interface ServerEvents {
-  'lobby_created': { lobby: Lobby; inviteLink: string };
-  'lobby_joined': { lobby: Lobby; player: Player };
-  'lobby_updated': { lobby: Lobby };
-  'avatar_selected': { playerId: string; avatar: AvatarClass };
-  'battle_started': { lobby: Lobby; boss: Boss };
-  'score_submitted': { playerId: string; team: TeamType };
-  'scores_revealed': { teamScores: TeamScores; teamConsensus: TeamConsensus };
-  'boss_attacked': { playerId: string; damage: number; bossHealth: number };
-  'boss_defeated': { lobby: Lobby };
-  'quest_abandoned': { lobby: Lobby };
-  'game_error': { message: string };
-  'player_disconnected': { playerId: string };
-  'youtube_play_synced': { videoId: string; url: string };
-  'youtube_stop_synced': {};
+export interface ServerToClientEvents {
+  lobby_created: (data: { lobby: Lobby; inviteLink: string }) => void;
+  lobby_joined: (data: { lobby: Lobby; player: Player }) => void;
+  lobby_updated: (data: { lobby: Lobby }) => void;
+  avatar_selected: (data: { playerId: string; avatar: AvatarClass }) => void;
+  battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
+  score_submitted: (data: { playerId: string; team: TeamType }) => void;
+  scores_revealed: (data: { teamScores: TeamScores; teamConsensus: TeamConsensus }) => void;
+  boss_attacked: (data: { playerId: string; damage: number; bossHealth: number }) => void;
+  boss_defeated: (data: { lobby: Lobby }) => void;
+  quest_abandoned: (data: { lobby: Lobby }) => void;
+  game_error: (data: { message: string }) => void;
+  player_disconnected: (data: { playerId: string }) => void;
+  youtube_play_synced: (data: { videoId: string; url: string }) => void;
+  youtube_stop_synced: () => void;
+  players_pos: (data: { positions: Record<string, Position> }) => void;
+  player_state_updated: (data: { playerId: string; combatState: PlayerCombatState }) => void;
+  player_attacked: (data: { attackerId: string; targetId: string; damage: number; targetHealth: number }) => void;
+  revive_progress: (data: { targetId: string; reviverId: string; progress: number }) => void;
+  revive_complete: (data: { targetId: string; reviverId: string }) => void;
+  revive_cancelled: (data: { targetId: string; reviverId: string }) => void;
 }
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];

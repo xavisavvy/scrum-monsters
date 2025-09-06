@@ -1,17 +1,31 @@
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
-import { ClientEvents, ServerEvents } from '../shared/gameEvents.js';
+import { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
 import { gameState } from './gameState.js';
 
+type InterServerEvents = {};
+type SocketData = { playerId?: string; lobbyId?: string };
+
 export function setupWebSocket(httpServer: HTTPServer) {
-  const io = new SocketIOServer<ClientEvents, ServerEvents>(httpServer, {
+  const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
     }
   });
 
-  io.on('connection', (socket) => {
+  // Set up revival completion watchdog
+  setInterval(() => {
+    const completedRevivals = (gameState as any).processRevivalSessions();
+    for (const revival of completedRevivals) {
+      io.to(revival.lobbyId).emit('revive_complete', { 
+        targetId: revival.targetId, 
+        reviverId: revival.reviverId 
+      });
+    }
+  }, 100);
+
+  io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
     console.log(`Player connected: ${socket.id}`);
 
     socket.on('create_lobby', ({ lobbyName, hostName }) => {
@@ -242,8 +256,86 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
 
       // Broadcast to all players in the lobby
-      io.to(lobbyId).emit('youtube_stop_synced', {});
+      io.to(lobbyId).emit('youtube_stop_synced');
       console.log(`Host ${playerId} stopped YouTube music`);
+    });
+
+    // Position sync for combat
+    socket.on('player_pos', ({ x, y }: { x: number; y: number }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.updatePlayerPosition(playerId, { x, y });
+      if (lobby) {
+        // Broadcast position updates to room (throttled)
+        socket.to(lobby.id).emit('players_pos', { positions: lobby.playerPositions });
+      }
+    });
+
+    // Player vs player combat
+    socket.on('attack_player', ({ targetId, damage }: { targetId: string; damage: number }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      // For spectators, override target with nearest player
+      const lobby = gameState.getLobbyByPlayerId(playerId);
+      if (!lobby) return;
+
+      const attacker = lobby.players.find(p => p.id === playerId);
+      if (!attacker || attacker.team !== 'spectators') return;
+
+      const actualTargetId = gameState.findNearestTarget(playerId) || targetId;
+      const result = gameState.attackPlayer(playerId, actualTargetId, damage);
+      
+      if (result) {
+        const { lobby: updatedLobby, targetHealth } = result;
+        io.to(lobby.id).emit('player_attacked', { 
+          attackerId: playerId, 
+          targetId: actualTargetId, 
+          damage, 
+          targetHealth 
+        });
+        io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+      }
+    });
+
+    // Revival system
+    socket.on('revive_start', ({ targetId }: { targetId: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const result = gameState.startRevive(playerId, targetId);
+      if (result) {
+        const { lobby, canRevive } = result;
+        if (canRevive) {
+          io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
+        }
+      }
+    });
+
+    socket.on('revive_cancel', ({ targetId }: { targetId: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.cancelRevive(playerId, targetId);
+      if (lobby) {
+        io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+      }
+    });
+
+    socket.on('revive_tick', ({ targetId }: { targetId: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      // Update keep-alive and validate revival conditions
+      const isValid = gameState.tickRevive(playerId, targetId);
+      if (!isValid) {
+        // Revival was cancelled due to distance or state changes
+        const lobby = gameState.getLobbyByPlayerId(playerId);
+        if (lobby) {
+          io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+        }
+      }
     });
 
     socket.on('disconnect', () => {
