@@ -240,27 +240,13 @@ export function setupWebSocket(httpServer: HTTPServer) {
       if (lobby) {
         io.to(lobby.id).emit('lobby_updated', { lobby });
         
-        // Check for consensus and auto-advance
+        // Check for consensus and auto-advance - rely on gameState for consensus logic
         const result = gameState.checkDiscussionConsensus(lobby.id);
         if (result) {
-          const { lobby: updatedLobby, teamScores, teamConsensus } = result;
+          const { lobby: updatedLobby } = result;
           
-          // Check if teams agreed using same logic as gameState
-          const devTeamExists = updatedLobby.teams.developers.length > 0;
-          const qaTeamExists = updatedLobby.teams.qa.length > 0;
-          
-          let teamsAgree = false;
-          if (devTeamExists && qaTeamExists) {
-            teamsAgree = teamConsensus.developers.hasConsensus && 
-                        teamConsensus.qa.hasConsensus &&
-                        teamConsensus.developers.score === teamConsensus.qa.score;
-          } else if (devTeamExists && !qaTeamExists) {
-            teamsAgree = teamConsensus.developers.hasConsensus;
-          } else if (!devTeamExists && qaTeamExists) {
-            teamsAgree = teamConsensus.qa.hasConsensus;
-          }
-          
-          if (teamsAgree) {
+          // If lobby progressed beyond discussion phase, emit appropriate updates
+          if (updatedLobby.gamePhase !== 'discussion') {
             // Auto-advance after a brief delay for players to see the consensus
             setTimeout(() => {
               io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
