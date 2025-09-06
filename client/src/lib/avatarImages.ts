@@ -7,10 +7,10 @@ const AVATAR_IMAGES: Record<string, string> = {
   monk: '/avatars/monk.png',
   paladin: '/avatars/paladin.png',
   ranger: '/avatars/ranger.png',
+  rogue: '/avatars/rogue.png',
   sorcerer: '/avatars/sorcerer.png',
   warrior: '/avatars/warrior.png',
   wizard: '/avatars/wizard.png'
-  // rogue intentionally omitted as no image provided
 };
 
 /**
