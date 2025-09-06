@@ -88,7 +88,8 @@ export function Lobby() {
         wizard: '🧙',
         warrior: '⚔️',
         paladin: '🛡️',
-        cleric: '✨'
+        cleric: '✨',
+        oathbreaker: '⚡'
       };
       return icons[avatarClass] || '⚔️';
     };

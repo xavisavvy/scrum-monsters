@@ -110,7 +110,7 @@ export type GamePhase = 'lobby' | 'avatar_selection' | 'battle' | 'scoring' | 'r
 
 export type TeamType = 'developers' | 'qa' | 'spectators';
 
-export type AvatarClass = 'ranger' | 'rogue' | 'bard' | 'sorcerer' | 'wizard' | 'warrior' | 'paladin' | 'cleric';
+export type AvatarClass = 'ranger' | 'rogue' | 'bard' | 'sorcerer' | 'wizard' | 'warrior' | 'paladin' | 'cleric' | 'oathbreaker';
 
 
 // WebSocket Events (Socket.IO function signature format)
@@ -290,6 +290,13 @@ export const AVATAR_CLASSES: Record<AvatarClass, {
     color: '#F0F8FF',
     stats: { str: 10, dex: 6, con: 12, wis: 20, int: 12, cha: 18 },
     specialties: ['Healing Magic', 'Divine Power', 'Support']
+  },
+  oathbreaker: {
+    name: 'Oathbreaker',
+    description: 'Fallen paladin wielding dark power',
+    color: '#8A2BE2',
+    stats: { str: 16, dex: 10, con: 14, wis: 8, int: 12, cha: 18 },
+    specialties: ['Dark Magic', 'Corruption', 'Fear Aura']
   }
 };
 

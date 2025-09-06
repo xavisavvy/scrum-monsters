@@ -5,6 +5,7 @@ const AVATAR_IMAGES: Record<string, string> = {
   bard: '/avatars/bard.png',
   cleric: '/avatars/cleric.png', 
   monk: '/avatars/monk.png',
+  oathbreaker: '/avatars/oathbreaker.png',
   paladin: '/avatars/paladin.png',
   ranger: '/avatars/ranger.png',
   rogue: '/avatars/rogue.png',

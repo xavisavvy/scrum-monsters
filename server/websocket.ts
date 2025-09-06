@@ -132,7 +132,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
       if (!playerId || !lobbyId) return;
 
       // Validate that player is in lobby phase
-      const lobby = gameState.findLobbyById(lobbyId);
+      const lobby = gameState.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
         console.log(`Player ${playerId} tried to move but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
         return;
@@ -153,7 +153,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
       if (!playerId || !lobbyId) return;
 
       // Validate that player is in lobby phase
-      const lobby = gameState.findLobbyById(lobbyId);
+      const lobby = gameState.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
         console.log(`Player ${playerId} tried to jump but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
         return;
