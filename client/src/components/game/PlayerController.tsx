@@ -168,15 +168,21 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
       
       // Convert percentage coordinates to pixel coordinates and add to boss projectiles
-      const convertedProjectiles = ringProjectiles.map(proj => ({
-        id: proj.id,
-        startX: (bossX / 100) * containerWidth,
-        startY: (bossY / 100) * containerHeight,
-        targetX: (proj.targetX / 100) * containerWidth,
-        targetY: (proj.targetY / 100) * containerHeight,
-        progress: 0,
-        emoji: proj.emoji
-      }));
+      const convertedProjectiles = ringProjectiles.map(proj => {
+        const targetX = (proj.targetX / 100) * containerWidth;
+        const targetY = (proj.targetY / 100) * containerHeight;
+        console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetX}px, ${targetY}px)`);
+        
+        return {
+          id: proj.id,
+          startX: (bossX / 100) * containerWidth,
+          startY: (bossY / 100) * containerHeight,
+          targetX,
+          targetY,
+          progress: 0,
+          emoji: proj.emoji
+        };
+      });
       
       setBossProjectiles(convertedProjectiles);
     });
@@ -348,10 +354,10 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       Math.pow(playerPixelY - projectile.targetY, 2)
     );
     
-    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 150)`);
+    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 300)`);
     
-    // If hit (within 150 pixels - larger collision area for boss projectiles)
-    if (distance < 150) {
+    // If hit (within 300 pixels - much larger collision area for boss projectiles)
+    if (distance < 300) {
       const damage = Math.floor(Math.random() * 3) + 2; // 2-4 damage
       
       // Play hit sound
