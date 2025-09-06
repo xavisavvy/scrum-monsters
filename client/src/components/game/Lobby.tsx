@@ -20,7 +20,7 @@ export function Lobby() {
   
   // Movement constants
   const moveSpeed = 3;
-  const screenWidth = typeof window !== 'undefined' ? window.innerWidth : 1200;
+  const movementAreaWidth = 1200; // Use fixed width for consistent movement area
   const characterSize = 60;
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
@@ -85,14 +85,14 @@ export function Lobby() {
           moving = true;
         }
         if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          newX = Math.min(screenWidth - characterSize, prev.x + moveSpeed);
+          newX = Math.min(movementAreaWidth - characterSize, prev.x + moveSpeed);
           direction = 'right';
           moving = true;
         }
 
         // Emit position to server for other players to see
         if (moving) {
-          const percentX = (newX / (screenWidth - characterSize)) * 100;
+          const percentX = (newX / (movementAreaWidth - characterSize)) * 100;
           emit('lobby_player_pos', { x: percentX, y: 85, direction }); // y: 85% to put players at bottom
         }
 
@@ -102,7 +102,7 @@ export function Lobby() {
 
     const interval = setInterval(movePlayer, 50); // ~20 FPS to reduce server load
     return () => clearInterval(interval);
-  }, [keys, currentLobby?.gamePhase, emit, screenWidth]);
+  }, [keys, currentLobby?.gamePhase, emit]);
 
   // Listen for other players' positions in lobby
   useEffect(() => {
@@ -114,7 +114,7 @@ export function Lobby() {
       setPlayerPositions(prev => ({
         ...prev,
         [playerId]: {
-          x: (x / 100) * (screenWidth - characterSize),
+          x: (x / 100) * (movementAreaWidth - characterSize),
           direction: direction || 'right',
           isMoving: true
         }
@@ -126,7 +126,7 @@ export function Lobby() {
     return () => {
       socket.off('lobby_player_pos', handleLobbyPlayerPos);
     };
-  }, [socket, currentLobby?.gamePhase, currentPlayer?.id, screenWidth]);
+  }, [socket, currentLobby?.gamePhase, currentPlayer?.id]);
 
   // Use tickets from server state instead of local state
   const tickets = currentLobby?.tickets || [];
