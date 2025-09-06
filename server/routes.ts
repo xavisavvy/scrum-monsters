@@ -33,6 +33,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/?page=about');
   });
 
+  // Features page route
+  app.get('/features', (req, res) => {
+    // Redirect to frontend with features parameter
+    res.redirect('/?page=features');
+  });
+
+  // Pricing page route
+  app.get('/pricing', (req, res) => {
+    // Redirect to frontend with pricing parameter
+    res.redirect('/?page=pricing');
+  });
+
+  // Support page route
+  app.get('/support', (req, res) => {
+    // Redirect to frontend with support parameter
+    res.redirect('/?page=support');
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server
