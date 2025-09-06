@@ -310,20 +310,22 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     
     if (!currentPlayer) return;
     
-    // Check if boss projectile hits any player (including current player)
-    const currentPlayerPos = {
-      x: playerPosition.x + characterSize / 2,
-      y: containerHeight - (playerPosition.y + characterSize / 2)
-    };
+    // Convert player position to percentage coordinates to match projectile system
+    const playerPercentX = ((playerPosition.x + characterSize / 2) / containerWidth) * 100;
+    const playerPercentY = ((containerHeight - (playerPosition.y + characterSize / 2)) / containerHeight) * 100;
     
-    // Check collision with projectile target
+    console.log(`🎯 Boss projectile collision check: Player at (${playerPercentX.toFixed(1)}, ${playerPercentY.toFixed(1)}), Projectile target (${projectile.targetX}, ${projectile.targetY})`);
+    
+    // Check collision with projectile target (use percentage coordinates)
     const distance = Math.sqrt(
-      Math.pow(currentPlayerPos.x - projectile.targetX, 2) + 
-      Math.pow(currentPlayerPos.y - projectile.targetY, 2)
+      Math.pow(playerPercentX - projectile.targetX, 2) + 
+      Math.pow(playerPercentY - projectile.targetY, 2)
     );
     
-    // If hit (within 30 pixels)
-    if (distance < 30) {
+    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 8)`);
+    
+    // If hit (within 8% of screen - larger collision area for better gameplay)
+    if (distance < 8) {
       const damage = Math.floor(Math.random() * 3) + 2; // 2-4 damage
       
       // Play hit sound
@@ -335,16 +337,18 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         playerId: 'boss',
         damage,
         timestamp: Date.now(),
-        x: projectile.targetX,
-        y: projectile.targetY
+        x: (projectile.targetX / 100) * containerWidth,
+        y: (projectile.targetY / 100) * containerHeight
       });
       
       // Emit boss damage to server
       emit('boss_damage_player', { playerId: currentPlayer.id, damage });
       
       console.log(`💀 Boss ring attack hit ${currentPlayer.name} for ${damage} damage!`);
+    } else {
+      console.log(`💨 Boss projectile missed ${currentPlayer.name}`);
     }
-  }, [currentPlayer, playerPosition, characterSize, containerHeight, playHit, addAttackAnimation, emit]);
+  }, [currentPlayer, playerPosition, characterSize, containerWidth, containerHeight, playHit, addAttackAnimation, emit]);
 
   const handleProjectileComplete = useCallback((projectile: Projectile) => {
     // Remove the projectile from the list

@@ -520,22 +520,34 @@ class GameStateManager {
     const bossX = 50; // 50% of screen width
     const bossY = 40; // 40% of screen height
     
-    // Create 12 projectiles in a ring pattern
+    // Create fewer projectiles for better performance (8 instead of 12)
     const projectiles = [];
-    const numProjectiles = 12;
-    const radius = 15; // Percentage of screen
+    const numProjectiles = 8;
+    
+    // Target areas around the screen edges (where players are likely to be)
+    const targetAreas = [
+      { x: 20, y: 80 }, // Bottom left
+      { x: 50, y: 85 }, // Bottom center  
+      { x: 80, y: 80 }, // Bottom right
+      { x: 85, y: 50 }, // Right center
+      { x: 80, y: 20 }, // Top right
+      { x: 50, y: 15 }, // Top center
+      { x: 20, y: 20 }, // Top left
+      { x: 15, y: 50 }, // Left center
+    ];
     
     for (let i = 0; i < numProjectiles; i++) {
-      const angle = (i / numProjectiles) * 2 * Math.PI;
-      const targetX = bossX + Math.cos(angle) * radius;
-      const targetY = bossY + Math.sin(angle) * radius;
+      const targetArea = targetAreas[i];
+      // Add some randomness to make dodging possible
+      const targetX = targetArea.x + (Math.random() - 0.5) * 10;
+      const targetY = targetArea.y + (Math.random() - 0.5) * 10;
       
       projectiles.push({
         id: Math.random().toString(36).substring(2, 15),
         x: bossX,
         y: bossY,
-        targetX,
-        targetY,
+        targetX: Math.max(5, Math.min(95, targetX)), // Clamp to screen bounds
+        targetY: Math.max(5, Math.min(95, targetY)),
         emoji: '💥'
       });
     }
