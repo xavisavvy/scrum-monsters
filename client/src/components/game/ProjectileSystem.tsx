@@ -15,25 +15,44 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
   }, [projectiles]);
 
   useEffect(() => {
+    let animationFrame: number;
+    
     const animateProjectiles = () => {
-      setAnimatedProjectiles(prev => 
-        prev.map(projectile => {
-          const newProgress = projectile.progress + 0.05; // 5% progress per frame
-          
-          if (newProgress >= 1) {
-            // Projectile reached target
-            setTimeout(() => onProjectileComplete(projectile), 100);
-            return { ...projectile, progress: 1 };
-          }
-          
+      setAnimatedProjectiles(prev => {
+        if (prev.length === 0) return prev;
+        
+        const updatedProjectiles = prev.map(projectile => {
+          const newProgress = Math.min(1, projectile.progress + 0.03); // 3% progress per frame for smoother animation
           return { ...projectile, progress: newProgress };
-        }).filter(p => p.progress < 1)
-      );
+        });
+        
+        // Find completed projectiles and call completion handler
+        const completedProjectiles = updatedProjectiles.filter(p => p.progress >= 1);
+        completedProjectiles.forEach(projectile => {
+          // Call completion handler immediately 
+          onProjectileComplete(projectile);
+        });
+        
+        // Remove completed projectiles for better performance
+        const activeProjectiles = updatedProjectiles.filter(p => p.progress < 1);
+        
+        return activeProjectiles;
+      });
+      
+      // Continue animation if there are still projectiles
+      animationFrame = requestAnimationFrame(animateProjectiles);
     };
 
-    const interval = setInterval(animateProjectiles, 32); // ~30 FPS
-    return () => clearInterval(interval);
-  }, [onProjectileComplete]);
+    if (animatedProjectiles.length > 0) {
+      animationFrame = requestAnimationFrame(animateProjectiles);
+    }
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [animatedProjectiles.length, onProjectileComplete]);
 
   return (
     <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 100 }}>

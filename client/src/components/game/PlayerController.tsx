@@ -336,22 +336,22 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     
     if (!currentPlayer) return;
     
-    // Convert player position to percentage coordinates to match projectile system
-    const playerPercentX = ((playerPosition.x + characterSize / 2) / containerWidth) * 100;
-    const playerPercentY = ((containerHeight - (playerPosition.y + characterSize / 2)) / containerHeight) * 100;
+    // Use pixel coordinates for both player and projectile (projectiles are already in pixels)
+    const playerPixelX = playerPosition.x + characterSize / 2;
+    const playerPixelY = containerHeight - (playerPosition.y + characterSize / 2); // Convert to top-based Y
     
-    console.log(`🎯 Boss projectile collision check: Player at (${playerPercentX.toFixed(1)}, ${playerPercentY.toFixed(1)}), Projectile target (${projectile.targetX}, ${projectile.targetY})`);
+    console.log(`🎯 Boss projectile collision check: Player at (${playerPixelX.toFixed(1)}, ${playerPixelY.toFixed(1)}), Projectile target (${projectile.targetX}, ${projectile.targetY})`);
     
-    // Check collision with projectile target (use percentage coordinates)
+    // Check collision with projectile target (both in pixel coordinates)
     const distance = Math.sqrt(
-      Math.pow(playerPercentX - projectile.targetX, 2) + 
-      Math.pow(playerPercentY - projectile.targetY, 2)
+      Math.pow(playerPixelX - projectile.targetX, 2) + 
+      Math.pow(playerPixelY - projectile.targetY, 2)
     );
     
-    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 8)`);
+    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 80)`);
     
-    // If hit (within 8% of screen - larger collision area for better gameplay)
-    if (distance < 8) {
+    // If hit (within 80 pixels - reasonable collision area)
+    if (distance < 80) {
       const damage = Math.floor(Math.random() * 3) + 2; // 2-4 damage
       
       // Play hit sound
@@ -363,8 +363,8 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
         playerId: 'boss',
         damage,
         timestamp: Date.now(),
-        x: (projectile.targetX / 100) * containerWidth,
-        y: (projectile.targetY / 100) * containerHeight
+        x: projectile.targetX,
+        y: projectile.targetY
       });
       
       // Emit boss damage to server
