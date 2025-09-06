@@ -6,7 +6,7 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { FIBONACCI_NUMBERS } from '@/lib/gameTypes';
 
 export function ScoreSubmission() {
-  const [selectedScore, setSelectedScore] = useState<number | null>(null);
+  const [selectedScore, setSelectedScore] = useState<number | '?' | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer } = useGameState();
@@ -76,7 +76,7 @@ export function ScoreSubmission() {
         <RetroCard title="Submit Your Estimate">
           <div className="space-y-4">
             <p className="text-center text-sm">
-              Choose your story point estimate:
+              Choose your story point estimate (or ? if you're unsure):
             </p>
             
             <div className="fibonacci-grid">
@@ -92,6 +92,18 @@ export function ScoreSubmission() {
                   {number}
                 </RetroButton>
               ))}
+              {/* Add "Don't Know" option */}
+              <RetroButton
+                key="unknown"
+                className={`fibonacci-button ${
+                  selectedScore === '?' ? 'bg-purple-600' : ''
+                }`}
+                onClick={() => setSelectedScore('?')}
+                variant={selectedScore === '?' ? 'accent' : 'primary'}
+                title="I don't know / No opinion"
+              >
+                ?
+              </RetroButton>
             </div>
             
             <div className="text-center">

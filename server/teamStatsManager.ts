@@ -178,7 +178,7 @@ export class TeamStatsManager {
 
   static calculatePerformanceData(lobby: Lobby, playerPerformanceMap: Map<string, {
     estimationTime: number;
-    score: number;
+    score: number | '?';
     team: TeamType;
   }>): any[] {
     const teamData: { [key in TeamType]?: any } = {};
@@ -194,19 +194,20 @@ export class TeamStatsManager {
       const avgEstimationTime = teamPerformances.reduce((sum, p) => sum + p.estimationTime, 0) / teamPerformances.length / 1000; // Convert ms to seconds
       const participationRate = teamPerformances.length / Math.max(teamPlayers.length, 1);
       
-      // Calculate accuracy based on final consensus vs individual estimates
+      // Calculate accuracy based on final consensus vs individual estimates (exclude '?' votes)
       const finalScore = lobby.currentTicket?.storyPoints || 0;
-      const accuracy = teamPerformances.length > 0 ? 
-        teamPerformances.reduce((sum, p) => {
-          const diff = Math.abs(p.score - finalScore);
-          const maxDiff = Math.max(p.score, finalScore);
+      const numericPerformances = teamPerformances.filter(p => typeof p.score === 'number');
+      const accuracy = numericPerformances.length > 0 ? 
+        numericPerformances.reduce((sum, p) => {
+          const diff = Math.abs((p.score as number) - finalScore);
+          const maxDiff = Math.max((p.score as number), finalScore);
           return sum + (maxDiff > 0 ? 1 - (diff / maxDiff) : 1);
-        }, 0) / teamPerformances.length : 0;
+        }, 0) / numericPerformances.length : 0;
 
-      // Check if team achieved consensus
-      const teamScores = teamPerformances.map(p => p.score);
-      const consensusAchieved = teamScores.length > 1 && 
-        teamScores.every(score => score === teamScores[0]);
+      // Check if team achieved consensus (exclude '?' votes)
+      const numericScores = teamPerformances.map(p => p.score).filter(score => typeof score === 'number');
+      const consensusAchieved = numericScores.length > 1 && 
+        numericScores.every(score => score === numericScores[0]);
 
       teamData[team as TeamType] = {
         team: team as TeamType,

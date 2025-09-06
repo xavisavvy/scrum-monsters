@@ -22,7 +22,7 @@ export interface Player {
   avatar: AvatarClass;
   team: TeamType;
   isHost: boolean;
-  currentScore?: number;
+  currentScore?: number | '?';
   hasSubmittedScore: boolean;
 }
 
@@ -112,8 +112,6 @@ export type TeamType = 'developers' | 'qa' | 'spectators';
 
 export type AvatarClass = 'ranger' | 'rogue' | 'bard' | 'sorcerer' | 'wizard' | 'warrior' | 'paladin' | 'cleric';
 
-// Export timer interfaces at module level
-export { TimerSettings, TimerState };
 
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
@@ -123,7 +121,7 @@ export interface ClientToServerEvents {
   assign_team: (data: { playerId: string; team: TeamType }) => void;
   change_own_team: (data: { team: TeamType }) => void;
   start_battle: (data: { tickets: JiraTicket[] }) => void;
-  submit_score: (data: { score: number }) => void;
+  submit_score: (data: { score: number | '?' }) => void;
   attack_boss: (data: { damage: number }) => void;
   proceed_next_level: () => void;
   restart_game: () => void;
@@ -157,8 +155,8 @@ export interface ClientToServerEvents {
 }
 
 export interface TeamScores {
-  developers: Record<string, number>;
-  qa: Record<string, number>;
+  developers: Record<string, number | '?'>;
+  qa: Record<string, number | '?'>;
 }
 
 export interface TeamConsensus {

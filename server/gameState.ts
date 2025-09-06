@@ -15,7 +15,7 @@ class GameStateManager {
   private playerToLobby: Map<string, string> = new Map();
   private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
   private revivalWatchdog: NodeJS.Timeout;
-  private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number; team: TeamType }>> = new Map();
+  private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
 
   constructor() {
@@ -33,7 +33,7 @@ class GameStateManager {
     const now = Date.now();
     const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
     
-    for (const [sessionKey, session] of this.revivalSessions.entries()) {
+    for (const [sessionKey, session] of Array.from(this.revivalSessions.entries())) {
       const lobby = this.lobbies.get(session.lobbyId);
       if (!lobby) {
         this.cancelRevivalSession(sessionKey);
@@ -222,9 +222,9 @@ class GameStateManager {
     return this.lobbies.get(lobbyId);
   }
 
-  getLobbyByPlayerId(playerId: string): Lobby | undefined {
+  getLobbyByPlayerId(playerId: string): Lobby | null {
     const lobbyId = this.playerToLobby.get(playerId);
-    return lobbyId ? this.lobbies.get(lobbyId) : undefined;
+    return lobbyId ? this.lobbies.get(lobbyId) || null : null;
   }
 
   selectAvatar(playerId: string, avatarClass: AvatarClass): Lobby | null {
@@ -342,7 +342,7 @@ class GameStateManager {
     return lobby;
   }
 
-  submitScore(playerId: string, score: number): Lobby | null {
+  submitScore(playerId: string, score: number | '?'): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || lobby.gamePhase !== 'battle') return null;
 
@@ -371,8 +371,8 @@ class GameStateManager {
     if (!lobby || lobby.gamePhase !== 'reveal') return null;
 
     const teamScores = {
-      developers: {} as Record<string, number>,
-      qa: {} as Record<string, number>
+      developers: {} as Record<string, number | '?'>,
+      qa: {} as Record<string, number | '?'>
     };
 
     // Separate scores by team
@@ -391,9 +391,9 @@ class GameStateManager {
       }
     });
 
-    // Check for consensus within each team
-    const devScoreValues = Object.values(teamScores.developers);
-    const qaScoreValues = Object.values(teamScores.qa);
+    // Check for consensus within each team (excluding "?" votes)
+    const devScoreValues = Object.values(teamScores.developers).filter(score => typeof score === 'number');
+    const qaScoreValues = Object.values(teamScores.qa).filter(score => typeof score === 'number');
     
     const devConsensus = devScoreValues.length > 0 && devScoreValues.every(score => score === devScoreValues[0]);
     const qaConsensus = qaScoreValues.length > 0 && qaScoreValues.every(score => score === qaScoreValues[0]);
@@ -401,11 +401,11 @@ class GameStateManager {
     const teamConsensus = {
       developers: { 
         hasConsensus: devConsensus, 
-        score: devConsensus ? devScoreValues[0] : undefined 
+        score: devConsensus ? (devScoreValues[0] as number) : undefined 
       },
       qa: { 
         hasConsensus: qaConsensus, 
-        score: qaConsensus ? qaScoreValues[0] : undefined 
+        score: qaConsensus ? (qaScoreValues[0] as number) : undefined 
       }
     };
 
@@ -486,7 +486,7 @@ class GameStateManager {
 
   trackPlayerPerformance(playerId: string, performanceData: {
     estimationTime: number;
-    score: number;
+    score: number | '?';
     team: TeamType;
     ticketId?: string;
   }): void {
@@ -539,7 +539,7 @@ class GameStateManager {
     const bossX = 50; // 50% of screen width
     const bossY = 40; // 40% of screen height
     
-    const projectiles = [];
+    const projectiles: Array<{ id: string; x: number; y: number; targetX: number; targetY: number; emoji: string; }> = [];
     const maxProjectiles = 6; // Cap for performance
     
     // Get active dev/qa players only (exclude spectators from targeting)
@@ -672,7 +672,7 @@ class GameStateManager {
     if (!lobby) return null;
 
     // Cancel any revival sessions involving this player
-    for (const [sessionKey, session] of this.revivalSessions.entries()) {
+    for (const [sessionKey, session] of Array.from(this.revivalSessions.entries())) {
       if (session.reviverId === playerId || session.targetId === playerId) {
         this.cancelRevivalSession(sessionKey);
       }
@@ -854,7 +854,7 @@ class GameStateManager {
     const now = Date.now();
     
     // Cancel any existing session for this reviver
-    for (const [key, session] of this.revivalSessions.entries()) {
+    for (const [key, session] of Array.from(this.revivalSessions.entries())) {
       if (session.reviverId === reviverId) {
         this.cancelRevivalSession(key);
       }
