@@ -27,6 +27,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/?game=menu');
   });
 
+  // About page route
+  app.get('/about', (req, res) => {
+    // Redirect to frontend with about parameter
+    res.redirect('/?page=about');
+  });
+
   const httpServer = createServer(app);
   
   // Setup WebSocket server
