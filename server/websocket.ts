@@ -205,6 +205,34 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Player projectile broadcasting for multiplayer visibility
+    socket.on('player_projectile', ({ startX, startY, targetX, targetY, emoji, targetPlayerId }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.getLobbyByPlayerId(playerId);
+      if (!lobby || lobby.gamePhase !== 'battle') return;
+
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player) return;
+
+      // Client should send percentage coordinates, so just relay them
+      // This removes the hardcoded screen dimension assumptions
+      socket.to(lobby.id).emit('player_projectile_fired', {
+        playerId,
+        playerName: player.name,
+        startX,
+        startY,
+        targetX,
+        targetY,
+        emoji,
+        targetPlayerId,
+        projectileId: Math.random().toString(36).substring(2, 15)
+      });
+
+      console.log(`🚀 Broadcasting projectile from ${player.name}: ${emoji} to ${targetPlayerId ? 'player' : 'boss'}`);
+    });
+
     socket.on('proceed_next_level', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;

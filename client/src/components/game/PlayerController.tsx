@@ -19,6 +19,8 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const [isJumping, setIsJumping] = useState(false);
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [bossProjectiles, setBossProjectiles] = useState<Projectile[]>([]);
+  const [otherPlayersPositions, setOtherPlayersPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [otherPlayersProjectiles, setOtherPlayersProjectiles] = useState<Projectile[]>([]);
   const [keys, setKeys] = useState<Set<string>>(new Set());
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [ctrlPressed, setCtrlPressed] = useState(false);
@@ -134,6 +136,22 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           console.log('📦 Updated projectiles from keyboard:', updated);
           return updated;
         });
+        
+        // Convert pixel coordinates to percentages before emitting
+        const percentStartX = (characterCenterX / containerWidth) * 100;
+        const percentStartY = (characterCenterY / containerHeight) * 100;
+        const percentTargetX = (targetX / containerWidth) * 100;
+        const percentTargetY = (targetY / containerHeight) * 100;
+        
+        // Emit projectile event for multiplayer visibility with percentage coordinates
+        emit('player_projectile', {
+          startX: percentStartX,
+          startY: percentStartY,
+          targetX: percentTargetX,
+          targetY: percentTargetY,
+          emoji: getProjectileEmoji(currentPlayer.avatar),
+          targetPlayerId
+        });
       }
     };
 
@@ -160,11 +178,12 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   }, [isJumping, jumpDuration, currentPlayer, containerWidth, containerHeight, playerPosition, characterSize]);
 
   // Handle movement based on pressed keys
-  // Boss ring attack WebSocket listener
+  // WebSocket listeners for multiplayer features
   useEffect(() => {
     if (!socket) return;
 
-    socket.on('boss_ring_attack', ({ bossX, bossY, projectiles: ringProjectiles }) => {
+    // Create handler functions that can be properly removed
+    const handleBossRingAttack = ({ bossX, bossY, projectiles: ringProjectiles }) => {
       console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
       
       // Convert percentage coordinates to pixel coordinates and add to boss projectiles
@@ -185,12 +204,63 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       });
       
       setBossProjectiles(convertedProjectiles);
-    });
+    };
+
+    const handlePlayersPos = ({ positions }) => {
+      if (!currentPlayer || !positions) return;
+      
+      // Convert server percentage positions to pixel positions for all other players
+      const otherPositions: Record<string, { x: number; y: number }> = {};
+      
+      Object.entries(positions).forEach(([playerId, serverPos]) => {
+        // Skip our own position
+        if (playerId === currentPlayer.id) return;
+        
+        const pixelX = ((serverPos as any).x / 100) * (containerWidth - characterSize);
+        const pixelY = ((serverPos as any).y / 100) * (containerHeight - characterSize - 100);
+        
+        otherPositions[playerId] = { x: pixelX, y: pixelY };
+      });
+      
+      setOtherPlayersPositions(otherPositions);
+      console.log('👥 Updated other players positions:', Object.keys(otherPositions).length, 'players');
+    };
+
+    const handlePlayerProjectileFired = ({ playerId, playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }) => {
+      if (playerId === currentPlayer?.id) return; // Skip own projectiles
+      
+      // Convert percentage coordinates to pixel coordinates
+      const pixelStartX = (startX / 100) * containerWidth;
+      const pixelStartY = (startY / 100) * containerHeight;
+      const pixelTargetX = (targetX / 100) * containerWidth;
+      const pixelTargetY = (targetY / 100) * containerHeight;
+      
+      const newProjectile = {
+        id: projectileId,
+        startX: pixelStartX,
+        startY: pixelStartY,
+        targetX: pixelTargetX,
+        targetY: pixelTargetY,
+        emoji,
+        targetPlayerId,
+        progress: 0
+      };
+      
+      setOtherPlayersProjectiles(prev => [...prev, newProjectile]);
+      console.log(`🚀 Received projectile from ${playerName}: ${emoji}`);
+    };
+
+    // Add listeners with specific handler references
+    socket.on('boss_ring_attack', handleBossRingAttack);
+    socket.on('players_pos', handlePlayersPos);
+    socket.on('player_projectile_fired', handlePlayerProjectileFired);
 
     return () => {
-      socket.off('boss_ring_attack');
+      socket.off('boss_ring_attack', handleBossRingAttack);
+      socket.off('players_pos', handlePlayersPos);
+      socket.off('player_projectile_fired', handlePlayerProjectileFired);
     };
-  }, [socket, containerWidth, containerHeight]);
+  }, [socket, containerWidth, containerHeight, characterSize, currentPlayer?.id]);
 
   useEffect(() => {
     const movePlayer = () => {
@@ -211,6 +281,14 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           newY = Math.max(0, prev.y - moveSpeed);
         }
 
+        // Send position update to server if position changed
+        if (newX !== prev.x || newY !== prev.y) {
+          // Convert pixels to percentage for server
+          const percentX = (newX / (containerWidth - characterSize)) * 100;
+          const percentY = (newY / (containerHeight - characterSize - 100)) * 100;
+          emit('player_pos', { x: percentX, y: percentY });
+        }
+
         return { x: newX, y: newY };
       });
     };
@@ -219,7 +297,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       const interval = setInterval(movePlayer, 16); // ~60 FPS
       return () => clearInterval(interval);
     }
-  }, [keys, containerWidth, containerHeight, characterSize, moveSpeed]);
+  }, [keys, containerWidth, containerHeight, characterSize, moveSpeed, emit]);
 
   const handleShoot = useCallback((projectileData: Omit<Projectile, 'id' | 'progress'>) => {
     const newProjectile: Projectile = {
@@ -282,6 +360,21 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
     
     console.log('🚀 Projectile data:', projectileData);
     handleShoot(projectileData);
+    
+    // Convert pixel coordinates to percentages before emitting
+    const percentStartX = (characterCenterX / containerWidth) * 100;
+    const percentStartY = (characterCenterY / containerHeight) * 100;
+    const percentTargetX = (targetX / containerWidth) * 100;
+    const percentTargetY = (targetY / containerHeight) * 100;
+    
+    // Emit projectile event for multiplayer visibility with percentage coordinates
+    emit('player_projectile', {
+      startX: percentStartX,
+      startY: percentStartY,
+      targetX: percentTargetX,
+      targetY: percentTargetY,
+      emoji: currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'
+    });
     
     console.log(`🎯 Shot ${currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'} from character!`);
   }, [playerPosition, containerHeight, characterSize, handleShoot, currentPlayer]);
@@ -478,6 +571,32 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           playerId={currentPlayer.id}
         />
       </div>
+
+      {/* Other players */}
+      {currentLobby && Object.entries(otherPlayersPositions).map(([playerId, position]) => {
+        const player = currentLobby.players.find(p => p.id === playerId);
+        if (!player) return null;
+        
+        return (
+          <div key={playerId} style={{ 
+            opacity: 0.9,
+            filter: 'brightness(0.9)'
+          }}>
+            <PlayerCharacter
+              avatarClass={player.avatar}
+              playerName={player.name}
+              position={position}
+              onPositionChange={() => {}} // Other players can't be moved
+              onShoot={() => {}} // Other players don't shoot from here
+              isJumping={false} // TODO: sync jumping state
+              isDead={false}
+              containerWidth={containerWidth}
+              containerHeight={containerHeight}
+              playerId={playerId}
+            />
+          </div>
+        );
+      })}
       
       <ProjectileSystem
         projectiles={projectiles}
@@ -488,6 +607,14 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
       <ProjectileSystem
         projectiles={bossProjectiles}
         onProjectileComplete={handleBossProjectileComplete}
+      />
+
+      {/* Other players' projectiles */}
+      <ProjectileSystem
+        projectiles={otherPlayersProjectiles}
+        onProjectileComplete={(projectile) => {
+          setOtherPlayersProjectiles(prev => prev.filter(p => p.id !== projectile.id));
+        }}
       />
       
       {/* Movement Instructions */}
@@ -508,6 +635,9 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
                 <div>🎮 Player: {currentPlayer?.name || 'None'}</div>
                 <div>📍 Position: ({playerPosition.x}, {playerPosition.y})</div>
                 <div>🚀 Projectiles: {projectiles.length}</div>
+                <div>💀 Boss Projectiles: {bossProjectiles.length}</div>
+                <div>👥 Other Players: {Object.keys(otherPlayersPositions).length}</div>
+                <div>⚡ Other Projectiles: {otherPlayersProjectiles.length}</div>
                 <div>🎯 Container: {containerWidth}x{containerHeight}</div>
               </div>
             </div>

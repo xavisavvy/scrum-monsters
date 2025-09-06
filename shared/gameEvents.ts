@@ -146,6 +146,14 @@ export interface ClientToServerEvents {
   revive_tick: (data: { targetId: string }) => void;
   player_jump: (data: { isJumping: boolean }) => void;
   boss_damage_player: (data: { playerId: string; damage: number }) => void;
+  player_projectile: (data: { 
+    startX: number; 
+    startY: number; 
+    targetX: number; 
+    targetY: number; 
+    emoji: string; 
+    targetPlayerId?: string;
+  }) => void;
 }
 
 export interface TeamScores {
@@ -191,6 +199,17 @@ export interface ServerToClientEvents {
       targetY: number; 
       emoji: string; 
     }> 
+  }) => void;
+  player_projectile_fired: (data: { 
+    playerId: string;
+    playerName: string;
+    startX: number; 
+    startY: number; 
+    targetX: number; 
+    targetY: number; 
+    emoji: string; 
+    targetPlayerId?: string;
+    projectileId: string;
   }) => void;
 }
 
