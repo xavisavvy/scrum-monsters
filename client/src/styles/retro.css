@@ -16,6 +16,7 @@
   --retro-text-dim: #b0b0b0;
   --retro-border: #333366;
   --retro-glow: hsl(var(--hue) 100% 60%);
+  --retro-glow-light: hsl(var(--hue) 100% 85%);
   
   /* Drive single hue cycle animation at root */
   animation: hue-cycle 8s linear infinite;
@@ -38,6 +39,7 @@
   :root {
     animation: none;
     --retro-glow: #ff0080; /* Fixed magenta color */
+    --retro-glow-light: #ff80c0; /* Lighter magenta for text */
   }
   
   .retro-text-glow {
@@ -173,8 +175,8 @@
 }
 
 .retro-text-glow {
-  /* Base text color with good contrast */
-  color: #ffffff;
+  /* Base text color - lighter version of current glow */
+  color: var(--retro-glow-light);
   
   /* Text outline for readability - creates a dark border */
   -webkit-text-stroke: 1px #000000;
