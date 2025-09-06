@@ -489,6 +489,17 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    socket.on('update_jira_settings', ({ jiraSettings }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.updateJiraSettings(playerId, jiraSettings);
+      if (lobby) {
+        // Broadcast updated lobby settings to all players
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
     socket.on('disconnect', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;

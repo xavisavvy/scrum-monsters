@@ -15,7 +15,7 @@ import { SpriteRenderer } from './SpriteRenderer';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings } from '@/lib/gameTypes';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings } from '@/lib/gameTypes';
 
 export function Lobby() {
   const [newTicketTitle, setNewTicketTitle] = useState('');
@@ -208,6 +208,10 @@ export function Lobby() {
     emit('update_timer_settings', { timerSettings });
   };
 
+  const updateJiraSettings = (jiraSettings: JiraSettings) => {
+    emit('update_jira_settings', { jiraSettings });
+  };
+
   // Helper function to safely get avatar class from player
   const getAvatarClass = (player: any) => {
     return player?.avatarClass ?? player?.avatar ?? 'warrior';
@@ -331,6 +335,30 @@ export function Lobby() {
                                   </p>
                                 </div>
                               )}
+                            </div>
+                          </div>
+                          
+                          {/* JIRA Integration Section */}
+                          <div className="border-t border-gray-700 pt-6">
+                            <h3 className="text-lg font-semibold text-gray-200 mb-4">JIRA Integration</h3>
+                            <div className="space-y-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-2">
+                                  JIRA Base URL
+                                </label>
+                                <input
+                                  type="url"
+                                  placeholder="https://yourcompany.atlassian.net/browse/"
+                                  className="retro-input w-full"
+                                  value={currentLobby.jiraSettings?.baseUrl || ''}
+                                  onChange={(e) => updateJiraSettings({
+                                    baseUrl: e.target.value.trim() || undefined
+                                  })}
+                                />
+                                <p className="text-xs text-gray-400 mt-1">
+                                  🔗 When set, ticket names become clickable links to your JIRA instance
+                                </p>
+                              </div>
                             </div>
                           </div>
                           
@@ -488,7 +516,18 @@ export function Lobby() {
                   >
                     <div className="flex-1 min-w-0">
                       <span className="font-mono text-sm text-blue-400">#{index + 1}</span>
-                      <span className="ml-2 min-w-0 truncate inline-block max-w-full">{ticket.title}</span>
+                      {currentLobby.jiraSettings?.baseUrl ? (
+                        <a
+                          href={`${currentLobby.jiraSettings.baseUrl}${ticket.title}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="ml-2 min-w-0 truncate inline-block max-w-full text-blue-300 hover:text-blue-200 hover:underline"
+                        >
+                          {ticket.title}
+                        </a>
+                      ) : (
+                        <span className="ml-2 min-w-0 truncate inline-block max-w-full">{ticket.title}</span>
+                      )}
                     </div>
                     {isHost && (
                       <RetroButton

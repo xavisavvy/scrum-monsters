@@ -62,12 +62,17 @@ export interface Lobby {
   playerCombatStates: Record<string, PlayerCombatState>;
   playerPositions: Record<string, Position>;
   timerSettings?: TimerSettings;
+  jiraSettings?: JiraSettings;
   currentTimer?: TimerState;
 }
 
 export interface TimerSettings {
   enabled: boolean;
   durationMinutes: number;
+}
+
+export interface JiraSettings {
+  baseUrl?: string; // e.g. "https://vivint.atlassian.net/browse/"
 }
 
 export interface TimerState {
@@ -123,6 +128,7 @@ export interface ClientToServerEvents {
   change_own_team: (data: { team: TeamType }) => void;
   add_tickets: (data: { tickets: JiraTicket[] }) => void;
   remove_ticket: (data: { ticketId: string }) => void;
+  update_jira_settings: (data: { jiraSettings: JiraSettings }) => void;
   lobby_player_pos: (data: { x: number; y: number; direction?: string }) => void;
   lobby_player_jump: (data: { isJumping: boolean }) => void;
   start_battle: () => void;
