@@ -667,7 +667,7 @@ class GameStateManager {
     const bosses = [
       { name: 'Bug Hydra', sprite: 'Bug_Hydra_Boss_8b867e3e.png' },
       { name: 'Sprint Demon', sprite: 'Sprint_Demon_Boss_a43a8439.png' },
-      { name: 'Deadline Dragon', sprite: 'Deadline_Dragon_Boss_4f628254.png' },
+      { name: 'Deadline Dragon', sprite: 'Deadline_Dragon_Boss_transparent.png' },
       { name: 'Technical Debt Golem', sprite: 'Technical_Debt_Golem_882e6943.png' },
       { name: 'Scope Creep Beast', sprite: 'Scope_Creep_Beast_3a9ec6b7.png' }
     ];

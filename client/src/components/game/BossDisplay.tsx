@@ -6,7 +6,7 @@ import { Boss } from '@/lib/gameTypes';
 // Import boss images (transparent versions)
 import bugHydraImg from '@/assets/bosses/Bug_Hydra_Boss_transparent.png';
 import sprintDemonImg from '@/assets/bosses/Sprint_Demon_Boss_transparent.png';
-import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_4f628254.png'; // No transparent version available
+import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_transparent.png';
 import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_transparent.png';
 import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_transparent.png';
 
@@ -21,7 +21,7 @@ const scopeCreepBeastLair = '/images/lairs/Scope_Creep_Beast_Void_bd13cec0.png';
 const BOSS_IMAGE_MAP: Record<string, string> = {
   'Bug_Hydra_Boss_8b867e3e.png': bugHydraImg,
   'Sprint_Demon_Boss_a43a8439.png': sprintDemonImg,
-  'Deadline_Dragon_Boss_4f628254.png': deadlineDragonImg,
+  'Deadline_Dragon_Boss_transparent.png': deadlineDragonImg,
   'Technical_Debt_Golem_882e6943.png': techDebtGolemImg,
   'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastImg,
 };
@@ -30,7 +30,7 @@ const BOSS_IMAGE_MAP: Record<string, string> = {
 const LAIR_BACKGROUND_MAP: Record<string, string> = {
   'Bug_Hydra_Boss_8b867e3e.png': bugHydraLair,
   'Sprint_Demon_Boss_a43a8439.png': sprintDemonLair,
-  'Deadline_Dragon_Boss_4f628254.png': deadlineDragonLair,
+  'Deadline_Dragon_Boss_transparent.png': deadlineDragonLair,
   'Technical_Debt_Golem_882e6943.png': techDebtGolemLair,
   'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastLair,
 };
