@@ -450,6 +450,7 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
           isDead={false} // Could be tied to game state later
           containerWidth={containerWidth}
           containerHeight={containerHeight}
+          playerId={currentPlayer.id}
         />
       </div>
       

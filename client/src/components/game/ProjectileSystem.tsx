@@ -65,10 +65,10 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
         return (
           <div
             key={projectile.id}
-            className="absolute text-2xl"
+            className="absolute text-4xl"
             style={{
-              left: x - 12,
-              top: y - 12,
+              left: x - 20,
+              top: y - 20,
               transform: `rotate(${rotation}deg)`,
               transition: 'none',
               textShadow: '2px 2px 4px rgba(0,0,0,0.8)',

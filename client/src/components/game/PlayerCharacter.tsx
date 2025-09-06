@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { AvatarClass, AVATAR_CLASSES } from '@/lib/gameTypes';
+import { useGameState } from '@/lib/stores/useGameState';
 
 export interface PlayerPosition {
   x: number;
@@ -26,6 +27,7 @@ interface PlayerCharacterProps {
   isDead: boolean;
   containerWidth: number;
   containerHeight: number;
+  playerId?: string;
 }
 
 type AnimationState = 'idle' | 'walk' | 'jump' | 'death';
@@ -39,16 +41,28 @@ export function PlayerCharacter({
   isJumping,
   isDead,
   containerWidth,
-  containerHeight
+  containerHeight,
+  playerId
 }: PlayerCharacterProps) {
   const [animationState, setAnimationState] = useState<AnimationState>('idle');
   const [spriteFrame, setSpriteFrame] = useState(0);
   const [facingRight, setFacingRight] = useState(true);
+  const [isDamaged, setIsDamaged] = useState(false);
   const animationFrameRef = useRef<number>();
   const lastFrameTime = useRef<number>(0);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastProcessedAttackId = useRef<string | null>(null);
+  
+  const { currentLobby, attackAnimations } = useGameState();
 
   const character = AVATAR_CLASSES[avatarClass];
   const characterSize = 64; // Size of character sprite
+  
+  // Get current player's combat state
+  const combatState = currentLobby && playerId ? currentLobby.playerCombatStates?.[playerId] : null;
+  const currentHp = combatState?.hp || 100;
+  const maxHp = combatState?.maxHp || 100;
+  const healthPercentage = (currentHp / maxHp) * 100;
 
   // Sprite frame counts for each animation
   const frameConfig = {
@@ -91,6 +105,47 @@ export function PlayerCharacter({
       }
     };
   }, [animationState]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+        timeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Watch for NEW attack animations targeting this player to trigger damage flash
+  useEffect(() => {
+    if (attackAnimations.length > 0 && playerId) {
+      const latestAttack = attackAnimations[attackAnimations.length - 1];
+      
+      // Only trigger flash for attacks targeting this player that are new
+      if (latestAttack.id !== lastProcessedAttackId.current) {
+        // Check if this attack is targeting this player (boss attacks or spectator attacks)
+        const isTargetedAtThisPlayer = latestAttack.playerId === 'boss' || // Boss attacks affect everyone
+                                     latestAttack.playerId === playerId; // Direct player attacks
+        
+        if (isTargetedAtThisPlayer) {
+          console.log('🎨 Player damage effect triggered for attack:', latestAttack.id);
+          lastProcessedAttackId.current = latestAttack.id;
+          setIsDamaged(true);
+          
+          // Clear any existing timeout
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+          }
+          
+          // Set new timeout for damage flash
+          timeoutRef.current = setTimeout(() => {
+            setIsDamaged(false);
+            timeoutRef.current = null;
+          }, 400); // Flash for 400ms
+        }
+      }
+    }
+  }, [attackAnimations, playerId]);
 
   // Generate emoji sprite based on class and animation
   const getCharacterEmoji = (): string => {
@@ -149,8 +204,12 @@ export function PlayerCharacter({
       <div
         className="w-full h-full flex items-center justify-center text-4xl"
         style={{
-          filter: `drop-shadow(2px 2px 4px ${character.color})`,
-          animation: animationState === 'walk' ? 'character-bob 0.3s ease-in-out infinite' : 'none'
+          filter: isDamaged 
+            ? `brightness(2.5) contrast(2) saturate(1.5) hue-rotate(15deg) drop-shadow(2px 2px 4px ${character.color})`
+            : `drop-shadow(2px 2px 4px ${character.color})`,
+          animation: animationState === 'walk' ? 'character-bob 0.3s ease-in-out infinite' : 'none',
+          transform: isDamaged ? 'scale(1.1)' : 'scale(1)',
+          transition: 'transform 0.1s ease, filter 0.1s ease'
         }}
       >
         {getCharacterEmoji()}
@@ -167,8 +226,11 @@ export function PlayerCharacter({
       {/* Health Bar */}
       <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded overflow-hidden">
         <div 
-          className="h-full bg-green-500 transition-all duration-300"
-          style={{ width: isDead ? '0%' : '100%' }}
+          className={`h-full transition-all duration-300 ${
+            healthPercentage > 60 ? 'bg-green-500' : 
+            healthPercentage > 30 ? 'bg-yellow-500' : 'bg-red-500'
+          }`}
+          style={{ width: isDead ? '0%' : `${Math.max(0, healthPercentage)}%` }}
         />
       </div>
     </div>
