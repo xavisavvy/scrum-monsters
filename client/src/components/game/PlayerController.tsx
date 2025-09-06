@@ -312,9 +312,10 @@ export function PlayerController({}: PlayerControllerProps) {
 
         // Send position update to server if position changed
         if (newX !== prev.x || newY !== prev.y) {
-          // Convert pixels to percentage for server
-          const percentX = (newX / (containerWidth - characterSize)) * 100;
-          const percentY = (newY / (containerHeight - characterSize - 100)) * 100;
+          // Convert screen coordinates to world coordinates, then to percentage for server
+          const worldPos = viewport.screenToWorld(newX, newY);
+          const percentX = (worldPos.x / viewport.worldWidth) * 100;
+          const percentY = (worldPos.y / viewport.worldHeight) * 100;
           emit('player_pos', { x: percentX, y: percentY });
         }
 
@@ -329,7 +330,7 @@ export function PlayerController({}: PlayerControllerProps) {
       // No keys pressed, not moving
       setIsMoving(false);
     }
-  }, [keys, containerWidth, containerHeight, characterSize, moveSpeed, emit, currentDirection]);
+  }, [keys, viewport, characterSize, moveSpeed, emit, currentDirection]);
 
   const handleShoot = useCallback((projectileData: Omit<Projectile, 'id' | 'progress'>) => {
     const newProjectile: Projectile = {
@@ -393,11 +394,13 @@ export function PlayerController({}: PlayerControllerProps) {
     console.log('🚀 Projectile data:', projectileData);
     handleShoot(projectileData);
     
-    // Convert pixel coordinates to percentages before emitting
-    const percentStartX = (characterCenterX / containerWidth) * 100;
-    const percentStartY = (characterCenterY / containerHeight) * 100;
-    const percentTargetX = (targetX / containerWidth) * 100;
-    const percentTargetY = (targetY / containerHeight) * 100;
+    // Convert screen coordinates to world coordinates, then to percentages before emitting
+    const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
+    const targetWorld = viewport.screenToWorld(targetX, targetY);
+    const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
+    const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
+    const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
+    const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
     
     // Emit projectile event for multiplayer visibility with percentage coordinates
     emit('player_projectile', {
@@ -409,7 +412,7 @@ export function PlayerController({}: PlayerControllerProps) {
     });
     
     console.log(`🎯 Shot ${currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'} from character!`);
-  }, [playerPosition, containerHeight, characterSize, handleShoot, currentPlayer]);
+  }, [playerPosition, viewport.viewportHeight, characterSize, handleShoot, currentPlayer]);
 
   const getProjectileEmoji = (avatarClass: AvatarClass): string => {
     const projectileEmojis = {
@@ -467,9 +470,9 @@ export function PlayerController({}: PlayerControllerProps) {
     
     if (!currentPlayer) return;
     
-    // Use pixel coordinates for both player and projectile (projectiles are already in pixels)
+    // Use screen coordinates for both player and projectile (projectiles are already in screen coordinates)
     const playerPixelX = playerPosition.x + characterSize / 2;
-    const playerPixelY = containerHeight - (playerPosition.y + characterSize / 2); // Convert to top-based Y
+    const playerPixelY = viewport.viewportHeight - (playerPosition.y + characterSize / 2); // Convert to top-based Y
     
     console.log(`🎯 Boss projectile collision check: Player at (${playerPixelX.toFixed(1)}, ${playerPixelY.toFixed(1)}), Projectile target (${projectile.targetX}, ${projectile.targetY})`);
     
@@ -505,7 +508,7 @@ export function PlayerController({}: PlayerControllerProps) {
     } else {
       console.log(`💨 Boss projectile missed ${currentPlayer.name}`);
     }
-  }, [currentPlayer, playerPosition, characterSize, containerWidth, containerHeight, playHit, addAttackAnimation, emit]);
+  }, [currentPlayer, playerPosition, characterSize, viewport, playHit, addAttackAnimation, emit]);
 
   const handleProjectileComplete = useCallback((projectile: Projectile) => {
     // Remove the projectile from the list
@@ -536,10 +539,10 @@ export function PlayerController({}: PlayerControllerProps) {
       console.log(`💥 Spectator ${currentPlayer.name} hit player ${projectile.targetPlayerId} for ${damage} damage with ${projectile.emoji}!`);
     } else {
       // Dev/QA attacking boss
-      const bossAreaX = containerWidth * 0.3; // Boss takes up center area
-      const bossAreaY = containerHeight * 0.2;
-      const bossAreaWidth = containerWidth * 0.4;
-      const bossAreaHeight = containerHeight * 0.6;
+      const bossAreaX = viewport.viewportWidth * 0.3; // Boss takes up center area
+      const bossAreaY = viewport.viewportHeight * 0.2;
+      const bossAreaWidth = viewport.viewportWidth * 0.4;
+      const bossAreaHeight = viewport.viewportHeight * 0.6;
       
       const hitBoss = projectile.targetX >= bossAreaX && 
                      projectile.targetX <= bossAreaX + bossAreaWidth &&
@@ -569,7 +572,7 @@ export function PlayerController({}: PlayerControllerProps) {
         console.log(`💥 ${currentPlayer.name} hit boss for ${damage} damage with ${projectile.emoji}!`);
       }
     }
-  }, [containerWidth, containerHeight, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
+  }, [viewport, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
 
   // Don't render if not in battle or no current player
   if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {
@@ -598,8 +601,8 @@ export function PlayerController({}: PlayerControllerProps) {
           onShoot={handleShoot}
           isJumping={isJumping}
           isDead={false} // Could be tied to game state later
-          containerWidth={containerWidth}
-          containerHeight={containerHeight}
+          containerWidth={viewport.viewportWidth}
+          containerHeight={viewport.viewportHeight}
           playerId={currentPlayer.id}
           isMoving={isMoving}
           direction={currentDirection}
@@ -624,8 +627,8 @@ export function PlayerController({}: PlayerControllerProps) {
               onShoot={() => {}} // Other players don't shoot from here
               isJumping={false} // TODO: sync jumping state
               isDead={false}
-              containerWidth={containerWidth}
-              containerHeight={containerHeight}
+              containerWidth={viewport.viewportWidth}
+              containerHeight={viewport.viewportHeight}
               playerId={playerId}
               isMoving={false} // TODO: sync movement state
               direction="down" // TODO: sync direction
@@ -674,7 +677,10 @@ export function PlayerController({}: PlayerControllerProps) {
                 <div>💀 Boss Projectiles: {bossProjectiles.length}</div>
                 <div>👥 Other Players: {Object.keys(otherPlayersPositions).length}</div>
                 <div>⚡ Other Projectiles: {otherPlayersProjectiles.length}</div>
-                <div>🎯 Container: {containerWidth}x{containerHeight}</div>
+                <div>🎯 Viewport: {viewport.viewportWidth}x{viewport.viewportHeight}</div>
+                <div>🌍 World: {viewport.worldWidth}x{viewport.worldHeight}</div>
+                <div>📏 Scale: {viewport.scale.toFixed(3)}</div>
+                <div>📹 Camera: ({viewport.cameraX.toFixed(1)}, {viewport.cameraY.toFixed(1)})</div>
               </div>
             </div>
             
