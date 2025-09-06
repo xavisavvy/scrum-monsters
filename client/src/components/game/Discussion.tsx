@@ -143,7 +143,7 @@ export function Discussion() {
                 <div 
                   key={player.id}
                   className={`flex items-center justify-between p-3 rounded border ${
-                    qaConsensus ? 'bg-green-900/30 border-green-500/30' : 'bg-green-900/30 border-green-500/30'
+                    qaConsensus ? 'bg-green-900/30 border-green-500/30' : 'bg-red-900/30 border-red-500/30'
                   }`}
                 >
                   <div className="flex items-center gap-3">
