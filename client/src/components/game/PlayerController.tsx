@@ -27,18 +27,24 @@ export function PlayerController({ containerWidth, containerHeight }: PlayerCont
   const moveSpeed = 5;
   const jumpDuration = 600; // Jump duration in ms
 
-  // Sync player position from server lobby data
+  // Sync player position from server lobby data (only on initial load)
   useEffect(() => {
     if (currentPlayer && currentLobby?.playerPositions?.[currentPlayer.id]) {
       const serverPos = currentLobby.playerPositions[currentPlayer.id];
-      // Convert server percentage coordinates (0-100) to pixel coordinates
+      
+      // Only sync if we don't have a position yet (initial spawn) or if we're significantly different
       const pixelX = (serverPos.x / 100) * (containerWidth - characterSize);
       const pixelY = (serverPos.y / 100) * (containerHeight - characterSize - 100); // Keep bottom margin
       
-      setPlayerPosition({ x: pixelX, y: pixelY });
-      console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${pixelX}px, ${pixelY}px)`);
+      const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
+      const isSignificantDifference = Math.abs(playerPosition.x - pixelX) > 50 || Math.abs(playerPosition.y - pixelY) > 50;
+      
+      if (isInitialSync || isSignificantDifference) {
+        setPlayerPosition({ x: pixelX, y: pixelY });
+        console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${pixelX}px, ${pixelY}px)`);
+      }
     }
-  }, [currentPlayer, currentLobby?.playerPositions, containerWidth, containerHeight, characterSize]);
+  }, [currentPlayer?.id, currentLobby?.id, containerWidth, containerHeight, characterSize]); // Only trigger on player/lobby change
 
   // Handle keyboard input
   useEffect(() => {
