@@ -62,7 +62,7 @@ export function LandingPage({ onStartGame }: LandingPageProps) {
         <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 text-center">
           <div className="max-w-4xl mx-auto">
             {/* Main Title */}
-            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold retro-text-glow mb-6 w-full text-justify">
+            <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold retro-text-glow mb-6">
               SCRUM MONSTERS
             </h1>
             
