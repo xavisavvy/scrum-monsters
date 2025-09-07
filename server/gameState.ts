@@ -100,7 +100,7 @@ class GameStateManager {
       players: [{
         id: hostId,
         name: hostName,
-        team: 'developers',
+        team: 'spectators',
         isHost: true,
         avatar: 'warrior',
         avatarClass: 'warrior',
