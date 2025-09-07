@@ -89,7 +89,7 @@ export function BossTools({ onBack }: BossToolsProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 p-4">
+    <div className="bg-gradient-to-br from-gray-900 via-purple-900 to-blue-900 p-4">
       <div className="max-w-6xl mx-auto">
         <RetroCard>
           <div className="mb-6 flex items-center justify-between">
