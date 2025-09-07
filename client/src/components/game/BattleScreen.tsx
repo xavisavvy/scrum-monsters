@@ -27,7 +27,7 @@ export function BattleScreen() {
 
   // Handle boss music when entering/leaving battle
   useEffect(() => {
-    console.log('🎵 Boss music effect triggered. Phase:', currentLobby?.gamePhase, 'Boss:', !!currentLobby?.boss);
+    console.log('🎵 Boss music effect triggered. Phase:', currentLobby?.gamePhase, 'Has Boss:', !!currentLobby?.boss);
     if (currentLobby?.gamePhase === 'battle' && currentLobby?.boss) {
       console.log('🎵 Starting boss music...');
       // Fade in boss music when battle starts
@@ -42,7 +42,7 @@ export function BattleScreen() {
     return () => {
       stopBossMusic();
     };
-  }, [currentLobby?.gamePhase, currentLobby?.boss, fadeInBossMusic, stopBossMusic]);
+  }, [currentLobby?.gamePhase, fadeInBossMusic, stopBossMusic]); // Removed currentLobby?.boss dependency
 
   const handleBossAttack = () => {
     const damage = Math.floor(Math.random() * 50) + 10;

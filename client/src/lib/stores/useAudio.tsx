@@ -424,11 +424,17 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   fadeInBossMusic: () => {
-    const { bossMusic, isBossMusicMuted, isYoutubeAudioActive } = get();
+    const { bossMusic, isBossMusicMuted, isYoutubeAudioActive, isBossMusicPlaying } = get();
     
     // Don't play boss music if YouTube music is already active
     if (isYoutubeAudioActive) {
       console.log("Boss music skipped - YouTube audio is active");
+      return;
+    }
+    
+    // Don't restart if already playing
+    if (isBossMusicPlaying && bossMusic && !bossMusic.paused) {
+      console.log("Boss music already playing - skipping restart");
       return;
     }
     
