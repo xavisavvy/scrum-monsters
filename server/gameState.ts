@@ -630,14 +630,46 @@ class GameStateManager {
   private createBossFromTickets(tickets: JiraTicket[]): Boss {
     const totalComplexity = tickets.length * 100;
     
+    // Available boss types with their sprite names and themed names
+    const availableBosses = [
+      { 
+        sprite: 'Bug_Hydra_Boss_8b867e3e.png', 
+        name: 'Bug Hydra', 
+        description: 'Legendary Beast of Endless Bugs' 
+      },
+      { 
+        sprite: 'Sprint_Demon_Boss_a43a8439.png', 
+        name: 'Sprint Demon', 
+        description: 'Infernal Master of Rushed Deadlines' 
+      },
+      { 
+        sprite: 'Deadline_Dragon_Boss_transparent.png', 
+        name: 'Deadline Dragon', 
+        description: 'Ancient Terror of Time Constraints' 
+      },
+      { 
+        sprite: 'Technical_Debt_Golem_882e6943.png', 
+        name: 'Technical Debt Golem', 
+        description: 'Crushing Burden of Legacy Code' 
+      },
+      { 
+        sprite: 'Scope_Creep_Beast_3a9ec6b7.png', 
+        name: 'Scope Creep Beast', 
+        description: 'Ever-Expanding Horror of Feature Bloat' 
+      }
+    ];
+    
+    // Randomly select a boss type
+    const selectedBoss = availableBosses[Math.floor(Math.random() * availableBosses.length)];
+    
     return {
       id: Math.random().toString(36).substring(2, 15),
-      name: `Epic Boss of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''}`,
+      name: `${selectedBoss.name} of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''}`,
       maxHealth: totalComplexity,
       currentHealth: totalComplexity,
       phase: 1,
       maxPhases: tickets.length,
-      sprite: 'boss_default',
+      sprite: selectedBoss.sprite,
       defeated: false
     };
   }
