@@ -197,7 +197,9 @@ export function BattleScreen() {
             </div>
 
             {/* Team Competition Components */}
-            <TeamScoreboard />
+            <div className="absolute bottom-6 left-6 z-40">
+              <TeamScoreboard />
+            </div>
             <TeamPerformanceTracker />
             <TeamCelebration />
           </div>
@@ -238,7 +240,9 @@ export function BattleScreen() {
             </div>
 
             {/* Team Competition Components */}
-            <TeamScoreboard />
+            <div className="absolute bottom-6 left-6 z-40">
+              <TeamScoreboard />
+            </div>
             <TeamPerformanceTracker />
             <TeamCelebration />
           </div>
