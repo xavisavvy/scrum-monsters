@@ -80,8 +80,21 @@ export function Discussion() {
         <div className="space-y-4">
           <div className="text-center">
             {hasConsensus ? (
-              <div className="text-green-400 text-lg font-bold">
-                ✅ Consensus Reached! Auto-advancing soon...
+              <div className="space-y-3">
+                <div className="text-green-400 text-lg font-bold">
+                  ✅ Consensus Reached! Auto-advancing soon...
+                </div>
+                {currentPlayer.isHost && (
+                  <button
+                    onClick={() => socket?.emit('advancePhaseNow', { 
+                      lobbyId: currentLobby.id,
+                      playerId: currentPlayer.id 
+                    })}
+                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded border-2 border-yellow-400 transition-colors"
+                  >
+                    ⚡ Advance Now (Host)
+                  </button>
+                )}
               </div>
             ) : (
               <div className="text-orange-400 text-lg">
