@@ -1122,7 +1122,7 @@ export function Lobby() {
             <div 
               className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
               style={{
-                height: '800px',
+                height: '500px',
                 width: '600px', // Give it a reasonable width
                 backgroundImage: 'url(/textures/tavern/center.png)',
                 backgroundSize: 'contain',
