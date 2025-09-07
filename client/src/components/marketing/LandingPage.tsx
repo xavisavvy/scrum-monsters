@@ -3,6 +3,7 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { FooterSection } from '@/components/marketing/FooterSection';
 import { useAudio } from '@/lib/stores/useAudio';
+import { VolumeX, Volume2 } from 'lucide-react';
 
 // Floating animation component for icons
 const FloatingIcon = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
@@ -39,7 +40,7 @@ interface LandingPageProps {
 }
 
 export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
-  const { playButtonSelect } = useAudio();
+  const { playButtonSelect, toggleMute, isMuted } = useAudio();
 
   const handleGetStarted = () => {
     playButtonSelect();
@@ -80,6 +81,20 @@ export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
   return (
     <div className="relative">
       <CinematicBackground />
+      
+      {/* Mute/Unmute Button - Top Right */}
+      <div className="fixed top-4 right-4 z-50">
+        <RetroButton
+          onClick={toggleMute}
+          variant="secondary"
+          size="sm"
+          className={`${isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} 
+                      flex items-center gap-2`}
+        >
+          {isMuted ? <VolumeX size={16} /> : <Volume2 size={16} />}
+          {isMuted ? 'Unmute' : 'Mute'}
+        </RetroButton>
+      </div>
       
       <div className="relative z-20">
         {/* Hero Section */}
