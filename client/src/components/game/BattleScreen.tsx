@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { BossDisplay } from './BossDisplay';
 import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
@@ -27,6 +28,41 @@ export function BattleScreen() {
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
   const viewport = useViewport();
+  
+  // Collapsible sidebar state
+  const [sidebarExpanded, setSidebarExpanded] = useState(true);
+
+  // Helper function to render collapsible sidebar
+  const renderCollapsibleSidebar = (content: React.ReactNode) => (
+    <div className="absolute right-0 top-0 bottom-0 z-30 flex items-center">
+      {/* Toggle Button */}
+      <button
+        onClick={() => setSidebarExpanded(!sidebarExpanded)}
+        className="bg-black bg-opacity-90 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-95 hover:border-retro-accent-bright transition-all duration-300 z-40 shadow-lg"
+        style={{ marginRight: sidebarExpanded ? '30vw' : '0' }}
+        data-no-shoot
+        title={sidebarExpanded ? 'Hide Sidebar' : 'Show Sidebar'}
+      >
+        {sidebarExpanded ? (
+          <ChevronRight className="w-5 h-5 text-retro-accent" />
+        ) : (
+          <ChevronLeft className="w-5 h-5 text-retro-accent" />
+        )}
+      </button>
+      
+      {/* Sidebar Panel */}
+      <div
+        className={`bg-black bg-opacity-90 border-l-2 border-retro-border h-full transition-all duration-300 ease-in-out overflow-hidden ${
+          sidebarExpanded ? 'w-[30vw]' : 'w-0'
+        }`}
+        data-no-shoot
+      >
+        <div className="h-full overflow-y-auto p-4">
+          {content}
+        </div>
+      </div>
+    </div>
+  );
 
   // Hide root page scrollbar during battle phases
   useEffect(() => {
@@ -189,20 +225,18 @@ export function BattleScreen() {
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
-            {/* UI Overlay */}
-            <div className="relative z-30 min-h-screen flex items-center justify-end p-6">
-              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600 max-h-[85vh] overflow-y-auto" data-no-shoot>
-                <div className="p-4">
-                  <ScoreSubmission />
-                </div>
-              </div>
-            </div>
+            {/* Collapsible Sidebar */}
+            {renderCollapsibleSidebar(<ScoreSubmission />)}
 
             {/* Timer Display - Top Left */}
             <TimerDisplay />
             
             {/* Boss Music Controls - Top Right */}
-            <div className="absolute top-6 right-6 z-40" data-no-shoot>
+            <div 
+              className="absolute top-6 z-40 transition-all duration-300" 
+              style={{ right: sidebarExpanded ? 'calc(30vw + 24px)' : '24px' }}
+              data-no-shoot
+            >
               <BossMusicControls />
             </div>
 
@@ -240,20 +274,18 @@ export function BattleScreen() {
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
-            {/* UI Overlay */}
-            <div className="relative z-30 min-h-screen flex items-center justify-center p-6">
-              <div className="w-full max-w-6xl bg-black bg-opacity-90 rounded-lg border-2 border-gray-600 max-h-screen overflow-y-auto" data-no-shoot>
-                <div className="p-6">
-                  <Discussion />
-                </div>
-              </div>
-            </div>
+            {/* Collapsible Sidebar */}
+            {renderCollapsibleSidebar(<Discussion />)}
 
             {/* Timer Display - Top Left */}
             <TimerDisplay />
             
             {/* Boss Music Controls - Top Right */}
-            <div className="absolute top-6 right-6 z-40" data-no-shoot>
+            <div 
+              className="absolute top-6 z-40 transition-all duration-300" 
+              style={{ right: sidebarExpanded ? 'calc(30vw + 24px)' : '24px' }}
+              data-no-shoot
+            >
               <BossMusicControls />
             </div>
 
