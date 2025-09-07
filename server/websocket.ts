@@ -182,6 +182,25 @@ export function setupWebSocket(httpServer: HTTPServer) {
       });
     });
 
+    socket.on('player_charge', ({ isCharging, chargePower }: { isCharging: boolean; chargePower?: number }) => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      
+      if (!playerId || !lobbyId) return;
+
+      const lobby = gameState.getLobby(lobbyId);
+      if (!lobby || lobby.gamePhase !== 'lobby') {
+        return;
+      }
+
+      // Broadcast charge state to other players in the same lobby
+      socket.to(lobbyId).emit('lobby_player_charge', { 
+        playerId,
+        isCharging,
+        chargePower: chargePower || 0
+      });
+    });
+
     socket.on('lobby_emote', ({ message, x, y }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;

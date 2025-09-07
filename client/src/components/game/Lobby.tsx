@@ -152,7 +152,7 @@ export function Lobby() {
   
   // Player movement state for lobby walking
   const [keys, setKeys] = useState<Set<string>>(new Set());
-  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean; isJumping?: boolean; jumpHeight?: number; lastUpdate?: number; timeoutId?: NodeJS.Timeout }>>({});
+  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean; isJumping?: boolean; jumpHeight?: number; lastUpdate?: number; timeoutId?: NodeJS.Timeout; isCharging?: boolean; chargePower?: number }>>({});
   const [myPosition, setMyPosition] = useState({ x: 200, direction: 'right' as SpriteDirection });
   
   // Jumping physics state
@@ -242,6 +242,8 @@ export function Lobby() {
       if (event.code === 'Space') {
         event.preventDefault();
         if (!jumpState.isJumping && !jumpState.isCharging) {
+          // Emit charge start event to other players
+          emit('player_charge', { isCharging: true, chargePower: 0 });
           setJumpState(prev => ({
             ...prev,
             isCharging: true,
@@ -281,7 +283,8 @@ export function Lobby() {
           const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight); // Reduced gravity for smoother arc
           
           // Jump triggered with calculated physics
-          // Emit jump event to other players
+          // Emit charge stop and jump events to other players
+          emit('player_charge', { isCharging: false, chargePower: 0 });
           emit('player_jump', { isJumping: true });
           
           setJumpState(prev => ({
@@ -410,10 +413,14 @@ export function Lobby() {
       const chargeTime = Date.now() - jumpState.chargeStartTime;
       const chargePower = Math.min(chargeTime / maxChargeTime, 1);
       
+      const currentChargePower = chargePower * maxJumpHeight;
       setJumpState(prev => ({
         ...prev,
-        jumpPower: chargePower * maxJumpHeight
+        jumpPower: currentChargePower
       }));
+      
+      // Emit charge progress to other players
+      emit('player_charge', { isCharging: true, chargePower: currentChargePower });
     }, 16); // ~60 FPS
 
     return () => clearInterval(chargeInterval);
@@ -493,7 +500,22 @@ export function Lobby() {
         [playerId]: {
           ...prev[playerId],
           isJumping,
-          jumpHeight: jumpHeight || 0
+          jumpHeight: jumpHeight || 0,
+          isCharging: false, // Stop charging when jumping
+          chargePower: 0
+        }
+      }));
+    };
+
+    const handleLobbyPlayerCharge = ({ playerId, isCharging, chargePower }: { playerId: string; isCharging: boolean; chargePower?: number }) => {
+      if (playerId === currentPlayer?.id) return; // Skip own updates
+
+      setPlayerPositions(prev => ({
+        ...prev,
+        [playerId]: {
+          ...prev[playerId],
+          isCharging,
+          chargePower: chargePower || 0
         }
       }));
     };
@@ -555,12 +577,14 @@ export function Lobby() {
     socket.on('player_joined', handlePlayerJoined);
     socket.on('lobby_emote', handleLobbyEmote);
     socket.on('lobby_player_jump', handleLobbyPlayerJump);
+    socket.on('lobby_player_charge', handleLobbyPlayerCharge);
 
     return () => {
       socket.off('lobby_player_pos', handleLobbyPlayerPos);
       socket.off('player_joined', handlePlayerJoined);
       socket.off('lobby_emote', handleLobbyEmote);
       socket.off('lobby_player_jump', handleLobbyPlayerJump);
+      socket.off('lobby_player_charge', handleLobbyPlayerCharge);
     };
   }, [socket, currentLobby?.gamePhase, currentPlayer?.id]);
 
@@ -1522,6 +1546,11 @@ export function Lobby() {
                   {/* Player name above character */}
                   <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
                     {player.name}
+                    {position.isCharging && (
+                      <div className="text-xs text-yellow-400 animate-pulse">
+                        ⚡ {Math.round((position.chargePower || 0) / maxJumpHeight * 100)}%
+                      </div>
+                    )}
                   </div>
                   
                   <div
@@ -1539,6 +1568,18 @@ export function Lobby() {
                       size={characterSize}
                     />
                   </div>
+                  
+                  {/* Jump charge visual effect for other players */}
+                  {position.isCharging && (
+                    <div 
+                      className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded overflow-hidden"
+                    >
+                      <div 
+                        className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-75"
+                        style={{ width: `${(position.chargePower || 0) / maxJumpHeight * 100}%` }}
+                      />
+                    </div>
+                  )}
                   
                   {/* Other Player's Speech Bubble */}
                   {emotes[player.id] && (
