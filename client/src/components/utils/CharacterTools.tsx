@@ -29,15 +29,15 @@ interface SpriteConfig {
 }
 
 const DEFAULT_CONFIG: SpriteConfig = {
-  frameWidth: 256,
-  frameHeight: 256,
+  frameWidth: 64,
+  frameHeight: 64,
   animations: {
     idle: { row: 0, frames: 1, speed: 1000, loop: true },
     walk: { row: 0, frames: 4, speed: 200, loop: true },
-    attack: { row: 2, frames: 4, speed: 150, loop: false },
-    cast: { row: 2, frames: 4, speed: 200, loop: false },
-    death: { row: 2, frames: 3, speed: 400, loop: false },
-    victory: { row: 2, frames: 1, speed: 1000, loop: false }
+    attack: { row: 3, frames: 1, speed: 150, loop: false },
+    cast: { row: 3, frames: 1, speed: 200, loop: false },
+    death: { row: 3, frames: 1, speed: 400, loop: false },
+    victory: { row: 0, frames: 1, speed: 1000, loop: false }
   },
   directions: {
     down: 0,

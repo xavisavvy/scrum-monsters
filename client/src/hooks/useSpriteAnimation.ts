@@ -20,23 +20,23 @@ interface SpriteConfig {
   };
 }
 
-// Configuration for sprite sheet layout (actual images are 1024x1024 with 4x4 grid)
+// Configuration for sprite sheet layout (actual images are 256x256 with 4x4 grid)
 const SPRITE_CONFIG: SpriteConfig = {
-  frameWidth: 256, // Each frame is 256px wide (1024/4)
-  frameHeight: 256, // Each frame is 256px tall (1024/4)
+  frameWidth: 64, // Each frame is 64px wide (256/4)
+  frameHeight: 64, // Each frame is 64px tall (256/4)
   animations: {
-    idle: { row: 0, frames: 1, speed: 1000, loop: true }, // Use first frame of down walk
+    idle: { row: 0, frames: 1, speed: 1000, loop: true }, // Frame 0: Idle pose
     walk: { row: 0, frames: 4, speed: 200, loop: true }, // Will be overridden by direction
-    attack: { row: 2, frames: 4, speed: 150, loop: false }, // Third row combat actions
-    cast: { row: 2, frames: 4, speed: 200, loop: false }, // Same row, different interpretation
-    death: { row: 2, frames: 3, speed: 400, loop: false }, // Death animation frames
-    victory: { row: 2, frames: 1, speed: 1000, loop: false } // Victory pose
+    attack: { row: 3, frames: 1, speed: 150, loop: false }, // Frame 13: Attack action
+    cast: { row: 3, frames: 1, speed: 200, loop: false }, // Frame 14: Cast action
+    death: { row: 3, frames: 1, speed: 400, loop: false }, // Frame 15: Damage/Death
+    victory: { row: 0, frames: 1, speed: 1000, loop: false } // Use idle pose for victory
   },
   directions: {
-    down: 0,  // Row 0: Walk down
-    left: 1,  // Row 1: Walk left  
-    right: 2, // Row 2: Walk right (if available, otherwise we'll flip left)
-    up: 3     // Row 3: Walk up (if available)
+    down: 0,  // Row 0: Idle + Walk Down (frames 0-3)
+    left: 1,  // Row 1: Walk Left (frames 4-7)
+    right: 2, // Row 2: Walk Right (frames 8-11)
+    up: 3     // Row 3: Walk Up + Combat (frames 12-15)
   }
 };
 
@@ -72,11 +72,12 @@ export function useSpriteAnimation({
   const getAnimationConfig = () => {
     let config = SPRITE_CONFIG.animations[animation];
     
-    // For walk animation, use direction-specific row
+    // For walk animation, use direction-specific row and frames
     if (animation === 'walk' && isMoving) {
       config = {
         ...config,
-        row: SPRITE_CONFIG.directions[direction]
+        row: SPRITE_CONFIG.directions[direction],
+        frames: direction === 'up' ? 1 : 4 // Row 3 only has 1 walk frame (frame 12)
       };
     } else if (animation === 'walk' && !isMoving) {
       // If not moving, show idle (first frame of walk cycle)
@@ -92,12 +93,23 @@ export function useSpriteAnimation({
   const getCurrentSpriteFrame = (): SpriteFrame => {
     const { frameWidth, frameHeight } = SPRITE_CONFIG;
     const row = animConfig.row;
-    const col = currentFrame;
+    let col = currentFrame;
+    
+    // For specific combat actions, use fixed column positions
+    if (animation === 'attack') {
+      col = 1; // Frame 13 (row 3, col 1)
+    } else if (animation === 'cast') {
+      col = 2; // Frame 14 (row 3, col 2)
+    } else if (animation === 'death') {
+      col = 3; // Frame 15 (row 3, col 3)
+    }
     
     // Simplified frame calculation debug
     if (col > 3 || row > 3) {
       console.warn(`⚠️ Frame out of bounds: ${avatarClass} col=${col} row=${row}`);
     }
+    
+    console.log(`🎯 ${avatarClass}: frame(${col},${row}) size=${frameWidth}x${frameHeight}`);
     
     return {
       x: col * frameWidth,
