@@ -10,9 +10,10 @@ import { useViewport } from '@/lib/hooks/useViewport';
 
 interface PlayerControllerProps {
   // Remove containerWidth/Height - viewport system handles this
+  onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
 }
 
-export function PlayerController({}: PlayerControllerProps) {
+export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerProps) {
   const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
   const { emit, socket } = useWebSocket();
   const { playHit } = useAudio();
@@ -278,6 +279,15 @@ export function PlayerController({}: PlayerControllerProps) {
       
       setOtherPlayersPositions(otherPositions);
       console.log('👥 Updated other players positions:', Object.keys(otherPositions).length, 'players');
+      
+      // Pass all positions (current player + other players) to parent component
+      if (onPlayerPositionsUpdate && currentPlayer) {
+        const allPositions = {
+          ...otherPositions,
+          [currentPlayer.id]: { x: playerPosition.x + characterSize / 2, y: playerPosition.y + characterSize / 2 }
+        };
+        onPlayerPositionsUpdate(allPositions);
+      }
     };
 
     const handlePlayerProjectileFired = ({ playerId, playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }: any) => {
@@ -315,6 +325,17 @@ export function PlayerController({}: PlayerControllerProps) {
       socket.off('player_projectile_fired', handlePlayerProjectileFired);
     };
   }, [socket, viewport, characterSize, currentPlayer?.id]);
+
+  // Update parent component with current player position changes
+  useEffect(() => {
+    if (onPlayerPositionsUpdate && currentPlayer) {
+      const currentPositions = {
+        ...otherPlayersPositions,
+        [currentPlayer.id]: { x: playerPosition.x + characterSize / 2, y: playerPosition.y + characterSize / 2 }
+      };
+      onPlayerPositionsUpdate(currentPositions);
+    }
+  }, [playerPosition, otherPlayersPositions, onPlayerPositionsUpdate, currentPlayer?.id, characterSize]);
 
   // Throttled network updates - industry standard approach
   const lastNetworkUpdate = useRef({ x: 0, y: 0, time: 0 });

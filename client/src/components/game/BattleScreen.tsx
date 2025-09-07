@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { BossDisplay } from './BossDisplay';
 import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
@@ -19,12 +19,14 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { usePhaseVictoryImage } from '@/lib/victoryImages';
+import { useViewport } from '@/lib/hooks/useViewport';
 
 export function BattleScreen() {
   const { currentLobby, addAttackAnimation, currentPlayer } = useGameState();
   const { emit, socket } = useWebSocket();
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
+  const viewport = useViewport();
 
   // Emote system state
   const [showEmoteModal, setShowEmoteModal] = useState(false);
@@ -34,6 +36,7 @@ export function BattleScreen() {
     x: number;
     y: number;
   }>>({});
+  const playerPositionsRef = useRef<Record<string, { x: number, y: number }>>({});
 
   // Handle emote modal open event from PlayerController
   useEffect(() => {
@@ -85,8 +88,14 @@ export function BattleScreen() {
   const handleEmoteSubmit = (message: string) => {
     if (!currentPlayer) return;
 
-    // Get current player position (for now, use center screen)
-    const myPosition = { x: 50, y: 50 }; // Center of screen in percentage
+    // Get current player's actual screen position
+    const myScreenPosition = playerPositionsRef.current[currentPlayer.id];
+    const myPosition = myScreenPosition 
+      ? {
+          x: myScreenPosition.x,
+          y: myScreenPosition.y
+        }
+      : { x: viewport.viewportWidth / 2, y: viewport.viewportHeight / 2 }; // Fallback to center if position not found
 
     // Emit emote to server
     emit('battle_emote', { message, x: myPosition.x, y: myPosition.y });
@@ -180,7 +189,11 @@ export function BattleScreen() {
 
             {/* Player Character Controller */}
             <div className="absolute inset-0 z-20" style={{ pointerEvents: 'auto' }}>
-              <PlayerController />
+              <PlayerController 
+                onPlayerPositionsUpdate={(positions) => {
+                  playerPositionsRef.current = positions;
+                }}
+              />
             </div>
 
             {/* Team Competition Components */}
@@ -477,28 +490,34 @@ export function BattleScreen() {
       </div>
 
       {/* Emote Display Bubbles */}
-      {Object.entries(emotes).map(([playerId, emote]) => (
-        <div
-          key={playerId}
-          className="absolute z-50 pointer-events-none animate-bounce"
-          style={{
-            left: `${emote.x}%`,
-            top: `${emote.y}%`,
-            transform: 'translate(-50%, -100%)'
-          }}
-        >
-          <div className="bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-lg border-2 border-gray-300 max-w-xs">
-            <div className="text-black text-sm font-bold break-words">
-              {emote.message}
+      {Object.entries(emotes).map(([playerId, emote]) => {
+        // Convert stored screen position to CSS position for display
+        const screenX = emote.x;
+        const screenY = emote.y;
+        
+        return (
+          <div
+            key={playerId}
+            className="absolute z-50 pointer-events-none animate-bounce"
+            style={{
+              left: `${screenX}px`,
+              top: `${screenY - 80}px`, // Position above character (character is ~60px tall)
+              transform: 'translateX(-50%)' // Center horizontally on character
+            }}
+          >
+            <div className="bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-lg border-2 border-gray-300 max-w-xs">
+              <div className="text-black text-sm font-bold break-words">
+                {emote.message}
+              </div>
+              <div 
+                className="absolute top-full left-1/2 transform -translate-x-1/2
+                           w-0 h-0 border-l-[8px] border-r-[8px] border-t-[8px] 
+                           border-l-transparent border-r-transparent border-t-white"
+              />
             </div>
-            <div 
-              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full 
-                         border-l-8 border-r-8 border-t-8 
-                         border-l-transparent border-r-transparent border-t-white"
-            />
           </div>
-        </div>
-      ))}
+        );
+      })}
 
       {/* Emote Modal */}
       <EmoteModal 
