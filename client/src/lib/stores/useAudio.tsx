@@ -56,6 +56,7 @@ interface AudioState {
   playBossMusic: () => void;
   fadeInBossMusic: () => void;
   fadeOutBossMusic: () => void;
+  fadeOutBossMusicSlowly: () => void;
   stopBossMusic: () => void;
   playYoutubeAudio: (videoId: string) => void;
   stopYoutubeAudio: () => void;
@@ -518,6 +519,26 @@ export const useAudio = create<AudioState>((set, get) => ({
           clearInterval(fadeOutInterval);
         }
       }, 50);
+    }
+  },
+
+  fadeOutBossMusicSlowly: () => {
+    const { bossMusic } = get();
+    if (bossMusic && !bossMusic.paused) {
+      console.log('🎵 Fading out boss music slowly over 5 seconds...');
+      const startVolume = bossMusic.volume;
+      const fadeOutInterval = setInterval(() => {
+        if (bossMusic.volume > 0.01) {
+          // Fade over 5000ms: decrement by (startVolume / 100) every 50ms
+          bossMusic.volume = Math.max(bossMusic.volume - (startVolume / 100), 0);
+        } else {
+          bossMusic.pause();
+          bossMusic.volume = 0.6; // Reset volume for next play
+          set({ isBossMusicPlaying: false });
+          clearInterval(fadeOutInterval);
+          console.log('🎵 Boss music fade-out completed');
+        }
+      }, 50); // 50ms * 100 steps = 5000ms = 5 seconds
     }
   },
 

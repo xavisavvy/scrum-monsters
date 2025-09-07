@@ -73,7 +73,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
   const [isDeathAnimationActive, setIsDeathAnimationActive] = useState(false);
   const [deathAnimationStarted, setDeathAnimationStarted] = useState(false);
   const { attackAnimations } = useGameState();
-  const { playExplosion } = useAudio();
+  const { playExplosion, fadeOutBossMusicSlowly } = useAudio();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedAttackId = useRef<string | null>(null);
   const deathAnimationRef = useRef<NodeJS.Timeout | null>(null);
@@ -107,6 +107,9 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       setTimeout(() => playExplosion(), 400);
       setTimeout(() => playExplosion(), 800);
       
+      // Fade out boss music slowly over 5 seconds
+      fadeOutBossMusicSlowly();
+      
       // Reset death animation after it completes
       deathAnimationRef.current = setTimeout(() => {
         setIsDeathAnimationActive(false);
@@ -122,7 +125,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
         deathAnimationRef.current = null;
       }
     }
-  }, [boss.defeated, deathAnimationStarted, playExplosion]);
+  }, [boss.defeated, deathAnimationStarted, playExplosion, fadeOutBossMusicSlowly]);
 
   // Watch for NEW attack animations to trigger damage flash effects
   useEffect(() => {
