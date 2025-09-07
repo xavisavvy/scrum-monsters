@@ -1204,10 +1204,6 @@ export function Lobby() {
               );
             })}
           
-          {/* Instructions */}
-          <div className="absolute bottom-1 left-4 text-xs text-gray-400">
-            Use A/D or arrow keys to walk around! Press E to emote!
-          </div>
           </div>
           
           {/* Layer 4: Pixel Art Foreground Elements */}
