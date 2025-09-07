@@ -280,10 +280,10 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
                   </p>
                   
                   <div className="flex justify-center space-x-6 text-sm">
-                    <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">LinkedIn</a>
-                    <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">GitHub</a>
-                    <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Twitter</a>
-                    <a href="#" className="text-blue-400 hover:text-blue-300 transition-colors">Personal Site</a>
+                    <a href="https://www.linkedin.com/in/prestonfarr/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">LinkedIn</a>
+                    <a href="https://github.com/xavisavvy" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">GitHub</a>
+                    <a href="https://x.com/prestonbfarr" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">X</a>
+                    <a href="https://prestonfarr.com" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 transition-colors">Personal Site</a>
                   </div>
                 </div>
               </div>
