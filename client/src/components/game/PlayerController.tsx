@@ -26,6 +26,8 @@ export function PlayerController({}: PlayerControllerProps) {
   const [keys, setKeys] = useState<Set<string>>(new Set());
   const [showDebugModal, setShowDebugModal] = useState(false);
   const [ctrlPressed, setCtrlPressed] = useState(false);
+  const [qPressed, setQPressed] = useState(false);
+  const [specialAttackCooldown, setSpecialAttackCooldown] = useState(0);
   const [currentDirection, setCurrentDirection] = useState<SpriteDirection>('down');
   const [isMoving, setIsMoving] = useState(false);
 
@@ -162,6 +164,30 @@ export function PlayerController({}: PlayerControllerProps) {
           targetPlayerId
         });
       }
+      
+      // Handle special attack with Q key (single attack per keydown, with cooldown)
+      if (event.code === 'KeyQ' && currentPlayer && !qPressed && specialAttackCooldown <= 0) {
+        setQPressed(true); // Prevent multiple attacks while held
+        event.preventDefault();
+        console.log('⌨️ Q key pressed for special attack!');
+        
+        // Trigger special attack based on character class
+        handleSpecialAttack(currentPlayer.avatar);
+        
+        // Set cooldown (5 seconds)
+        setSpecialAttackCooldown(5000);
+        
+        // Start cooldown countdown
+        const cooldownInterval = setInterval(() => {
+          setSpecialAttackCooldown(prev => {
+            if (prev <= 100) {
+              clearInterval(cooldownInterval);
+              return 0;
+            }
+            return prev - 100;
+          });
+        }, 100);
+      }
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
@@ -174,6 +200,11 @@ export function PlayerController({}: PlayerControllerProps) {
       // Reset Ctrl key state when released to allow next shot
       if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
         setCtrlPressed(false);
+      }
+      
+      // Reset Q key state when released
+      if (event.code === 'KeyQ') {
+        setQPressed(false);
       }
     };
 
@@ -431,6 +462,168 @@ export function PlayerController({}: PlayerControllerProps) {
     };
     
     return projectileEmojis[avatarClass];
+  };
+
+  // Special attack system with class-specific effects
+  const handleSpecialAttack = useCallback((avatarClass: AvatarClass) => {
+    console.log(`🌟 Casting special attack for ${avatarClass}!`);
+    
+    // Create special effect element
+    const specialEffect = document.createElement('div');
+    specialEffect.style.position = 'fixed';
+    specialEffect.style.pointerEvents = 'none';
+    specialEffect.style.zIndex = '9999';
+    specialEffect.style.fontSize = '4rem';
+    specialEffect.style.textAlign = 'center';
+    specialEffect.style.transition = 'all 1.5s ease-out';
+    
+    // Calculate character center
+    const characterCenterX = playerPosition.x + characterSize / 2;
+    const characterCenterY = playerPosition.y + characterSize / 2;
+    
+    let effectEmoji = '✨';
+    let effectColor = '#ffffff';
+    let damage = 25; // Base damage
+    let effectText = 'Special Attack';
+    
+    // Class-specific special attack effects
+    switch (avatarClass) {
+      case 'ranger':
+        effectEmoji = '🏹💨';
+        effectColor = '#228B22';
+        damage = 30;
+        effectText = 'ARROW STORM';
+        break;
+      case 'rogue':
+        effectEmoji = '🗡️💀';
+        effectColor = '#2F4F4F';
+        damage = 35;
+        effectText = 'SHADOW STRIKE';
+        break;
+      case 'bard':
+        effectEmoji = '🎵🎶';
+        effectColor = '#9370DB';
+        damage = 20;
+        effectText = 'SONIC BLAST';
+        break;
+      case 'sorcerer':
+        effectEmoji = '🔥💥';
+        effectColor = '#FF4500';
+        damage = 40;
+        effectText = 'FIREBALL';
+        break;
+      case 'wizard':
+        effectEmoji = '⚡🌩️';
+        effectColor = '#4169E1';
+        damage = 38;
+        effectText = 'LIGHTNING BOLT';
+        break;
+      case 'warrior':
+        effectEmoji = '⚔️🛡️';
+        effectColor = '#B22222';
+        damage = 32;
+        effectText = 'BERSERKER RAGE';
+        break;
+      case 'paladin':
+        effectEmoji = '✨⚡';
+        effectColor = '#FFD700';
+        damage = 28;
+        effectText = 'DIVINE SMITE';
+        break;
+      case 'cleric':
+        effectEmoji = '💫🌟';
+        effectColor = '#F0F8FF';
+        damage = 25;
+        effectText = 'HOLY LIGHT';
+        break;
+      case 'oathbreaker':
+        effectEmoji = '🖤💀';
+        effectColor = '#8A2BE2';
+        damage = 42;
+        effectText = 'DARK COVENANT';
+        break;
+      case 'monk':
+        effectEmoji = '👊💨';
+        effectColor = '#8B4513';
+        damage = 33;
+        effectText = 'CHI BLAST';
+        break;
+    }
+    
+    // Position effect at character location
+    specialEffect.style.left = `${characterCenterX - 100}px`;
+    specialEffect.style.top = `${characterCenterY - 50}px`;
+    specialEffect.style.color = effectColor;
+    specialEffect.style.textShadow = `0 0 20px ${effectColor}, 0 0 40px ${effectColor}`;
+    specialEffect.innerHTML = `
+      <div style="font-size: 4rem; margin-bottom: 0.5rem;">${effectEmoji}</div>
+      <div style="font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">${effectText}</div>
+    `;
+    
+    document.body.appendChild(specialEffect);
+    
+    // Animate the effect
+    setTimeout(() => {
+      specialEffect.style.transform = 'scale(1.5) translateY(-100px)';
+      specialEffect.style.opacity = '0';
+    }, 100);
+    
+    // Create particle explosion effect
+    createParticleExplosion(characterCenterX, characterCenterY, effectColor, effectEmoji);
+    
+    // Attack the boss directly with higher damage
+    emit('attack_boss', { damage });
+    console.log(`🎯 Special attack deals ${damage} damage to boss!`);
+    
+    // Play audio feedback
+    if (playHit) {
+      playHit();
+    }
+    
+    // Remove effect after animation
+    setTimeout(() => {
+      if (document.body.contains(specialEffect)) {
+        document.body.removeChild(specialEffect);
+      }
+    }, 1500);
+  }, [playerPosition, characterSize, emit, playHit]);
+
+  // Create particle explosion effect
+  const createParticleExplosion = (x: number, y: number, color: string, emoji: string) => {
+    const particleCount = 12;
+    
+    for (let i = 0; i < particleCount; i++) {
+      const particle = document.createElement('div');
+      particle.style.position = 'fixed';
+      particle.style.left = `${x}px`;
+      particle.style.top = `${y}px`;
+      particle.style.pointerEvents = 'none';
+      particle.style.zIndex = '9998';
+      particle.style.fontSize = '2rem';
+      particle.textContent = emoji.split('')[i % emoji.length] || '✨';
+      particle.style.color = color;
+      particle.style.textShadow = `0 0 10px ${color}`;
+      particle.style.transition = 'all 1s ease-out';
+      
+      document.body.appendChild(particle);
+      
+      // Random direction for particles
+      const angle = (i / particleCount) * 2 * Math.PI;
+      const distance = 150 + Math.random() * 100;
+      const targetX = x + Math.cos(angle) * distance;
+      const targetY = y + Math.sin(angle) * distance;
+      
+      setTimeout(() => {
+        particle.style.transform = `translate(${targetX - x}px, ${targetY - y}px) scale(0.5)`;
+        particle.style.opacity = '0';
+      }, 50);
+      
+      setTimeout(() => {
+        if (document.body.contains(particle)) {
+          document.body.removeChild(particle);
+        }
+      }, 1000);
+    }
   };
 
   const findNearestTargetPlayer = useCallback(() => {
