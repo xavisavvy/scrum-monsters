@@ -168,7 +168,7 @@ export function BattleScreen() {
       case 'battle':
         if (!currentLobby?.boss) return null;
         return (
-          <div key={`battle-${currentLobby.gamePhase}-${currentLobby.boss.id}`} className="relative">
+          <div key={`battle-${currentLobby.gamePhase}`} className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
@@ -218,7 +218,7 @@ export function BattleScreen() {
       case 'discussion':
         if (!currentLobby?.boss) return null;
         return (
-          <div key={`discussion-${currentLobby.gamePhase}-${currentLobby.boss.id}`} className="relative">
+          <div key={`discussion-${currentLobby.gamePhase}`} className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
@@ -257,7 +257,7 @@ export function BattleScreen() {
         );
         
         return (
-          <div key={`victory-${currentLobby.gamePhase}-${completedTickets.length}`} className="relative">
+          <div key={`victory-${currentLobby.gamePhase}`} className="relative">
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
@@ -390,7 +390,7 @@ export function BattleScreen() {
           : null;
         
         return (
-          <div key={`next_level-${currentLobby.gamePhase}-${currentLobby.completedTickets.length}`} className="relative">
+          <div key={`next_level-${currentLobby.gamePhase}`} className="relative">
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
