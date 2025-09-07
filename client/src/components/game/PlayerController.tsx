@@ -44,9 +44,9 @@ export function PlayerController({}: PlayerControllerProps) {
       const screenPos = viewport.worldToScreen(worldX, worldY);
       
       const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
-      const isSignificantDifference = Math.abs(playerPosition.x - screenPos.x) > 50 || Math.abs(playerPosition.y - screenPos.y) > 50;
+      const isSignificantDifference = Math.abs(playerPosition.x - screenPos.x) > 100 || Math.abs(playerPosition.y - screenPos.y) > 100;
       
-      if (isInitialSync || isSignificantDifference) {
+      if (isInitialSync) {
         setPlayerPosition({ x: screenPos.x, y: screenPos.y });
         console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${screenPos.x}px, ${screenPos.y}px)`);
       }
@@ -294,12 +294,12 @@ export function PlayerController({}: PlayerControllerProps) {
           moving = true;
         }
         if (keys.has('ArrowUp') || keys.has('KeyW')) {
-          newY = Math.min(viewport.viewportHeight - characterSize - 100, prev.y + moveSpeed); // Keep some bottom margin
+          newY = Math.max(0, prev.y - moveSpeed); // Up decreases Y
           direction = 'up';
           moving = true;
         }
         if (keys.has('ArrowDown') || keys.has('KeyS')) {
-          newY = Math.max(0, prev.y - moveSpeed);
+          newY = Math.min(viewport.viewportHeight - characterSize - 100, prev.y + moveSpeed); // Down increases Y
           direction = 'down';
           moving = true;
         }
