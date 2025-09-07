@@ -630,30 +630,30 @@ class GameStateManager {
   private createBossFromTickets(tickets: JiraTicket[]): Boss {
     const totalComplexity = tickets.length * 100;
     
-    // Available boss types with their sprite names and themed names
+    // Available boss types with simplified sprite names
     const availableBosses = [
       { 
-        sprite: 'Bug_Hydra_Boss_8b867e3e.png', 
+        sprite: 'bug-hydra.png', 
         name: 'Bug Hydra', 
         description: 'Legendary Beast of Endless Bugs' 
       },
       { 
-        sprite: 'Sprint_Demon_Boss_a43a8439.png', 
+        sprite: 'sprint-demon.png', 
         name: 'Sprint Demon', 
         description: 'Infernal Master of Rushed Deadlines' 
       },
       { 
-        sprite: 'Deadline_Dragon_Boss_transparent.png', 
+        sprite: 'deadline-dragon.png', 
         name: 'Deadline Dragon', 
         description: 'Ancient Terror of Time Constraints' 
       },
       { 
-        sprite: 'Technical_Debt_Golem_882e6943.png', 
+        sprite: 'technical-debt-golem.png', 
         name: 'Technical Debt Golem', 
         description: 'Crushing Burden of Legacy Code' 
       },
       { 
-        sprite: 'Scope_Creep_Beast_3a9ec6b7.png', 
+        sprite: 'scope-creep-beast.png', 
         name: 'Scope Creep Beast', 
         description: 'Ever-Expanding Horror of Feature Bloat' 
       }

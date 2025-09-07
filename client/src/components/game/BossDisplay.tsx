@@ -3,36 +3,35 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { Boss } from '@/lib/gameTypes';
 
-// Import boss images (transparent versions)
-import bugHydraImg from '@/assets/bosses/Bug_Hydra_Boss_transparent.png';
-import sprintDemonImg from '@/assets/bosses/Sprint_Demon_Boss_transparent.png';
-import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_transparent.png';
-import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_transparent.png';
-import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_transparent.png';
+// Boss images and lair backgrounds (using public URLs for better performance)
+const bugHydraImg = '/images/bosses/bug-hydra.png';
+const sprintDemonImg = '/images/bosses/sprint-demon.png';
+const deadlineDragonImg = '/images/bosses/deadline-dragon.png';
+const techDebtGolemImg = '/images/bosses/technical-debt-golem.png';
+const scopeCreepBeastImg = '/images/bosses/scope-creep-beast.png';
 
-// Lair background paths (using public URLs)
 const bugHydraLair = '/images/lairs/Bug_Hydra_Cave_Lair_a07f8108.png';
 const sprintDemonLair = '/images/lairs/Sprint_Demon_Volcano_Lair_01853ccf.png';
 const deadlineDragonLair = '/images/lairs/Deadline_Dragon_Clocktower_Lair_5c2916e4.png';
 const techDebtGolemLair = '/images/lairs/Technical_Debt_Golem_Temple_f7e377fe.png';
 const scopeCreepBeastLair = '/images/lairs/Scope_Creep_Beast_Void_bd13cec0.png';
 
-// Boss image mapping (outside component for performance)
+// Boss image mapping with simplified names
 const BOSS_IMAGE_MAP: Record<string, string> = {
-  'Bug_Hydra_Boss_8b867e3e.png': bugHydraImg,
-  'Sprint_Demon_Boss_a43a8439.png': sprintDemonImg,
-  'Deadline_Dragon_Boss_transparent.png': deadlineDragonImg,
-  'Technical_Debt_Golem_882e6943.png': techDebtGolemImg,
-  'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastImg,
+  'bug-hydra.png': bugHydraImg,
+  'sprint-demon.png': sprintDemonImg,
+  'deadline-dragon.png': deadlineDragonImg,
+  'technical-debt-golem.png': techDebtGolemImg,
+  'scope-creep-beast.png': scopeCreepBeastImg,
 };
 
 // Lair background mapping
 const LAIR_BACKGROUND_MAP: Record<string, string> = {
-  'Bug_Hydra_Boss_8b867e3e.png': bugHydraLair,
-  'Sprint_Demon_Boss_a43a8439.png': sprintDemonLair,
-  'Deadline_Dragon_Boss_transparent.png': deadlineDragonLair,
-  'Technical_Debt_Golem_882e6943.png': techDebtGolemLair,
-  'Scope_Creep_Beast_3a9ec6b7.png': scopeCreepBeastLair,
+  'bug-hydra.png': bugHydraLair,
+  'sprint-demon.png': sprintDemonLair,
+  'deadline-dragon.png': deadlineDragonLair,
+  'technical-debt-golem.png': techDebtGolemLair,
+  'scope-creep-beast.png': scopeCreepBeastLair,
 };
 
 const getBossImage = (sprite: string): string => {

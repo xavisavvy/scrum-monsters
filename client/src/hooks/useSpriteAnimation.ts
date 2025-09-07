@@ -65,8 +65,8 @@ export function useSpriteAnimation({
   const animationRef = useRef<number>();
   const lastFrameTime = useRef(0);
 
-  // Get sprite sheet URL
-  const spriteSheetUrl = `/sprites/${avatarClass}.png`;
+  // Get sprite sheet URL from organized directory
+  const spriteSheetUrl = `/images/sprites/${avatarClass}.png`;
 
   // Determine which animation config to use
   const getAnimationConfig = () => {

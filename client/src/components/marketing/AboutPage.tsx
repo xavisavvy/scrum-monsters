@@ -64,7 +64,7 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
                 <div>
                   <div className="mb-6">
                     <img 
-                      src="/images/victory-1.png" 
+                      src="/images/victory/victory-1.png" 
                       alt="Preston Farr" 
                       className="w-24 h-24 pixelated object-contain"
                       style={{ imageRendering: 'pixelated' }}

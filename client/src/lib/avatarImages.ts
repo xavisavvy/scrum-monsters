@@ -1,17 +1,17 @@
 import { AvatarClass } from './gameTypes';
 
-// Map of available avatar images
+// Map of available avatar images (organized in public/images/avatars/)
 const AVATAR_IMAGES: Record<string, string> = {
-  bard: '/avatars/bard.png',
-  cleric: '/avatars/cleric.png', 
-  monk: '/avatars/monk.png',
-  oathbreaker: '/avatars/oathbreaker.png',
-  paladin: '/avatars/paladin.png',
-  ranger: '/avatars/ranger.png',
-  rogue: '/avatars/rogue.png',
-  sorcerer: '/avatars/sorcerer.png',
-  warrior: '/avatars/warrior.png',
-  wizard: '/avatars/wizard.png'
+  bard: '/images/avatars/bard.png',
+  cleric: '/images/avatars/cleric.png', 
+  monk: '/images/avatars/monk.png',
+  oathbreaker: '/images/avatars/oathbreaker.png',
+  paladin: '/images/avatars/paladin.png',
+  ranger: '/images/avatars/ranger.png',
+  rogue: '/images/avatars/rogue.png',
+  sorcerer: '/images/avatars/sorcerer.png',
+  warrior: '/images/avatars/warrior.png',
+  wizard: '/images/avatars/wizard.png'
 };
 
 /**

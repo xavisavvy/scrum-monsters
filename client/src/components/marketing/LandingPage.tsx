@@ -4,12 +4,12 @@ import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { FooterSection } from '@/components/marketing/FooterSection';
 import { useAudio } from '@/lib/stores/useAudio';
 
-// Import boss images
-import bugHydraImg from '@/assets/bosses/Bug_Hydra_Boss_transparent.png';
-import sprintDemonImg from '@/assets/bosses/Sprint_Demon_Boss_transparent.png';
-import deadlineDragonImg from '@/assets/bosses/Deadline_Dragon_Boss_transparent.png';
-import techDebtGolemImg from '@/assets/bosses/Technical_Debt_Golem_transparent.png';
-import scopeCreepBeastImg from '@/assets/bosses/Scope_Creep_Beast_transparent.png';
+// Boss images from public directory for better performance
+const bugHydraImg = '/images/bosses/bug-hydra.png';
+const sprintDemonImg = '/images/bosses/sprint-demon.png';
+const deadlineDragonImg = '/images/bosses/deadline-dragon.png';
+const techDebtGolemImg = '/images/bosses/technical-debt-golem.png';
+const scopeCreepBeastImg = '/images/bosses/scope-creep-beast.png';
 
 interface LandingPageProps {
   onStartGame: () => void;
