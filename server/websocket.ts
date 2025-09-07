@@ -1,7 +1,7 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
-import { gameState } from './gameState.js';
+import { gameState, setGameStateIO } from './gameState.js';
 
 type InterServerEvents = {};
 type SocketData = { playerId?: string; lobbyId?: string };
@@ -13,6 +13,9 @@ export function setupWebSocket(httpServer: HTTPServer) {
       methods: ["GET", "POST"]
     }
   });
+
+  // Pass the io instance to GameState for emitting events
+  setGameStateIO(io);
 
   // Set up revival completion watchdog
   setInterval(() => {

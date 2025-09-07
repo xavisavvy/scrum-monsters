@@ -18,8 +18,10 @@ class GameStateManager {
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
+  private io?: any; // SocketIO server instance
 
-  constructor() {
+  constructor(io?: any) {
+    this.io = io;
     // Start revival watchdog timer
     this.revivalWatchdog = setInterval(() => {
       this.processRevivalSessions();
@@ -864,6 +866,9 @@ class GameStateManager {
         // Set up countdown timer
         this.startConsensusCountdown(lobby.id);
         
+        // Emit countdown started event
+        this.emitConsensusCountdownUpdate(lobby.id, lobby.consensusCountdown);
+        
         return { lobby, teamScores, teamConsensus };
       }
       
@@ -875,6 +880,8 @@ class GameStateManager {
     if (lobby.consensusCountdown?.isActive && !teamsAgree) {
       lobby.consensusCountdown = undefined;
       this.clearConsensusCountdown(lobby.id);
+      // Emit countdown cancelled event
+      this.emitConsensusCountdownUpdate(lobby.id, null);
     }
 
     return { lobby, teamScores, teamConsensus };
@@ -899,6 +906,9 @@ class GameStateManager {
         // Countdown finished - complete consensus
         this.completeConsensus(lobbyId);
         this.clearConsensusCountdown(lobbyId);
+      } else {
+        // Emit countdown update
+        this.emitConsensusCountdownUpdate(lobbyId, lobby.consensusCountdown);
       }
     }, 100); // Update every 100ms
     
@@ -964,6 +974,12 @@ class GameStateManager {
       // Progress to next phase/ticket
       lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
       lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
+    }
+  }
+
+  private emitConsensusCountdownUpdate(lobbyId: string, countdown: { isActive: boolean; remainingSeconds: number; startedAt: number } | null): void {
+    if (this.io) {
+      this.io.to(lobbyId).emit('consensus_countdown_update', { countdown });
     }
   }
 
@@ -1279,3 +1295,8 @@ class GameStateManager {
 }
 
 export const gameState = new GameStateManager();
+
+// Method to set the io instance after it's created
+export function setGameStateIO(io: any) {
+  (gameState as any).io = io;
+}
