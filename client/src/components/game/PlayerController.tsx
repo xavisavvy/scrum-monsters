@@ -127,7 +127,7 @@ export function PlayerController({}: PlayerControllerProps) {
           targetX,
           targetY,
           emoji: getProjectileEmoji(currentPlayer.avatar),
-          targetPlayerId // For spectator attacks
+          targetPlayerId: targetPlayerId || undefined // For spectator attacks
         };
         
         console.log('🚀 Keyboard projectile data:', projectileData);
@@ -853,6 +853,36 @@ export function PlayerController({}: PlayerControllerProps) {
         }}
       />
       
+      {/* Special Attack Cooldown Indicator */}
+      {specialAttackCooldown > 0 && (
+        <div className="absolute top-6 left-6 z-50" data-no-shoot>
+          <div className="bg-black bg-opacity-80 rounded-lg p-4 border-2 border-purple-500">
+            <div className="text-white font-bold text-sm mb-2">SPECIAL ATTACK</div>
+            <div className="w-24 h-3 bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-purple-500 to-blue-500 transition-all duration-100"
+                style={{ width: `${((5000 - specialAttackCooldown) / 5000) * 100}%` }}
+              />
+            </div>
+            <div className="text-purple-300 text-xs mt-1 text-center">
+              {(specialAttackCooldown / 1000).toFixed(1)}s
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Q Key Hint */}
+      {specialAttackCooldown === 0 && (
+        <div className="absolute top-6 left-6 z-40" data-no-shoot>
+          <div className="bg-purple-900 bg-opacity-70 rounded-lg px-3 py-2 border border-purple-400">
+            <div className="text-purple-200 font-bold text-sm flex items-center gap-2">
+              <span className="bg-purple-600 px-2 py-1 rounded text-xs font-mono">Q</span>
+              Special Attack Ready
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Movement Instructions */}
       {/* Debug Modal - Toggle with Tab */}
       {showDebugModal && (
@@ -889,6 +919,7 @@ export function PlayerController({}: PlayerControllerProps) {
                 <div>🤸 <span className="text-yellow-400">Spacebar:</span> Jump</div>
                 <div>🎯 <span className="text-yellow-400">Click anywhere:</span> Shoot</div>
                 <div>⌨️ <span className="text-yellow-400">Ctrl (L/R):</span> Shoot at boss</div>
+                <div>🌟 <span className="text-yellow-400">Q:</span> Special attack (5s cooldown)</div>
                 <div>🔧 <span className="text-yellow-400">Tab:</span> Toggle this modal</div>
               </div>
             </div>
