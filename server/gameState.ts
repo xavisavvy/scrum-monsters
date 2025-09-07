@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 
 interface RevivalSession {
@@ -1226,6 +1226,17 @@ class GameStateManager {
     if (!requester?.isHost) return null;
 
     lobby.jiraSettings = jiraSettings;
+    return lobby;
+  }
+
+  updateEstimationSettings(playerId: string, estimationSettings: EstimationSettings): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const requester = lobby.players.find(p => p.id === playerId);
+    if (!requester?.isHost) return null;
+
+    lobby.estimationSettings = estimationSettings;
     return lobby;
   }
 
