@@ -225,9 +225,15 @@ export function Lobby() {
     if (currentLobby?.gamePhase !== 'lobby') return;
     
     const handleKeyDown = (event: KeyboardEvent) => {
+      // Debug: Log all keyboard events
+      if (event.code === 'Space' || ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'KeyE'].includes(event.code)) {
+        console.log(`⌨️ KeyDown: ${event.code}`);
+      }
+      
       // Ignore input if user is typing in an input field
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        console.log(`⌨️ Ignoring key event - in input field`);
         return;
       }
 
@@ -241,7 +247,9 @@ export function Lobby() {
       // Handle jump charging (Spacebar)
       if (event.code === 'Space') {
         event.preventDefault();
+        console.log(`🚀 Spacebar DOWN - isJumping: ${jumpState.isJumping}, isCharging: ${jumpState.isCharging}`);
         if (!jumpState.isJumping && !jumpState.isCharging) {
+          console.log(`🚀 Starting jump charge!`);
           setJumpState(prev => ({
             ...prev,
             isCharging: true,
@@ -265,22 +273,29 @@ export function Lobby() {
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      // Debug: Log all keyboard events
+      if (event.code === 'Space' || ['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
+        console.log(`⌨️ KeyUp: ${event.code}`);
+      }
+      
       // Ignore input if user is typing in an input field
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        console.log(`⌨️ Ignoring key event - in input field`);
         return;
       }
 
       // Handle jump release (Spacebar)
       if (event.code === 'Space') {
         event.preventDefault();
+        console.log(`🚀 Spacebar UP - isCharging: ${jumpState.isCharging}`);
         if (jumpState.isCharging) {
           const chargeTime = Date.now() - jumpState.chargeStartTime;
           const chargePower = Math.min(chargeTime / maxChargeTime, 1); // 0 to 1
           const jumpHeight = chargePower * maxJumpHeight;
           const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight); // Reduced gravity for smoother arc
           
-          console.log(`🦘 Jump triggered! Height: ${jumpHeight}px, Velocity: ${initialVelocity}`);
+          console.log(`🦘 Jump triggered! Height: ${jumpHeight}px, Velocity: ${initialVelocity}, ChargeTime: ${chargeTime}ms`);
           
           setJumpState(prev => ({
             ...prev,
@@ -290,6 +305,8 @@ export function Lobby() {
             velocityY: initialVelocity,
             currentHeight: 0
           }));
+        } else {
+          console.log(`🚀 Spacebar UP but not charging`);
         }
         return;
       }
