@@ -1,4 +1,6 @@
 import React, { useEffect, useState } from 'react';
+import { toast } from 'sonner';
+import { Toaster } from '@/components/ui/sonner';
 import { LobbyCreation } from '@/components/game/LobbyCreation';
 import { LobbyJoin } from '@/components/game/LobbyJoin';
 import { Lobby } from '@/components/game/Lobby';
@@ -31,6 +33,7 @@ function App() {
   const { 
     currentLobby, 
     currentPlayer, 
+    error,
     setLobby, 
     setPlayer, 
     setBoss, 
@@ -230,7 +233,11 @@ function App() {
 
     socket.on('game_error', ({ message }) => {
       setError(message);
+      toast.error(message);
       console.error('Game error:', message);
+      
+      // Clear error after showing toast
+      setTimeout(() => setError(null), 100);
       
       // If we're trying to join a lobby and it fails, fade menu music back in
       if (appState === 'join_lobby' && !isMuted) {
@@ -543,6 +550,9 @@ function App() {
         onOpenCharacterTools={() => setAppState('character_tools')}
         onOpenBossTools={() => setAppState('boss_tools')}
       />
+      
+      {/* Toast Notifications */}
+      <Toaster />
     </div>
   );
 }
