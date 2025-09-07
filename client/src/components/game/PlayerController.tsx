@@ -296,12 +296,12 @@ export function PlayerController({}: PlayerControllerProps) {
           moving = true;
         }
         if (keys.has('ArrowUp') || keys.has('KeyW')) {
-          newY = Math.max(0, prev.y - moveSpeed); // Up decreases Y
+          newY = Math.min(viewport.viewportHeight - characterSize - 100, prev.y + moveSpeed); // Up moves toward bottom edge
           direction = 'up';
           moving = true;
         }
         if (keys.has('ArrowDown') || keys.has('KeyS')) {
-          newY = Math.min(viewport.viewportHeight - characterSize - 100, prev.y + moveSpeed); // Down increases Y
+          newY = Math.max(0, prev.y - moveSpeed); // Down moves toward top edge
           direction = 'down';
           moving = true;
         }
