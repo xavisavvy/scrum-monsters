@@ -192,7 +192,7 @@ export function PlayerController({}: PlayerControllerProps) {
     if (!socket) return;
 
     // Create handler functions that can be properly removed
-    const handleBossRingAttack = ({ bossX, bossY, projectiles: ringProjectiles }: any) => {
+    const handleBossRingAttack = ({ projectiles: ringProjectiles }: any) => {
       console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
       
       // Convert percentage coordinates to world coordinates, then to screen coordinates
@@ -201,8 +201,10 @@ export function PlayerController({}: PlayerControllerProps) {
         const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
         console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetScreen.x}px, ${targetScreen.y}px)`);
         
-        const bossWorld = { x: (bossX / 100) * viewport.worldWidth, y: (bossY / 100) * viewport.worldHeight };
+        // Use projectile's startX/startY as boss position (server sends boss center as 50%, 40%)
+        const bossWorld = { x: (proj.startX / 100) * viewport.worldWidth, y: (proj.startY / 100) * viewport.worldHeight };
         const bossScreen = viewport.worldToScreen(bossWorld.x, bossWorld.y);
+        console.log(`🎯 Converting boss position: (${proj.startX}%, ${proj.startY}%) -> (${bossScreen.x}px, ${bossScreen.y}px)`);
         
         return {
           id: proj.id,
