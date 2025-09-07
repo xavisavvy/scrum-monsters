@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense, useMemo } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
@@ -170,11 +170,6 @@ export function Lobby() {
   const characterSize = 64; // Match PlayerController
   const movementAreaRef = React.useRef<HTMLDivElement>(null);
   
-  // Get player's STR for jump calculations
-  const playerSTR = currentPlayer?.avatar ? AVATAR_CLASSES[currentPlayer.avatar].stats.str : 12;
-  const maxJumpHeight = Math.min(playerSTR * 3, 60); // Cap at 60px max jump
-  const maxChargeTime = 1000; // 1 second max charge time
-  
   // State for dropping avatar animations
   const [droppingAvatars, setDroppingAvatars] = React.useState<Array<{
     id: string;
@@ -202,6 +197,14 @@ export function Lobby() {
     playLobbyMusic, 
     stopLobbyMusic 
   } = useAudio();
+
+  // Get player's STR for jump calculations (with safe fallback)
+  const playerSTR = useMemo(() => {
+    return currentPlayer?.avatar ? AVATAR_CLASSES[currentPlayer.avatar].stats.str : 12;
+  }, [currentPlayer?.avatar]);
+  
+  const maxJumpHeight = useMemo(() => Math.min(playerSTR * 3, 60), [playerSTR]); // Cap at 60px max jump
+  const maxChargeTime = 1000; // 1 second max charge time
 
   // Lobby background music
   useEffect(() => {
