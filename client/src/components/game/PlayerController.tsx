@@ -915,8 +915,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         }}
       />
       
-      {/* Bottom Left Controls */}
-      <div className="absolute bottom-6 left-6 z-50 flex flex-col gap-2" data-no-shoot>
+      {/* Bottom Left Controls - Positioned above PlayerHUD */}
+      <div className="absolute bottom-24 left-6 z-50 flex flex-col gap-2" data-no-shoot>
         {/* Special Attack Cooldown Indicator */}
         {specialAttackCooldown > 0 && (
           <div className="bg-black bg-opacity-80 rounded-lg p-4 border-2 border-purple-500">
