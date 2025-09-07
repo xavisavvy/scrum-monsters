@@ -17,7 +17,7 @@ export function ExplosionAnimation({ isActive, onComplete }: ExplosionAnimationP
     }
 
     // Generate particles
-    const newParticles = Array.from({ length: 20 }, (_, i) => ({
+    const newParticles = Array.from({ length: 40 }, (_, i) => ({
       id: i,
       x: 50 + Math.random() * 100, // Start near center
       y: 50 + Math.random() * 100,
