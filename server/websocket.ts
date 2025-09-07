@@ -188,6 +188,35 @@ export function setupWebSocket(httpServer: HTTPServer) {
         return;
       }
 
+      // Validate message length to prevent spam
+      if (!message || message.length > 100) {
+        console.log(`Player ${playerId} sent invalid emote message: ${message?.length || 0} characters`);
+        return;
+      }
+
+      // Broadcast emote to other players in the same lobby
+      socket.to(lobbyId).emit('lobby_emote', { 
+        playerId,
+        message: message.trim(),
+        x, 
+        y 
+      });
+      
+      console.log(`Player ${playerId} emoted in lobby ${lobbyId}: "${message.trim()}"`);
+    });
+
+    socket.on('lobby_emote', ({ message, x, y }) => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
+
+      // Validate that player is in lobby phase
+      const lobby = gameState.getLobby(lobbyId);
+      if (!lobby || lobby.gamePhase !== 'lobby') {
+        console.log(`Player ${playerId} tried to emote but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
+        return;
+      }
+
       // Validate message length (prevent spam)
       if (!message || message.length > 100) {
         console.log(`Player ${playerId} sent invalid emote message`);
