@@ -155,10 +155,25 @@ export function Lobby() {
   const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean }>>({});
   const [myPosition, setMyPosition] = useState({ x: 200, direction: 'right' as SpriteDirection });
   
+  // Jumping physics state
+  const [jumpState, setJumpState] = useState({
+    isJumping: false,
+    isCharging: false,
+    chargeStartTime: 0,
+    jumpPower: 0,
+    currentHeight: 0,
+    velocityY: 0
+  });
+  
   // Movement constants
   const moveSpeed = 3;
   const characterSize = 64; // Match PlayerController
   const movementAreaRef = React.useRef<HTMLDivElement>(null);
+  
+  // Get player's STR for jump calculations
+  const playerSTR = currentPlayer?.avatar ? AVATAR_CLASSES[currentPlayer.avatar].stats.str : 12;
+  const maxJumpHeight = Math.min(playerSTR * 3, 60); // Cap at 60px max jump
+  const maxChargeTime = 1000; // 1 second max charge time
   
   // State for dropping avatar animations
   const [droppingAvatars, setDroppingAvatars] = React.useState<Array<{
@@ -220,6 +235,20 @@ export function Lobby() {
         return;
       }
 
+      // Handle jump charging (Spacebar)
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (!jumpState.isJumping && !jumpState.isCharging) {
+          setJumpState(prev => ({
+            ...prev,
+            isCharging: true,
+            chargeStartTime: Date.now(),
+            jumpPower: 0
+          }));
+        }
+        return;
+      }
+
       // Prevent default for movement keys to avoid page scrolling
       if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
         event.preventDefault();
@@ -236,6 +265,26 @@ export function Lobby() {
       // Ignore input if user is typing in an input field
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
+      // Handle jump release (Spacebar)
+      if (event.code === 'Space') {
+        event.preventDefault();
+        if (jumpState.isCharging) {
+          const chargeTime = Date.now() - jumpState.chargeStartTime;
+          const chargePower = Math.min(chargeTime / maxChargeTime, 1); // 0 to 1
+          const jumpHeight = chargePower * maxJumpHeight;
+          
+          setJumpState(prev => ({
+            ...prev,
+            isCharging: false,
+            isJumping: true,
+            jumpPower: jumpHeight,
+            velocityY: Math.sqrt(2 * 0.8 * jumpHeight), // Physics: v = sqrt(2 * g * h)
+            currentHeight: 0
+          }));
+        }
         return;
       }
 
@@ -310,6 +359,55 @@ export function Lobby() {
     const interval = setInterval(movePlayer, 16); // ~60 FPS for smooth movement
     return () => clearInterval(interval);
   }, [keys, currentLobby?.gamePhase, emit]);
+
+  // Jumping physics animation loop
+  useEffect(() => {
+    if (!jumpState.isJumping) return;
+
+    const gravity = 0.8; // Gravity constant
+    const animationInterval = setInterval(() => {
+      setJumpState(prev => {
+        const newVelocityY = prev.velocityY - gravity; // Apply gravity
+        const newHeight = prev.currentHeight + prev.velocityY;
+
+        // Check if landed
+        if (newHeight <= 0) {
+          return {
+            ...prev,
+            isJumping: false,
+            currentHeight: 0,
+            velocityY: 0,
+            jumpPower: 0
+          };
+        }
+
+        return {
+          ...prev,
+          currentHeight: newHeight,
+          velocityY: newVelocityY
+        };
+      });
+    }, 16); // ~60 FPS
+
+    return () => clearInterval(animationInterval);
+  }, [jumpState.isJumping]);
+
+  // Charge power animation
+  useEffect(() => {
+    if (!jumpState.isCharging) return;
+
+    const chargeInterval = setInterval(() => {
+      const chargeTime = Date.now() - jumpState.chargeStartTime;
+      const chargePower = Math.min(chargeTime / maxChargeTime, 1);
+      
+      setJumpState(prev => ({
+        ...prev,
+        jumpPower: chargePower * maxJumpHeight
+      }));
+    }, 16); // ~60 FPS
+
+    return () => clearInterval(chargeInterval);
+  }, [jumpState.isCharging, jumpState.chargeStartTime, maxJumpHeight, maxChargeTime]);
 
   // Listen for other players' positions in lobby
   useEffect(() => {
@@ -921,6 +1019,8 @@ export function Lobby() {
           )}
           <p className="text-xs text-gray-500 mt-2">
             Use A/D or arrow keys to walk around the lobby!
+            <br />
+            Hold SPACEBAR to charge jump (STR: {playerSTR} = Max {Math.round(maxJumpHeight)}px)
           </p>
         </div>
         
@@ -1209,8 +1309,9 @@ export function Lobby() {
               className="absolute transition-transform duration-100 ease-linear"
               style={{
                 left: `${myPosition.x}px`,
-                bottom: '0px',
-                zIndex: 10
+                bottom: `${jumpState.currentHeight}px`,
+                zIndex: 10,
+                transform: jumpState.isCharging ? 'scale(1.1)' : jumpState.isJumping ? 'scale(1.05)' : 'scale(1)'
               }}
             >
               <div
@@ -1230,7 +1331,24 @@ export function Lobby() {
               </div>
               <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
                 {currentPlayer.name}
+                {jumpState.isCharging && (
+                  <div className="text-xs text-yellow-400 animate-pulse">
+                    ⚡ {Math.round((jumpState.jumpPower / maxJumpHeight) * 100)}%
+                  </div>
+                )}
               </div>
+              
+              {/* Jump charge visual effect */}
+              {jumpState.isCharging && (
+                <div 
+                  className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded overflow-hidden"
+                >
+                  <div 
+                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-75"
+                    style={{ width: `${(jumpState.jumpPower / maxJumpHeight) * 100}%` }}
+                  />
+                </div>
+              )}
               
               {/* Current Player's Speech Bubble */}
               {emotes[currentPlayer.id] && (
