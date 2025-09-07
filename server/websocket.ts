@@ -205,6 +205,36 @@ export function setupWebSocket(httpServer: HTTPServer) {
       console.log(`Player ${playerId} emoted in lobby ${lobbyId}: "${message.trim()}"`);
     });
 
+    // Handle battle emotes
+    socket.on('battle_emote', ({ message, x, y }) => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
+
+      // Validate that player is in battle phase
+      const lobby = gameState.getLobby(lobbyId);
+      if (!lobby || lobby.gamePhase !== 'battle') {
+        console.log(`Player ${playerId} tried to battle emote but lobby is not in battle phase: ${lobby?.gamePhase || 'not found'}`);
+        return;
+      }
+
+      // Validate message length to prevent spam
+      if (!message || message.length > 100) {
+        console.log(`Player ${playerId} sent invalid battle emote message: ${message?.length || 0} characters`);
+        return;
+      }
+
+      // Broadcast battle emote to other players in the same lobby
+      socket.to(lobbyId).emit('battle_emote', { 
+        playerId,
+        message: message.trim(),
+        x, 
+        y 
+      });
+      
+      console.log(`Player ${playerId} battle emoted in lobby ${lobbyId}: "${message.trim()}"`);
+    });
+
     socket.on('start_battle', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;

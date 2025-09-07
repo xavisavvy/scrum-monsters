@@ -1,8 +1,9 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BossDisplay } from './BossDisplay';
 import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
+import { EmoteModal } from './EmoteModal';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
@@ -20,10 +21,97 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { usePhaseVictoryImage } from '@/lib/victoryImages';
 
 export function BattleScreen() {
-  const { currentLobby, addAttackAnimation } = useGameState();
-  const { emit } = useWebSocket();
+  const { currentLobby, addAttackAnimation, currentPlayer } = useGameState();
+  const { emit, socket } = useWebSocket();
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
+
+  // Emote system state
+  const [showEmoteModal, setShowEmoteModal] = useState(false);
+  const [emotes, setEmotes] = useState<Record<string, {
+    message: string;
+    timestamp: number;
+    x: number;
+    y: number;
+  }>>({});
+
+  // Handle emote modal open event from PlayerController
+  useEffect(() => {
+    const handleOpenEmoteModal = () => {
+      if (currentLobby?.gamePhase === 'battle') {
+        setShowEmoteModal(true);
+      }
+    };
+
+    window.addEventListener('openEmoteModal', handleOpenEmoteModal);
+    return () => {
+      window.removeEventListener('openEmoteModal', handleOpenEmoteModal);
+    };
+  }, [currentLobby?.gamePhase]);
+
+  // Handle battle emotes from other players
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleBattleEmote = ({ playerId, message, x, y }: { 
+      playerId: string; 
+      message: string; 
+      x: number; 
+      y: number; 
+    }) => {
+      const timestamp = Date.now();
+      setEmotes(prev => ({
+        ...prev,
+        [playerId]: { message, timestamp, x, y }
+      }));
+
+      // Auto-remove emote after 3.5 seconds
+      setTimeout(() => {
+        setEmotes(prev => {
+          const newEmotes = { ...prev };
+          delete newEmotes[playerId];
+          return newEmotes;
+        });
+      }, 3500);
+    };
+
+    socket.on('battle_emote', handleBattleEmote);
+    return () => {
+      socket.off('battle_emote', handleBattleEmote);
+    };
+  }, [socket]);
+
+  // Handle emote submission
+  const handleEmoteSubmit = (message: string) => {
+    if (!currentPlayer) return;
+
+    // Get current player position (for now, use center screen)
+    const myPosition = { x: 50, y: 50 }; // Center of screen in percentage
+
+    // Emit emote to server
+    emit('battle_emote', { message, x: myPosition.x, y: myPosition.y });
+    
+    // Show emote locally
+    const timestamp = Date.now();
+    setEmotes(prev => ({
+      ...prev,
+      [currentPlayer.id]: { 
+        message, 
+        timestamp, 
+        x: myPosition.x, 
+        y: myPosition.y
+      }
+    }));
+    
+    // Auto-remove emote after 3.5 seconds
+    setTimeout(() => {
+      setEmotes(prev => {
+        const newEmotes = { ...prev };
+        delete newEmotes[currentPlayer.id];
+        return newEmotes;
+      });
+    }, 3500);
+  };
 
   // Handle boss music when entering/leaving battle
   useEffect(() => {
@@ -387,6 +475,50 @@ export function BattleScreen() {
       <div className="relative z-40">
         <PlayerHUD />
       </div>
+
+      {/* Emote Display Bubbles */}
+      {Object.entries(emotes).map(([playerId, emote]) => (
+        <div
+          key={playerId}
+          className="absolute z-50 pointer-events-none animate-bounce"
+          style={{
+            left: `${emote.x}%`,
+            top: `${emote.y}%`,
+            transform: 'translate(-50%, -100%)'
+          }}
+        >
+          <div className="bg-white bg-opacity-95 rounded-lg px-3 py-2 shadow-lg border-2 border-gray-300 max-w-xs">
+            <div className="text-black text-sm font-bold break-words">
+              {emote.message}
+            </div>
+            <div 
+              className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-full 
+                         border-l-8 border-r-8 border-t-8 
+                         border-l-transparent border-r-transparent border-t-white"
+            />
+          </div>
+        </div>
+      ))}
+
+      {/* Emote Modal */}
+      <EmoteModal 
+        isOpen={showEmoteModal}
+        onClose={() => setShowEmoteModal(false)}
+        onSubmit={handleEmoteSubmit}
+      />
+
+      {/* E Key Hint - only show during battle */}
+      {currentLobby?.gamePhase === 'battle' && (
+        <div className="absolute bottom-6 right-6 z-40" data-no-shoot>
+          <div className="bg-purple-900 bg-opacity-70 rounded-lg px-3 py-2 border border-purple-400">
+            <div className="text-purple-200 font-bold text-sm flex items-center gap-2">
+              <span className="bg-purple-600 px-2 py-1 rounded text-xs font-mono">E</span>
+              Emote
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* YouTube Audio Player (hidden) */}
       <YoutubeAudioPlayer />
     </div>

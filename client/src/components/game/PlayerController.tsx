@@ -77,6 +77,14 @@ export function PlayerController({}: PlayerControllerProps) {
         }, jumpDuration);
       }
       
+      // Handle emote key (E) - from battle screen
+      if (event.code === 'KeyE') {
+        event.preventDefault();
+        // Trigger emote modal via custom event
+        window.dispatchEvent(new CustomEvent('openEmoteModal'));
+        return;
+      }
+
       // Handle debug modal toggle with tilde (~)
       if (event.code === 'Backquote') {
         event.preventDefault();
@@ -920,6 +928,7 @@ export function PlayerController({}: PlayerControllerProps) {
                 <div>🎯 <span className="text-yellow-400">Click anywhere:</span> Shoot</div>
                 <div>⌨️ <span className="text-yellow-400">Ctrl (L/R):</span> Shoot at boss</div>
                 <div>🌟 <span className="text-yellow-400">Q:</span> Special attack (5s cooldown)</div>
+                <div>💬 <span className="text-yellow-400">E:</span> Emote</div>
                 <div>🔧 <span className="text-yellow-400">~:</span> Toggle this modal</div>
               </div>
             </div>
