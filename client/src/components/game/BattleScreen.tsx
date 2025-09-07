@@ -174,8 +174,10 @@ export function BattleScreen() {
             
             {/* UI Overlay */}
             <div className="relative z-30 min-h-screen flex items-center justify-end p-6">
-              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600" data-no-shoot>
-                <ScoreSubmission />
+              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600 max-h-screen overflow-y-auto" data-no-shoot>
+                <div className="p-4">
+                  <ScoreSubmission />
+                </div>
               </div>
             </div>
 
@@ -197,9 +199,6 @@ export function BattleScreen() {
             </div>
 
             {/* Team Competition Components */}
-            <div className="absolute bottom-6 left-6 z-40">
-              <TeamScoreboard />
-            </div>
             <TeamPerformanceTracker />
             <TeamCelebration />
           </div>
@@ -226,8 +225,10 @@ export function BattleScreen() {
             
             {/* UI Overlay */}
             <div className="relative z-30 min-h-screen flex items-center justify-center p-6">
-              <div className="w-full max-w-6xl bg-black bg-opacity-90 rounded-lg border-2 border-gray-600 p-6" data-no-shoot>
-                <Discussion />
+              <div className="w-full max-w-6xl bg-black bg-opacity-90 rounded-lg border-2 border-gray-600 max-h-screen overflow-y-auto" data-no-shoot>
+                <div className="p-6">
+                  <Discussion />
+                </div>
               </div>
             </div>
 
@@ -240,9 +241,6 @@ export function BattleScreen() {
             </div>
 
             {/* Team Competition Components */}
-            <div className="absolute bottom-6 left-6 z-40">
-              <TeamScoreboard />
-            </div>
             <TeamPerformanceTracker />
             <TeamCelebration />
           </div>
