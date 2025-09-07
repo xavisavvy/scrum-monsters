@@ -915,6 +915,23 @@ class GameStateManager {
     this.consensusCountdownIntervals.set(lobbyId, countdownInterval);
   }
 
+  manualAdvancePhase(lobbyId: string): { lobby: Lobby } | null {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby || lobby.gamePhase !== 'discussion') return null;
+
+    // Check if consensus is actually reached
+    const result = this.checkDiscussionConsensus(lobbyId);
+    if (!result) return null;
+
+    // Clear any existing countdown
+    this.clearConsensusCountdown(lobbyId);
+    
+    // Immediately complete consensus (skip countdown)
+    this.completeConsensus(lobbyId);
+
+    return { lobby };
+  }
+
   private clearConsensusCountdown(lobbyId: string): void {
     const interval = this.consensusCountdownIntervals.get(lobbyId);
     if (interval) {
