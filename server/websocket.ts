@@ -244,13 +244,18 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       const result = gameState.startBattle(playerId, lobby.tickets);
       if (result) {
-        const { lobby, boss } = result;
-        
-        // Update all players with the new lobby state including tickets
-        io.to(lobby.id).emit('lobby_updated', { lobby });
-        
-        // Then start the battle (synchronous - relies on socket.io event ordering)
-        io.to(lobby.id).emit('battle_started', { lobby, boss });
+        if ('error' in result) {
+          // Send error message to the client
+          socket.emit('game_error', { message: result.error });
+        } else {
+          const { lobby, boss } = result;
+          
+          // Update all players with the new lobby state including tickets
+          io.to(lobby.id).emit('lobby_updated', { lobby });
+          
+          // Then start the battle (synchronous - relies on socket.io event ordering)
+          io.to(lobby.id).emit('battle_started', { lobby, boss });
+        }
       }
     });
 

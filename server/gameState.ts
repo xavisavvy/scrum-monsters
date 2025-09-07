@@ -370,7 +370,7 @@ class GameStateManager {
     return lobby;
   }
 
-  startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss } | null {
+  startBattle(playerId: string, tickets: JiraTicket[]): { lobby: Lobby; boss: Boss } | { error: string } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
@@ -382,7 +382,9 @@ class GameStateManager {
     // Check if there's at least one developer OR one QA team member
     const hasActivePlayers = lobby.players.some(p => p.team === 'developers') || 
                            lobby.players.some(p => p.team === 'qa');
-    if (!hasActivePlayers) return null;
+    if (!hasActivePlayers) {
+      return { error: 'Cannot start battle: At least one Developer or QA team member is required to participate in estimation battles. Please assign players to active teams first.' };
+    }
 
     // Initialize game state
     lobby.gamePhase = 'battle';
