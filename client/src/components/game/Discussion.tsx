@@ -9,7 +9,7 @@ const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21, '?'] as const;
 
 export function Discussion() {
   const { currentLobby, currentPlayer } = useGameState();
-  const { emit } = useWebSocket();
+  const { emit, socket } = useWebSocket();
   const [selectedScore, setSelectedScore] = useState<number | '?' | null>(null);
 
   // Auto-select current player's score when component mounts
