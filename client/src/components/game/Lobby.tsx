@@ -1347,6 +1347,16 @@ export function Lobby() {
               }}
               title="Tap to jump!"
             >
+              {/* Player name above character */}
+              <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
+                {currentPlayer.name}
+                {jumpState.isCharging && (
+                  <div className="text-xs text-yellow-400 animate-pulse">
+                    ⚡ {Math.round((jumpState.jumpPower / maxJumpHeight) * 100)}%
+                  </div>
+                )}
+              </div>
+              
               <div
                 className={currentPlayer.team === 'spectators' ? 'spectator-character' : ''}
                 style={{
@@ -1361,14 +1371,6 @@ export function Lobby() {
                   isMoving={keys.size > 0}
                   size={characterSize}
                 />
-              </div>
-              <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
-                {currentPlayer.name}
-                {jumpState.isCharging && (
-                  <div className="text-xs text-yellow-400 animate-pulse">
-                    ⚡ {Math.round((jumpState.jumpPower / maxJumpHeight) * 100)}%
-                  </div>
-                )}
               </div>
               
               {/* Jump charge visual effect */}
@@ -1418,6 +1420,11 @@ export function Lobby() {
                     zIndex: 9
                   }}
                 >
+                  {/* Player name above character */}
+                  <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
+                    {player.name}
+                  </div>
+                  
                   <div
                     className={player.team === 'spectators' ? 'spectator-character' : ''}
                     style={{
@@ -1432,9 +1439,6 @@ export function Lobby() {
                       isMoving={position.isMoving}
                       size={characterSize}
                     />
-                  </div>
-                  <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
-                    {player.name}
                   </div>
                   
                   {/* Other Player's Speech Bubble */}
