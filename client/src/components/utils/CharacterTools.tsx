@@ -4,6 +4,7 @@ import { RetroCard } from '../ui/retro-card';
 import { SpriteRenderer } from '../game/SpriteRenderer';
 import { AVATAR_CLASSES, AvatarClass } from '@/lib/gameTypes';
 import type { SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
+import { useAudio } from '@/lib/stores/useAudio';
 
 interface CharacterToolsProps {
   onBack: () => void;
@@ -63,6 +64,9 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
 
+  // Audio system
+  const { playHit, playSuccess, playButtonSelect, playExplosion } = useAudio();
+
   useEffect(() => {
     const config = spriteConfig.animations[selectedAnimation];
     if (config) {
@@ -101,6 +105,28 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
       } catch (error) {
         alert('Invalid JSON configuration');
       }
+    }
+  };
+
+  // Audio testing functions for different animation types
+  const testAnimationAudio = (animation: SpriteAnimation) => {
+    switch (animation) {
+      case 'attack':
+        playHit();
+        break;
+      case 'cast':
+        playExplosion();
+        break;
+      case 'victory':
+        playSuccess();
+        break;
+      case 'walk':
+      case 'idle':
+      case 'death':
+        playButtonSelect(); // Subtle UI sound for these animations
+        break;
+      default:
+        playButtonSelect();
     }
   };
 
@@ -224,6 +250,81 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   className="w-full"
                 >
                   {isMoving ? 'Moving' : 'Static'}
+                </RetroButton>
+              </div>
+            </RetroCard>
+
+            {/* Audio Testing Panel */}
+            <RetroCard>
+              <h2 className="text-xl font-bold mb-4 retro-text-glow-light">Audio Testing</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Test sound effects assigned to different animation types
+              </p>
+              
+              {/* Audio mapping info */}
+              <div className="mb-4 text-xs space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Attack:</span>
+                  <span className="text-blue-400">Hit Sound</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Cast:</span>
+                  <span className="text-purple-400">Explosion Sound</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Victory:</span>
+                  <span className="text-green-400">Success Sound</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Walk/Idle:</span>
+                  <span className="text-cyan-400">UI Sound</span>
+                </div>
+              </div>
+
+              {/* Test current animation audio */}
+              <div className="mb-4">
+                <RetroButton
+                  onClick={() => testAnimationAudio(selectedAnimation)}
+                  variant="accent"
+                  className="w-full"
+                >
+                  🔊 Test {selectedAnimation.charAt(0).toUpperCase() + selectedAnimation.slice(1)} Audio
+                </RetroButton>
+              </div>
+
+              {/* Test all audio types */}
+              <div className="grid grid-cols-2 gap-2">
+                <RetroButton
+                  onClick={() => playHit()}
+                  variant="secondary"
+                  size="sm"
+                  title="Attack/Combat sound"
+                >
+                  ⚔️ Hit
+                </RetroButton>
+                <RetroButton
+                  onClick={() => playExplosion()}
+                  variant="secondary"
+                  size="sm"
+                  title="Magic/Explosion sound"
+                >
+                  💥 Explosion
+                </RetroButton>
+                <RetroButton
+                  onClick={() => playSuccess()}
+                  variant="secondary"
+                  size="sm"
+                  title="Victory/Success sound"
+                >
+                  ✨ Success
+                </RetroButton>
+                <RetroButton
+                  onClick={() => playButtonSelect()}
+                  variant="secondary"
+                  size="sm"
+                  title="UI/Selection sound"
+                >
+                  🔘 UI
                 </RetroButton>
               </div>
             </RetroCard>
