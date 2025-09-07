@@ -219,6 +219,7 @@ export interface ServerToClientEvents {
     x: number;
     y: number;
   }) => void;
+  player_joined: (data: { player: Player; lobby: Lobby }) => void;
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
   score_submitted: (data: { playerId: string; team: TeamType }) => void;
   scores_revealed: (data: {
