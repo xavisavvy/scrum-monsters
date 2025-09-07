@@ -77,8 +77,8 @@ export function PlayerController({}: PlayerControllerProps) {
         }, jumpDuration);
       }
       
-      // Handle debug modal toggle with Tab
-      if (event.code === 'Tab') {
+      // Handle debug modal toggle with tilde (~)
+      if (event.code === 'Backquote') {
         event.preventDefault();
         setShowDebugModal(prev => !prev);
         return;
@@ -920,7 +920,7 @@ export function PlayerController({}: PlayerControllerProps) {
                 <div>🎯 <span className="text-yellow-400">Click anywhere:</span> Shoot</div>
                 <div>⌨️ <span className="text-yellow-400">Ctrl (L/R):</span> Shoot at boss</div>
                 <div>🌟 <span className="text-yellow-400">Q:</span> Special attack (5s cooldown)</div>
-                <div>🔧 <span className="text-yellow-400">Tab:</span> Toggle this modal</div>
+                <div>🔧 <span className="text-yellow-400">~:</span> Toggle this modal</div>
               </div>
             </div>
           </div>
