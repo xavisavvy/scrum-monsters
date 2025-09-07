@@ -34,10 +34,13 @@ export function setupWebSocket(httpServer: HTTPServer) {
     socket.on('create_lobby', ({ lobbyName, hostName }) => {
       try {
         const lobby = gameState.createLobby(hostName, lobbyName);
-        // Get the correct host for Replit or fallback to localhost
-        const host = process.env.REPL_SLUG && process.env.REPL_OWNER 
-          ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
-          : process.env.BASE_URL || 'http://localhost:5000';
+        // Get the correct host - in development always use localhost
+        const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
+        const host = isDevelopment 
+          ? 'http://localhost:5000'
+          : process.env.REPL_SLUG && process.env.REPL_OWNER 
+            ? `https://${process.env.REPL_SLUG}.${process.env.REPL_OWNER}.repl.co`
+            : process.env.BASE_URL || 'http://localhost:5000';
         const inviteLink = `${host}/lobby/${lobby.id}`;
         
         // Store player-socket mapping
