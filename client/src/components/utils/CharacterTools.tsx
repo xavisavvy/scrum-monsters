@@ -158,7 +158,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   className="bg-gray-800 rounded-lg p-12 relative overflow-hidden"
                   style={{ 
                     width: '280px',
-                    height: '280px',
+                    height: '330px',
                     backgroundImage: showingGrid ? 
                       'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)' : 
                       'none',
