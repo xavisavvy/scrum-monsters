@@ -59,3 +59,23 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Tailwind CSS with PostCSS for utility-first styling
 - **Fonts**: Inter font family via @fontsource for consistent typography
 - **Development**: Vite runtime error modal for enhanced debugging experience
+
+# Licensing Structure
+
+The project uses a comprehensive dual-licensing approach to protect intellectual property while maintaining open source principles:
+
+## Core Licenses
+- **Code**: GNU AGPL-3.0-or-later for all game logic, server, and client code
+- **Assets**: Creative Commons CC BY-NC-ND 4.0 for all art, sprites, sounds, and media
+- **Commercial**: Proprietary EULA for paid integrations and premium features
+- **Trademarks**: "Scrum Monsters" name and branding protected as trademarks
+
+## License Files Structure
+- `LICENSE.md` - Main licensing summary and guide
+- `licenses/AGPL-3.0-or-later.txt` - Full copyleft license text
+- `licenses/CC-BY-NC-ND-4.0.txt` - Full Creative Commons license text  
+- `licenses/Apache-2.0.txt` - Alternative permissive license text
+- `commercial/EULA.txt` - Commercial end user license agreement
+- `TRADEMARKS.md` - Trademark protection and usage guidelines
+- `NOTICES.md` - Third-party software attributions
+- `CONTRIBUTING.md` - Updated with DCO requirements for contributors
