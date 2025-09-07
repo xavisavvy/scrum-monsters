@@ -915,9 +915,10 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         }}
       />
       
-      {/* Special Attack Cooldown Indicator */}
-      {specialAttackCooldown > 0 && (
-        <div className="absolute top-6 left-6 z-50" data-no-shoot>
+      {/* Bottom Left Controls */}
+      <div className="absolute bottom-6 left-6 z-50 flex flex-col gap-2" data-no-shoot>
+        {/* Special Attack Cooldown Indicator */}
+        {specialAttackCooldown > 0 && (
           <div className="bg-black bg-opacity-80 rounded-lg p-4 border-2 border-purple-500">
             <div className="text-white font-bold text-sm mb-2">SPECIAL ATTACK</div>
             <div className="w-24 h-3 bg-gray-700 rounded-full overflow-hidden">
@@ -930,20 +931,29 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
               {(specialAttackCooldown / 1000).toFixed(1)}s
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Q Key Hint */}
-      {specialAttackCooldown === 0 && (
-        <div className="absolute top-6 left-6 z-40" data-no-shoot>
-          <div className="bg-purple-900 bg-opacity-70 rounded-lg px-3 py-2 border border-purple-400">
-            <div className="text-purple-200 font-bold text-sm flex items-center gap-2">
-              <span className="bg-purple-600 px-2 py-1 rounded text-xs font-mono">Q</span>
-              Special Attack Ready
+        {/* Action Hints */}
+        <div className="flex gap-2">
+          {/* Q Key Hint */}
+          {specialAttackCooldown === 0 && (
+            <div className="bg-purple-900 bg-opacity-70 rounded-lg px-3 py-2 border border-purple-400">
+              <div className="text-purple-200 font-bold text-sm flex items-center gap-2">
+                <span className="bg-purple-600 px-2 py-1 rounded text-xs font-mono">Q</span>
+                Special Attack Ready
+              </div>
+            </div>
+          )}
+
+          {/* E Key Hint for Emote */}
+          <div className="bg-cyan-900 bg-opacity-70 rounded-lg px-3 py-2 border border-cyan-400">
+            <div className="text-cyan-200 font-bold text-sm flex items-center gap-2">
+              <span className="bg-cyan-600 px-2 py-1 rounded text-xs font-mono">E</span>
+              Emote
             </div>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Movement Instructions */}
       {/* Debug Modal - Toggle with Tab */}
