@@ -552,7 +552,7 @@ export function Lobby() {
 
   return (
     <div className="retro-container relative overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-44 relative" style={{ zIndex: 20 }}>        
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 relative" style={{ zIndex: 20 }}>        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
