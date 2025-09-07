@@ -509,7 +509,7 @@ export function BattleScreen() {
 
       {/* E Key Hint - only show during battle */}
       {currentLobby?.gamePhase === 'battle' && (
-        <div className="absolute bottom-6 right-6 z-40" data-no-shoot>
+        <div className="absolute top-20 left-6 z-40" data-no-shoot>
           <div className="bg-purple-900 bg-opacity-70 rounded-lg px-3 py-2 border border-purple-400">
             <div className="text-purple-200 font-bold text-sm flex items-center gap-2">
               <span className="bg-purple-600 px-2 py-1 rounded text-xs font-mono">E</span>
