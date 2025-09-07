@@ -11,20 +11,21 @@ import { PricingPage } from '@/components/marketing/PricingPage';
 import { SupportPage } from '@/components/marketing/SupportPage';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
-import { CheatMenu } from '@/components/ui/CheatMenu';
+import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
 import { CharacterTools } from '@/components/utils/CharacterTools';
+import { BossTools } from '@/components/utils/BossTools';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
-import { useKonamiCode } from '@/hooks/useKonamiCode';
+import { useBacktickKey } from '@/hooks/useBacktickKey';
 import '@/styles/retro.css';
 
-type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools';
+type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
 
 function App() {
   const [appState, setAppState] = useState<AppState>('landing');
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
-  const [showCheatMenu, setShowCheatMenu] = useState(false);
+  const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   
   const { socket, connect, disconnect, isConnected } = useWebSocket();
   const { 
@@ -59,9 +60,9 @@ function App() {
     state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
   );
 
-  // Konami code easter egg
-  useKonamiCode(() => {
-    setShowCheatMenu(true);
+  // Developer menu hotkey
+  useBacktickKey(() => {
+    setShowDeveloperMenu(!showDeveloperMenu);
   });
 
   // Connect to WebSocket on mount and setup menu music
@@ -514,6 +515,11 @@ function App() {
           <CharacterTools onBack={() => setAppState('menu')} />
         );
 
+      case 'boss_tools':
+        return (
+          <BossTools onBack={() => setAppState('menu')} />
+        );
+
       default:
         return null;
     }
@@ -536,10 +542,12 @@ function App() {
 
       {renderCurrentState()}
       
-      {/* Konami Code Cheat Menu */}
-      <CheatMenu 
-        isOpen={showCheatMenu} 
-        onClose={() => setShowCheatMenu(false)} 
+      {/* Developer Menu */}
+      <DeveloperMenu 
+        isOpen={showDeveloperMenu} 
+        onClose={() => setShowDeveloperMenu(false)}
+        onOpenCharacterTools={() => setAppState('character_tools')}
+        onOpenBossTools={() => setAppState('boss_tools')}
       />
     </div>
   );
