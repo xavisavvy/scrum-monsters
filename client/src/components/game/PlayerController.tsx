@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { PlayerCharacter, PlayerPosition, Projectile } from './PlayerCharacter';
 import { ProjectileSystem } from './ProjectileSystem';
 import { useGameState } from '@/lib/stores/useGameState';
@@ -316,6 +316,10 @@ export function PlayerController({}: PlayerControllerProps) {
     };
   }, [socket, viewport, characterSize, currentPlayer?.id]);
 
+  // Throttled network updates - industry standard approach
+  const lastNetworkUpdate = useRef({ x: 0, y: 0, time: 0 });
+  const networkUpdateThrottle = 100; // 10 updates per second max
+
   useEffect(() => {
     const movePlayer = () => {
       setPlayerPosition(prev => {
@@ -324,26 +328,45 @@ export function PlayerController({}: PlayerControllerProps) {
         let moving = false;
         let direction: SpriteDirection = currentDirection;
 
+        // Calculate movement vector for smooth diagonal movement
+        let deltaX = 0;
+        let deltaY = 0;
+
+        // Horizontal movement
         if (keys.has('ArrowLeft') || keys.has('KeyA')) {
-          newX = Math.max(0, prev.x - moveSpeed);
+          deltaX -= moveSpeed;
           direction = 'left';
           moving = true;
         }
         if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          newX = Math.min(viewport.viewportWidth - characterSize, prev.x + moveSpeed);
+          deltaX += moveSpeed;
           direction = 'right';
           moving = true;
         }
+        
+        // Vertical movement  
         if (keys.has('ArrowUp') || keys.has('KeyW')) {
-          newY = Math.min(viewport.viewportHeight - characterSize - 100, prev.y + moveSpeed); // Up moves toward bottom edge
+          deltaY += moveSpeed; // Up moves toward bottom edge
           direction = 'up';
           moving = true;
         }
         if (keys.has('ArrowDown') || keys.has('KeyS')) {
-          newY = Math.max(0, prev.y - moveSpeed); // Down moves toward top edge
+          deltaY -= moveSpeed; // Down moves toward top edge
           direction = 'down';
           moving = true;
         }
+
+        // Apply diagonal movement normalization for consistent speed
+        if (deltaX !== 0 && deltaY !== 0) {
+          // Normalize diagonal movement to prevent faster diagonal speed
+          const normalizer = Math.sqrt(2) / 2;
+          deltaX *= normalizer;
+          deltaY *= normalizer;
+        }
+
+        // Apply movement with bounds checking
+        newX = Math.max(0, Math.min(viewport.viewportWidth - characterSize, prev.x + deltaX));
+        newY = Math.max(0, Math.min(viewport.viewportHeight - characterSize - 100, prev.y + deltaY));
 
         // Update movement state and direction
         setIsMoving(moving);
@@ -351,13 +374,23 @@ export function PlayerController({}: PlayerControllerProps) {
           setCurrentDirection(direction);
         }
 
-        // Send position update to server if position changed
-        if (newX !== prev.x || newY !== prev.y) {
+        // Throttled network updates - only send if enough time has passed and position changed
+        const now = Date.now();
+        const timeDelta = now - lastNetworkUpdate.current.time;
+        const positionChanged = Math.abs(newX - lastNetworkUpdate.current.x) > 2 || 
+                               Math.abs(newY - lastNetworkUpdate.current.y) > 2;
+
+        if (positionChanged && timeDelta >= networkUpdateThrottle) {
           // Convert screen coordinates to world coordinates, then to percentage for server
           const worldPos = viewport.screenToWorld(newX, newY);
           const percentX = (worldPos.x / viewport.worldWidth) * 100;
           const percentY = (worldPos.y / viewport.worldHeight) * 100;
+          
           emit('player_pos', { x: percentX, y: percentY });
+          
+          // Update throttle tracking
+          lastNetworkUpdate.current = { x: newX, y: newY, time: now };
+          console.log('🔄 Synced player position to server: (' + percentX.toFixed(1) + '%, ' + percentY.toFixed(1) + '%) -> (' + newX.toFixed(0) + 'px, ' + newY.toFixed(0) + 'px)');
         }
 
         return { x: newX, y: newY };
