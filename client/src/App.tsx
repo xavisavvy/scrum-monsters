@@ -390,7 +390,7 @@ function App() {
                     style={{ imageRendering: 'pixelated' }}
                   />
                   <h1 className="text-4xl font-bold retro-text-glow">
-                    SCRUM QUEST
+                    SCRUM MONSTERS
                   </h1>
                   <img 
                     src="/scrum-monster-icon.png" 
