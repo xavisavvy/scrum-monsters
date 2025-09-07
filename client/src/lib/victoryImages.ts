@@ -2,9 +2,9 @@ import { useState, useMemo } from 'react';
 
 // Victory images - pixel art for celebrations
 const VICTORY_IMAGES = [
-  '/images/victory-1.png',
-  '/images/victory-2.png', 
-  '/images/victory-3.png'
+  '/images/victory/victory-1.png',
+  '/images/victory/victory-2.png', 
+  '/images/victory/victory-3.png'
 ] as const;
 
 // Utility to handle base URL for production builds
