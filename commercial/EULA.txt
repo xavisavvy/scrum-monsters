@@ -1,0 +1,47 @@
+SCRUM MONSTERS COMMERCIAL ADD-ONS
+END USER LICENSE AGREEMENT (EULA)
+
+Copyright (c) 2025 Preston Farr. All rights reserved.
+
+IMPORTANT: READ THIS LICENSE AGREEMENT CAREFULLY BEFORE USING ANY COMMERCIAL 
+ADD-ONS, INTEGRATIONS, OR CONTENT PACKS.
+
+1. GRANT OF LICENSE
+Subject to the terms of this agreement, Preston Farr grants you a limited, 
+non-exclusive, non-transferable license to use the commercial add-ons solely 
+for your internal business purposes.
+
+2. RESTRICTIONS
+You may NOT:
+- Redistribute, resell, or sublicense the commercial content
+- Reverse engineer, decompile, or disassemble the software
+- Use the content in competing products or services
+- Remove copyright notices or proprietary markings
+
+3. COMMERCIAL CONTENT INCLUDES
+- Pro integrations (Slack, Jira, Trello, etc.)
+- Trainer slide decks and materials
+- Premium Boss Packs and characters
+- Enterprise deployment tools
+- White-label licensing options
+
+4. SUPPORT AND UPDATES
+Commercial licenses include 12 months of updates and email support.
+Extended support available separately.
+
+5. TERMINATION
+This license terminates automatically if you violate any terms.
+Upon termination, you must cease all use and destroy all copies.
+
+6. WARRANTY DISCLAIMER
+COMMERCIAL ADD-ONS ARE PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND.
+
+7. LIMITATION OF LIABILITY
+IN NO EVENT SHALL PRESTON FARR BE LIABLE FOR ANY DAMAGES ARISING FROM 
+THE USE OF COMMERCIAL ADD-ONS.
+
+8. GOVERNING LAW
+This agreement is governed by the laws of Utah, United States.
+
+For questions or commercial licensing inquiries:
+Email: licensing@scrummonsters.app
