@@ -64,6 +64,7 @@ export interface Lobby {
   timerSettings?: TimerSettings;
   jiraSettings?: JiraSettings;
   consensusSettings?: ConsensusSettings;
+  estimationSettings?: EstimationSettings;
   currentTimer?: TimerState;
   consensusCountdown?: {
     isActive: boolean;
@@ -83,6 +84,11 @@ export interface JiraSettings {
 
 export interface ConsensusSettings {
   countdownSeconds: number; // Default 5 seconds
+}
+
+export interface EstimationSettings {
+  scaleType: EstimationScaleType;
+  customTshirtMapping?: Record<string, number>; // Custom point values for T-shirt sizes
 }
 
 export interface TimerState {

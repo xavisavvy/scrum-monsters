@@ -18,7 +18,7 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings } from '@/lib/gameTypes';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings } from '@/lib/gameTypes';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -663,6 +663,11 @@ export function Lobby() {
     emit('update_jira_settings', { jiraSettings });
   };
 
+  const updateEstimationSettings = (estimationSettings: EstimationSettings) => {
+    if (!currentPlayer?.isHost || currentLobby?.gamePhase !== 'lobby') return;
+    emit('update_estimation_settings', { estimationSettings });
+  };
+
   // Helper function to safely get avatar class from player
   const getAvatarClass = (player: any) => {
     return player?.avatarClass ?? player?.avatar ?? 'warrior';
@@ -826,10 +831,61 @@ export function Lobby() {
                             </div>
                           </div>
                           
-                          {/* Future Settings Section - placeholder for expansion */}
-                          <div className="border-t border-gray-700 pt-4">
-                            <h3 className="text-lg font-semibold text-gray-200 mb-2">More Settings</h3>
-                            <p className="text-sm text-gray-400">Additional settings will appear here in future updates.</p>
+                          {/* Estimation Scale Section */}
+                          <div className="border-t border-gray-700 pt-6">
+                            <h3 className="text-lg font-semibold text-gray-200 mb-4">Estimation Scale</h3>
+                            <div className="space-y-4">
+                              <div className="space-y-2">
+                                <label className="block text-sm font-medium text-gray-300">
+                                  Scale Type
+                                </label>
+                                <select
+                                  className="retro-input w-full"
+                                  value={currentLobby.estimationSettings?.scaleType || 'fibonacci'}
+                                  onChange={(e) => updateEstimationSettings({
+                                    scaleType: e.target.value as EstimationScaleType,
+                                    customTshirtMapping: currentLobby.estimationSettings?.customTshirtMapping
+                                  })}
+                                >
+                                  <option value="fibonacci">Fibonacci (1, 2, 3, 5, 8, 13...)</option>
+                                  <option value="doubling">Doubling (1, 2, 4, 8, 16, 32...)</option>
+                                  <option value="tshirt">T-Shirt Sizes (XS, S, M, L, XL)</option>
+                                </select>
+                              </div>
+                              
+                              {/* T-shirt size point mapping */}
+                              {(currentLobby.estimationSettings?.scaleType || 'fibonacci') === 'tshirt' && (
+                                <div className="space-y-2">
+                                  <label className="block text-sm font-medium text-gray-300">
+                                    T-Shirt Size Point Values
+                                  </label>
+                                  <div className="grid grid-cols-5 gap-2">
+                                    {['XS', 'S', 'M', 'L', 'XL'].map(size => (
+                                      <div key={size} className="space-y-1">
+                                        <label className="block text-xs text-gray-400 text-center">{size}</label>
+                                        <input
+                                          type="number"
+                                          min="0"
+                                          className="retro-input w-full text-center text-xs"
+                                          value={currentLobby.estimationSettings?.customTshirtMapping?.[size] || ESTIMATION_SCALES.tshirt.pointMapping![size]}
+                                          onChange={(e) => {
+                                            const newMapping = {
+                                              ...ESTIMATION_SCALES.tshirt.pointMapping,
+                                              ...currentLobby.estimationSettings?.customTshirtMapping,
+                                              [size]: parseInt(e.target.value) || 0
+                                            };
+                                            updateEstimationSettings({
+                                              scaleType: 'tshirt',
+                                              customTshirtMapping: newMapping
+                                            });
+                                          }}
+                                        />
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       </DialogContent>
