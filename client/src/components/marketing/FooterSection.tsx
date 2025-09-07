@@ -18,6 +18,7 @@ export function FooterSection({ onNavigate }: FooterSectionProps) {
           <button 
             onClick={() => {
               playButtonSelect();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
               onNavigate?.('about');
             }}
             className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
@@ -27,6 +28,7 @@ export function FooterSection({ onNavigate }: FooterSectionProps) {
           <button 
             onClick={() => {
               playButtonSelect();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
               onNavigate?.('features');
             }}
             className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
@@ -36,6 +38,7 @@ export function FooterSection({ onNavigate }: FooterSectionProps) {
           <button 
             onClick={() => {
               playButtonSelect();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
               onNavigate?.('pricing');
             }}
             className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"
@@ -45,6 +48,7 @@ export function FooterSection({ onNavigate }: FooterSectionProps) {
           <button 
             onClick={() => {
               playButtonSelect();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
               onNavigate?.('support');
             }}
             className="text-blue-400 hover:text-blue-300 transition-colors cursor-pointer"

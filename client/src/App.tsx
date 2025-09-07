@@ -139,6 +139,14 @@ function App() {
     // Default stays on landing page
   }, []);
 
+  // Auto-scroll to top when navigating to marketing pages
+  useEffect(() => {
+    const marketingPages = ['about', 'features', 'pricing', 'support'];
+    if (marketingPages.includes(appState)) {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [appState]);
+
   // Handle menu music based on app state
   useEffect(() => {
     const marketingPages = ['menu', 'landing', 'about', 'features', 'pricing', 'support'];
