@@ -295,6 +295,35 @@ export interface ServerToClientEvents {
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
 
+// Estimation scale types
+export type EstimationScaleType = 'fibonacci' | 'doubling' | 'tshirt';
+
+export interface EstimationScale {
+  type: EstimationScaleType;
+  name: string;
+  options: (string | number)[];
+  pointMapping?: Record<string, number>; // For T-shirt sizes
+}
+
+export const ESTIMATION_SCALES: Record<EstimationScaleType, EstimationScale> = {
+  fibonacci: {
+    type: 'fibonacci',
+    name: 'Fibonacci',
+    options: [1, 2, 3, 5, 8, 13, 21, 34, 55]
+  },
+  doubling: {
+    type: 'doubling', 
+    name: 'Doubling',
+    options: [1, 2, 4, 8, 16, 32, 64, 128, 256]
+  },
+  tshirt: {
+    type: 'tshirt',
+    name: 'T-Shirt Sizes',
+    options: ['XS', 'S', 'M', 'L', 'XL'],
+    pointMapping: { 'XS': 1, 'S': 3, 'M': 5, 'L': 8, 'XL': 13 }
+  }
+};
+
 export interface CharacterStats {
   str: number; // Strength - Physical damage, HP
   dex: number; // Dexterity - Attack speed, critical chance
