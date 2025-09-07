@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { Boss } from '@/lib/gameTypes';
+import { ExplosionAnimation } from './ExplosionAnimation';
 
 // Boss images and lair backgrounds (using public URLs for better performance)
 const bugHydraImg = '/images/bosses/bug-hydra.png';
@@ -69,22 +70,59 @@ interface DamageEffect {
 export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayProps) {
   const [isDamaged, setIsDamaged] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [isDeathAnimationActive, setIsDeathAnimationActive] = useState(false);
+  const [deathAnimationStarted, setDeathAnimationStarted] = useState(false);
   const { attackAnimations } = useGameState();
   const { playExplosion } = useAudio();
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedAttackId = useRef<string | null>(null);
+  const deathAnimationRef = useRef<NodeJS.Timeout | null>(null);
 
   // No need to load explosion sound separately - using central audio store
 
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
         timeoutRef.current = null;
       }
+      if (deathAnimationRef.current) {
+        clearTimeout(deathAnimationRef.current);
+        deathAnimationRef.current = null;
+      }
     };
   }, []);
+
+  // Handle boss death animation trigger
+  useEffect(() => {
+    if (boss.defeated && !deathAnimationStarted) {
+      console.log('🔥 Boss defeated! Starting epic death animation');
+      setDeathAnimationStarted(true);
+      setIsDeathAnimationActive(true);
+      
+      // Play multiple layered explosion sounds
+      setTimeout(() => playExplosion(), 0);
+      setTimeout(() => playExplosion(), 200);
+      setTimeout(() => playExplosion(), 400);
+      setTimeout(() => playExplosion(), 800);
+      
+      // Reset death animation after it completes
+      deathAnimationRef.current = setTimeout(() => {
+        setIsDeathAnimationActive(false);
+      }, 3000);
+    }
+    
+    // Reset if boss is no longer defeated (new level)
+    if (!boss.defeated && deathAnimationStarted) {
+      setDeathAnimationStarted(false);
+      setIsDeathAnimationActive(false);
+      if (deathAnimationRef.current) {
+        clearTimeout(deathAnimationRef.current);
+        deathAnimationRef.current = null;
+      }
+    }
+  }, [boss.defeated, deathAnimationStarted, playExplosion]);
 
   // Watch for NEW attack animations to trigger damage flash effects
   useEffect(() => {
@@ -157,18 +195,36 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
           {/* Boss Sprite positioned in center */}
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
             <div className="relative">
+              {/* Explosion Animation Overlay */}
+              {isDeathAnimationActive && (
+                <ExplosionAnimation 
+                  isActive={isDeathAnimationActive} 
+                  onComplete={() => {
+                    console.log('🎆 Explosion animation completed');
+                  }}
+                />
+              )}
+              
               <img
                 src={bossImage}
                 alt={boss.name}
-                className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''} ${!boss.defeated ? 'boss-hovering' : ''}`}
+                className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''} ${!boss.defeated ? 'boss-hovering' : ''} ${isDeathAnimationActive ? 'boss-death-animation' : ''}`}
                 style={{
                   maxWidth: '400px',
                   maxHeight: '400px',
                   objectFit: 'contain',
                   imageRendering: 'pixelated',
-                  transition: 'all 0.3s ease',
-                  transform: isDamaged ? 'scale(1.15)' : 'scale(1)',
-                  filter: isDamaged ? 'brightness(2.5) contrast(2) saturate(1.5) hue-rotate(15deg)' : 'none',
+                  transition: isDamaged || isDeathAnimationActive ? 'none' : 'all 0.3s ease',
+                  transform: isDeathAnimationActive 
+                    ? 'scale(1.2) rotate(360deg)' 
+                    : isDamaged ? 'scale(1.15)' : 'scale(1)',
+                  filter: isDeathAnimationActive
+                    ? 'brightness(1.8) contrast(1.5) saturate(2) hue-rotate(0deg) drop-shadow(0 0 20px #ff0000)'
+                    : isDamaged ? 'brightness(2.5) contrast(2) saturate(1.5) hue-rotate(15deg)' : 'none',
+                  opacity: isDeathAnimationActive ? 0 : 1,
+                  animation: isDeathAnimationActive 
+                    ? 'boss-death-sequence 3s ease-out forwards, boss-death-flicker 0.2s linear infinite' 
+                    : 'none',
                   cursor: onAttack ? 'pointer' : 'default',
                   pointerEvents: 'auto'
                 }}
@@ -232,18 +288,37 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
     
     return (
       <div className="relative flex justify-center items-center" style={{ width: '300px', height: '300px' }}>
+        {/* Explosion Animation Overlay for non-fullscreen */}
+        {isDeathAnimationActive && (
+          <ExplosionAnimation 
+            isActive={isDeathAnimationActive} 
+            onComplete={() => {
+              console.log('🎆 Explosion animation completed (non-fullscreen)');
+            }}
+          />
+        )}
+        
         <img
           src={bossImage}
           alt={boss.name}
-          className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''}`}
+          className={`boss-sprite ${isDamaged ? 'boss-damaged' : ''} ${isDeathAnimationActive ? 'boss-death-animation' : ''}`}
           style={{
             maxWidth: '300px',
             maxHeight: '300px',
             objectFit: 'contain',
             imageRendering: 'pixelated',
             cursor: onAttack ? 'pointer' : 'default',
-            transition: 'all 0.3s ease',
-            filter: isDamaged ? 'brightness(1.5) contrast(1.2)' : 'none'
+            transition: isDamaged || isDeathAnimationActive ? 'none' : 'all 0.3s ease',
+            transform: isDeathAnimationActive 
+              ? 'scale(1.2) rotate(360deg)' 
+              : 'scale(1)',
+            filter: isDeathAnimationActive
+              ? 'brightness(1.8) contrast(1.5) saturate(2) hue-rotate(0deg) drop-shadow(0 0 15px #ff0000)'
+              : isDamaged ? 'brightness(1.5) contrast(1.2)' : 'none',
+            opacity: isDeathAnimationActive ? 0 : 1,
+            animation: isDeathAnimationActive 
+              ? 'boss-death-sequence 3s ease-out forwards, boss-death-flicker 0.2s linear infinite' 
+              : 'none'
           }}
           onClick={handleBossClick}
           onError={() => {

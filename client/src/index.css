@@ -54,3 +54,36 @@ canvas {
     transform: translateY(var(--float-height, -15px)); 
   }
 }
+
+/* Boss Death Animation Styles */
+@keyframes boss-death-sequence {
+  0% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  25% {
+    transform: scale(1.1) rotate(90deg);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.15) rotate(180deg);
+    opacity: 0.7;
+  }
+  75% {
+    transform: scale(1.2) rotate(270deg);
+    opacity: 0.4;
+  }
+  100% {
+    transform: scale(1.2) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+@keyframes boss-death-flicker {
+  0%, 100% {
+    filter: brightness(1.8) contrast(1.5) saturate(2) hue-rotate(0deg) drop-shadow(0 0 20px #ff0000);
+  }
+  50% {
+    filter: brightness(2.5) contrast(2) saturate(3) hue-rotate(15deg) drop-shadow(0 0 30px #ff6600);
+  }
+}
