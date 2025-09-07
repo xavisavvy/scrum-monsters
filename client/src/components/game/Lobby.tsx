@@ -138,6 +138,7 @@ export function Lobby() {
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
+  const [duplicateNotification, setDuplicateNotification] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
   // Player movement state for lobby walking
@@ -386,14 +387,48 @@ export function Lobby() {
     // Don't proceed if no valid tickets parsed
     if (ticketTitles.length === 0) return;
     
-    const newTickets: JiraTicket[] = ticketTitles.map(title => ({
-      id: Math.random().toString(36).substring(2, 15),
-      title,
-      description: 'Jira ticket to be estimated by the team'
-    }));
+    // Check for duplicates against existing tickets
+    const existingTitles = tickets.map(ticket => ticket.title.toLowerCase());
+    const duplicates: string[] = [];
+    const uniqueTicketTitles: string[] = [];
     
-    // Send tickets to server for real-time synchronization
-    emit('add_tickets', { tickets: newTickets });
+    ticketTitles.forEach(title => {
+      const normalizedTitle = title.toLowerCase();
+      if (existingTitles.includes(normalizedTitle)) {
+        duplicates.push(title);
+      } else if (!uniqueTicketTitles.map(t => t.toLowerCase()).includes(normalizedTitle)) {
+        uniqueTicketTitles.push(title);
+        existingTitles.push(normalizedTitle); // Prevent duplicates within the same batch
+      } else {
+        duplicates.push(title); // Duplicate within the same input
+      }
+    });
+    
+    // Show duplicate notification if any found
+    if (duplicates.length > 0) {
+      const message = duplicates.length === 1 
+        ? `"${duplicates[0]}" is already in the list`
+        : `These tickets are already in the list: ${duplicates.join(', ')}`;
+      setDuplicateNotification(message);
+      
+      // Auto-hide notification after 4 seconds
+      setTimeout(() => {
+        setDuplicateNotification(null);
+      }, 4000);
+    }
+    
+    // Only add unique tickets
+    if (uniqueTicketTitles.length > 0) {
+      const newTickets: JiraTicket[] = uniqueTicketTitles.map(title => ({
+        id: Math.random().toString(36).substring(2, 15),
+        title,
+        description: 'Jira ticket to be estimated by the team'
+      }));
+      
+      // Send tickets to server for real-time synchronization
+      emit('add_tickets', { tickets: newTickets });
+    }
+    
     setNewTicketTitle('');
   };
 
@@ -769,6 +804,13 @@ export function Lobby() {
                   <p className="text-xs text-gray-300 mb-2">
                     💡 Tip: Enter multiple tickets separated by commas to add them all at once
                   </p>
+                  
+                  {/* Duplicate notification */}
+                  {duplicateNotification && (
+                    <div className="bg-yellow-600/20 border border-yellow-500 text-yellow-300 px-3 py-2 rounded-lg text-sm mb-2 animate-pulse">
+                      ⚠️ {duplicateNotification}
+                    </div>
+                  )}
                 </div>
               )}
               
