@@ -66,7 +66,29 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
   const [offsetY, setOffsetY] = useState(0);
 
   // Audio system
-  const { playHit, playSuccess, playButtonSelect, playExplosion, startWalkingSound, stopWalkingSound } = useAudio();
+  const { 
+    playHit, 
+    playSuccess, 
+    playButtonSelect, 
+    playExplosion, 
+    startWalkingSound, 
+    stopWalkingSound,
+    setBackgroundMusic,
+    playBackgroundMusic,
+    stopBackgroundMusic
+  } = useAudio();
+
+  // Background music for developer tools
+  useEffect(() => {
+    const backgroundAudio = new Audio('/sounds/background.mp3');
+    backgroundAudio.preload = 'auto';
+    setBackgroundMusic(backgroundAudio);
+    playBackgroundMusic();
+
+    return () => {
+      stopBackgroundMusic();
+    };
+  }, [setBackgroundMusic, playBackgroundMusic, stopBackgroundMusic]);
 
   useEffect(() => {
     const config = spriteConfig.animations[selectedAnimation];

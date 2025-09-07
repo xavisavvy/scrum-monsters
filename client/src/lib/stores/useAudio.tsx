@@ -58,6 +58,8 @@ interface AudioState {
   fadeOutBossMusic: () => void;
   fadeOutBossMusicSlowly: () => void;
   stopBossMusic: () => void;
+  playBackgroundMusic: () => void;
+  stopBackgroundMusic: () => void;
   playYoutubeAudio: (videoId: string) => void;
   stopYoutubeAudio: () => void;
   switchToNextTrack: () => void;
@@ -573,6 +575,27 @@ export const useAudio = create<AudioState>((set, get) => ({
       youtubePlayer.loadVideoById(videoId);
       set({ isYoutubeAudioActive: true });
       console.log("🎵 YouTube music started:", videoId);
+    }
+  },
+
+  playBackgroundMusic: () => {
+    const { backgroundMusic, isMuted } = get();
+    if (backgroundMusic && !isMuted) {
+      backgroundMusic.loop = true;
+      backgroundMusic.volume = 0.3;
+      backgroundMusic.play().catch((error: any) => {
+        console.log("Background music play prevented:", error);
+      });
+      console.log("🎵 Background music started");
+    }
+  },
+
+  stopBackgroundMusic: () => {
+    const { backgroundMusic } = get();
+    if (backgroundMusic) {
+      backgroundMusic.pause();
+      backgroundMusic.currentTime = 0;
+      console.log("🎵 Background music stopped");
     }
   },
 

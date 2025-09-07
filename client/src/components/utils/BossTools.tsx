@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RetroButton } from '../ui/retro-button';
 import { RetroCard } from '../ui/retro-card';
 import { BossDisplay } from '../game/BossDisplay';
@@ -46,7 +46,25 @@ export function BossTools({ onBack }: BossToolsProps) {
   const [isDefeated, setIsDefeated] = useState(false);
   const [currentHealth, setCurrentHealth] = useState(1000);
   
-  const { playExplosion, playHit } = useAudio();
+  const { 
+    playExplosion, 
+    playHit,
+    setBackgroundMusic,
+    playBackgroundMusic,
+    stopBackgroundMusic
+  } = useAudio();
+
+  // Background music for developer tools
+  useEffect(() => {
+    const backgroundAudio = new Audio('/sounds/background.mp3');
+    backgroundAudio.preload = 'auto';
+    setBackgroundMusic(backgroundAudio);
+    playBackgroundMusic();
+
+    return () => {
+      stopBackgroundMusic();
+    };
+  }, [setBackgroundMusic, playBackgroundMusic, stopBackgroundMusic]);
 
   const selectedBoss = AVAILABLE_BOSSES[selectedBossIndex];
 
