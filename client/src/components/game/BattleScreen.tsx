@@ -28,6 +28,23 @@ export function BattleScreen() {
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
   const viewport = useViewport();
 
+  // Hide root page scrollbar during battle phases
+  useEffect(() => {
+    const battlePhases = ['battle', 'discussion', 'reveal'];
+    const shouldHideScrollbar = battlePhases.includes(currentLobby?.gamePhase || '');
+    
+    if (shouldHideScrollbar) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    // Cleanup on unmount
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [currentLobby?.gamePhase]);
+
   // Emote system state
   const [showEmoteModal, setShowEmoteModal] = useState(false);
   const [emotes, setEmotes] = useState<Record<string, {
