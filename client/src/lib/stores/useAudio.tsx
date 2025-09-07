@@ -15,6 +15,7 @@ interface AudioState {
   successSound: HTMLAudioElement | null;
   buttonSelectSound: HTMLAudioElement | null;
   explosionSound: HTMLAudioElement | null;
+  walkingSound: HTMLAudioElement | null;
   musicTracks: MusicTrack[];
   currentTrackIndex: number;
   isMuted: boolean;
@@ -22,6 +23,7 @@ interface AudioState {
   isMenuMusicPlaying: boolean;
   isBossMusicPlaying: boolean;
   isYoutubeAudioActive: boolean;
+  isWalkingSoundPlaying: boolean;
   fadeTimer: NodeJS.Timeout | null;
   isTransitioning: boolean;
   youtubeUrl: string;
@@ -34,6 +36,7 @@ interface AudioState {
   setHitSound: (sound: HTMLAudioElement) => void;
   setSuccessSound: (sound: HTMLAudioElement) => void;
   setButtonSelectSound: (sound: HTMLAudioElement) => void;
+  setWalkingSound: (sound: HTMLAudioElement) => void;
   setMusicTracks: (tracks: MusicTrack[]) => void;
   setYoutubeUrl: (url: string) => void;
   
@@ -44,6 +47,8 @@ interface AudioState {
   playSuccess: () => void;
   playButtonSelect: () => void;
   playExplosion: () => void;
+  startWalkingSound: () => void;
+  stopWalkingSound: () => void;
   playMenuMusic: () => void;
   fadeInMenuMusic: () => void;
   fadeOutMenuMusic: () => void;
@@ -66,6 +71,8 @@ export const useAudio = create<AudioState>((set, get) => ({
   hitSound: null,
   successSound: null,
   buttonSelectSound: null,
+  explosionSound: null,
+  walkingSound: null,
   musicTracks: [],
   currentTrackIndex: 0,
   isMuted: false, // Start unmuted by default
@@ -73,23 +80,25 @@ export const useAudio = create<AudioState>((set, get) => ({
   isMenuMusicPlaying: false,
   isBossMusicPlaying: false,
   isYoutubeAudioActive: false,
+  isWalkingSoundPlaying: false,
   fadeTimer: null,
   isTransitioning: false,
   youtubeUrl: '',
   
-  setBackgroundMusic: (music) => set({ backgroundMusic: music }),
-  setMenuMusic: (music) => set({ menuMusic: music }),
-  setBossMusic: (music) => set({ bossMusic: music }),
+  setBackgroundMusic: (music: HTMLAudioElement) => set({ backgroundMusic: music }),
+  setMenuMusic: (music: HTMLAudioElement) => set({ menuMusic: music }),
+  setBossMusic: (music: HTMLAudioElement) => set({ bossMusic: music }),
   setYoutubePlayer: (player) => set({ youtubePlayer: player }),
-  setHitSound: (sound) => set({ hitSound: sound }),
-  setSuccessSound: (sound) => set({ successSound: sound }),
-  setButtonSelectSound: (sound) => set({ buttonSelectSound: sound }),
-  setExplosionSound: (sound) => set({ explosionSound: sound }),
+  setHitSound: (sound: HTMLAudioElement) => set({ hitSound: sound }),
+  setSuccessSound: (sound: HTMLAudioElement) => set({ successSound: sound }),
+  setButtonSelectSound: (sound: HTMLAudioElement) => set({ buttonSelectSound: sound }),
+  setExplosionSound: (sound: HTMLAudioElement) => set({ explosionSound: sound }),
+  setWalkingSound: (sound: HTMLAudioElement) => set({ walkingSound: sound }),
   setMusicTracks: (tracks) => set({ musicTracks: tracks }),
   setYoutubeUrl: (url) => set({ youtubeUrl: url }),
   
   toggleMute: () => {
-    const { isMuted, menuMusic, fadeTimer } = get();
+    const { isMuted, menuMusic, walkingSound, isWalkingSoundPlaying, fadeTimer } = get();
     const newMutedState = !isMuted;
     
     // Clear any running fade timer
@@ -113,6 +122,19 @@ export const useAudio = create<AudioState>((set, get) => ({
           });
           set({ isMenuMusicPlaying: true });
         }
+      }
+    }
+    
+    // Handle walking sound mute state
+    if (walkingSound && isWalkingSoundPlaying) {
+      if (newMutedState) {
+        // Muting - pause the walking sound
+        walkingSound.pause();
+      } else {
+        // Unmuting - resume the walking sound
+        walkingSound.play().catch(error => {
+          console.log("Walking sound resume prevented:", error);
+        });
       }
     }
     
@@ -190,6 +212,31 @@ export const useAudio = create<AudioState>((set, get) => ({
       soundClone.play().catch(error => {
         console.log("Explosion sound play prevented:", error);
       });
+    }
+  },
+
+  startWalkingSound: () => {
+    const { walkingSound, isMuted, isWalkingSoundPlaying } = get();
+    if (walkingSound && !isMuted && !isWalkingSoundPlaying) {
+      walkingSound.loop = true;
+      walkingSound.volume = 0.3;
+      walkingSound.currentTime = 0;
+      walkingSound.play().then(() => {
+        set({ isWalkingSoundPlaying: true });
+        console.log("Walking sound started (looping)");
+      }).catch(error => {
+        console.log("Walking sound play prevented:", error);
+      });
+    }
+  },
+
+  stopWalkingSound: () => {
+    const { walkingSound, isWalkingSoundPlaying } = get();
+    if (walkingSound && isWalkingSoundPlaying) {
+      walkingSound.pause();
+      walkingSound.currentTime = 0;
+      set({ isWalkingSoundPlaying: false });
+      console.log("Walking sound stopped");
     }
   },
   

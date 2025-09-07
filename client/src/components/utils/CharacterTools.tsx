@@ -66,7 +66,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
   const [offsetY, setOffsetY] = useState(0);
 
   // Audio system
-  const { playHit, playSuccess, playButtonSelect, playExplosion } = useAudio();
+  const { playHit, playSuccess, playButtonSelect, playExplosion, startWalkingSound, stopWalkingSound } = useAudio();
 
   useEffect(() => {
     const config = spriteConfig.animations[selectedAnimation];
@@ -122,6 +122,10 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
         playSuccess();
         break;
       case 'walk':
+        // Test walking sound by starting and stopping it after 2 seconds
+        startWalkingSound();
+        setTimeout(() => stopWalkingSound(), 2000);
+        break;
       case 'idle':
       case 'death':
         playButtonSelect(); // Subtle UI sound for these animations
@@ -277,7 +281,11 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   <span className="text-green-400">Success Sound</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Walk/Idle:</span>
+                  <span className="text-gray-300">Walk:</span>
+                  <span className="text-orange-400">Walking Sound (Loop)</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Idle:</span>
                   <span className="text-cyan-400">UI Sound</span>
                 </div>
               </div>

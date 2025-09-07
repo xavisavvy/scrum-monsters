@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { AvatarClass } from '@/lib/gameTypes';
+import { useAudio } from '@/lib/stores/useAudio';
 
 export type SpriteDirection = 'down' | 'left' | 'right' | 'up';
 export type SpriteAnimation = 'idle' | 'walk' | 'attack' | 'cast' | 'death' | 'victory';
@@ -64,6 +65,9 @@ export function useSpriteAnimation({
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
   const animationRef = useRef<number>();
   const lastFrameTime = useRef(0);
+
+  // Audio system for walking sounds
+  const { startWalkingSound, stopWalkingSound } = useAudio();
 
   // Get sprite sheet URL from organized directory
   const spriteSheetUrl = `/images/sprites/${avatarClass}.png`;
@@ -166,6 +170,20 @@ export function useSpriteAnimation({
     setIsAnimationComplete(false);
     lastFrameTime.current = 0;
   }, [animation, direction, isMoving]);
+
+  // Handle walking sound based on animation and movement state
+  useEffect(() => {
+    if (animation === 'walk' && isMoving) {
+      startWalkingSound();
+    } else {
+      stopWalkingSound();
+    }
+
+    // Cleanup: stop walking sound when component unmounts
+    return () => {
+      stopWalkingSound();
+    };
+  }, [animation, isMoving, startWalkingSound, stopWalkingSound]);
 
   const spriteFrame = getCurrentSpriteFrame();
   

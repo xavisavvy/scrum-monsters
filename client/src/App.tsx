@@ -44,6 +44,7 @@ function App() {
     setBossMusic,
     setButtonSelectSound,
     setExplosionSound,
+    setWalkingSound,
     setMusicTracks,
     fadeInMenuMusic, 
     fadeOutMenuMusic, 
@@ -105,9 +106,14 @@ function App() {
     const bossAudio = new Audio('/sounds/boss-fight.mp3');
     bossAudio.preload = 'auto';
     setBossMusic(bossAudio);
+
+    // Load walking sound
+    const walkingAudio = new Audio('/sounds/walking.mp3');
+    walkingAudio.preload = 'auto';
+    setWalkingSound(walkingAudio);
     
     return () => disconnect();
-  }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setExplosionSound, setMusicTracks]);
+  }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setExplosionSound, setWalkingSound, setMusicTracks]);
 
   // Check for URL parameters and routing
   useEffect(() => {
