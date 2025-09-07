@@ -1101,7 +1101,7 @@ export function Lobby() {
                 </div>
               )}
               
-              <div className="space-y-2 mb-4 max-h-[80vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500">
+              <div className="space-y-2 mb-4 max-h-[50vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500">
                 {tickets.map((ticket, index) => (
                   <div
                     key={ticket.id}
