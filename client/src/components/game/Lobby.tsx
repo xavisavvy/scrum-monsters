@@ -1120,12 +1120,13 @@ export function Lobby() {
           <div className="absolute inset-0" style={{ zIndex: 1 }}>
             {/* Center Door Section */}
             <div 
-              className="absolute top-0 left-1/2 transform -translate-x-1/2 h-full"
+              className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
               style={{
-                width: '400px', // Approximate width of the center image
+                height: '800px',
+                aspectRatio: 'auto', // Maintain original aspect ratio
                 backgroundImage: 'url(/textures/tavern/center.png)',
-                backgroundSize: 'cover',
-                backgroundPosition: 'center',
+                backgroundSize: 'contain',
+                backgroundPosition: 'center bottom',
                 backgroundRepeat: 'no-repeat',
                 imageRendering: 'pixelated'
               }}
@@ -1329,12 +1330,12 @@ export function Lobby() {
               </div>
             </div>
             
-            {/* Wooden Floor Extension */}
+            {/* Minimal Floor Pattern */}
             <div 
               className="absolute bottom-0 left-0 right-0"
               style={{
-                height: '15%',
-                background: 'repeating-linear-gradient(90deg, #8B4513 0px, #8B4513 8px, #A0522D 8px, #A0522D 16px)',
+                height: '10px',
+                background: 'repeating-linear-gradient(90deg, #8B4513 0px, #8B4513 4px, #A0522D 4px, #A0522D 8px)',
                 imageRendering: 'pixelated'
               }}
             />
