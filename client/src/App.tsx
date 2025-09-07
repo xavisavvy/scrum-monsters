@@ -45,6 +45,7 @@ function App() {
     setBossMusic,
     setButtonSelectSound,
     setExplosionSound,
+    setHitSound,
     setWalkingSound,
     setMusicTracks,
     fadeInMenuMusic, 
@@ -98,6 +99,11 @@ function App() {
     buttonSelectAudio.preload = 'auto';
     setButtonSelectSound(buttonSelectAudio);
 
+    // Load hit sound
+    const hitAudio = new Audio('/sounds/hit.mp3');
+    hitAudio.preload = 'auto';
+    setHitSound(hitAudio);
+
     // Load explosion sound
     const explosionAudio = new Audio('/sounds/explosion.mp3');
     explosionAudio.preload = 'auto';
@@ -114,7 +120,7 @@ function App() {
     setWalkingSound(walkingAudio);
     
     return () => disconnect();
-  }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setExplosionSound, setWalkingSound, setMusicTracks]);
+  }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setHitSound, setExplosionSound, setWalkingSound, setMusicTracks]);
 
   // Check for URL parameters and routing
   useEffect(() => {
