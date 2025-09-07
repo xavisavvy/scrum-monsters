@@ -17,6 +17,7 @@ class GameStateManager {
   private revivalWatchdog: NodeJS.Timeout;
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
+  private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
 
   constructor() {
     // Start revival watchdog timer
@@ -850,46 +851,120 @@ class GameStateManager {
     }
 
     if (teamsAgree && lobby.boss && lobby.currentTicket) {
-      // Update team competition stats
-      this.updateTeamCompetitionStats(lobby);
-      // Defeat current boss phase
-      lobby.boss.currentHealth = 0;
-      
-      // Store completed ticket with agreed story points
-      const storyPoints = devTeamExists ? devScoreValues[0] : qaScoreValues[0];
-      const completedTicket: CompletedTicket = {
-        id: lobby.currentTicket.id,
-        title: lobby.currentTicket.title,
-        description: lobby.currentTicket.description,
-        storyPoints,
-        completedAt: new Date().toISOString(),
-        teamBreakdown: {
-          developers: { 
-            participated: devTeamExists && devConsensus, 
-            consensusScore: devConsensus ? devScoreValues[0] : undefined 
-          },
-          qa: { 
-            participated: qaTeamExists && qaConsensus, 
-            consensusScore: qaConsensus ? qaScoreValues[0] : undefined 
-          }
-        }
-      };
-      lobby.completedTickets.push(completedTicket);
-      
-      if (lobby.completedTickets.length >= lobby.tickets.length) {
-        lobby.gamePhase = 'victory';
-        lobby.boss.defeated = true;
-      } else {
-        lobby.gamePhase = 'next_level';
-        // Set boss as defeated for current phase
-        lobby.boss.defeated = true;
-        // Progress to next phase/ticket
-        lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
-        lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
+      // Check if countdown is already active
+      if (!lobby.consensusCountdown?.isActive) {
+        // Start consensus countdown
+        const countdownSeconds = lobby.consensusSettings?.countdownSeconds || 5;
+        lobby.consensusCountdown = {
+          isActive: true,
+          remainingSeconds: countdownSeconds,
+          startedAt: Date.now()
+        };
+        
+        // Set up countdown timer
+        this.startConsensusCountdown(lobby.id);
+        
+        return { lobby, teamScores, teamConsensus };
       }
+      
+      // If countdown is active, don't process again until countdown finishes
+      return { lobby, teamScores, teamConsensus };
+    }
+    
+    // Clear countdown if consensus is lost
+    if (lobby.consensusCountdown?.isActive && !teamsAgree) {
+      lobby.consensusCountdown = undefined;
+      this.clearConsensusCountdown(lobby.id);
     }
 
     return { lobby, teamScores, teamConsensus };
+  }
+
+  private startConsensusCountdown(lobbyId: string): void {
+    // Clear any existing countdown
+    this.clearConsensusCountdown(lobbyId);
+    
+    const countdownInterval = setInterval(() => {
+      const lobby = this.lobbies.get(lobbyId);
+      if (!lobby || !lobby.consensusCountdown?.isActive) {
+        this.clearConsensusCountdown(lobbyId);
+        return;
+      }
+      
+      const elapsed = Date.now() - lobby.consensusCountdown.startedAt;
+      const remainingMs = (lobby.consensusSettings?.countdownSeconds || 5) * 1000 - elapsed;
+      lobby.consensusCountdown.remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+      
+      if (remainingMs <= 0) {
+        // Countdown finished - complete consensus
+        this.completeConsensus(lobbyId);
+        this.clearConsensusCountdown(lobbyId);
+      }
+    }, 100); // Update every 100ms
+    
+    this.consensusCountdownIntervals.set(lobbyId, countdownInterval);
+  }
+
+  private clearConsensusCountdown(lobbyId: string): void {
+    const interval = this.consensusCountdownIntervals.get(lobbyId);
+    if (interval) {
+      clearInterval(interval);
+      this.consensusCountdownIntervals.delete(lobbyId);
+    }
+  }
+
+  private completeConsensus(lobbyId: string): void {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby || !lobby.boss || !lobby.currentTicket) return;
+    
+    // Re-calculate consensus to get current scores
+    const result = this.checkDiscussionConsensus(lobbyId);
+    if (!result) return;
+    
+    const { teamScores } = result;
+    const devScoreValues = Object.values(teamScores.developers).filter(score => typeof score === 'number');
+    const qaScoreValues = Object.values(teamScores.qa).filter(score => typeof score === 'number');
+    const devTeamExists = lobby.teams.developers.length > 0;
+    const qaTeamExists = lobby.teams.qa.length > 0;
+    
+    // Clear countdown
+    lobby.consensusCountdown = undefined;
+    
+    // Complete the consensus process
+    this.updateTeamCompetitionStats(lobby);
+    lobby.boss.currentHealth = 0;
+    
+    // Store completed ticket with agreed story points
+    const storyPoints = devTeamExists ? devScoreValues[0] : qaScoreValues[0];
+    const completedTicket: CompletedTicket = {
+      id: lobby.currentTicket.id,
+      title: lobby.currentTicket.title,
+      description: lobby.currentTicket.description,
+      storyPoints,
+      completedAt: new Date().toISOString(),
+      teamBreakdown: {
+        developers: { 
+          participated: devTeamExists && devScoreValues.length > 0, 
+          consensusScore: devScoreValues.length > 0 ? devScoreValues[0] : undefined 
+        },
+        qa: { 
+          participated: qaTeamExists && qaScoreValues.length > 0, 
+          consensusScore: qaScoreValues.length > 0 ? qaScoreValues[0] : undefined 
+        }
+      }
+    };
+    lobby.completedTickets.push(completedTicket);
+    
+    if (lobby.completedTickets.length >= lobby.tickets.length) {
+      lobby.gamePhase = 'victory';
+      lobby.boss.defeated = true;
+    } else {
+      lobby.gamePhase = 'next_level';
+      lobby.boss.defeated = true;
+      // Progress to next phase/ticket
+      lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
+      lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
+    }
   }
 
   trackPlayerPerformance(playerId: string, performanceData: {
