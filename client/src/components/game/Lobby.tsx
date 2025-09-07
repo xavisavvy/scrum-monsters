@@ -1113,8 +1113,8 @@ export function Lobby() {
       {currentLobby?.gamePhase === 'lobby' && (
         <div 
           ref={movementAreaRef}
-          className="fixed bottom-0 left-0 right-0 h-40"
-          style={{ zIndex: 5 }}
+          className="fixed inset-0"
+          style={{ zIndex: 1 }}
         >
           {/* Layer 1: Pixel Art Tavern Background (Furthest Back) */}
           <div className="absolute inset-0" style={{ zIndex: 1 }}>
