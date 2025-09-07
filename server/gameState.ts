@@ -917,6 +917,11 @@ class GameStateManager {
     // Damage the boss
     lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - damage);
 
+    // Check if boss is defeated when health reaches 0
+    if (lobby.boss.currentHealth <= 0) {
+      lobby.boss.defeated = true;
+    }
+
     // Check if boss should perform ring attack (every ~10 attacks or when health is low)
     const shouldRingAttack = Math.random() < 0.15 || lobby.boss.currentHealth < lobby.boss.maxHealth * 0.3;
     let ringAttack = null;
