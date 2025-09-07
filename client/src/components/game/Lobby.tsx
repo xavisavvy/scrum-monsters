@@ -552,7 +552,7 @@ export function Lobby() {
 
   return (
     <div className="retro-container relative overflow-x-hidden">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-44">        
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-44 relative" style={{ zIndex: 10 }}>        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
@@ -889,7 +889,7 @@ export function Lobby() {
         <div 
           ref={movementAreaRef}
           className="fixed bottom-0 left-0 right-0 h-40"
-          style={{ zIndex: 1 }}
+          style={{ zIndex: -1 }}
         >
           {/* Layer 1: Pixel Art Tavern Background (Furthest Back) */}
           <div className="absolute inset-0" style={{ zIndex: 1 }}>
