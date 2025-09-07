@@ -16,6 +16,7 @@ import { SpeechBubble } from './SpeechBubble';
 import { EmoteModal } from './EmoteModal';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings } from '@/lib/gameTypes';
 import { Canvas } from '@react-three/fiber';
@@ -179,6 +180,27 @@ export function Lobby() {
   
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
+  const { 
+    toggleMute, 
+    isMuted, 
+    setLobbyMusic, 
+    playLobbyMusic, 
+    stopLobbyMusic 
+  } = useAudio();
+
+  // Lobby background music
+  useEffect(() => {
+    if (currentLobby?.gamePhase === 'lobby') {
+      const lobbyAudio = new Audio('/sounds/lobby-theme.mp3');
+      lobbyAudio.preload = 'auto';
+      setLobbyMusic(lobbyAudio);
+      playLobbyMusic();
+
+      return () => {
+        stopLobbyMusic();
+      };
+    }
+  }, [currentLobby?.gamePhase, setLobbyMusic, playLobbyMusic, stopLobbyMusic]);
   
   // Handle keyboard input for lobby movement
   useEffect(() => {
@@ -561,6 +583,18 @@ export function Lobby() {
   return (
     <div className="retro-container relative overflow-x-hidden">
       <style>{spectatorStyles}</style>
+      
+      {/* Mute Button - Top Right */}
+      <div className="absolute top-4 right-4 z-50">
+        <RetroButton
+          onClick={toggleMute}
+          size="sm"
+          variant="secondary"
+        >
+          {isMuted ? '🔇' : '🔊'}
+        </RetroButton>
+      </div>
+
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 relative" style={{ zIndex: 20 }}>        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">

@@ -9,6 +9,7 @@ interface MusicTrack {
 interface AudioState {
   backgroundMusic: HTMLAudioElement | null;
   menuMusic: HTMLAudioElement | null;
+  lobbyMusic: HTMLAudioElement | null;
   bossMusic: HTMLAudioElement | null;
   youtubePlayer: any | null;
   hitSound: HTMLAudioElement | null;
@@ -31,6 +32,7 @@ interface AudioState {
   // Setter functions
   setBackgroundMusic: (music: HTMLAudioElement) => void;
   setMenuMusic: (music: HTMLAudioElement) => void;
+  setLobbyMusic: (music: HTMLAudioElement) => void;
   setBossMusic: (music: HTMLAudioElement) => void;
   setYoutubePlayer: (player: any) => void;
   setHitSound: (sound: HTMLAudioElement) => void;
@@ -60,6 +62,8 @@ interface AudioState {
   stopBossMusic: () => void;
   playBackgroundMusic: () => void;
   stopBackgroundMusic: () => void;
+  playLobbyMusic: () => void;
+  stopLobbyMusic: () => void;
   playYoutubeAudio: (videoId: string) => void;
   stopYoutubeAudio: () => void;
   switchToNextTrack: () => void;
@@ -69,6 +73,7 @@ interface AudioState {
 export const useAudio = create<AudioState>((set, get) => ({
   backgroundMusic: null,
   menuMusic: null,
+  lobbyMusic: null,
   bossMusic: null,
   youtubePlayer: null,
   hitSound: null,
@@ -90,6 +95,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   
   setBackgroundMusic: (music: HTMLAudioElement) => set({ backgroundMusic: music }),
   setMenuMusic: (music: HTMLAudioElement) => set({ menuMusic: music }),
+  setLobbyMusic: (music: HTMLAudioElement) => set({ lobbyMusic: music }),
   setBossMusic: (music: HTMLAudioElement) => set({ bossMusic: music }),
   setYoutubePlayer: (player) => set({ youtubePlayer: player }),
   setHitSound: (sound: HTMLAudioElement) => set({ hitSound: sound }),
@@ -596,6 +602,27 @@ export const useAudio = create<AudioState>((set, get) => ({
       backgroundMusic.pause();
       backgroundMusic.currentTime = 0;
       console.log("🎵 Background music stopped");
+    }
+  },
+
+  playLobbyMusic: () => {
+    const { lobbyMusic, isMuted } = get();
+    if (lobbyMusic && !isMuted) {
+      lobbyMusic.loop = true;
+      lobbyMusic.volume = 0.4;
+      lobbyMusic.play().catch((error: any) => {
+        console.log("Lobby music play prevented:", error);
+      });
+      console.log("🎵 Lobby music started");
+    }
+  },
+
+  stopLobbyMusic: () => {
+    const { lobbyMusic } = get();
+    if (lobbyMusic) {
+      lobbyMusic.pause();
+      lobbyMusic.currentTime = 0;
+      console.log("🎵 Lobby music stopped");
     }
   },
 
