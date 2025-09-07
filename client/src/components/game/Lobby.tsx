@@ -12,6 +12,8 @@ import {
   DialogDescription
 } from '@/components/ui/dialog';
 import { SpriteRenderer } from './SpriteRenderer';
+import { SpeechBubble } from './SpeechBubble';
+import { EmoteModal } from './EmoteModal';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
@@ -156,6 +158,16 @@ export function Lobby() {
     startTime: number;
   }>>([]);
   const [doorAnimation, setDoorAnimation] = React.useState({ isOpen: false, isOpening: false });
+  
+  // Emote system state
+  const [showEmoteModal, setShowEmoteModal] = useState(false);
+  const [emotes, setEmotes] = useState<Record<string, {
+    message: string;
+    timestamp: number;
+    x: number;
+    y: number;
+  }>>({});
+  
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
   
@@ -167,6 +179,13 @@ export function Lobby() {
       // Ignore input if user is typing in an input field
       const target = event.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.contentEditable === 'true') {
+        return;
+      }
+
+      // Handle emote key (E)
+      if (event.code === 'KeyE') {
+        event.preventDefault();
+        setShowEmoteModal(true);
         return;
       }
 
@@ -317,12 +336,36 @@ export function Lobby() {
       }, 300);
     };
 
+    const handleLobbyEmote = ({ playerId, message, x, y }: { 
+      playerId: string; 
+      message: string; 
+      x: number; 
+      y: number; 
+    }) => {
+      const timestamp = Date.now();
+      setEmotes(prev => ({
+        ...prev,
+        [playerId]: { message, timestamp, x, y }
+      }));
+      
+      // Auto-remove emote after 3.5 seconds
+      setTimeout(() => {
+        setEmotes(prev => {
+          const newEmotes = { ...prev };
+          delete newEmotes[playerId];
+          return newEmotes;
+        });
+      }, 3500);
+    };
+
     socket.on('lobby_player_pos', handleLobbyPlayerPos);
     socket.on('player_joined', handlePlayerJoined);
+    socket.on('lobby_emote', handleLobbyEmote);
 
     return () => {
       socket.off('lobby_player_pos', handleLobbyPlayerPos);
       socket.off('player_joined', handlePlayerJoined);
+      socket.off('lobby_emote', handleLobbyEmote);
     };
   }, [socket, currentLobby?.gamePhase, currentPlayer?.id]);
 
@@ -382,6 +425,47 @@ export function Lobby() {
         setShowCopiedNotification(false);
       }, 2000);
     }
+  };
+
+  // Handle emote submission
+  const handleEmoteSubmit = (message: string) => {
+    if (!currentPlayer) return;
+    
+    // Calculate current player position for emote
+    const movementArea = movementAreaRef.current;
+    if (!movementArea) return;
+    
+    const movementAreaWidth = movementArea.clientWidth;
+    const maxX = Math.max(0, movementAreaWidth - characterSize);
+    const percentX = (myPosition.x / maxX) * 100;
+    
+    // Emit emote to server for other players to see
+    emit('lobby_emote', { 
+      message, 
+      x: percentX, 
+      y: 85 // Same Y position as movement
+    });
+    
+    // Show emote locally for current player
+    const timestamp = Date.now();
+    setEmotes(prev => ({
+      ...prev,
+      [currentPlayer.id]: { 
+        message, 
+        timestamp, 
+        x: myPosition.x, 
+        y: 0 // Local position for current player
+      }
+    }));
+    
+    // Auto-remove emote after 3.5 seconds
+    setTimeout(() => {
+      setEmotes(prev => {
+        const newEmotes = { ...prev };
+        delete newEmotes[currentPlayer.id];
+        return newEmotes;
+      });
+    }, 3500);
   };
 
   const updateTimerSettings = (timerSettings: TimerSettings) => {
@@ -1054,6 +1138,22 @@ export function Lobby() {
               <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
                 {currentPlayer.name}
               </div>
+              
+              {/* Current Player's Speech Bubble */}
+              {emotes[currentPlayer.id] && (
+                <SpeechBubble
+                  message={emotes[currentPlayer.id].message}
+                  x={0} // Relative to character position
+                  y={0} // Relative to character position
+                  onComplete={() => {
+                    setEmotes(prev => {
+                      const newEmotes = { ...prev };
+                      delete newEmotes[currentPlayer.id];
+                      return newEmotes;
+                    });
+                  }}
+                />
+              )}
             </div>
           )}
           
@@ -1084,13 +1184,29 @@ export function Lobby() {
                   <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
                     {player.name}
                   </div>
+                  
+                  {/* Other Player's Speech Bubble */}
+                  {emotes[player.id] && (
+                    <SpeechBubble
+                      message={emotes[player.id].message}
+                      x={0} // Relative to character position
+                      y={0} // Relative to character position
+                      onComplete={() => {
+                        setEmotes(prev => {
+                          const newEmotes = { ...prev };
+                          delete newEmotes[player.id];
+                          return newEmotes;
+                        });
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
           
           {/* Instructions */}
           <div className="absolute bottom-1 left-4 text-xs text-gray-400">
-            Use A/D or arrow keys to walk around!
+            Use A/D or arrow keys to walk around! Press E to emote!
           </div>
           </div>
           
@@ -1114,6 +1230,13 @@ export function Lobby() {
           </div>
         </div>
       )}
+      
+      {/* Emote Modal */}
+      <EmoteModal
+        isOpen={showEmoteModal}
+        onClose={() => setShowEmoteModal(false)}
+        onSubmit={handleEmoteSubmit}
+      />
     </div>
   );
 }
