@@ -34,25 +34,7 @@ export function BattleScreen() {
 
   // Helper function to render collapsible sidebar
   const renderCollapsibleSidebar = (content: React.ReactNode) => (
-    <div className="fixed right-0 top-0 z-50 flex items-center" style={{ height: '80vh', marginTop: '10vh' }}>
-      {/* Toggle Button - Positioned below boss music controls */}
-      <button
-        onClick={() => setSidebarExpanded(!sidebarExpanded)}
-        className="bg-black bg-opacity-95 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-100 hover:border-retro-accent-bright transition-all duration-300 shadow-2xl"
-        style={{ 
-          marginRight: sidebarExpanded ? '30vw' : '0',
-          marginTop: '60px' // Position below boss music controls
-        }}
-        data-no-shoot
-        title={sidebarExpanded ? 'Hide Sidebar' : 'Show Sidebar'}
-      >
-        {sidebarExpanded ? (
-          <ChevronRight className="w-5 h-5 text-retro-accent" />
-        ) : (
-          <ChevronLeft className="w-5 h-5 text-retro-accent" />
-        )}
-      </button>
-      
+    <div className="fixed right-0 top-0 z-50" style={{ height: '80vh', marginTop: '10vh' }}>
       {/* Sidebar Panel */}
       <div
         className={`bg-black bg-opacity-95 border-l-2 border-retro-border border-t-2 border-b-2 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl ${
@@ -64,6 +46,24 @@ export function BattleScreen() {
           {content}
         </div>
       </div>
+      
+      {/* Toggle Button - Attached to sidebar edge */}
+      <button
+        onClick={() => setSidebarExpanded(!sidebarExpanded)}
+        className="absolute bg-black bg-opacity-95 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-100 hover:border-retro-accent-bright transition-all duration-300 shadow-2xl"
+        style={{ 
+          left: sidebarExpanded ? '-48px' : '-48px', // Always positioned at left edge of sidebar
+          top: '60px' // Position below boss music controls
+        }}
+        data-no-shoot
+        title={sidebarExpanded ? 'Hide Sidebar' : 'Show Sidebar'}
+      >
+        {sidebarExpanded ? (
+          <ChevronRight className="w-5 h-5 text-retro-accent" />
+        ) : (
+          <ChevronLeft className="w-5 h-5 text-retro-accent" />
+        )}
+      </button>
     </div>
   );
 
