@@ -151,6 +151,11 @@ export interface ClientToServerEvents {
     direction?: string;
   }) => void;
   lobby_player_jump: (data: { isJumping: boolean }) => void;
+  lobby_emote: (data: {
+    message: string;
+    x: number;
+    y: number;
+  }) => void;
   start_battle: () => void;
   submit_score: (data: { score: number | "?" }) => void;
   update_discussion_vote: (data: { score: number | "?" }) => void;
@@ -208,6 +213,12 @@ export interface ServerToClientEvents {
     direction?: string;
   }) => void;
   lobby_player_jump: (data: { playerId: string; isJumping: boolean }) => void;
+  lobby_emote: (data: {
+    playerId: string;
+    message: string;
+    x: number;
+    y: number;
+  }) => void;
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
   score_submitted: (data: { playerId: string; team: TeamType }) => void;
   scores_revealed: (data: {
