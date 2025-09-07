@@ -22,6 +22,14 @@ import { Canvas } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
 
+// CSS Animation for spectator pulsing effect
+const spectatorStyles = `
+  @keyframes spectatorPulse {
+    0%, 100% { opacity: 0.5; }
+    50% { opacity: 0.8; }
+  }
+`;
+
 // 3D Tavern Background Components
 function TavernBackground() {
   const { scene } = useGLTF('/models/tavern-background.glb');
@@ -552,6 +560,7 @@ export function Lobby() {
 
   return (
     <div className="retro-container relative overflow-x-hidden">
+      <style>{spectatorStyles}</style>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 relative" style={{ zIndex: 20 }}>        
         <div className="text-center mb-6">
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
@@ -1170,13 +1179,21 @@ export function Lobby() {
                 zIndex: 10
               }}
             >
-              <SpriteRenderer
-                avatarClass={getAvatarClass(currentPlayer)}
-                animation={keys.size > 0 ? 'walk' : 'idle'}
-                direction={myPosition.direction}
-                isMoving={keys.size > 0}
-                size={characterSize}
-              />
+              <div
+                className={currentPlayer.team === 'spectators' ? 'spectator-character' : ''}
+                style={{
+                  filter: currentPlayer.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none',
+                  animation: currentPlayer.team === 'spectators' ? 'spectatorPulse 2s ease-in-out infinite' : 'none'
+                }}
+              >
+                <SpriteRenderer
+                  avatarClass={getAvatarClass(currentPlayer)}
+                  animation={keys.size > 0 ? 'walk' : 'idle'}
+                  direction={myPosition.direction}
+                  isMoving={keys.size > 0}
+                  size={characterSize}
+                />
+              </div>
               <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
                 {currentPlayer.name}
               </div>
@@ -1216,13 +1233,21 @@ export function Lobby() {
                     zIndex: 9
                   }}
                 >
-                  <SpriteRenderer
-                    avatarClass={getAvatarClass(player)}
-                    animation={position.isMoving ? 'walk' : 'idle'}
-                    direction={position.direction}
-                    isMoving={position.isMoving}
-                    size={characterSize}
-                  />
+                  <div
+                    className={player.team === 'spectators' ? 'spectator-character' : ''}
+                    style={{
+                      filter: player.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none',
+                      animation: player.team === 'spectators' ? 'spectatorPulse 2s ease-in-out infinite' : 'none'
+                    }}
+                  >
+                    <SpriteRenderer
+                      avatarClass={getAvatarClass(player)}
+                      animation={position.isMoving ? 'walk' : 'idle'}
+                      direction={position.direction}
+                      isMoving={position.isMoving}
+                      size={characterSize}
+                    />
+                  </div>
                   <div className="text-center text-xs text-white bg-black/50 rounded px-1 mt-1">
                     {player.name}
                   </div>
