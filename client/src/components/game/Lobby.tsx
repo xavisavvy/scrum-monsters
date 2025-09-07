@@ -278,13 +278,16 @@ export function Lobby() {
           const chargeTime = Date.now() - jumpState.chargeStartTime;
           const chargePower = Math.min(chargeTime / maxChargeTime, 1); // 0 to 1
           const jumpHeight = chargePower * maxJumpHeight;
+          const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight); // Reduced gravity for smoother arc
+          
+          console.log(`🦘 Jump triggered! Height: ${jumpHeight}px, Velocity: ${initialVelocity}`);
           
           setJumpState(prev => ({
             ...prev,
             isCharging: false,
             isJumping: true,
             jumpPower: jumpHeight,
-            velocityY: Math.sqrt(2 * 0.8 * jumpHeight), // Physics: v = sqrt(2 * g * h)
+            velocityY: initialVelocity,
             currentHeight: 0
           }));
         }
@@ -367,14 +370,17 @@ export function Lobby() {
   useEffect(() => {
     if (!jumpState.isJumping) return;
 
-    const gravity = 0.8; // Gravity constant
+    const gravity = 0.5; // Reduced gravity for smoother arc
     const animationInterval = setInterval(() => {
       setJumpState(prev => {
         const newVelocityY = prev.velocityY - gravity; // Apply gravity
-        const newHeight = prev.currentHeight + prev.velocityY;
+        const newHeight = Math.max(0, prev.currentHeight + prev.velocityY); // Ensure height doesn't go negative
+
+        console.log(`🦘 Jump physics: height=${newHeight.toFixed(1)}px, velocity=${newVelocityY.toFixed(2)}`);
 
         // Check if landed
-        if (newHeight <= 0) {
+        if (newHeight <= 0 && prev.velocityY <= 0) {
+          console.log(`🦘 Landing complete!`);
           return {
             ...prev,
             isJumping: false,
