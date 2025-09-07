@@ -4,6 +4,26 @@ import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { FooterSection } from '@/components/marketing/FooterSection';
 import { useAudio } from '@/lib/stores/useAudio';
 
+// Floating animation component for icons
+const FloatingIcon = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
+  const animationDuration = 3 + Math.random() * 2;
+  const animationDelay = delay + Math.random() * 2;
+  const floatHeight = 10 + Math.random() * 15;
+  
+  return (
+    <div 
+      className="inline-block"
+      style={{
+        animation: `floatUpDown ${animationDuration}s ease-in-out infinite`,
+        animationDelay: `${animationDelay}s`,
+        '--float-height': `-${floatHeight}px`,
+      } as React.CSSProperties & { '--float-height': string }}
+    >
+      {children}
+    </div>
+  );
+};
+
 // Boss images from public directory for better performance
 const bugHydraImg = '/images/bosses/bug-hydra.png';
 const sprintDemonImg = '/images/bosses/sprint-demon.png';
@@ -65,21 +85,25 @@ export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
           <div className="max-w-4xl mx-auto">
             {/* Main Title */}
             <div className="flex items-center justify-center gap-6 mb-6">
-              <img 
-                src="/scrum-monster-icon.png" 
-                alt="Scrum Monster" 
-                className="w-16 sm:w-24 md:w-32 h-16 sm:h-24 md:h-32 pixelated object-contain"
-                style={{ imageRendering: 'pixelated' }}
-              />
+              <FloatingIcon delay={0}>
+                <img 
+                  src="/scrum-monster-icon.png" 
+                  alt="Scrum Monster" 
+                  className="w-16 sm:w-24 md:w-32 h-16 sm:h-24 md:h-32 pixelated object-contain"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              </FloatingIcon>
               <h1 className="text-4xl sm:text-6xl md:text-8xl font-bold retro-text-glow">
                 SCRUM MONSTERS
               </h1>
-              <img 
-                src="/scrum-monster-icon.png" 
-                alt="Scrum Monster" 
-                className="w-16 sm:w-24 md:w-32 h-16 sm:h-24 md:h-32 pixelated object-contain"
-                style={{ imageRendering: 'pixelated' }}
-              />
+              <FloatingIcon delay={1}>
+                <img 
+                  src="/scrum-monster-icon.png" 
+                  alt="Scrum Monster" 
+                  className="w-16 sm:w-24 md:w-32 h-16 sm:h-24 md:h-32 pixelated object-contain"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              </FloatingIcon>
             </div>
             
             {/* Tagline */}
@@ -147,7 +171,9 @@ export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {features.map((feature, index) => (
                 <div key={index} className="retro-card text-center h-full">
-                  <div className="text-4xl mb-4">{feature.icon}</div>
+                  <FloatingIcon delay={index * 0.5}>
+                    <div className="text-4xl mb-4">{feature.icon}</div>
+                  </FloatingIcon>
                   <h3 className="text-xl font-bold mb-3 text-blue-400">{feature.title}</h3>
                   <p className="text-gray-400 text-sm leading-relaxed">{feature.description}</p>
                 </div>

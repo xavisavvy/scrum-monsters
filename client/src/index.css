@@ -44,3 +44,13 @@ canvas {
   height: 100% !important;
   touch-action: none;
 }
+
+/* Floating animation for icons */
+@keyframes floatUpDown {
+  0%, 100% { 
+    transform: translateY(0px); 
+  }
+  50% { 
+    transform: translateY(var(--float-height, -15px)); 
+  }
+}
