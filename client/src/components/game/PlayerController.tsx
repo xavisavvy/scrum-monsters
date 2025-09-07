@@ -945,13 +945,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             </div>
           )}
 
-          {/* E Key Hint for Emote */}
-          <div className="bg-cyan-900 bg-opacity-70 rounded-lg px-3 py-2 border border-cyan-400">
-            <div className="text-cyan-200 font-bold text-sm flex items-center gap-2">
-              <span className="bg-cyan-600 px-2 py-1 rounded text-xs font-mono">E</span>
-              Emote
-            </div>
-          </div>
         </div>
       </div>
 
