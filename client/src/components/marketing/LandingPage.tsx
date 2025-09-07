@@ -8,15 +8,17 @@ import { useAudio } from '@/lib/stores/useAudio';
 const FloatingIcon = ({ children, delay = 0 }: { children: React.ReactNode; delay?: number }) => {
   const animationDuration = 3 + Math.random() * 2;
   const animationDelay = delay + Math.random() * 2;
-  const floatHeight = 10 + Math.random() * 15;
+  const floatHeight = 8 + Math.random() * 12; // Reduced float range
   
   return (
     <div 
-      className="inline-block"
+      className="flex-shrink-0" // Prevent flex shrinking and ensure visibility
       style={{
         animation: `floatUpDown ${animationDuration}s ease-in-out infinite`,
         animationDelay: `${animationDelay}s`,
         '--float-height': `-${floatHeight}px`,
+        display: 'block', // Ensure proper display
+        position: 'relative', // Maintain layout flow
       } as React.CSSProperties & { '--float-height': string }}
     >
       {children}
