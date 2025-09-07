@@ -415,6 +415,24 @@ export function Lobby() {
     return () => clearInterval(chargeInterval);
   }, [jumpState.isCharging, jumpState.chargeStartTime, maxJumpHeight, maxChargeTime]);
 
+  // Mobile touch jump handler
+  const handleAvatarTap = () => {
+    if (!jumpState.isJumping && !jumpState.isCharging) {
+      // Mobile tap triggers a 60% power jump (good default)
+      const jumpHeight = maxJumpHeight * 0.6;
+      const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight);
+      
+      setJumpState(prev => ({
+        ...prev,
+        isCharging: false,
+        isJumping: true,
+        jumpPower: jumpHeight,
+        velocityY: initialVelocity,
+        currentHeight: 0
+      }));
+    }
+  };
+
   // Listen for other players' positions in lobby
   useEffect(() => {
     if (!socket || currentLobby?.gamePhase !== 'lobby') return;
@@ -1026,7 +1044,9 @@ export function Lobby() {
           <p className="text-xs text-gray-500 mt-2">
             Use A/D or arrow keys to walk around the lobby!
             <br />
-            Hold SPACEBAR to charge jump (STR: {playerSTR} = Max {Math.round(maxJumpHeight)}px)
+            Hold SPACEBAR to charge jump • Tap avatar to jump on mobile
+            <br />
+            (STR: {playerSTR} = Max {Math.round(maxJumpHeight)}px)
           </p>
         </div>
         
@@ -1312,7 +1332,7 @@ export function Lobby() {
           {/* My Player Character */}
           {currentPlayer && (
             <div
-              className="absolute transition-transform duration-100 ease-linear"
+              className="absolute transition-transform duration-100 ease-linear cursor-pointer select-none"
               style={{
                 left: `${myPosition.x}px`,
                 bottom: `${jumpState.currentHeight}px`,
@@ -1320,6 +1340,12 @@ export function Lobby() {
                 transform: `scale(${jumpState.isCharging ? 1.1 : jumpState.isJumping ? 1.05 : 1}) translateY(-${jumpState.currentHeight * 0.5}px)`,
                 transition: jumpState.isJumping ? 'none' : 'transform 0.1s ease-linear'
               }}
+              onClick={handleAvatarTap}
+              onTouchStart={(e) => {
+                e.preventDefault(); // Prevent default touch behaviors
+                handleAvatarTap();
+              }}
+              title="Tap to jump!"
             >
               <div
                 className={currentPlayer.team === 'spectators' ? 'spectator-character' : ''}
