@@ -3,14 +3,43 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
-import { FIBONACCI_NUMBERS } from '@/lib/gameTypes';
+import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES } from '@/lib/gameTypes';
 import { TeamScoreboard } from './TeamScoreboard';
 
 export function ScoreSubmission() {
-  const [selectedScore, setSelectedScore] = useState<number | '?' | null>(null);
+  const [selectedScore, setSelectedScore] = useState<number | string | '?' | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer } = useGameState();
+
+  // Get the scoring options based on the lobby's estimation scale
+  const getScoringOptions = (): (number | string)[] => {
+    if (!currentLobby?.estimationSettings) {
+      return FIBONACCI_NUMBERS; // Default to Fibonacci if no settings
+    }
+
+    const scaleType = currentLobby.estimationSettings.scaleType;
+    const scale = ESTIMATION_SCALES[scaleType];
+    
+    if (scaleType === 'tshirt' && currentLobby.estimationSettings.customTshirtMapping) {
+      // Use custom T-shirt sizes in order
+      return ['XS', 'S', 'M', 'L', 'XL'];
+    }
+    
+    return scale.options;
+  };
+
+  // Get display text for a scoring option
+  const getScoreDisplayText = (option: number | string): string => {
+    if (typeof option === 'string') {
+      // For T-shirt sizes, show the size and points
+      const customMapping = currentLobby?.estimationSettings?.customTshirtMapping;
+      const defaultMapping = ESTIMATION_SCALES.tshirt.pointMapping;
+      const points = customMapping?.[option] ?? defaultMapping?.[option] ?? 0;
+      return `${option} (${points}pt)`;
+    }
+    return option.toString();
+  };
 
   // Reset local hasSubmitted state when server state changes
   useEffect(() => {
@@ -92,16 +121,17 @@ export function ScoreSubmission() {
             </p>
             
             <div className="fibonacci-grid">
-              {FIBONACCI_NUMBERS.map(number => (
+              {getScoringOptions().map(option => (
                 <RetroButton
-                  key={number}
+                  key={option}
                   className={`fibonacci-button ${
-                    selectedScore === number ? 'bg-yellow-600' : ''
+                    selectedScore === option ? 'bg-yellow-600' : ''
                   }`}
-                  onClick={() => setSelectedScore(number)}
-                  variant={selectedScore === number ? 'accent' : 'primary'}
+                  onClick={() => setSelectedScore(option)}
+                  variant={selectedScore === option ? 'accent' : 'primary'}
+                  title={typeof option === 'string' ? `T-shirt size: ${getScoreDisplayText(option)}` : undefined}
                 >
-                  {number}
+                  {getScoreDisplayText(option)}
                 </RetroButton>
               ))}
               {/* Add "Don't Know" option */}
