@@ -34,12 +34,15 @@ export function BattleScreen() {
 
   // Helper function to render collapsible sidebar
   const renderCollapsibleSidebar = (content: React.ReactNode) => (
-    <div className="absolute right-0 top-0 bottom-0 z-30 flex items-center">
-      {/* Toggle Button */}
+    <div className="fixed right-0 top-0 z-50 flex items-center" style={{ height: '80vh', marginTop: '10vh' }}>
+      {/* Toggle Button - Positioned below boss music controls */}
       <button
         onClick={() => setSidebarExpanded(!sidebarExpanded)}
-        className="bg-black bg-opacity-90 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-95 hover:border-retro-accent-bright transition-all duration-300 z-40 shadow-lg"
-        style={{ marginRight: sidebarExpanded ? '30vw' : '0' }}
+        className="bg-black bg-opacity-95 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-100 hover:border-retro-accent-bright transition-all duration-300 shadow-2xl"
+        style={{ 
+          marginRight: sidebarExpanded ? '30vw' : '0',
+          marginTop: '60px' // Position below boss music controls
+        }}
         data-no-shoot
         title={sidebarExpanded ? 'Hide Sidebar' : 'Show Sidebar'}
       >
@@ -52,12 +55,12 @@ export function BattleScreen() {
       
       {/* Sidebar Panel */}
       <div
-        className={`bg-black bg-opacity-90 border-l-2 border-retro-border h-full transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`bg-black bg-opacity-95 border-l-2 border-retro-border border-t-2 border-b-2 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl ${
           sidebarExpanded ? 'w-[30vw]' : 'w-0'
         }`}
         data-no-shoot
       >
-        <div className="h-full overflow-y-auto p-4">
+        <div className="h-full overflow-y-auto p-4 text-white">
           {content}
         </div>
       </div>
@@ -232,11 +235,7 @@ export function BattleScreen() {
             <TimerDisplay />
             
             {/* Boss Music Controls - Top Right */}
-            <div 
-              className="absolute top-6 z-40 transition-all duration-300" 
-              style={{ right: sidebarExpanded ? 'calc(30vw + 24px)' : '24px' }}
-              data-no-shoot
-            >
+            <div className="absolute top-6 right-6 z-40" data-no-shoot>
               <BossMusicControls />
             </div>
 
@@ -281,11 +280,7 @@ export function BattleScreen() {
             <TimerDisplay />
             
             {/* Boss Music Controls - Top Right */}
-            <div 
-              className="absolute top-6 z-40 transition-all duration-300" 
-              style={{ right: sidebarExpanded ? 'calc(30vw + 24px)' : '24px' }}
-              data-no-shoot
-            >
+            <div className="absolute top-6 right-6 z-40" data-no-shoot>
               <BossMusicControls />
             </div>
 
