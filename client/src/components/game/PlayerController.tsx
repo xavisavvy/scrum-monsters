@@ -86,8 +86,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         return;
       }
 
-      // Handle debug modal toggle with tilde (~)
-      if (event.code === 'Backquote') {
+      // Handle debug modal toggle with Tab key
+      if (event.code === 'Tab') {
         event.preventDefault();
         setShowDebugModal(prev => !prev);
         return;
