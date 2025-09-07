@@ -56,7 +56,7 @@ export function FooterSection({ onNavigate }: FooterSectionProps) {
             Support
           </button>
           <a 
-            href="https://github.com/prestonfarr/scrum-monsters" 
+            href="https://github.com/xavisavvy/scrum-monsters" 
             target="_blank" 
             rel="noopener noreferrer"
             className="text-blue-400 hover:text-blue-300 transition-colors"
