@@ -1163,13 +1163,6 @@ export function Lobby() {
               Waiting for host to start the battle...
             </p>
           )}
-          <p className="text-xs text-gray-500 mt-2">
-            Use A/D or arrow keys to walk around the lobby!
-            <br />
-            Hold SPACEBAR to charge jump • Tap avatar to jump on mobile
-            <br />
-            (STR: {playerSTR} = Max {Math.round(maxJumpHeight)}px)
-          </p>
         </div>
         
         
