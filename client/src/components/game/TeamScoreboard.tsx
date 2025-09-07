@@ -41,18 +41,24 @@ export function TeamScoreboard() {
   };
 
   const calculateCompetitiveScore = (stats: any) => {
-    const baseScore = stats.totalStoryPoints * 1.0;
-    const accuracyBonus = stats.accuracyScore * 50;
-    const consensusBonus = stats.consensusRate * 30;
-    const participationBonus = stats.participationRate * 20;
-    const streakBonus = stats.currentStreak * 15;
+    // Focus on healthy scrum behaviors rather than story point inflation
+    
+    // PRIMARY SCORING: Team collaboration & battle performance
+    const consensusBonus = stats.consensusRate * 100; // Reward team agreement (highest weight)
+    const accuracyBonus = stats.accuracyScore * 80;   // Boss battle performance
     const speedBonus = stats.averageEstimationTime > 0 ? 
-      Math.max(0, (30 - stats.averageEstimationTime) * 2) : 0;
-    const efficiencyBonus = stats.ticketsCompleted > 0 ? 
-      (stats.totalStoryPoints / stats.ticketsCompleted) * 5 : 0;
+      Math.max(0, (30 - stats.averageEstimationTime) * 4) : 0; // Estimation speed (doubled)
+    const participationBonus = stats.participationRate * 60; // Team engagement
+    
+    // SECONDARY SCORING: Progress & consistency  
+    const streakBonus = stats.currentStreak * 25; // Win streak momentum
+    const completionBonus = stats.ticketsCompleted * 15; // Tickets completed (not points)
+    
+    // INFORMATIONAL ONLY: Story points removed from competition calculation
+    // Story points are now purely for sprint planning reference
 
-    return baseScore + accuracyBonus + consensusBonus + participationBonus + 
-           streakBonus + speedBonus + efficiencyBonus;
+    return consensusBonus + accuracyBonus + speedBonus + participationBonus + 
+           streakBonus + completionBonus;
   };
 
   const getScoreDifference = () => {
@@ -122,27 +128,27 @@ export function TeamScoreboard() {
             
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
-                <span>💎 Points:</span>
-                <span className="font-bold text-yellow-400">{developers.totalStoryPoints}</span>
+                <span>🤝 Consensus:</span>
+                <span className="font-bold text-green-400">{formatPercentage(developers.consensusRate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>🎯 Accuracy:</span>
+                <span className="font-bold text-orange-400">{formatPercentage(developers.accuracyScore)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>⚡ Speed:</span>
+                <span className="font-bold text-cyan-400">{formatTime(developers.averageEstimationTime)}</span>
               </div>
               <div className="flex justify-between">
                 <span>🎫 Tickets:</span>
                 <span className="font-bold">{developers.ticketsCompleted}</span>
               </div>
               <div className="flex justify-between">
-                <span>⚡ Speed:</span>
-                <span className="font-bold">{formatTime(developers.averageEstimationTime)}</span>
+                <span className="text-gray-400">💎 Sprint Points:</span>
+                <span className="text-gray-300">{developers.totalStoryPoints}</span>
               </div>
-              <div className="flex justify-between">
-                <span>🤝 Consensus:</span>
-                <span className="font-bold">{formatPercentage(developers.consensusRate)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>🎯 Accuracy:</span>
-                <span className="font-bold">{formatPercentage(developers.accuracyScore)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>📊 Score:</span>
+              <div className="flex justify-between border-t border-gray-600 pt-1 mt-1">
+                <span>📊 Team Score:</span>
                 <span className="font-bold text-blue-400">{Math.round(calculateCompetitiveScore(developers))}</span>
               </div>
             </div>
@@ -163,27 +169,27 @@ export function TeamScoreboard() {
             
             <div className="space-y-1 text-xs">
               <div className="flex justify-between">
-                <span>💎 Points:</span>
-                <span className="font-bold text-yellow-400">{qa.totalStoryPoints}</span>
+                <span>🤝 Consensus:</span>
+                <span className="font-bold text-green-400">{formatPercentage(qa.consensusRate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>🎯 Accuracy:</span>
+                <span className="font-bold text-orange-400">{formatPercentage(qa.accuracyScore)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>⚡ Speed:</span>
+                <span className="font-bold text-cyan-400">{formatTime(qa.averageEstimationTime)}</span>
               </div>
               <div className="flex justify-between">
                 <span>🎫 Tickets:</span>
                 <span className="font-bold">{qa.ticketsCompleted}</span>
               </div>
               <div className="flex justify-between">
-                <span>⚡ Speed:</span>
-                <span className="font-bold">{formatTime(qa.averageEstimationTime)}</span>
+                <span className="text-gray-400">💎 Sprint Points:</span>
+                <span className="text-gray-300">{qa.totalStoryPoints}</span>
               </div>
-              <div className="flex justify-between">
-                <span>🤝 Consensus:</span>
-                <span className="font-bold">{formatPercentage(qa.consensusRate)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>🎯 Accuracy:</span>
-                <span className="font-bold">{formatPercentage(qa.accuracyScore)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>📊 Score:</span>
+              <div className="flex justify-between border-t border-gray-600 pt-1 mt-1">
+                <span>📊 Team Score:</span>
                 <span className="font-bold text-green-400">{Math.round(calculateCompetitiveScore(qa))}</span>
               </div>
             </div>
