@@ -379,6 +379,11 @@ class GameStateManager {
 
     if (tickets.length === 0) return null;
 
+    // Check if there's at least one developer OR one QA team member
+    const hasActivePlayers = lobby.players.some(p => p.team === 'developers') || 
+                           lobby.players.some(p => p.team === 'qa');
+    if (!hasActivePlayers) return null;
+
     // Initialize game state
     lobby.gamePhase = 'battle';
     lobby.currentTicket = tickets[0];
