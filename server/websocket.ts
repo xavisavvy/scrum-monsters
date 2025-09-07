@@ -491,6 +491,38 @@ export function setupWebSocket(httpServer: HTTPServer) {
       console.log(`Host ${playerId} stopped YouTube music`);
     });
 
+    socket.on('advancePhaseNow', ({ lobbyId, playerId }) => {
+      try {
+        // Only allow host to manually advance phases
+        const lobby = gameState.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== playerId) {
+          socket.emit('game_error', { message: 'Only the host can manually advance phases' });
+          return;
+        }
+
+        // Only allow advancement during discussion phase with consensus
+        if (lobby.gamePhase !== 'discussion') {
+          socket.emit('game_error', { message: 'Phase advancement only available during discussion phase' });
+          return;
+        }
+
+        const result = gameState.manualAdvancePhase(lobbyId);
+        if (result) {
+          const { lobby: updatedLobby } = result;
+          
+          // Broadcast the updated lobby state to all players
+          io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
+          
+          console.log(`Host ${playerId} manually advanced phase in lobby ${lobbyId}`);
+        } else {
+          socket.emit('game_error', { message: 'Cannot advance phase - consensus not reached' });
+        }
+      } catch (error) {
+        console.error('Error in advancePhaseNow:', error);
+        socket.emit('game_error', { message: 'Failed to advance phase' });
+      }
+    });
+
     // Position sync for combat
     socket.on('player_pos', ({ x, y }: { x: number; y: number }) => {
       const playerId = socket.data.playerId;

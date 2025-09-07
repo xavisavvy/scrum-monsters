@@ -185,6 +185,7 @@ export interface ClientToServerEvents {
   update_timer_settings: (data: { timerSettings: TimerSettings }) => void;
   youtube_play: (data: { videoId: string; url: string }) => void;
   youtube_stop: () => void;
+  advancePhaseNow: (data: { lobbyId: string; playerId: string }) => void;
   player_pos: (data: { x: number; y: number }) => void;
   attack_player: (data: { targetId: string; damage: number }) => void;
   revive_start: (data: { targetId: string }) => void;
