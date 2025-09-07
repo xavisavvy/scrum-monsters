@@ -133,7 +133,8 @@ export type AvatarClass =
   | "warrior"
   | "paladin"
   | "cleric"
-  | "oathbreaker";
+  | "oathbreaker"
+  | "monk";
 
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
@@ -364,6 +365,13 @@ export const AVATAR_CLASSES: Record<
     color: "#8A2BE2",
     stats: { str: 16, dex: 10, con: 14, wis: 8, int: 12, cha: 18 },
     specialties: ["Dark Magic", "Corruption", "Fear Aura"],
+  },
+  monk: {
+    name: "Monk",
+    description: "Disciplined martial artist",
+    color: "#8B4513",
+    stats: { str: 14, dex: 16, con: 14, wis: 18, int: 10, cha: 12 },
+    specialties: ["Martial Arts", "Inner Peace", "Chi Manipulation"],
   },
 };
 

@@ -426,7 +426,8 @@ export function PlayerController({}: PlayerControllerProps) {
       warrior: '⚔️',
       paladin: '✨',
       cleric: '💫',
-      oathbreaker: '🖤'
+      oathbreaker: '🖤',
+      monk: '👊'
     };
     
     return projectileEmojis[avatarClass];
