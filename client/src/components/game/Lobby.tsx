@@ -152,7 +152,7 @@ export function Lobby() {
   
   // Player movement state for lobby walking
   const [keys, setKeys] = useState<Set<string>>(new Set());
-  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean }>>({});
+  const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean; isJumping?: boolean; jumpHeight?: number; lastUpdate?: number; timeoutId?: NodeJS.Timeout }>>({});
   const [myPosition, setMyPosition] = useState({ x: 200, direction: 'right' as SpriteDirection });
   
   // Jumping physics state
@@ -281,6 +281,8 @@ export function Lobby() {
           const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight); // Reduced gravity for smoother arc
           
           // Jump triggered with calculated physics
+          // Emit jump event to other players
+          emit('player_jump', { isJumping: true });
           
           setJumpState(prev => ({
             ...prev,
@@ -378,6 +380,8 @@ export function Lobby() {
 
         // Check if landed
         if (newHeight <= 0 && prev.velocityY <= 0) {
+          // Emit landing event to other players
+          emit('player_jump', { isJumping: false });
           return {
             ...prev,
             isJumping: false,
@@ -422,6 +426,9 @@ export function Lobby() {
       const jumpHeight = maxJumpHeight * 0.6;
       const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight);
       
+      // Emit jump event to other players for mobile tap
+      emit('player_jump', { isJumping: true });
+      
       setJumpState(prev => ({
         ...prev,
         isCharging: false,
@@ -447,15 +454,48 @@ export function Lobby() {
         const movementAreaWidth = movementArea.clientWidth;
         const maxX = Math.max(0, movementAreaWidth - characterSize);
         
+        // Clear any existing timeout for this player
+        const currentPlayer = prev[playerId];
+        if (currentPlayer?.timeoutId) {
+          clearTimeout(currentPlayer.timeoutId);
+        }
+        
+        // Set a timeout to stop animation after 300ms of no updates
+        const timeoutId = setTimeout(() => {
+          setPlayerPositions(prevPositions => ({
+            ...prevPositions,
+            [playerId]: {
+              ...prevPositions[playerId],
+              isMoving: false
+            }
+          }));
+        }, 300);
+        
         return {
           ...prev,
           [playerId]: {
+            ...currentPlayer,
             x: Math.max(0, Math.min(maxX, (x / 100) * maxX)),
             direction: direction || 'right',
-            isMoving: true
+            isMoving: true,
+            lastUpdate: Date.now(),
+            timeoutId
           }
         };
       });
+    };
+
+    const handleLobbyPlayerJump = ({ playerId, isJumping, jumpHeight }: { playerId: string; isJumping: boolean; jumpHeight?: number }) => {
+      if (playerId === currentPlayer?.id) return; // Skip own updates
+
+      setPlayerPositions(prev => ({
+        ...prev,
+        [playerId]: {
+          ...prev[playerId],
+          isJumping,
+          jumpHeight: jumpHeight || 0
+        }
+      }));
     };
 
     // Handle new player joining - trigger dropping avatar animation
@@ -514,11 +554,13 @@ export function Lobby() {
     socket.on('lobby_player_pos', handleLobbyPlayerPos);
     socket.on('player_joined', handlePlayerJoined);
     socket.on('lobby_emote', handleLobbyEmote);
+    socket.on('lobby_player_jump', handleLobbyPlayerJump);
 
     return () => {
       socket.off('lobby_player_pos', handleLobbyPlayerPos);
       socket.off('player_joined', handlePlayerJoined);
       socket.off('lobby_emote', handleLobbyEmote);
+      socket.off('lobby_player_jump', handleLobbyPlayerJump);
     };
   }, [socket, currentLobby?.gamePhase, currentPlayer?.id]);
 
@@ -1473,7 +1515,7 @@ export function Lobby() {
                   className="absolute transition-transform duration-200 ease-out"
                   style={{
                     left: `${position.x}px`,
-                    bottom: '0px',
+                    bottom: `${position.jumpHeight || 0}px`,
                     zIndex: 9
                   }}
                 >
