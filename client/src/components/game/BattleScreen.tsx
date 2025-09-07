@@ -191,7 +191,7 @@ export function BattleScreen() {
             
             {/* UI Overlay */}
             <div className="relative z-30 min-h-screen flex items-center justify-end p-6">
-              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600 max-h-screen overflow-y-auto" data-no-shoot>
+              <div className="w-full max-w-md bg-black bg-opacity-80 rounded-lg border-2 border-gray-600 max-h-[85vh] overflow-y-auto" data-no-shoot>
                 <div className="p-4">
                   <ScoreSubmission />
                 </div>
