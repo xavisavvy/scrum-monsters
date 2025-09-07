@@ -154,6 +154,9 @@ class GameStateManager {
           x: Math.random() * 80 + 10,
           y: 80
         }
+      },
+      consensusSettings: {
+        countdownSeconds: 5
       }
     };
 

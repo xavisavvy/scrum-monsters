@@ -63,7 +63,13 @@ export interface Lobby {
   playerPositions: Record<string, Position>;
   timerSettings?: TimerSettings;
   jiraSettings?: JiraSettings;
+  consensusSettings?: ConsensusSettings;
   currentTimer?: TimerState;
+  consensusCountdown?: {
+    isActive: boolean;
+    remainingSeconds: number;
+    startedAt: number;
+  };
 }
 
 export interface TimerSettings {
@@ -73,6 +79,10 @@ export interface TimerSettings {
 
 export interface JiraSettings {
   baseUrl?: string; // e.g. "https://yourcompany.atlassian.net/browse/"
+}
+
+export interface ConsensusSettings {
+  countdownSeconds: number; // Default 5 seconds
 }
 
 export interface TimerState {
