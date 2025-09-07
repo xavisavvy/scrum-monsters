@@ -413,7 +413,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
   }
 
   return (
-    <div className="boss-container">
+    <div className="relative">
       {/* Boss Name and Phase */}
       <div className="text-center mb-4">
         <h2 className="text-2xl font-bold retro-text-glow mb-2">

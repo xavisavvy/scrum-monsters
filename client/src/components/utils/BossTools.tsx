@@ -250,11 +250,13 @@ export function BossTools({ onBack }: BossToolsProps) {
             <div className="space-y-6">
               <RetroCard title="Boss Preview">
                 <div className="flex justify-center p-8">
-                  <BossDisplay 
-                    boss={testBoss} 
-                    onAttack={handleAttackBoss}
-                    fullscreen={false}
-                  />
+                  <div className="relative" style={{ minHeight: '300px' }}>
+                    <BossDisplay 
+                      boss={testBoss} 
+                      onAttack={handleAttackBoss}
+                      fullscreen={false}
+                    />
+                  </div>
                 </div>
               </RetroCard>
 
