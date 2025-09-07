@@ -5,6 +5,7 @@ import { SpriteRenderer } from '../game/SpriteRenderer';
 import { AVATAR_CLASSES, AvatarClass } from '@/lib/gameTypes';
 import type { SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { useAudio } from '@/lib/stores/useAudio';
+import { getAvatarImage } from '@/lib/avatarImages';
 
 interface CharacterToolsProps {
   onBack: () => void;
@@ -286,9 +287,15 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                 <RetroButton
                   onClick={() => testAnimationAudio(selectedAnimation)}
                   variant="accent"
-                  className="w-full"
+                  className="w-full flex items-center justify-center gap-2"
                 >
-                  🔊 Test {selectedAnimation.charAt(0).toUpperCase() + selectedAnimation.slice(1)} Audio
+                  <img 
+                    src={getAvatarImage(selectedAvatarClass) || '/images/avatars/warrior.png'} 
+                    alt={selectedAvatarClass}
+                    className="w-5 h-5 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  Test {selectedAnimation.charAt(0).toUpperCase() + selectedAnimation.slice(1)} Audio
                 </RetroButton>
               </div>
 
@@ -299,32 +306,60 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
                   variant="secondary"
                   size="sm"
                   title="Attack/Combat sound"
+                  className="flex items-center justify-center gap-1"
                 >
-                  ⚔️ Hit
+                  <img 
+                    src={getAvatarImage(selectedAvatarClass) || '/images/avatars/warrior.png'} 
+                    alt={selectedAvatarClass}
+                    className="w-4 h-4 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  Hit
                 </RetroButton>
                 <RetroButton
                   onClick={() => playExplosion()}
                   variant="secondary"
                   size="sm"
                   title="Magic/Explosion sound"
+                  className="flex items-center justify-center gap-1"
                 >
-                  💥 Explosion
+                  <img 
+                    src={getAvatarImage(selectedAvatarClass) || '/images/avatars/warrior.png'} 
+                    alt={selectedAvatarClass}
+                    className="w-4 h-4 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  Explosion
                 </RetroButton>
                 <RetroButton
                   onClick={() => playSuccess()}
                   variant="secondary"
                   size="sm"
                   title="Victory/Success sound"
+                  className="flex items-center justify-center gap-1"
                 >
-                  ✨ Success
+                  <img 
+                    src={getAvatarImage(selectedAvatarClass) || '/images/avatars/warrior.png'} 
+                    alt={selectedAvatarClass}
+                    className="w-4 h-4 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  Success
                 </RetroButton>
                 <RetroButton
                   onClick={() => playButtonSelect()}
                   variant="secondary"
                   size="sm"
                   title="UI/Selection sound"
+                  className="flex items-center justify-center gap-1"
                 >
-                  🔘 UI
+                  <img 
+                    src={getAvatarImage(selectedAvatarClass) || '/images/avatars/warrior.png'} 
+                    alt={selectedAvatarClass}
+                    className="w-4 h-4 pixelated object-contain"
+                    style={{ imageRendering: 'pixelated' }}
+                  />
+                  UI
                 </RetroButton>
               </div>
             </RetroCard>
