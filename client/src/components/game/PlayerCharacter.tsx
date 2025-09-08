@@ -154,14 +154,14 @@ export function PlayerCharacter({
     <div
       className="absolute pointer-events-auto cursor-crosshair"
       style={{
-        left: clampedPosition.x,
-        bottom: clampedPosition.y,
+        left: Math.max(100, Math.min(clampedPosition.x, containerWidth - 200)), // Force into visible area
+        top: Math.max(100, Math.min(containerHeight - clampedPosition.y - characterSize, containerHeight - 200)), // Use top instead of bottom
         width: characterSize,
         height: characterSize,
-        transition: 'bottom 0.3s ease-out', // Smooth jump animation
-        zIndex: 75,
-        border: '2px solid lime', // Temporary visibility debug
-        backgroundColor: 'rgba(255, 0, 0, 0.3)' // Temporary visibility debug
+        zIndex: 9999, // Much higher z-index
+        border: '5px solid lime', // Thicker border
+        backgroundColor: 'rgba(255, 0, 0, 0.8)', // More visible background
+        boxShadow: '0 0 20px lime' // Glowing effect
       }}
       onClick={handleClick}
     >
