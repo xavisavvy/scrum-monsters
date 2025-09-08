@@ -349,9 +349,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     }
   }, [playerPosition, otherPlayersPositions, onPlayerPositionsUpdate, currentPlayer?.id, characterSize]);
 
-  // Throttled network updates - industry standard approach
+  // Throttled network updates - more responsive
   const lastNetworkUpdate = useRef({ x: 0, y: 0, time: 0 });
-  const networkUpdateThrottle = 100; // 10 updates per second max
+  const networkUpdateThrottle = 50; // 20 updates per second for better responsiveness
 
   useEffect(() => {
     const movePlayer = () => {
@@ -410,8 +410,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         // Throttled network updates - only send if enough time has passed and position changed
         const now = Date.now();
         const timeDelta = now - lastNetworkUpdate.current.time;
-        const positionChanged = Math.abs(newX - lastNetworkUpdate.current.x) > 2 || 
-                               Math.abs(newY - lastNetworkUpdate.current.y) > 2;
+        const positionChanged = Math.abs(newX - lastNetworkUpdate.current.x) > 1 || 
+                               Math.abs(newY - lastNetworkUpdate.current.y) > 1;
 
         if (positionChanged && timeDelta >= networkUpdateThrottle) {
           // Convert screen coordinates to world coordinates, then to percentage for server

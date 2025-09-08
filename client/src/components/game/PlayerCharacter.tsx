@@ -148,20 +148,17 @@ export function PlayerCharacter({
     y: Math.max(50, Math.min(position.y, containerHeight - characterSize - 100)) // Keep well within bounds
   };
 
-  console.log(`🎯 ${avatarClass}: Character at (${position.x.toFixed(0)}, ${position.y.toFixed(0)}) container=${containerWidth}x${containerHeight}`);
+  // Removed debug logging for performance
 
   return (
     <div
       className="absolute pointer-events-auto cursor-crosshair"
       style={{
-        left: Math.max(100, Math.min(clampedPosition.x, containerWidth - 200)), // Force into visible area
-        top: Math.max(100, Math.min(containerHeight - clampedPosition.y - characterSize, containerHeight - 200)), // Use top instead of bottom
+        left: Math.max(100, Math.min(clampedPosition.x, containerWidth - 200)),
+        top: Math.max(100, Math.min(containerHeight - clampedPosition.y - characterSize, containerHeight - 200)),
         width: characterSize,
         height: characterSize,
-        zIndex: 9999, // Much higher z-index
-        border: '5px solid lime', // Thicker border
-        backgroundColor: 'rgba(255, 0, 0, 0.8)', // More visible background
-        boxShadow: '0 0 20px lime' // Glowing effect
+        zIndex: 75
       }}
       onClick={handleClick}
     >
