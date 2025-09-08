@@ -145,7 +145,7 @@ export function PricingPage({ onBackToHome, onNavigate }: PricingPageProps) {
                   className="w-full opacity-60 cursor-not-allowed"
                   disabled
                 >
-                  Coming Q2 2025
+                  Coming Q1 2026
                 </RetroButton>
               </div>
             </section>
