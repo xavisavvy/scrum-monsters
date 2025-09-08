@@ -20,6 +20,8 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { useBacktickKey } from '@/hooks/useBacktickKey';
+import { useKonamiCode } from '@/hooks/useKonamiCode';
+import { CheatMenu } from '@/components/ui/CheatMenu';
 import '@/styles/retro.css';
 
 type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
@@ -28,6 +30,7 @@ function App() {
   const [appState, setAppState] = useState<AppState>('landing');
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
+  const [showCheatMenu, setShowCheatMenu] = useState(false);
   
   const { socket, connect, disconnect, isConnected } = useWebSocket();
   const { 
@@ -67,6 +70,11 @@ function App() {
   // Developer menu hotkey
   useBacktickKey(() => {
     setShowDeveloperMenu(!showDeveloperMenu);
+  });
+  
+  // Konami code for cheat menu
+  useKonamiCode(() => {
+    setShowCheatMenu(true);
   });
 
   // Connect to WebSocket on mount and setup menu music
@@ -549,6 +557,12 @@ function App() {
         onClose={() => setShowDeveloperMenu(false)}
         onOpenCharacterTools={() => setAppState('character_tools')}
         onOpenBossTools={() => setAppState('boss_tools')}
+      />
+      
+      {/* Cheat Menu (Konami Code) */}
+      <CheatMenu
+        isOpen={showCheatMenu}
+        onClose={() => setShowCheatMenu(false)}
       />
       
       {/* Toast Notifications */}
