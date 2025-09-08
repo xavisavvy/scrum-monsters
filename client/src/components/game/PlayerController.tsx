@@ -130,9 +130,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           targetY = bossWorld.y;
         }
         
-        // Calculate character center position (use bottom-based Y coordinate system)
+        // Calculate character center position (corrected for top-based positioning)
         const characterCenterX = playerPosition.x + characterSize / 2;
-        const characterCenterY = playerPosition.y + characterSize / 2;
+        const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
         
         console.log(`🎯 Keyboard shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
         
@@ -253,7 +253,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
         console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetScreen.x}px, ${targetScreen.y}px)`);
         
-        // Use projectile's startX/startY as boss position (server sends boss center as 50%, 40%)
+        // Use projectile's startX/startY as boss position (server sends boss center as 50%, 40%) 
         const bossWorld = { x: (proj.startX / 100) * viewport.worldWidth, y: (proj.startY / 100) * viewport.worldHeight };
         const bossScreen = viewport.worldToScreen(bossWorld.x, bossWorld.y);
         console.log(`🎯 Converting boss position: (${proj.startX}%, ${proj.startY}%) -> (${bossScreen.x}px, ${bossScreen.y}px)`);
@@ -430,13 +430,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       });
     };
 
-    if (keys.size > 0) {
-      const interval = setInterval(movePlayer, 16); // ~60 FPS
-      return () => clearInterval(interval);
-    } else {
-      // No keys pressed, not moving
-      setIsMoving(false);
-    }
+    const interval = setInterval(movePlayer, 16); // ~60 FPS for immediate response
+    return () => clearInterval(interval);
   }, [keys, viewport, characterSize, moveSpeed, emit, currentDirection]);
 
   const handleShoot = useCallback((projectileData: Omit<Projectile, 'id' | 'progress'>) => {
@@ -483,9 +478,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     const targetX = event.clientX - rect.left;
     const targetY = event.clientY - rect.top;
     
-    // Calculate character center position (use bottom-based Y coordinate system)
+    // Calculate character center position (corrected for top-based positioning)
     const characterCenterX = playerPosition.x + characterSize / 2;
-    const characterCenterY = playerPosition.y + characterSize / 2;
+    const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
     
     console.log(`🎯 Preparing to shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
     
@@ -551,9 +546,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     specialEffect.style.textAlign = 'center';
     specialEffect.style.transition = 'all 1.5s ease-out';
     
-    // Calculate character center
+    // Calculate character center (corrected for top-based positioning)
     const characterCenterX = playerPosition.x + characterSize / 2;
-    const characterCenterY = playerPosition.y + characterSize / 2;
+    const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
     
     let effectEmoji = '✨';
     let effectColor = '#ffffff';
