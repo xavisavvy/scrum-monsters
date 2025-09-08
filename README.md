@@ -1,8 +1,10 @@
 # 🎮 Multiplayer Scrum Poker RPG
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code License: AGPL-3.0](https://img.shields.io/badge/Code%20License-AGPL--3.0-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![Assets License: CC BY-NC-ND 4.0](https://img.shields.io/badge/Assets%20License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-blue.svg)](https://www.typescriptlang.org/)
+[![Trademark](https://img.shields.io/badge/Trademark-Scrum%20Monsters%E2%84%A2-red.svg)](TRADEMARKS.md)
 
 A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that gamifies story point estimation. Players create or join lobbies, select fantasy avatar classes, and estimate Jira tickets by "battling" pixel art bosses in real-time combat scenarios.
 
@@ -256,7 +258,29 @@ npm run db:push      # Update database schema
 
 ## 📝 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+**Scrum Monsters** uses a comprehensive dual-licensing approach to protect intellectual property while maintaining open source principles:
+
+### 🔓 Open Source Components
+- **Code** (client, server, shared): **GNU AGPL-3.0-or-later**
+  - Full source code availability required for network-deployed modifications
+  - Ensures community contributions remain open
+
+### 🎨 Creative Assets
+- **Art & Media** (sprites, sounds, images): **CC BY-NC-ND 4.0**
+  - Attribution required for non-commercial use
+  - No derivatives or commercial resales permitted
+
+### 💼 Commercial Components
+- **Pro Integrations & Add-ons**: **Proprietary EULA**
+  - Boss packs, trainer materials, commercial integrations
+  - All rights reserved for commercial use
+
+### ™️ Trademark Protection
+- **"Scrum Monsters"** name and logos are protected trademarks
+- Usage requires permission to avoid confusion or implied endorsement
+
+For complete licensing details, see [LICENSE.md](LICENSE.md).
+For commercial licensing inquiries, contact: licensing@scrummonsters.app
 
 ## 🙏 Acknowledgments
 
