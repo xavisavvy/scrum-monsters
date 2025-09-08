@@ -35,6 +35,9 @@ export function BattleScreen() {
   
   // Copy button feedback states
   const [copyFeedback, setCopyFeedback] = useState<Record<string, boolean>>({});
+  
+  // Refs for timeout cleanup
+  const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set());
 
   // Helper function to render collapsible sidebar
   const renderCollapsibleSidebar = (content: React.ReactNode) => (
@@ -88,6 +91,17 @@ export function BattleScreen() {
     };
   }, [currentLobby?.gamePhase]);
 
+  // Cleanup all timeouts on unmount
+  useEffect(() => {
+    return () => {
+      // Clear all tracked timeouts to prevent DOM manipulation errors
+      timeoutRefs.current.forEach(timeoutId => {
+        clearTimeout(timeoutId);
+      });
+      timeoutRefs.current.clear();
+    };
+  }, []);
+
   // Emote system state
   const [showEmoteModal, setShowEmoteModal] = useState(false);
   const [emotes, setEmotes] = useState<Record<string, {
@@ -129,13 +143,15 @@ export function BattleScreen() {
       }));
 
       // Auto-remove emote after 3.5 seconds
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         setEmotes(prev => {
           const newEmotes = { ...prev };
           delete newEmotes[playerId];
           return newEmotes;
         });
+        timeoutRefs.current.delete(timeoutId);
       }, 3500);
+      timeoutRefs.current.add(timeoutId);
     };
 
     socket.on('battle_emote', handleBattleEmote);
@@ -173,13 +189,15 @@ export function BattleScreen() {
     }));
     
     // Auto-remove emote after 3.5 seconds
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       setEmotes(prev => {
         const newEmotes = { ...prev };
         delete newEmotes[currentPlayer.id];
         return newEmotes;
       });
+      timeoutRefs.current.delete(timeoutId);
     }, 3500);
+    timeoutRefs.current.add(timeoutId);
   };
 
   // Handle boss music when entering/leaving battle
@@ -446,9 +464,11 @@ export function BattleScreen() {
                             console.log('✅ All results copied to clipboard:', summaryText);
                             // Show temporary success feedback using React state
                             setCopyFeedback(prev => ({ ...prev, victory: true }));
-                            setTimeout(() => {
+                            const timeoutId = setTimeout(() => {
                               setCopyFeedback(prev => ({ ...prev, victory: false }));
+                              timeoutRefs.current.delete(timeoutId);
                             }, 2000);
+                            timeoutRefs.current.add(timeoutId);
                           }).catch(err => {
                             console.error('❌ Failed to copy to clipboard:', err);
                           });
@@ -562,9 +582,11 @@ export function BattleScreen() {
                           console.log('✅ Results copied to clipboard:', resultsText);
                           // Show temporary success feedback using React state
                           setCopyFeedback(prev => ({ ...prev, nextLevel: true }));
-                          setTimeout(() => {
+                          const timeoutId = setTimeout(() => {
                             setCopyFeedback(prev => ({ ...prev, nextLevel: false }));
+                            timeoutRefs.current.delete(timeoutId);
                           }, 2000);
+                          timeoutRefs.current.add(timeoutId);
                         }).catch(err => {
                           console.error('❌ Failed to copy to clipboard:', err);
                         });
