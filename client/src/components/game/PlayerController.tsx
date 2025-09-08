@@ -41,9 +41,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     if (currentPlayer && currentLobby?.playerPositions?.[currentPlayer.id]) {
       const serverPos = currentLobby.playerPositions[currentPlayer.id];
       
-      // Convert server position (percentage) to world coordinates, then to screen pixels
-      const worldX = (serverPos.x / 100) * viewport.worldWidth;
-      const worldY = (serverPos.y / 100) * viewport.worldHeight;
+      // Clamp server positions to valid range and convert to screen coordinates
+      const clampedX = Math.max(0, Math.min(100, serverPos.x));
+      const clampedY = Math.max(0, Math.min(100, serverPos.y));
+      const worldX = (clampedX / 100) * viewport.worldWidth;
+      const worldY = (clampedY / 100) * viewport.worldHeight;
       const screenPos = viewport.worldToScreen(worldX, worldY);
       
       const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
@@ -414,8 +416,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         if (positionChanged && timeDelta >= networkUpdateThrottle) {
           // Convert screen coordinates to world coordinates, then to percentage for server
           const worldPos = viewport.screenToWorld(newX, newY);
-          const percentX = (worldPos.x / viewport.worldWidth) * 100;
-          const percentY = (worldPos.y / viewport.worldHeight) * 100;
+          const percentX = Math.max(0, Math.min(100, (worldPos.x / viewport.worldWidth) * 100));
+          const percentY = Math.max(0, Math.min(100, (worldPos.y / viewport.worldHeight) * 100));
           
           emit('player_pos', { x: percentX, y: percentY });
           
@@ -842,6 +844,17 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       }
     }
   }, [viewport, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
+
+  // Reset player to visible position when entering battle
+  useEffect(() => {
+    if (currentLobby?.gamePhase === 'battle' && currentPlayer) {
+      // Reset to a safe visible position in center-bottom of screen
+      const safeX = viewport.viewportWidth / 2 - characterSize / 2;
+      const safeY = 150; // 150px from bottom of screen
+      setPlayerPosition({ x: safeX, y: safeY });
+      console.log(`🎮 Reset player position for battle: (${safeX}, ${safeY})`);
+    }
+  }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, characterSize]);
 
   // Don't render if not in battle or no current player
   if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {
