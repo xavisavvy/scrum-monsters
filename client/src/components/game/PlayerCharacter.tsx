@@ -127,7 +127,9 @@ export function PlayerCharacter({
       wizard: '⚡',
       warrior: '⚔️',
       paladin: '✨',
-      cleric: '💫'
+      cleric: '💫',
+      oathbreaker: '🖤',
+      monk: '👊'
     };
     
     return projectileEmojis[avatarClass];
@@ -140,16 +142,24 @@ export function PlayerCharacter({
     // This allows clicking anywhere else on the screen to shoot projectiles
   };
 
+  // Clamp position to stay within viewport bounds
+  const clampedPosition = {
+    x: Math.max(0, Math.min(position.x, containerWidth - characterSize)),
+    y: Math.max(50, Math.min(position.y, containerHeight - characterSize - 50)) // Keep 50px margin from edges
+  };
+
+  console.log(`🎯 ${avatarClass}: PlayerCharacter at (${position.x}, ${position.y}) clamped to (${clampedPosition.x}, ${clampedPosition.y}) container=${containerWidth}x${containerHeight}`);
+
   return (
     <div
       className="absolute pointer-events-auto cursor-crosshair"
       style={{
-        left: position.x,
-        bottom: position.y,
+        left: clampedPosition.x,
+        bottom: clampedPosition.y,
         width: characterSize,
         height: characterSize,
         transition: 'bottom 0.3s ease-out', // Smooth jump animation
-        zIndex: 65
+        zIndex: 75
       }}
       onClick={handleClick}
     >
