@@ -29,6 +29,7 @@ export function BattleScreen() {
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
   const viewport = useViewport();
   
+  
   // Collapsible sidebar state
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
 
@@ -509,6 +510,40 @@ export function BattleScreen() {
                 <p className="text-sm text-gray-400">
                   Waiting for host to proceed to next level...
                 </p>
+                
+                {/* Host Copy Results Button */}
+                {currentPlayer?.isHost && lastCompletedTicket && (
+                  <div className="mt-4 pt-4 border-t border-gray-600">
+                    <RetroButton
+                      onClick={() => {
+                        const devScore = lastCompletedTicket.teamBreakdown?.developers?.consensusScore ?? 'N/A';
+                        const qaScore = lastCompletedTicket.teamBreakdown?.qa?.consensusScore ?? 'N/A';
+                        const combinedValue = lastCompletedTicket.storyPoints;
+                        
+                        const resultsText = `${lastCompletedTicket.title} - Developers voted ${devScore} QA voted ${qaScore}, with a combined sprint value of ${combinedValue}`;
+                        
+                        navigator.clipboard.writeText(resultsText).then(() => {
+                          console.log('✅ Results copied to clipboard:', resultsText);
+                          // Show temporary success feedback
+                          const button = event?.target as HTMLElement;
+                          if (button) {
+                            const originalText = button.textContent;
+                            button.textContent = '✅ Copied!';
+                            setTimeout(() => {
+                              button.textContent = originalText;
+                            }, 2000);
+                          }
+                        }).catch(err => {
+                          console.error('❌ Failed to copy to clipboard:', err);
+                        });
+                      }}
+                      className="w-full"
+                      variant="secondary"
+                    >
+                      📋 Copy Results (Host)
+                    </RetroButton>
+                  </div>
+                )}
                   </div>
                 </RetroCard>
               </div>
