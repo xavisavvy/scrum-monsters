@@ -32,6 +32,9 @@ export function BattleScreen() {
   
   // Collapsible sidebar state
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  
+  // Copy button feedback states
+  const [copyFeedback, setCopyFeedback] = useState<Record<string, boolean>>({});
 
   // Helper function to render collapsible sidebar
   const renderCollapsibleSidebar = (content: React.ReactNode) => (
@@ -441,15 +444,11 @@ export function BattleScreen() {
                           
                           navigator.clipboard.writeText(summaryText).then(() => {
                             console.log('✅ All results copied to clipboard:', summaryText);
-                            // Show temporary success feedback
-                            const button = event?.target as HTMLElement;
-                            if (button) {
-                              const originalText = button.textContent;
-                              button.textContent = '✅ Copied!';
-                              setTimeout(() => {
-                                button.textContent = originalText;
-                              }, 2000);
-                            }
+                            // Show temporary success feedback using React state
+                            setCopyFeedback(prev => ({ ...prev, victory: true }));
+                            setTimeout(() => {
+                              setCopyFeedback(prev => ({ ...prev, victory: false }));
+                            }, 2000);
                           }).catch(err => {
                             console.error('❌ Failed to copy to clipboard:', err);
                           });
@@ -457,7 +456,7 @@ export function BattleScreen() {
                         className="w-full"
                         variant="secondary"
                       >
-                        📋 Copy All Results (Host)
+                        {copyFeedback.victory ? '✅ Copied!' : '📋 Copy All Results (Host)'}
                       </RetroButton>
                     </div>
                   )}
@@ -561,15 +560,11 @@ export function BattleScreen() {
                         
                         navigator.clipboard.writeText(resultsText).then(() => {
                           console.log('✅ Results copied to clipboard:', resultsText);
-                          // Show temporary success feedback
-                          const button = event?.target as HTMLElement;
-                          if (button) {
-                            const originalText = button.textContent;
-                            button.textContent = '✅ Copied!';
-                            setTimeout(() => {
-                              button.textContent = originalText;
-                            }, 2000);
-                          }
+                          // Show temporary success feedback using React state
+                          setCopyFeedback(prev => ({ ...prev, nextLevel: true }));
+                          setTimeout(() => {
+                            setCopyFeedback(prev => ({ ...prev, nextLevel: false }));
+                          }, 2000);
                         }).catch(err => {
                           console.error('❌ Failed to copy to clipboard:', err);
                         });
@@ -577,7 +572,7 @@ export function BattleScreen() {
                       className="w-full"
                       variant="secondary"
                     >
-                      📋 Copy Results (Host)
+                      {copyFeedback.nextLevel ? '✅ Copied!' : '📋 Copy Results (Host)'}
                     </RetroButton>
                   </div>
                 )}
