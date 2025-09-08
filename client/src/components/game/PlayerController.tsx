@@ -845,16 +845,16 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     }
   }, [viewport, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
 
-  // Reset player to visible position when entering battle
+  // Reset player to visible position when entering battle (only once)
   useEffect(() => {
-    if (currentLobby?.gamePhase === 'battle' && currentPlayer) {
-      // Reset to a safe visible position in center-bottom of screen
+    if (currentLobby?.gamePhase === 'battle' && currentPlayer && playerPosition.x === 100 && playerPosition.y === 100) {
+      // Reset to a safe visible position in center-bottom of screen (only if at default position)
       const safeX = viewport.viewportWidth / 2 - characterSize / 2;
       const safeY = 150; // 150px from bottom of screen
       setPlayerPosition({ x: safeX, y: safeY });
-      console.log(`🎮 Reset player position for battle: (${safeX}, ${safeY})`);
+      console.log(`🎮 Initial battle position reset: (${safeX}, ${safeY})`);
     }
-  }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, characterSize]);
+  }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, characterSize, playerPosition.x, playerPosition.y]);
 
   // Don't render if not in battle or no current player
   if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {

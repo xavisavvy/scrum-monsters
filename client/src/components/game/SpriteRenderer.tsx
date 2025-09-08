@@ -68,6 +68,8 @@ export function SpriteRenderer({
           backgroundRepeat: 'no-repeat',
           transform: shouldFlip ? 'scaleX(-1)' : 'scaleX(1)',
           imageRendering: 'pixelated',
+          border: '1px solid blue', // Debug - sprite container
+          backgroundColor: 'rgba(0, 255, 0, 0.2)', // Debug - sprite background
           ...style
         }}
       />

@@ -162,7 +162,9 @@ export function PlayerCharacter({
         width: characterSize,
         height: characterSize,
         transition: 'bottom 0.3s ease-out', // Smooth jump animation
-        zIndex: 75
+        zIndex: 75,
+        border: '2px solid lime', // Temporary visibility debug
+        backgroundColor: 'rgba(255, 0, 0, 0.3)' // Temporary visibility debug
       }}
       onClick={handleClick}
     >
