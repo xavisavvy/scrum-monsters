@@ -240,7 +240,7 @@ export function BattleScreen() {
             </div>
 
             {/* Player Character Controller */}
-            <div className="absolute inset-0 z-20" style={{ pointerEvents: 'auto' }}>
+            <div className="absolute inset-0 z-30" style={{ pointerEvents: 'auto' }}>
               <PlayerController 
                 onPlayerPositionsUpdate={(positions) => {
                   playerPositionsRef.current = positions;
