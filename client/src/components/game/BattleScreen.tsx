@@ -424,6 +424,43 @@ export function BattleScreen() {
                     Total Story Points Completed: 
                     <span className="text-yellow-400 ml-2">{totalStoryPoints}</span>
                   </div>
+                  
+                  {/* Host Copy All Results Button */}
+                  {currentPlayer?.isHost && completedTickets.length > 0 && (
+                    <div className="mt-4">
+                      <RetroButton
+                        onClick={() => {
+                          const allResults = completedTickets.map(ticket => {
+                            const devScore = ticket.teamBreakdown?.developers?.consensusScore ?? 'N/A';
+                            const qaScore = ticket.teamBreakdown?.qa?.consensusScore ?? 'N/A';
+                            const combinedValue = ticket.storyPoints;
+                            return `${ticket.title} - Developers voted ${devScore} QA voted ${qaScore}, with a combined sprint value of ${combinedValue}`;
+                          }).join('\n');
+                          
+                          const summaryText = `${allResults}\n\nTotal Story Points: ${totalStoryPoints}`;
+                          
+                          navigator.clipboard.writeText(summaryText).then(() => {
+                            console.log('✅ All results copied to clipboard:', summaryText);
+                            // Show temporary success feedback
+                            const button = event?.target as HTMLElement;
+                            if (button) {
+                              const originalText = button.textContent;
+                              button.textContent = '✅ Copied!';
+                              setTimeout(() => {
+                                button.textContent = originalText;
+                              }, 2000);
+                            }
+                          }).catch(err => {
+                            console.error('❌ Failed to copy to clipboard:', err);
+                          });
+                        }}
+                        className="w-full"
+                        variant="secondary"
+                      >
+                        📋 Copy All Results (Host)
+                      </RetroButton>
+                    </div>
+                  )}
                 </div>
               </div>
             </RetroCard>
