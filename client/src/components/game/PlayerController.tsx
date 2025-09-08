@@ -397,9 +397,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           deltaY *= normalizer;
         }
 
-        // Apply movement with bounds checking
+        // Apply movement with bounds checking (keep character in visible area)
         newX = Math.max(0, Math.min(viewport.viewportWidth - characterSize, prev.x + deltaX));
-        newY = Math.max(0, Math.min(viewport.viewportHeight - characterSize - 100, prev.y + deltaY));
+        newY = Math.max(50, Math.min(viewport.viewportHeight - characterSize - 50, prev.y + deltaY)); // Keep away from edges
 
         // Update movement state and direction
         setIsMoving(moving);
@@ -845,16 +845,16 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     }
   }, [viewport, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
 
-  // Reset player to visible position when entering battle (only once)
+  // Reset player to visible position when entering battle
   useEffect(() => {
-    if (currentLobby?.gamePhase === 'battle' && currentPlayer && playerPosition.x === 100 && playerPosition.y === 100) {
-      // Reset to a safe visible position in center-bottom of screen (only if at default position)
+    if (currentLobby?.gamePhase === 'battle' && currentPlayer) {
+      // Always reset to center-bottom when entering battle to ensure visibility
       const safeX = viewport.viewportWidth / 2 - characterSize / 2;
       const safeY = 150; // 150px from bottom of screen
       setPlayerPosition({ x: safeX, y: safeY });
-      console.log(`🎮 Initial battle position reset: (${safeX}, ${safeY})`);
+      console.log(`🎮 Battle position reset: (${safeX}, ${safeY}) viewport=${viewport.viewportWidth}x${viewport.viewportHeight}`);
     }
-  }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, characterSize, playerPosition.x, playerPosition.y]);
+  }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, viewport.viewportHeight, characterSize]);
 
   // Don't render if not in battle or no current player
   if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {

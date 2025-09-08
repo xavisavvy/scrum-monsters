@@ -142,16 +142,13 @@ export function PlayerCharacter({
     // This allows clicking anywhere else on the screen to shoot projectiles
   };
 
-  // Clamp position to stay within viewport bounds (using proper screen coordinate system)
+  // Clamp position to stay within viewport bounds 
   const clampedPosition = {
-    x: Math.max(0, Math.min(position.x, containerWidth - characterSize)),
-    y: Math.max(50, Math.min(position.y, containerHeight - characterSize - 50)) // Keep 50px margin from edges
+    x: Math.max(10, Math.min(position.x, containerWidth - characterSize - 10)),
+    y: Math.max(50, Math.min(position.y, containerHeight - characterSize - 100)) // Keep well within bounds
   };
 
-  // Only log if position was actually changed by clamping
-  if (clampedPosition.x !== position.x || clampedPosition.y !== position.y) {
-    console.log(`🎯 ${avatarClass}: PlayerCharacter CLAMPED from (${position.x}, ${position.y}) to (${clampedPosition.x}, ${clampedPosition.y})`);
-  }
+  console.log(`🎯 ${avatarClass}: Character at (${position.x.toFixed(0)}, ${position.y.toFixed(0)}) container=${containerWidth}x${containerHeight}`);
 
   return (
     <div
