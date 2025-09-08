@@ -149,7 +149,7 @@ export function PlayerCharacter({
         width: characterSize,
         height: characterSize,
         transition: 'bottom 0.3s ease-out', // Smooth jump animation
-        zIndex: 35
+        zIndex: 65
       }}
       onClick={handleClick}
     >

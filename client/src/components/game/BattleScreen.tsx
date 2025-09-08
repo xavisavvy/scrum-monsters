@@ -241,7 +241,7 @@ export function BattleScreen() {
             </div>
 
             {/* Player Character Controller */}
-            <div className="absolute inset-0 z-30" style={{ pointerEvents: 'auto' }}>
+            <div className="absolute inset-0 z-60" style={{ pointerEvents: 'auto' }}>
               <PlayerController 
                 onPlayerPositionsUpdate={(positions) => {
                   playerPositionsRef.current = positions;
@@ -566,7 +566,7 @@ export function BattleScreen() {
   return (
     <div className="battle-screen relative">
       {renderGamePhase()}
-      <div className="relative z-40">
+      <div className="relative z-45">
         <PlayerHUD />
       </div>
 
