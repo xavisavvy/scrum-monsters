@@ -61,11 +61,15 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   // Handle keyboard input
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
+      console.log('🎹 KeyDown detected:', event.code, 'target:', event.target);
+      
       // Prevent game controls when typing in input fields
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        console.log('🚫 Ignoring keyboard input (typing in input field)');
         return;
       }
       
+      console.log('✅ Processing keyboard input:', event.code);
       setKeys(prev => new Set(prev).add(event.code));
       
       // Handle jump
@@ -207,11 +211,15 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      console.log('🎹 KeyUp detected:', event.code);
+      
       // Prevent game controls when typing in input fields
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
+        console.log('🚫 Ignoring keyboard release (typing in input field)');
         return;
       }
       
+      console.log('✅ Processing keyboard release:', event.code);
       setKeys(prev => {
         const newKeys = new Set(prev);
         newKeys.delete(event.code);
