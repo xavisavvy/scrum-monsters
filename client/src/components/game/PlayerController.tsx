@@ -871,8 +871,47 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
 
   return (
     <div 
-      className="absolute inset-0 pointer-events-auto cursor-crosshair"
+      className="absolute inset-0 pointer-events-auto cursor-crosshair focus:outline-none"
       onClick={handleScreenClick}
+      onMouseDown={(e) => {
+        e.currentTarget.focus();
+        console.log('🎯 Game focused via mouse click');
+      }}
+      tabIndex={0}
+      onKeyDown={(e) => {
+        console.log('🎹 Direct KeyDown on game area:', e.code);
+        const event = e.nativeEvent;
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        console.log('✅ Processing direct keyboard input:', event.code);
+        setKeys(prev => new Set(prev).add(event.code));
+        
+        if (event.code === 'Space' && !isJumping) {
+          e.preventDefault();
+          setIsJumping(true);
+          emit('player_jump', { isJumping: true });
+          setTimeout(() => {
+            setIsJumping(false);
+            emit('player_jump', { isJumping: false });
+          }, jumpDuration);
+        }
+      }}
+      onKeyUp={(e) => {
+        console.log('🎹 Direct KeyUp on game area:', e.code);
+        const event = e.nativeEvent;
+        if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
+        console.log('✅ Processing direct keyboard release:', event.code);
+        setKeys(prev => {
+          const newKeys = new Set(prev);
+          newKeys.delete(event.code);
+          return newKeys;
+        });
+      }}
+      ref={(el) => {
+        if (el && document.activeElement !== el) {
+          el.focus();
+          console.log('🎯 Auto-focusing game area');
+        }
+      }}
     >
       <div style={{ 
         opacity: currentPlayer.team === 'spectators' ? 0.7 : 1,
