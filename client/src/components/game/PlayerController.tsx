@@ -789,26 +789,27 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     }
   }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, viewport.viewportHeight, characterSize]);
 
-  // Don't render if not in battle or no current player
-  if (!currentPlayer || !currentLobby || currentLobby.gamePhase !== 'battle') {
-    console.log('❌ PlayerController not rendering - missing player or not in battle', {
+  // Check if should be active (but always render container to prevent DOM reconciliation issues)
+  const isActive = currentPlayer && currentLobby && currentLobby.gamePhase === 'battle';
+  
+  if (!isActive) {
+    console.log('❌ PlayerController inactive - missing player or not in battle', {
       hasCurrentPlayer: !!currentPlayer,
       hasCurrentLobby: !!currentLobby,
       gamePhase: currentLobby?.gamePhase
     });
-    return null;
   }
 
   return (
     <div 
-      className="absolute inset-0 pointer-events-auto cursor-crosshair focus:outline-none"
-      onClick={handleScreenClick}
-      onMouseDown={(e) => {
+      className={`absolute inset-0 focus:outline-none ${isActive ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
+      onClick={isActive ? handleScreenClick : undefined}
+      onMouseDown={isActive ? (e) => {
         e.currentTarget.focus();
         console.log('🎯 Game focused via mouse click');
-      }}
-      tabIndex={0}
-      onKeyDown={(e) => {
+      } : undefined}
+      tabIndex={isActive ? 0 : -1}
+      onKeyDown={isActive ? (e) => {
         console.log('🎹 Direct KeyDown on game area:', e.code);
         const event = e.nativeEvent;
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -901,8 +902,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             });
           }
         }
-      }}
-      onKeyUp={(e) => {
+      } : undefined}
+      onKeyUp={isActive ? (e) => {
         console.log('🎹 Direct KeyUp on game area:', e.code);
         const event = e.nativeEvent;
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
@@ -917,33 +918,35 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
           setCtrlPressed(false);
         }
-      }}
-      ref={(el) => {
+      } : undefined}
+      ref={isActive ? (el) => {
         if (el && document.activeElement !== el) {
           el.focus();
           console.log('🎯 Auto-focusing game area');
         }
-      }}
+      } : undefined}
     >
-      <div style={{ 
-        opacity: currentPlayer.team === 'spectators' ? 0.7 : 1,
-        filter: currentPlayer.team === 'spectators' ? 'saturate(0.9)' : 'none'
-      }}>
-        <PlayerCharacter
-          avatarClass={currentPlayer.avatar}
-          playerName={currentPlayer.name}
-          position={playerPosition}
-          onPositionChange={setPlayerPosition}
-          onShoot={handleShoot}
-          isJumping={isJumping}
-          isDead={false} // Could be tied to game state later
-          containerWidth={viewport.viewportWidth}
-          containerHeight={viewport.viewportHeight}
-          playerId={currentPlayer.id}
-          isMoving={isMoving}
-          direction={currentDirection}
-        />
-      </div>
+      {isActive && currentPlayer && (
+        <div style={{ 
+          opacity: currentPlayer.team === 'spectators' ? 0.7 : 1,
+          filter: currentPlayer.team === 'spectators' ? 'saturate(0.9)' : 'none'
+        }}>
+          <PlayerCharacter
+            avatarClass={currentPlayer.avatar}
+            playerName={currentPlayer.name}
+            position={playerPosition}
+            onPositionChange={setPlayerPosition}
+            onShoot={handleShoot}
+            isJumping={isJumping}
+            isDead={false} // Could be tied to game state later
+            containerWidth={viewport.viewportWidth}
+            containerHeight={viewport.viewportHeight}
+            playerId={currentPlayer.id}
+            isMoving={isMoving}
+            direction={currentDirection}
+          />
+        </div>
+      )}
 
       {/* Other players */}
       {currentLobby && Object.entries(otherPlayersPositions).map(([playerId, position]) => {
