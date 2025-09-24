@@ -36,8 +36,9 @@ export function BattleScreen() {
   // Copy button feedback states
   const [copyFeedback, setCopyFeedback] = useState<Record<string, boolean>>({});
   
-  // Refs for timeout cleanup
+  // Refs for timeout cleanup and component mount tracking
   const timeoutRefs = useRef<Set<NodeJS.Timeout>>(new Set());
+  const isMountedRef = useRef(true);
 
   // Helper function to render collapsible sidebar
   const renderCollapsibleSidebar = (content: React.ReactNode) => (
@@ -92,9 +93,12 @@ export function BattleScreen() {
     };
   }, [currentLobby?.gamePhase]);
 
-  // Cleanup all timeouts on unmount
+  // Cleanup all timeouts on unmount and track component state
   useEffect(() => {
+    isMountedRef.current = true;
+    
     return () => {
+      isMountedRef.current = false;
       // Clear all tracked timeouts to prevent DOM manipulation errors
       timeoutRefs.current.forEach(timeoutId => {
         clearTimeout(timeoutId);
@@ -145,11 +149,14 @@ export function BattleScreen() {
 
       // Auto-remove emote after 3.5 seconds
       const timeoutId = setTimeout(() => {
-        setEmotes(prev => {
-          const newEmotes = { ...prev };
-          delete newEmotes[playerId];
-          return newEmotes;
-        });
+        // Only update state if component is still mounted
+        if (isMountedRef.current) {
+          setEmotes(prev => {
+            const newEmotes = { ...prev };
+            delete newEmotes[playerId];
+            return newEmotes;
+          });
+        }
         timeoutRefs.current.delete(timeoutId);
       }, 3500);
       timeoutRefs.current.add(timeoutId);
@@ -191,11 +198,14 @@ export function BattleScreen() {
     
     // Auto-remove emote after 3.5 seconds
     const timeoutId = setTimeout(() => {
-      setEmotes(prev => {
-        const newEmotes = { ...prev };
-        delete newEmotes[currentPlayer.id];
-        return newEmotes;
-      });
+      // Only update state if component is still mounted
+      if (isMountedRef.current) {
+        setEmotes(prev => {
+          const newEmotes = { ...prev };
+          delete newEmotes[currentPlayer.id];
+          return newEmotes;
+        });
+      }
       timeoutRefs.current.delete(timeoutId);
     }, 3500);
     timeoutRefs.current.add(timeoutId);
@@ -466,7 +476,10 @@ export function BattleScreen() {
                             // Show temporary success feedback using React state
                             setCopyFeedback(prev => ({ ...prev, victory: true }));
                             const timeoutId = setTimeout(() => {
-                              setCopyFeedback(prev => ({ ...prev, victory: false }));
+                              // Only update state if component is still mounted
+                              if (isMountedRef.current) {
+                                setCopyFeedback(prev => ({ ...prev, victory: false }));
+                              }
                               timeoutRefs.current.delete(timeoutId);
                             }, 2000);
                             timeoutRefs.current.add(timeoutId);
@@ -584,7 +597,10 @@ export function BattleScreen() {
                           // Show temporary success feedback using React state
                           setCopyFeedback(prev => ({ ...prev, nextLevel: true }));
                           const timeoutId = setTimeout(() => {
-                            setCopyFeedback(prev => ({ ...prev, nextLevel: false }));
+                            // Only update state if component is still mounted
+                            if (isMountedRef.current) {
+                              setCopyFeedback(prev => ({ ...prev, nextLevel: false }));
+                            }
                             timeoutRefs.current.delete(timeoutId);
                           }, 2000);
                           timeoutRefs.current.add(timeoutId);
