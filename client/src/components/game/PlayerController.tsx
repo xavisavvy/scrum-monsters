@@ -894,6 +894,83 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             emit('player_jump', { isJumping: false });
           }, jumpDuration);
         }
+        
+        // Handle emote key (E)
+        if (event.code === 'KeyE') {
+          e.preventDefault();
+          console.log('🎭 E key pressed - opening emote modal');
+          window.dispatchEvent(new CustomEvent('openEmoteModal'));
+        }
+        
+        // Handle shooting with Ctrl keys
+        if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer && !ctrlPressed) {
+          setCtrlPressed(true);
+          e.preventDefault();
+          console.log('⌨️ Direct Ctrl key pressed for shooting!');
+          
+          let targetX, targetY, targetPlayerId = null;
+          
+          if (currentPlayer.team === 'spectators') {
+            const nearestPlayer = findNearestTargetPlayer();
+            if (nearestPlayer) {
+              targetX = nearestPlayer.x;
+              targetY = nearestPlayer.y;
+              targetPlayerId = nearestPlayer.id;
+            } else {
+              const centerWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
+              targetX = centerWorld.x;
+              targetY = centerWorld.y;
+            }
+          } else {
+            const bossWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
+            targetX = bossWorld.x;
+            targetY = bossWorld.y;
+          }
+          
+          const characterCenterX = playerPosition.x + characterSize / 2;
+          const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
+          
+          const emoji = getProjectileEmoji(currentPlayer.avatar);
+          const newProjectile: Projectile = {
+            id: Math.random().toString(36).substring(2, 15),
+            startX: characterCenterX,
+            startY: characterCenterY,
+            targetX,
+            targetY,
+            emoji,
+            progress: 0
+          };
+          
+          setProjectiles(prev => [...prev, newProjectile]);
+          
+          const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
+          const targetWorld = viewport.screenToWorld(targetX, targetY);
+          const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
+          const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
+          const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
+          const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
+          
+          if (currentPlayer.team === 'spectators' && targetPlayerId) {
+            emit('attack_player', {
+              targetPlayerId,
+              startX: percentStartX,
+              startY: percentStartY,
+              targetX: percentTargetX,
+              targetY: percentTargetY,
+              emoji,
+              projectileId: newProjectile.id
+            });
+          } else {
+            emit('attack_boss', {
+              startX: percentStartX,
+              startY: percentStartY,
+              targetX: percentTargetX,
+              targetY: percentTargetY,
+              emoji,
+              projectileId: newProjectile.id
+            });
+          }
+        }
       }}
       onKeyUp={(e) => {
         console.log('🎹 Direct KeyUp on game area:', e.code);
@@ -905,6 +982,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           newKeys.delete(event.code);
           return newKeys;
         });
+        
+        // Reset Ctrl key state when released
+        if (event.code === 'ControlLeft' || event.code === 'ControlRight') {
+          setCtrlPressed(false);
+        }
       }}
       ref={(el) => {
         if (el && document.activeElement !== el) {
