@@ -1,6 +1,6 @@
 import React from 'react';
 import { GamePhase } from '@shared/gameEvents';
-import { PhaseComponentProps } from './PhaseComponent';
+import { PhaseComponentProps } from './index';
 import { BattlePhase } from './BattlePhase';
 import { RevealPhase } from './RevealPhase';
 import { DiscussionPhase } from './DiscussionPhase';
