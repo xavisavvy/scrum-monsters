@@ -45,6 +45,11 @@ canvas {
   touch-action: none;
 }
 
+/* Battle mode scroll hiding - prevents DOM manipulation conflicts */
+body.battle-mode-no-scroll {
+  overflow: hidden !important;
+}
+
 /* Floating animation for icons */
 @keyframes floatUpDown {
   0%, 100% { 
