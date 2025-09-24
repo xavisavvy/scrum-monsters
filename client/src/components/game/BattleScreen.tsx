@@ -10,6 +10,7 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
 import { YoutubeAudioPlayer } from '@/components/ui/YoutubeAudioPlayer';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { PlayerController } from './PlayerController';
 // Team competition components for enhanced multiplayer experience
 import { TeamScoreboard } from './TeamScoreboard';
@@ -274,11 +275,13 @@ export function BattleScreen() {
 
             {/* Player Character Controller */}
             <div className="absolute inset-0 z-70" style={{ pointerEvents: 'auto' }}>
-              <PlayerController 
-                onPlayerPositionsUpdate={(positions) => {
-                  playerPositionsRef.current = positions;
-                }}
-              />
+              <ErrorBoundary fallback={<div className="error-recovery-player" />}>
+                <PlayerController 
+                  onPlayerPositionsUpdate={(positions) => {
+                    playerPositionsRef.current = positions;
+                  }}
+                />
+              </ErrorBoundary>
             </div>
 
             {/* Team Competition Components */}
