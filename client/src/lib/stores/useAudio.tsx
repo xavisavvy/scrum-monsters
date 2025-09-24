@@ -480,7 +480,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   fadeInBossMusic: () => {
-    const { bossMusic, isBossMusicMuted, isYoutubeAudioActive, isBossMusicPlaying } = get();
+    const { bossMusic, isBossMusicMuted, isYoutubeAudioActive, isBossMusicPlaying, fadeTimer } = get();
     
     // Don't play boss music if YouTube music is already active
     if (isYoutubeAudioActive) {
@@ -494,39 +494,63 @@ export const useAudio = create<AudioState>((set, get) => ({
       return;
     }
     
+    // Clear any existing fade timer to prevent conflicts during rapid phase changes
+    if (fadeTimer) {
+      clearInterval(fadeTimer);
+      set({ fadeTimer: null });
+    }
+    
     if (bossMusic && !isBossMusicMuted) {
       bossMusic.volume = 0;
       bossMusic.loop = true;
       bossMusic.play().catch((error: any) => {
         console.log("Boss music fade in prevented:", error);
+        set({ isBossMusicPlaying: false, fadeTimer: null });
+        return;
       });
       
       set({ isBossMusicPlaying: true });
       
-      // Fade in over 1 second
+      // Fade in over 1 second with cleanup tracking
       const fadeInInterval = setInterval(() => {
-        if (bossMusic.volume < 0.6) {
-          bossMusic.volume = Math.min(bossMusic.volume + 0.05, 0.6);
+        const { bossMusic: currentMusic } = get(); // Get fresh reference
+        if (currentMusic && currentMusic.volume < 0.6) {
+          currentMusic.volume = Math.min(currentMusic.volume + 0.05, 0.6);
         } else {
           clearInterval(fadeInInterval);
+          set({ fadeTimer: null });
         }
       }, 50);
+      
+      set({ fadeTimer: fadeInInterval });
     }
   },
 
   fadeOutBossMusic: () => {
-    const { bossMusic } = get();
+    const { bossMusic, fadeTimer } = get();
+    
+    // Clear any existing fade timer to prevent conflicts
+    if (fadeTimer) {
+      clearInterval(fadeTimer);
+      set({ fadeTimer: null });
+    }
+    
     if (bossMusic && !bossMusic.paused) {
       const fadeOutInterval = setInterval(() => {
-        if (bossMusic.volume > 0.05) {
-          bossMusic.volume = Math.max(bossMusic.volume - 0.05, 0);
+        const { bossMusic: currentMusic } = get(); // Get fresh reference
+        if (currentMusic && currentMusic.volume > 0.05) {
+          currentMusic.volume = Math.max(currentMusic.volume - 0.05, 0);
         } else {
-          bossMusic.pause();
-          bossMusic.volume = 0.6; // Reset volume for next play
-          set({ isBossMusicPlaying: false });
+          if (currentMusic) {
+            currentMusic.pause();
+            currentMusic.volume = 0.6; // Reset volume for next play
+          }
+          set({ isBossMusicPlaying: false, fadeTimer: null });
           clearInterval(fadeOutInterval);
         }
       }, 50);
+      
+      set({ fadeTimer: fadeOutInterval });
     }
   },
 
@@ -551,7 +575,13 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   stopBossMusic: () => {
-    const { bossMusic, youtubePlayer, isYoutubeAudioActive } = get();
+    const { bossMusic, youtubePlayer, isYoutubeAudioActive, fadeTimer } = get();
+    
+    // Clear any fade timers to prevent DOM manipulation conflicts
+    if (fadeTimer) {
+      clearInterval(fadeTimer);
+      set({ fadeTimer: null });
+    }
     
     if (isYoutubeAudioActive && youtubePlayer) {
       youtubePlayer.stopVideo();
