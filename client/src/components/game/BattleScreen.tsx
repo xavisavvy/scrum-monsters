@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+// Reverted to original approach for simpler fix
 import { BossDisplay } from './BossDisplay';
 import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
@@ -254,11 +255,14 @@ export function BattleScreen() {
   const renderGamePhase = () => {
     if (!currentLobby) return null;
 
+    // Use stable component container with consistent key to prevent DOM reconciliation issues
+    const phaseKey = `game-phase-container`; // Single stable key for all phases
+    
     switch (currentLobby.gamePhase) {
       case 'battle':
         if (!currentLobby?.boss) return null;
         return (
-          <div key="game-battle" className="relative">
+          <div key={phaseKey} className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
@@ -292,7 +296,7 @@ export function BattleScreen() {
 
       case 'reveal':
         return (
-          <div key="game-reveal" className="text-center p-6">
+          <div key={phaseKey} className="text-center p-6">
             <RetroCard title="Revealing Estimates...">
               <div className="space-y-4">
                 <div className="text-2xl">⏳</div>
@@ -305,7 +309,7 @@ export function BattleScreen() {
       case 'discussion':
         if (!currentLobby?.boss) return null;
         return (
-          <div key="game-discussion" className="relative">
+          <div key={phaseKey} className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
@@ -339,7 +343,7 @@ export function BattleScreen() {
         );
         
         return (
-          <div key="game-victory" className="relative">
+          <div key={phaseKey} className="relative">
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
@@ -510,7 +514,7 @@ export function BattleScreen() {
           : null;
         
         return (
-          <div key="game-next-level" className="relative">
+          <div key={phaseKey} className="relative">
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
@@ -628,7 +632,7 @@ export function BattleScreen() {
       default:
         return null;
     }
-  };
+  }; // End of old render function - remove this once PhaseRenderer is working
 
   useEffect(() => {
     // Play success sound on victory

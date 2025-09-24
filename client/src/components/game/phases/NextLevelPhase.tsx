@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { PhaseContainer } from './PhaseContainer';
-import { PhaseComponentProps } from './PhaseComponent';
+import { PhaseComponentProps } from './index';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 

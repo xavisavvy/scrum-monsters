@@ -1,6 +1,6 @@
 import React from 'react';
 import { PhaseContainer } from './PhaseContainer';
-import { PhaseComponentProps } from './PhaseComponent';
+import { PhaseComponentProps } from './index';
 import { RetroCard } from '@/components/ui/retro-card';
 
 interface RevealPhaseProps extends PhaseComponentProps {}
