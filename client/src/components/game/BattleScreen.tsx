@@ -74,20 +74,21 @@ export function BattleScreen() {
     </div>
   );
 
-  // Hide root page scrollbar during battle phases
+  // Hide root page scrollbar during battle phases using CSS class to avoid React conflicts
   useEffect(() => {
     const battlePhases = ['battle', 'discussion', 'reveal'];
     const shouldHideScrollbar = battlePhases.includes(currentLobby?.gamePhase || '');
     
+    // Use CSS class toggle instead of direct style manipulation
     if (shouldHideScrollbar) {
-      document.body.style.overflow = 'hidden';
+      document.body.classList.add('battle-mode-no-scroll');
     } else {
-      document.body.style.overflow = '';
+      document.body.classList.remove('battle-mode-no-scroll');
     }
 
     // Cleanup on unmount
     return () => {
-      document.body.style.overflow = '';
+      document.body.classList.remove('battle-mode-no-scroll');
     };
   }, [currentLobby?.gamePhase]);
 
