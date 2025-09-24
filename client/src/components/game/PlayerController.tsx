@@ -545,15 +545,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   const handleSpecialAttack = useCallback((avatarClass: AvatarClass) => {
     console.log(`🌟 Casting special attack for ${avatarClass}!`);
     
-    // Create special effect element
-    const specialEffect = document.createElement('div');
-    specialEffect.style.position = 'fixed';
-    specialEffect.style.pointerEvents = 'none';
-    specialEffect.style.zIndex = '9999';
-    specialEffect.style.fontSize = '4rem';
-    specialEffect.style.textAlign = 'center';
-    specialEffect.style.transition = 'all 1.5s ease-out';
-    
     // Calculate character center (corrected for top-based positioning)
     const characterCenterX = playerPosition.x + characterSize / 2;
     const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
@@ -627,28 +618,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         break;
     }
     
-    // Position effect at character location
-    specialEffect.style.left = `${characterCenterX - 100}px`;
-    specialEffect.style.top = `${characterCenterY - 50}px`;
-    specialEffect.style.color = effectColor;
-    specialEffect.style.textShadow = `0 0 20px ${effectColor}, 0 0 40px ${effectColor}`;
-    specialEffect.innerHTML = `
-      <div style="font-size: 4rem; margin-bottom: 0.5rem;">${effectEmoji}</div>
-      <div style="font-size: 1.5rem; font-weight: bold; text-transform: uppercase; letter-spacing: 2px;">${effectText}</div>
-    `;
-    
-    document.body.appendChild(specialEffect);
-    
-    // Animate the effect
-    setTimeout(() => {
-      specialEffect.style.transform = 'scale(1.5) translateY(-100px)';
-      specialEffect.style.opacity = '0';
-    }, 100);
-    
-    // Create particle explosion effect
-    createParticleExplosion(characterCenterX, characterCenterY, effectColor, effectEmoji);
-    
-    // Attack the boss directly with higher damage
+    // Attack the boss directly with higher damage - no DOM manipulation needed
     emit('attack_boss', { damage });
     console.log(`🎯 Special attack deals ${damage} damage to boss!`);
     
@@ -657,51 +627,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       playHit();
     }
     
-    // Remove effect after animation
-    setTimeout(() => {
-      if (document.body.contains(specialEffect)) {
-        document.body.removeChild(specialEffect);
-      }
-    }, 1500);
+    // Create simple console effect instead of DOM manipulation 
+    console.log(`${effectEmoji} ${effectText} - ${damage} damage!`);
   }, [playerPosition, characterSize, emit, playHit]);
 
-  // Create particle explosion effect
-  const createParticleExplosion = (x: number, y: number, color: string, emoji: string) => {
-    const particleCount = 12;
-    
-    for (let i = 0; i < particleCount; i++) {
-      const particle = document.createElement('div');
-      particle.style.position = 'fixed';
-      particle.style.left = `${x}px`;
-      particle.style.top = `${y}px`;
-      particle.style.pointerEvents = 'none';
-      particle.style.zIndex = '9998';
-      particle.style.fontSize = '2rem';
-      particle.textContent = emoji.split('')[i % emoji.length] || '✨';
-      particle.style.color = color;
-      particle.style.textShadow = `0 0 10px ${color}`;
-      particle.style.transition = 'all 1s ease-out';
-      
-      document.body.appendChild(particle);
-      
-      // Random direction for particles
-      const angle = (i / particleCount) * 2 * Math.PI;
-      const distance = 150 + Math.random() * 100;
-      const targetX = x + Math.cos(angle) * distance;
-      const targetY = y + Math.sin(angle) * distance;
-      
-      setTimeout(() => {
-        particle.style.transform = `translate(${targetX - x}px, ${targetY - y}px) scale(0.5)`;
-        particle.style.opacity = '0';
-      }, 50);
-      
-      setTimeout(() => {
-        if (document.body.contains(particle)) {
-          document.body.removeChild(particle);
-        }
-      }, 1000);
-    }
-  };
+  // Removed createParticleExplosion function to prevent DOM manipulation errors
 
   const findNearestTargetPlayer = useCallback(() => {
     if (!currentLobby || !currentPlayer) return null;
