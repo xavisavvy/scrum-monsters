@@ -257,7 +257,7 @@ export function BattleScreen() {
       case 'battle':
         if (!currentLobby?.boss) return null;
         return (
-          <div key={`battle-${currentLobby.gamePhase}`} className="relative">
+          <div key="game-battle" className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
@@ -289,7 +289,7 @@ export function BattleScreen() {
 
       case 'reveal':
         return (
-          <div key={`reveal-${currentLobby.gamePhase}`} className="text-center p-6">
+          <div key="game-reveal" className="text-center p-6">
             <RetroCard title="Revealing Estimates...">
               <div className="space-y-4">
                 <div className="text-2xl">⏳</div>
@@ -302,7 +302,7 @@ export function BattleScreen() {
       case 'discussion':
         if (!currentLobby?.boss) return null;
         return (
-          <div key={`discussion-${currentLobby.gamePhase}`} className="relative">
+          <div key="game-discussion" className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
@@ -336,7 +336,7 @@ export function BattleScreen() {
         );
         
         return (
-          <div key={`victory-${currentLobby.gamePhase}`} className="relative">
+          <div key="game-victory" className="relative">
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
@@ -507,7 +507,7 @@ export function BattleScreen() {
           : null;
         
         return (
-          <div key={`next_level-${currentLobby.gamePhase}`} className="relative">
+          <div key="game-next-level" className="relative">
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
