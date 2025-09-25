@@ -933,7 +933,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
               projectileId: newProjectile.id
             });
           } else {
+            // Calculate damage for boss attack (same as click attacks)
+            const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
+            
             emit('attack_boss', {
+              damage,
               startX: percentStartX,
               startY: percentStartY,
               targetX: percentTargetX,
