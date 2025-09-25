@@ -14,9 +14,9 @@ import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { PlayerController } from './PlayerController';
 // Team competition components for enhanced multiplayer experience
-import { TeamScoreboard } from './TeamScoreboard';
 import { TeamPerformanceTracker } from './TeamPerformanceTracker';
 import { TeamCelebration } from './TeamCelebration';
+import { TeamCompetitionModal } from './TeamCompetitionModal';
 import { TimerDisplay } from './TimerDisplay';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -119,6 +119,9 @@ export function BattleScreen() {
   }>>({});
   const playerPositionsRef = useRef<Record<string, { x: number, y: number }>>({});
 
+  // Team Competition Modal state
+  const [showTeamCompetitionModal, setShowTeamCompetitionModal] = useState(false);
+
   // Handle emote modal open event from PlayerController
   useEffect(() => {
     const handleOpenEmoteModal = () => {
@@ -132,6 +135,22 @@ export function BattleScreen() {
       window.removeEventListener('openEmoteModal', handleOpenEmoteModal);
     };
   }, [currentLobby?.gamePhase]);
+
+  // Handle Tab key for Team Competition Modal
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Only trigger during battle phase and when no other modals are open
+      if (event.key === 'Tab' && currentLobby?.gamePhase === 'battle' && !showEmoteModal) {
+        event.preventDefault();
+        setShowTeamCompetitionModal(prev => !prev);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [currentLobby?.gamePhase, showEmoteModal]);
 
   // Handle battle emotes from other players
   useEffect(() => {
@@ -718,6 +737,24 @@ export function BattleScreen() {
           </div>
         </div>
       )}
+
+      {/* Tab Key Hint - only show during battle and if team competition exists */}
+      {currentLobby?.gamePhase === 'battle' && currentLobby?.teamCompetition && (
+        <div className="absolute top-36 left-6 z-40" data-no-shoot>
+          <div className="bg-cyan-900 bg-opacity-70 rounded-lg px-3 py-2 border border-cyan-400">
+            <div className="text-cyan-200 font-bold text-sm flex items-center gap-2">
+              <span className="bg-cyan-600 px-2 py-1 rounded text-xs font-mono">TAB</span>
+              Team Stats
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Team Competition Modal */}
+      <TeamCompetitionModal
+        isOpen={showTeamCompetitionModal}
+        onClose={() => setShowTeamCompetitionModal(false)}
+      />
 
       {/* YouTube Audio Player (hidden) */}
       <YoutubeAudioPlayer />

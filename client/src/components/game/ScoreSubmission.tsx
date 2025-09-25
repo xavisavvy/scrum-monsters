@@ -4,7 +4,6 @@ import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES } from '@/lib/gameTypes';
-import { TeamScoreboard } from './TeamScoreboard';
 
 export function ScoreSubmission() {
   const [selectedScore, setSelectedScore] = useState<number | string | '?' | null>(null);
@@ -252,9 +251,6 @@ export function ScoreSubmission() {
           )}
         </div>
       </RetroCard>
-
-      {/* Team Competition Section */}
-      <TeamScoreboard />
     </div>
   );
 }
