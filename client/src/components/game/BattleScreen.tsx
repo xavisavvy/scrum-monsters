@@ -266,6 +266,9 @@ export function BattleScreen() {
   const renderPhaseContent = () => {
     if (!currentLobby) return null;
     
+    // Define phaseKey for consistent component keys
+    const phaseKey = `phase-${currentLobby.gamePhase}`;
+    
     switch (currentLobby.gamePhase) {
       case 'battle':
         if (!currentLobby?.boss) return null;
