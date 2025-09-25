@@ -662,9 +662,16 @@ export function BattleScreen() {
 
       {/* Emote Display Bubbles */}
       {Object.entries(emotes).map(([playerId, emote]) => {
-        // Convert stored screen position to CSS position for display
-        const screenX = emote.x;
-        const screenY = emote.y;
+        // Use current player position instead of fixed coordinates to follow character movement
+        const currentPlayerPosition = playerPositionsRef.current[playerId];
+        
+        // If player position not found, don't render the emote (they may have left)
+        if (!currentPlayerPosition) {
+          return null;
+        }
+        
+        const screenX = currentPlayerPosition.x;
+        const screenY = currentPlayerPosition.y;
         
         return (
           <div
