@@ -211,9 +211,15 @@ function App() {
         }
       }
       
-      // Force BattleScreen remount during ALL transitions TO battle to prevent DOM reconciliation errors
-      if (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') {
-        console.log(`🔄 CRITICAL TRANSITION: ${lastGamePhase} → battle. Using aggressive unmount/remount strategy...`);
+      // Force BattleScreen remount on ANY significant state change to prevent DOM reconciliation errors
+      const shouldRemount = (
+        (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') || // Entering battle
+        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' && 
+         JSON.stringify(currentLobby?.currentTicket) !== JSON.stringify(lobby.currentTicket)) // Ticket changed in battle
+      );
+      
+      if (shouldRemount) {
+        console.log(`🔄 COMPREHENSIVE REMOUNT: ${lastGamePhase} → ${lobby.gamePhase}, ticket change detected`);
         
         // Step 1: Unmount immediately
         setIsBattleUnmounting(true);
@@ -222,11 +228,11 @@ function App() {
         setTimeout(() => {
           setBattleRemountKey(prev => {
             const newKey = prev + 1;
-            console.log(`🎮 BattleScreen aggressive remount key: ${prev} → ${newKey}`);
+            console.log(`🎮 BattleScreen comprehensive remount key: ${prev} → ${newKey}`);
             return newKey;
           });
           setIsBattleUnmounting(false);
-        }, 50); // Short delay to ensure complete DOM cleanup
+        }, 100); // Increased delay for more reliable cleanup
       }
       
       // Log all phase changes for debugging
@@ -562,8 +568,19 @@ function App() {
         }
         
         return (
-          <ErrorBoundary>
-            <BattleScreen key={`battle-${battleRemountKey}`} />
+          <ErrorBoundary
+            fallback={
+              <div className="retro-container bg-gray-900 flex items-center justify-center h-screen">
+                <div className="text-center">
+                  <div className="text-xl font-bold text-red-400 mb-4">⚡ Battle System Recovered</div>
+                  <div className="text-sm text-gray-400">Combat systems automatically restored</div>
+                </div>
+              </div>
+            }
+          >
+            <BattleScreen 
+              key={`battle-${battleRemountKey}-${currentLobby?.gamePhase}-${currentLobby?.currentTicket?.id || 'none'}`} 
+            />
           </ErrorBoundary>
         );
 
