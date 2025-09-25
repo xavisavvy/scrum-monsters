@@ -920,7 +920,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         }
       } : undefined}
       ref={isActive ? (el) => {
-        if (el && document.activeElement !== el) {
+        // Only auto-focus during battle phase to prevent stealing focus from other UI elements
+        if (el && document.activeElement !== el && currentLobby?.gamePhase === 'battle') {
           // Don't steal focus if user is typing in an input field (like emote modal)
           const activeElement = document.activeElement;
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
