@@ -25,7 +25,7 @@
     margin: 0;
     padding: 0;
     overflow-x: hidden;
-    overflow-y: scroll; /* Force scrollbar to always be visible */
+    overflow-y: auto; /* Only show scrollbar when needed */
     width: 100vw;
     min-height: 100vh;
     font-family: 'Press Start 2P', 'Courier New', monospace;
