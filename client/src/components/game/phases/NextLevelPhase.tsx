@@ -13,6 +13,7 @@ export function NextLevelPhase({
   isTransitioning = false
 }: NextLevelPhaseProps) {
   const [resultsCopied, setResultsCopied] = useState(false);
+  const [isLoadingNextLevel, setIsLoadingNextLevel] = useState(false);
   
   const lastCompletedTicket = Array.isArray(lobby.completedTickets) && lobby.completedTickets.length > 0 
     ? lobby.completedTickets[lobby.completedTickets.length - 1] 
@@ -118,18 +119,28 @@ export function NextLevelPhase({
               
               {currentPlayer?.isHost && (
                 <RetroButton 
-                  onClick={() => emit('proceed_next_level')}
+                  onClick={() => {
+                    setIsLoadingNextLevel(true);
+                    console.log('🔄 Starting staged next level transition...');
+                    
+                    // Stage 1: Show loading state immediately
+                    setTimeout(() => {
+                      console.log('📤 Emitting proceed_next_level after staging delay');
+                      emit('proceed_next_level');
+                    }, 500); // Give React 500ms to update UI and prepare for transition
+                  }}
                   variant="primary"
                   className="flex-1 max-w-48"
+                  disabled={isLoadingNextLevel}
                 >
-                  ⚔️ Next Battle
+                  {isLoadingNextLevel ? '⚡ Loading...' : '⚔️ Next Battle'}
                 </RetroButton>
               )}
             </div>
             
-            {isTransitioning && (
+            {(isTransitioning || isLoadingNextLevel) && (
               <div className="text-center text-xs text-gray-400 mt-2">
-                Preparing next battle...
+                {isLoadingNextLevel ? 'Initializing next battle...' : 'Preparing next battle...'}
               </div>
             )}
           </div>
