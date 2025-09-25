@@ -211,6 +211,12 @@ function App() {
         }
       }
       
+      // Handle Return Home functionality: transition from victory back to lobby
+      if (lastGamePhase === 'victory' && lobby.gamePhase === 'lobby' && appState === 'battle') {
+        console.log('🏠 Return Home: transitioning from victory to lobby');
+        setAppState('lobby');
+      }
+      
       // Force BattleScreen remount on ANY significant state change to prevent DOM reconciliation errors
       const shouldRemount = (
         (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') || // Entering battle
