@@ -1,0 +1,58 @@
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 Auto-focusing game area
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎯 paladin: frame(0,0) size=64x64
+🎯 paladin: frame(0,0) size=256x256
+🎵 Boss music effect triggered. Phase: reveal Has Boss: true
+🎵 Stopping boss music...
+Team scores revealed: 
+Object {teamScores: {…}, teamConsensus: {…}}
+🎵 Boss music effect triggered. Phase: discussion Has Boss: true
+🎵 Stopping boss music...
+🎵 Boss music effect triggered. Phase: next_level Has Boss: true
+🎵 Stopping boss music...
+🎯 paladin: frame(0,0) size=64x64
+DOMException {}
+stack: "NotFoundError: Failed to execute 'insertBefore' on 'Node': The node before which the new node is to be inserted is not a child of this node.↵ at insertBefore (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:8446:26)↵ at insertOrAppendPlacementNode (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17432:15)↵ at commitPlacement (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17389:15)↵ at commitReconciliationEffects (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17906:15)↵ at commitMutationEffectsOnFiber (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17738:15)↵ at recursivelyTraverseMutationEffects (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17685:15)↵ at commitMutationEffectsOnFiber (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17737:15)↵ at recursivelyTraverseMutationEffects (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17685:15)↵ at commitMutationEffectsOnFiber (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17699:15)↵ at recursivelyTraverseMutationEffects (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/chunk-PJEEZAML.js?v=79a39f8f:17685:15)"
+get stack: ƒ ()
+set stack: ƒ ()
+[[Prototype]]: DOMException
+
+🎯 Auto-focusing game area
+🎯 ProjectileSystem received projectiles: 
+Array []
+🎯 ProjectileSystem received projectiles: 
+Array []
+🎯 ProjectileSystem received projectiles: 
+Array []
+🔄 Synced player position from server: (16.574542152233995%, 21.336705046582523%) -> (457.4573634016583px, 341.5023458481937px)
+🎮 Battle position reset: (1348, 150) viewport=2760x1573
+🎵 Boss music effect triggered. Phase: battle Has Boss: true
+🎵 Starting boss music...
+The above error occurred in the <div> component:
+
+    at div
+    at div
+    at BattleScreen (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/src/components/game/BattleScreen.tsx?t=1758809934746:42:63)
+    at div
+    at App (https://508b505e-6aa0-42d2-aa1c-defdb71ef047-00-14cufu9di6aoz.kirk.replit.dev/src/App.tsx?t=1758809934746&v=OR2miuKff2INKhvI6N1fQ:45:35)
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+DOMException {}
+
+Disconnected from server

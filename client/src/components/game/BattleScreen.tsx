@@ -255,14 +255,22 @@ export function BattleScreen() {
   const renderGamePhase = () => {
     if (!currentLobby) return null;
 
-    // Use stable component container with consistent key to prevent DOM reconciliation issues
-    const phaseKey = `game-phase-container`; // Single stable key for all phases
+    // Use consistent wrapper with stable key to prevent DOM reconciliation issues
+    return (
+      <div key="stable-phase-wrapper" className="relative w-full h-full">
+        {renderPhaseContent()}
+      </div>
+    );
+  };
+
+  const renderPhaseContent = () => {
+    if (!currentLobby) return null;
     
     switch (currentLobby.gamePhase) {
       case 'battle':
         if (!currentLobby?.boss) return null;
         return (
-          <div key={phaseKey} className="relative">
+          <div className="relative">
             {/* Fullscreen Boss Background */}
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
