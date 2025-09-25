@@ -673,13 +673,16 @@ export function BattleScreen() {
         const screenX = currentPlayerPosition.x;
         const screenY = currentPlayerPosition.y;
         
+        // Convert from bottom-up player coordinates to top-down CSS coordinates
+        const cssY = viewport.viewportHeight - screenY;
+        
         return (
           <div
             key={playerId}
             className="absolute z-50 pointer-events-none animate-bounce"
             style={{
               left: `${screenX}px`,
-              top: `${screenY - 80}px`, // Position above character (character is ~60px tall)
+              top: `${cssY - 80}px`, // Position above character (character is ~60px tall)
               transform: 'translateX(-50%)' // Center horizontally on character
             }}
           >
