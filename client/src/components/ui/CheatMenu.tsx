@@ -3,6 +3,7 @@ import { RetroCard } from './retro-card';
 import { RetroButton } from './retro-button';
 import { useAudio } from '@/lib/stores/useAudio';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useWebSocket } from '@/lib/stores/useWebSocket';
 
 interface CheatMenuProps {
   isOpen: boolean;
@@ -11,7 +12,8 @@ interface CheatMenuProps {
 
 export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
   const { playButtonSelect } = useAudio();
-  const { currentLobby, setError } = useGameState();
+  const { currentLobby, setError, currentPlayer } = useGameState();
+  const { emit } = useWebSocket();
 
   if (!isOpen) return null;
 
@@ -19,6 +21,19 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
     playButtonSelect();
     console.log(`🎮 CHEAT ACTIVATED: ${cheatName}`);
     action();
+    
+    // Emote when using cheat (if in lobby or battle)
+    if (currentLobby && currentPlayer && (currentLobby.gamePhase === 'lobby' || currentLobby.gamePhase === 'battle')) {
+      const emoteMessage = `😈 ${cheatName}!`;
+      const x = 50; // Center of character
+      const y = 50; // Center of character
+      
+      if (currentLobby.gamePhase === 'lobby') {
+        emit('lobby_emote', { message: emoteMessage, x, y });
+      } else if (currentLobby.gamePhase === 'battle') {
+        emit('battle_emote', { message: emoteMessage, x, y });
+      }
+    }
   };
 
   const addFakePlayer = () => {
@@ -50,7 +65,7 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
       <RetroCard 
         title="🕹️ CHEATER'S PARADISE 🕹️" 
-        className="w-full max-w-md relative animate-bounce-in"
+        className="w-full max-w-lg relative animate-bounce-in"
       >
         <div className="space-y-4">
           <div className="text-center">
