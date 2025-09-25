@@ -22,9 +22,17 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
     console.log(`🎮 CHEAT ACTIVATED: ${cheatName}`);
     action();
     
-    // Emote when using cheat (if in lobby or battle)
+    // Tattle-tell emote when using cheat (if in lobby or battle)
     if (currentLobby && currentPlayer && (currentLobby.gamePhase === 'lobby' || currentLobby.gamePhase === 'battle')) {
-      const emoteMessage = `😈 ${cheatName}!`;
+      const tattleMessages: Record<string, string> = {
+        'Add Fake Player': '🚨 Hey everyone! I just tried to add fake players! 🤡',
+        'Unlimited Votes': '📢 Look at me! I\'m trying to get unlimited votes! 🗳️',
+        'Skip to Victory': '🎺 Everyone! I\'m attempting to skip to victory! 🏆', 
+        'Reveal All Cards': '👀 PSA: I just tried to reveal all the cards! 🃏',
+        'Auto-Win Tickets': '📣 Attention! I\'m trying to auto-win tickets! 🎫'
+      };
+      
+      const emoteMessage = tattleMessages[cheatName] || `🚨 I just tried to cheat: ${cheatName}!`;
       const x = 50; // Center of character
       const y = 50; // Center of character
       
@@ -85,45 +93,45 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
               "CHEAT" OPTIONS
             </h3>
             
-            <div className="space-y-2">
+            <div className="space-y-2 text-center">
               <RetroButton
                 onClick={() => handleCheatAction('Add Fake Player', addFakePlayer)}
-                className="w-full text-sm"
+                className="w-full text-sm text-center"
                 variant="secondary"
               >
-                👥 Add Fake Player
+                👥 ADD FAKE PLAYER
               </RetroButton>
               
               <RetroButton
                 onClick={() => handleCheatAction('Unlimited Votes', giveUnlimitedVotes)}
-                className="w-full text-sm"
+                className="w-full text-sm text-center"
                 variant="secondary"
               >
-                🗳️ Unlimited Votes
+                🗳️ UNLIMITED VOTES
               </RetroButton>
               
               <RetroButton
                 onClick={() => handleCheatAction('Skip to Victory', skipToVictory)}
-                className="w-full text-sm"
+                className="w-full text-sm text-center"
                 variant="secondary"
               >
-                🏆 Skip to Victory
+                🏆 SKIP TO VICTORY
               </RetroButton>
               
               <RetroButton
                 onClick={() => handleCheatAction('Reveal All Cards', revealAllCards)}
-                className="w-full text-sm"
+                className="w-full text-sm text-center"
                 variant="secondary"
               >
-                🃏 Reveal All Cards
+                🃏 REVEAL ALL CARDS
               </RetroButton>
               
               <RetroButton
                 onClick={() => handleCheatAction('Auto-Win Tickets', autoWinTickets)}
-                className="w-full text-sm"
+                className="w-full text-sm text-center"
                 variant="secondary"
               >
-                🎫 Auto-Win Tickets
+                🎫 AUTO-WIN TICKETS
               </RetroButton>
             </div>
           </div>
@@ -138,9 +146,9 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
                 playButtonSelect();
                 onClose();
               }}
-              className="w-full"
+              className="w-full text-center"
             >
-              Close (and Pretend This Never Happened)
+              CLOSE (AND PRETEND THIS NEVER HAPPENED)
             </RetroButton>
           </div>
         </div>
