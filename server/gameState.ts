@@ -92,7 +92,11 @@ class GameStateManager {
     this.cancelRevivalSession(sessionKey);
   }
 
-  createLobby(hostName: string, lobbyName: string): Lobby {
+  createLobby(hostName: string, lobbyName: string, initialSettings?: { 
+    timerSettings?: TimerSettings; 
+    jiraSettings?: JiraSettings; 
+    estimationSettings?: EstimationSettings; 
+  }): Lobby {
     const lobbyId = this.generateLobbyId();
     const hostId = Math.random().toString(36).substring(2, 15);
     
@@ -160,7 +164,11 @@ class GameStateManager {
       },
       consensusSettings: {
         countdownSeconds: 5
-      }
+      },
+      // Apply initial settings if provided
+      timerSettings: initialSettings?.timerSettings,
+      jiraSettings: initialSettings?.jiraSettings,
+      estimationSettings: initialSettings?.estimationSettings
     };
 
     this.updateTeamAssignments(lobby);

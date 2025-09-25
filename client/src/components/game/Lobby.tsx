@@ -19,6 +19,7 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings } from '@/lib/gameTypes';
+import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { Canvas } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
 import * as THREE from 'three';
@@ -661,15 +662,21 @@ export function Lobby() {
 
   const updateTimerSettings = (timerSettings: TimerSettings) => {
     emit('update_timer_settings', { timerSettings });
+    // Save to persistent storage for future lobbies
+    LobbySettingsStorage.updateTimerSettings(timerSettings);
   };
 
   const updateJiraSettings = (jiraSettings: JiraSettings) => {
     emit('update_jira_settings', { jiraSettings });
+    // Save to persistent storage for future lobbies
+    LobbySettingsStorage.updateJiraSettings(jiraSettings);
   };
 
   const updateEstimationSettings = (estimationSettings: EstimationSettings) => {
     if (!currentPlayer?.isHost || currentLobby?.gamePhase !== 'lobby') return;
     emit('update_estimation_settings', { estimationSettings });
+    // Save to persistent storage for future lobbies
+    LobbySettingsStorage.updateEstimationSettings(estimationSettings);
   };
 
   // Helper function to safely get avatar class from player

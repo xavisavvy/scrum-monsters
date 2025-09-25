@@ -31,9 +31,9 @@ export function setupWebSocket(httpServer: HTTPServer) {
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
     console.log(`Player connected: ${socket.id}`);
 
-    socket.on('create_lobby', ({ lobbyName, hostName }) => {
+    socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
-        const lobby = gameState.createLobby(hostName, lobbyName);
+        const lobby = gameState.createLobby(hostName, lobbyName, initialSettings);
         // Get the correct host based on environment
         const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
         const isReplitPreview = process.env.REPLIT_DEV_DOMAIN;

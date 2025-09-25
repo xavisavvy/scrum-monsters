@@ -154,7 +154,15 @@ export type AvatarClass =
 
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
-  create_lobby: (data: { lobbyName: string; hostName: string }) => void;
+  create_lobby: (data: { 
+    lobbyName: string; 
+    hostName: string; 
+    initialSettings?: {
+      timerSettings?: TimerSettings;
+      jiraSettings?: JiraSettings;
+      estimationSettings?: EstimationSettings;
+    };
+  }) => void;
   join_lobby: (data: { lobbyId: string; playerName: string }) => void;
   select_avatar: (data: { avatarClass: AvatarClass }) => void;
   assign_team: (data: { playerId: string; team: TeamType }) => void;

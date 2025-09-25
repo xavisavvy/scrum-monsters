@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
+import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 
 interface LobbyCreationProps {
   onLobbyCreated: () => void;
@@ -17,9 +18,14 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
     if (!lobbyName.trim() || !hostName.trim()) return;
     
     setIsCreating(true);
+    
+    // Load saved settings and send them with lobby creation
+    const savedSettings = LobbySettingsStorage.loadSettings();
+    
     emit('create_lobby', { 
       lobbyName: lobbyName.trim(), 
-      hostName: hostName.trim() 
+      hostName: hostName.trim(),
+      initialSettings: savedSettings
     });
     
     // onLobbyCreated will be called when server responds
