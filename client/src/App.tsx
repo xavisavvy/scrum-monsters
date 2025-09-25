@@ -22,6 +22,7 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { useBacktickKey } from '@/hooks/useBacktickKey';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import { CheatMenu } from '@/components/ui/CheatMenu';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import '@/styles/retro.css';
 
 type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
@@ -209,9 +210,9 @@ function App() {
         }
       }
       
-      // Force BattleScreen remount during critical transitions to prevent DOM reconciliation errors
-      if (lastGamePhase === 'next_level' && lobby.gamePhase === 'battle') {
-        console.log('🔄 CRITICAL TRANSITION: next_level → battle. Forcing complete component tree remount...');
+      // Force BattleScreen remount during ALL transitions TO battle to prevent DOM reconciliation errors
+      if (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') {
+        console.log(`🔄 CRITICAL TRANSITION: ${lastGamePhase} → battle. Forcing complete component tree remount...`);
         setBattleRemountKey(prev => {
           const newKey = prev + 1;
           console.log(`🎮 BattleScreen remount key: ${prev} → ${newKey}`);
@@ -539,7 +540,11 @@ function App() {
         );
 
       case 'battle':
-        return <BattleScreen key={`battle-${battleRemountKey}`} />;
+        return (
+          <ErrorBoundary>
+            <BattleScreen key={`battle-${battleRemountKey}`} />
+          </ErrorBoundary>
+        );
 
       case 'character_tools':
         return (
