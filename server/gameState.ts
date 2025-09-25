@@ -475,14 +475,25 @@ class GameStateManager {
   }
 
   returnToLobby(playerId: string): Lobby | null {
+    console.log(`🏠 GameState: returnToLobby called for player ${playerId}`);
     const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
+    if (!lobby) {
+      console.log('❌ No lobby found for player');
+      return null;
+    }
 
     const player = lobby.players.find(p => p.id === playerId);
-    if (!player?.isHost) return null;
+    if (!player?.isHost) {
+      console.log('❌ Player is not host, cannot return to lobby');
+      return null;
+    }
 
+    console.log(`🏠 Current lobby phase: ${lobby.gamePhase}`);
     // Only allow return to lobby from victory phase
-    if (lobby.gamePhase !== 'victory') return null;
+    if (lobby.gamePhase !== 'victory') {
+      console.log('❌ Can only return to lobby from victory phase');
+      return null;
+    }
 
     // Return to lobby state but preserve completed objectives
     lobby.gamePhase = 'lobby';

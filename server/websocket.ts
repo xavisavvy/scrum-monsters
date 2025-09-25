@@ -447,12 +447,20 @@ export function setupWebSocket(httpServer: HTTPServer) {
     });
 
     socket.on('return_to_lobby', () => {
+      console.log('🏠 Server received return_to_lobby event');
       const playerId = socket.data.playerId;
-      if (!playerId) return;
+      if (!playerId) {
+        console.log('❌ No playerId found for return_to_lobby');
+        return;
+      }
 
+      console.log(`🏠 Processing return_to_lobby for player: ${playerId}`);
       const lobby = gameState.returnToLobby(playerId);
       if (lobby) {
+        console.log(`✅ Returned to lobby: ${lobby.id}, new phase: ${lobby.gamePhase}`);
         io.to(lobby.id).emit('lobby_updated', { lobby });
+      } else {
+        console.log('❌ Failed to return to lobby - gameState.returnToLobby returned null');
       }
     });
 
