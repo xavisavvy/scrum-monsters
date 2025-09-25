@@ -36,6 +36,7 @@ function App() {
   // Force remount mechanism for critical phase transitions
   const [battleRemountKey, setBattleRemountKey] = useState(0);
   const [lastGamePhase, setLastGamePhase] = useState<string | null>(null);
+  const [isBattleUnmounting, setIsBattleUnmounting] = useState(false);
   
   const { socket, connect, disconnect, isConnected } = useWebSocket();
   const { 
@@ -212,12 +213,20 @@ function App() {
       
       // Force BattleScreen remount during ALL transitions TO battle to prevent DOM reconciliation errors
       if (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') {
-        console.log(`🔄 CRITICAL TRANSITION: ${lastGamePhase} → battle. Forcing complete component tree remount...`);
-        setBattleRemountKey(prev => {
-          const newKey = prev + 1;
-          console.log(`🎮 BattleScreen remount key: ${prev} → ${newKey}`);
-          return newKey;
-        });
+        console.log(`🔄 CRITICAL TRANSITION: ${lastGamePhase} → battle. Using aggressive unmount/remount strategy...`);
+        
+        // Step 1: Unmount immediately
+        setIsBattleUnmounting(true);
+        
+        // Step 2: Remount after a brief delay with new key
+        setTimeout(() => {
+          setBattleRemountKey(prev => {
+            const newKey = prev + 1;
+            console.log(`🎮 BattleScreen aggressive remount key: ${prev} → ${newKey}`);
+            return newKey;
+          });
+          setIsBattleUnmounting(false);
+        }, 50); // Short delay to ensure complete DOM cleanup
       }
       
       // Log all phase changes for debugging
@@ -540,6 +549,18 @@ function App() {
         );
 
       case 'battle':
+        // Show loading during aggressive unmount/remount to prevent DOM conflicts
+        if (isBattleUnmounting) {
+          return (
+            <div className="retro-container bg-gray-900 flex items-center justify-center h-screen">
+              <div className="text-center">
+                <div className="text-xl font-bold text-cyan-400 mb-4">⚡ Entering Battle...</div>
+                <div className="text-sm text-gray-400">Preparing combat systems...</div>
+              </div>
+            </div>
+          );
+        }
+        
         return (
           <ErrorBoundary>
             <BattleScreen key={`battle-${battleRemountKey}`} />
