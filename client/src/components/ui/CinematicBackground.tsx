@@ -91,7 +91,7 @@ export function CinematicBackground({ className = '' }: CinematicBackgroundProps
 
 
   return (
-    <div className={`fixed inset-0 z-0 overflow-hidden ${className}`}>
+    <div className={`fixed inset-0 z-0 overflow-hidden ${className}`} style={{ pointerEvents: 'none' }}>
       {/* Render all boss lair layers for seamless looping */}
       {BOSS_LAIR_IMAGES.map((image, index) => (
         <div
