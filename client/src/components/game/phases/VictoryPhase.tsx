@@ -51,7 +51,7 @@ export function VictoryPhase({
   };
 
   const mainContent = (
-    <div className="p-6">
+    <div className="p-6 max-h-screen overflow-y-auto">
       <div className="text-center mb-6">
         <RetroCard title="Victory!">
           <div className="space-y-4">
@@ -93,7 +93,7 @@ export function VictoryPhase({
       {/* Battle Summary */}
       <RetroCard title="Battle Summary" className="max-w-4xl mx-auto">
         <div className="space-y-4">
-          <div className="grid gap-3 max-h-[60vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500">
+          <div className="grid gap-3 max-h-[40vh] overflow-y-auto scrollbar-thin scrollbar-track-gray-800 scrollbar-thumb-gray-600 hover:scrollbar-thumb-gray-500">
             {completedTickets.map((ticket, index) => (
               <div 
                 key={ticket.id}
