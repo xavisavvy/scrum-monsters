@@ -1,22 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { RetroButton } from '@/components/ui/retro-button';
 import { AVATAR_CLASSES } from '@/lib/gameTypes';
 import { getAvatarImage } from '@/lib/avatarImages';
+import { AbandonQuestModal } from './AbandonQuestModal';
 
 export function PlayerHUD() {
   const { currentLobby, currentPlayer } = useGameState();
   const { emit } = useWebSocket();
+  const [showAbandonModal, setShowAbandonModal] = useState(false);
 
   const handleProceedNext = () => {
     emit('proceed_next_level', {});
   };
 
   const handleAbandonQuest = () => {
-    if (confirm('Are you sure you want to abandon the quest and return to the lobby? All progress will be lost.')) {
-      emit('abandon_quest', {});
-    }
+    setShowAbandonModal(true);
+  };
+
+  const handleConfirmAbandon = () => {
+    emit('abandon_quest', {});
   };
 
   const handleReturnHome = () => {
@@ -120,6 +124,13 @@ export function PlayerHUD() {
           )}
         </div>
       </div>
+
+      {/* Abandon Quest Modal */}
+      <AbandonQuestModal
+        isOpen={showAbandonModal}
+        onClose={() => setShowAbandonModal(false)}
+        onConfirm={handleConfirmAbandon}
+      />
     </div>
   );
 }
