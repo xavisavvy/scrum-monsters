@@ -19,11 +19,16 @@ export function PlayerHUD() {
     }
   };
 
+  const handleReturnHome = () => {
+    emit('return_to_lobby', {});
+  };
+
   if (!currentLobby || !currentPlayer) return null;
 
   const isHost = currentPlayer.isHost;
   const showProceedButton = isHost && currentLobby.gamePhase === 'next_level';
-  const showAbandonButton = isHost && currentLobby.gamePhase !== 'lobby';
+  const showAbandonButton = isHost && currentLobby.gamePhase !== 'lobby' && currentLobby.gamePhase !== 'victory';
+  const showReturnHomeButton = isHost && currentLobby.gamePhase === 'victory';
 
   return (
     <div className="player-hud">
@@ -84,6 +89,17 @@ export function PlayerHUD() {
               className="bg-red-600 hover:bg-red-700 border-red-500"
             >
               Abandon Quest
+            </RetroButton>
+          )}
+          
+          {showReturnHomeButton && (
+            <RetroButton
+              onClick={handleReturnHome}
+              variant="primary"
+              size="sm"
+              className="bg-green-600 hover:bg-green-700 border-green-500"
+            >
+              Return Home
             </RetroButton>
           )}
           

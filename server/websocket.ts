@@ -446,6 +446,16 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    socket.on('return_to_lobby', () => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = gameState.returnToLobby(playerId);
+      if (lobby) {
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
     socket.on('force_reveal', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;

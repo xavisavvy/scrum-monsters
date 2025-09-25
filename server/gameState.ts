@@ -474,6 +474,35 @@ class GameStateManager {
     return lobby;
   }
 
+  returnToLobby(playerId: string): Lobby | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) return null;
+
+    // Only allow return to lobby from victory phase
+    if (lobby.gamePhase !== 'victory') return null;
+
+    // Return to lobby state but preserve completed objectives
+    lobby.gamePhase = 'lobby';
+    lobby.currentTicket = undefined;
+    lobby.boss = undefined;
+    // Note: Keep completedTickets to preserve victory progress
+
+    // Reset player states for next session
+    lobby.players.forEach(p => {
+      p.hasSubmittedScore = false;
+      p.currentScore = undefined;
+      if (lobby.playerCombatStates[p.id]) {
+        lobby.playerCombatStates[p.id].hp = lobby.playerCombatStates[p.id].maxHp;
+        lobby.playerCombatStates[p.id].isDowned = false;
+      }
+    });
+
+    return lobby;
+  }
+
   forceRevealScores(playerId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || lobby.gamePhase !== 'battle') return null;
