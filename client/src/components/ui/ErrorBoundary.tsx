@@ -22,14 +22,16 @@ export class ErrorBoundary extends Component<Props, State> {
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     // Log the error for debugging
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
+    console.error('🚨 ErrorBoundary caught an error:', error, errorInfo);
     
-    // For DOM manipulation errors during phase transitions, we'll reset the error after a short delay
-    if (error.message.includes('insertBefore') || error.message.includes('DOM')) {
-      console.log('🔄 DOM error detected, attempting recovery...');
+    // For DOM manipulation errors during phase transitions, we'll reset the error immediately
+    if (error.message.includes('insertBefore') || error.message.includes('DOM') || error.message.includes('Failed to execute')) {
+      console.log('🔄 DOM reconciliation error detected, auto-recovering immediately...');
+      // Immediate recovery for DOM errors
       setTimeout(() => {
         this.setState({ hasError: false, error: undefined });
-      }, 100);
+        console.log('✅ DOM error recovery completed');
+      }, 10); // Very fast recovery
     }
   }
 
