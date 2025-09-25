@@ -921,6 +921,12 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       } : undefined}
       ref={isActive ? (el) => {
         if (el && document.activeElement !== el) {
+          // Don't steal focus if user is typing in an input field (like emote modal)
+          const activeElement = document.activeElement;
+          if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
+            console.log('🚫 Not auto-focusing game area (user is typing in input field)');
+            return;
+          }
           el.focus();
           console.log('🎯 Auto-focusing game area');
         }
