@@ -155,14 +155,10 @@ export function Lobby() {
   const [playerPositions, setPlayerPositions] = useState<Record<string, { x: number; direction: SpriteDirection; isMoving: boolean; isJumping?: boolean; jumpHeight?: number; lastUpdate?: number; timeoutId?: NodeJS.Timeout; isCharging?: boolean; chargePower?: number }>>({});
   const [myPosition, setMyPosition] = useState({ x: 200, direction: 'right' as SpriteDirection });
   
-  // Jumping physics state
+  // Simple jumping state
   const [jumpState, setJumpState] = useState({
     isJumping: false,
-    isCharging: false,
-    chargeStartTime: 0,
-    jumpPower: 0,
-    currentHeight: 0,
-    velocityY: 0
+    jumpHeight: 0
   });
   
   // Movement constants
@@ -198,13 +194,7 @@ export function Lobby() {
     stopLobbyMusic 
   } = useAudio();
 
-  // Get player's STR for jump calculations (with safe fallback)
-  const playerSTR = useMemo(() => {
-    return currentPlayer?.avatar ? AVATAR_CLASSES[currentPlayer.avatar].stats.str : 12;
-  }, [currentPlayer?.avatar]);
-  
-  const maxJumpHeight = useMemo(() => Math.min(playerSTR * 3, 60), [playerSTR]); // Cap at 60px max jump
-  const maxChargeTime = 1000; // 1 second max charge time
+  // Removed old charge system variables - using simple jump instead
 
   // Lobby background music
   useEffect(() => {
@@ -238,18 +228,17 @@ export function Lobby() {
         return;
       }
 
-      // Handle jump charging (Spacebar)
+      // Handle jump (Spacebar)
       if (event.code === 'Space') {
         event.preventDefault();
-        if (!jumpState.isJumping && !jumpState.isCharging) {
-          // Emit charge start event to other players
-          emit('player_charge', { isCharging: true, chargePower: 0 });
-          setJumpState(prev => ({
-            ...prev,
-            isCharging: true,
-            chargeStartTime: Date.now(),
-            jumpPower: 0
-          }));
+        if (!jumpState.isJumping) {
+          // Start simple jump
+          setJumpState({
+            isJumping: true,
+            jumpHeight: 0
+          });
+          // Emit jump start to other players
+          emit('player_jump', { isJumping: true });
         }
         return;
       }
@@ -273,31 +262,7 @@ export function Lobby() {
         return;
       }
 
-      // Handle jump release (Spacebar)
-      if (event.code === 'Space') {
-        event.preventDefault();
-        if (jumpState.isCharging) {
-          const chargeTime = Date.now() - jumpState.chargeStartTime;
-          const chargePower = Math.min(chargeTime / maxChargeTime, 1); // 0 to 1
-          const jumpHeight = chargePower * maxJumpHeight;
-          const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight); // Reduced gravity for smoother arc
-          
-          // Jump triggered with calculated physics
-          // Emit charge stop and jump events to other players
-          emit('player_charge', { isCharging: false, chargePower: 0 });
-          emit('player_jump', { isJumping: true });
-          
-          setJumpState(prev => ({
-            ...prev,
-            isCharging: false,
-            isJumping: true,
-            jumpPower: jumpHeight,
-            velocityY: initialVelocity,
-            currentHeight: 0
-          }));
-        }
-        return;
-      }
+      // No spacebar handling needed in keyup for simple jump
 
       // Always remove the key on keyup
       if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
@@ -371,79 +336,52 @@ export function Lobby() {
     return () => clearInterval(interval);
   }, [keys, currentLobby?.gamePhase, emit]);
 
-  // Jumping physics animation loop
+  // Simple jump animation
   useEffect(() => {
     if (!jumpState.isJumping) return;
 
-    const gravity = 0.5; // Reduced gravity for smoother arc
-    const animationInterval = setInterval(() => {
-      setJumpState(prev => {
-        const newVelocityY = prev.velocityY - gravity; // Apply gravity
-        const newHeight = Math.max(0, prev.currentHeight + prev.velocityY); // Ensure height doesn't go negative
+    const jumpDuration = 600; // 600ms total jump time
+    const maxHeight = 50; // 50px max jump height
+    const startTime = Date.now();
 
-        // Check if landed
-        if (newHeight <= 0 && prev.velocityY <= 0) {
-          // Emit landing event to other players
-          emit('player_jump', { isJumping: false });
-          return {
-            ...prev,
-            isJumping: false,
-            currentHeight: 0,
-            velocityY: 0,
-            jumpPower: 0
-          };
-        }
-
-        return {
-          ...prev,
-          currentHeight: newHeight,
-          velocityY: newVelocityY
-        };
-      });
-    }, 16); // ~60 FPS
-
-    return () => clearInterval(animationInterval);
-  }, [jumpState.isJumping]);
-
-  // Charge power animation
-  useEffect(() => {
-    if (!jumpState.isCharging) return;
-
-    const chargeInterval = setInterval(() => {
-      const chargeTime = Date.now() - jumpState.chargeStartTime;
-      const chargePower = Math.min(chargeTime / maxChargeTime, 1);
+    const animateJump = () => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / jumpDuration, 1);
       
-      const currentChargePower = chargePower * maxJumpHeight;
+      // Sine wave for smooth up/down motion
+      const height = Math.sin(progress * Math.PI) * maxHeight;
+      
       setJumpState(prev => ({
         ...prev,
-        jumpPower: currentChargePower
+        jumpHeight: height
       }));
       
-      // Emit charge progress to other players
-      emit('player_charge', { isCharging: true, chargePower: currentChargePower });
-    }, 16); // ~60 FPS
+      if (progress < 1) {
+        requestAnimationFrame(animateJump);
+      } else {
+        // Jump complete
+        setJumpState({
+          isJumping: false,
+          jumpHeight: 0
+        });
+        // Emit landing event to other players
+        emit('player_jump', { isJumping: false });
+      }
+    };
 
-    return () => clearInterval(chargeInterval);
-  }, [jumpState.isCharging, jumpState.chargeStartTime, maxJumpHeight, maxChargeTime]);
+    requestAnimationFrame(animateJump);
+  }, [jumpState.isJumping, emit]);
 
   // Mobile touch jump handler
   const handleAvatarTap = () => {
-    if (!jumpState.isJumping && !jumpState.isCharging) {
-      // Mobile tap triggers a 60% power jump (good default)
-      const jumpHeight = maxJumpHeight * 0.6;
-      const initialVelocity = Math.sqrt(2 * 0.5 * jumpHeight);
-      
+    if (!jumpState.isJumping) {
       // Emit jump event to other players for mobile tap
       emit('player_jump', { isJumping: true });
       
-      setJumpState(prev => ({
-        ...prev,
-        isCharging: false,
+      setJumpState({
         isJumping: true,
-        jumpPower: jumpHeight,
-        velocityY: initialVelocity,
-        currentHeight: 0
-      }));
+        jumpHeight: 0
+      });
     }
   };
 
@@ -1451,9 +1389,9 @@ export function Lobby() {
               className="absolute transition-transform duration-100 ease-linear cursor-pointer select-none"
               style={{
                 left: `${myPosition.x}px`,
-                bottom: `${jumpState.currentHeight}px`,
+                bottom: `${jumpState.jumpHeight}px`,
                 zIndex: 10,
-                transform: `scale(${jumpState.isCharging ? 1.1 : jumpState.isJumping ? 1.05 : 1}) translateY(-${jumpState.currentHeight * 0.5}px)`,
+                transform: `scale(${jumpState.isJumping ? 1.05 : 1})`,
                 transition: jumpState.isJumping ? 'none' : 'transform 0.1s ease-linear'
               }}
               onClick={handleAvatarTap}
@@ -1466,11 +1404,6 @@ export function Lobby() {
               {/* Player name above character */}
               <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
                 {currentPlayer.name}
-                {jumpState.isCharging && (
-                  <div className="text-xs text-yellow-400 animate-pulse">
-                    ⚡ {Math.round((jumpState.jumpPower / maxJumpHeight) * 100)}%
-                  </div>
-                )}
               </div>
               
               <div
@@ -1489,17 +1422,6 @@ export function Lobby() {
                 />
               </div>
               
-              {/* Jump charge visual effect */}
-              {jumpState.isCharging && (
-                <div 
-                  className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded overflow-hidden"
-                >
-                  <div 
-                    className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-75"
-                    style={{ width: `${(jumpState.jumpPower / maxJumpHeight) * 100}%` }}
-                  />
-                </div>
-              )}
               
               {/* Current Player's Speech Bubble */}
               {emotes[currentPlayer.id] && (
@@ -1539,11 +1461,6 @@ export function Lobby() {
                   {/* Player name above character */}
                   <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
                     {player.name}
-                    {position.isCharging && (
-                      <div className="text-xs text-yellow-400 animate-pulse">
-                        ⚡ {Math.round((position.chargePower || 0) / maxJumpHeight * 100)}%
-                      </div>
-                    )}
                   </div>
                   
                   <div
@@ -1562,17 +1479,6 @@ export function Lobby() {
                     />
                   </div>
                   
-                  {/* Jump charge visual effect for other players */}
-                  {position.isCharging && (
-                    <div 
-                      className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gray-600 rounded overflow-hidden"
-                    >
-                      <div 
-                        className="h-full bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-75"
-                        style={{ width: `${(position.chargePower || 0) / maxJumpHeight * 100}%` }}
-                      />
-                    </div>
-                  )}
                   
                   {/* Other Player's Speech Bubble */}
                   {emotes[player.id] && (
