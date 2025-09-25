@@ -1482,7 +1482,7 @@ export function Lobby() {
               >
                 <SpriteRenderer
                   avatarClass={getAvatarClass(currentPlayer)}
-                  animation={keys.size > 0 ? 'walk' : 'idle'}
+                  animation={jumpState.isJumping ? 'victory' : (keys.size > 0 ? 'walk' : 'idle')}
                   direction={myPosition.direction}
                   isMoving={keys.size > 0}
                   size={characterSize}
@@ -1555,7 +1555,7 @@ export function Lobby() {
                   >
                     <SpriteRenderer
                       avatarClass={getAvatarClass(player)}
-                      animation={position.isMoving ? 'walk' : 'idle'}
+                      animation={position.isJumping ? 'victory' : (position.isMoving ? 'walk' : 'idle')}
                       direction={position.direction}
                       isMoving={position.isMoving}
                       size={characterSize}
