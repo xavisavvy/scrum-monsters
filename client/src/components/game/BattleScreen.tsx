@@ -255,9 +255,10 @@ export function BattleScreen() {
   const renderGamePhase = () => {
     if (!currentLobby) return null;
 
-    // Use consistent wrapper with stable key to prevent DOM reconciliation issues
+    // Use phase-specific key to create fresh DOM tree for each phase transition
+    // This prevents DOM reconciliation errors when switching between drastically different UIs
     return (
-      <div key="stable-phase-wrapper" className="relative w-full h-full">
+      <div key={`phase-${currentLobby.gamePhase}`} className="relative w-full h-full">
         {renderPhaseContent()}
       </div>
     );
