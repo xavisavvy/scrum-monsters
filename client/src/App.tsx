@@ -211,9 +211,10 @@ function App() {
         }
       }
       
-      // Handle Return Home functionality: transition from victory back to lobby
-      if (lastGamePhase === 'victory' && lobby.gamePhase === 'lobby' && appState === 'battle') {
-        console.log('🏠 Return Home: transitioning from victory to lobby');
+      // Handle Return Home functionality: transition from any battle-related phase back to lobby
+      if (lobby.gamePhase === 'lobby' && appState === 'battle' && 
+          (lastGamePhase === 'victory' || lastGamePhase === 'discussion' || lastGamePhase === 'reveal')) {
+        console.log(`🏠 Return Home: transitioning from ${lastGamePhase} to lobby`);
         setAppState('lobby');
       }
       
