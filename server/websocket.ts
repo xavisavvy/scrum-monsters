@@ -39,7 +39,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
         const host = isDevelopment 
           ? 'http://localhost:5000'
           : 'https://scrummonsters.com';
-        const inviteLink = `${host}/lobby/${lobby.id}`;
+        const inviteLink = `${host}/join/${lobby.id}`;
         
         // Store player-socket mapping
         socket.data.playerId = lobby.hostId;
