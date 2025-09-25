@@ -36,6 +36,10 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
       const x = 50; // Center of character
       const y = 50; // Center of character
       
+      // Note: For now, cheat emotes only show to other players
+      // TODO: Add local emote display when CheatMenu is integrated with Lobby's emote system
+      
+      // Send emote to other players
       if (currentLobby.gamePhase === 'lobby') {
         emit('lobby_emote', { message: emoteMessage, x, y });
       } else if (currentLobby.gamePhase === 'battle') {
