@@ -27,6 +27,7 @@ interface PlayerCharacterProps {
   onPositionChange: (position: PlayerPosition) => void;
   onShoot: (projectile: Omit<Projectile, 'id' | 'progress'>) => void;
   isJumping: boolean;
+  jumpHeight?: number;
   isDead: boolean;
   containerWidth: number;
   containerHeight: number;
@@ -43,6 +44,7 @@ export function PlayerCharacter({
   onPositionChange,
   onShoot,
   isJumping,
+  jumpHeight = 0,
   isDead,
   containerWidth,
   containerHeight,
@@ -155,7 +157,7 @@ export function PlayerCharacter({
       className="absolute pointer-events-auto cursor-crosshair"
       style={{
         left: Math.max(100, Math.min(clampedPosition.x, containerWidth - 200)),
-        top: Math.max(100, Math.min(containerHeight - clampedPosition.y - characterSize, containerHeight - 200)),
+        top: Math.max(100, Math.min(containerHeight - clampedPosition.y - characterSize - jumpHeight, containerHeight - 200)),
         width: characterSize,
         height: characterSize,
         zIndex: 75

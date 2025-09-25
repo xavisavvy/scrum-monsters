@@ -20,6 +20,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   const viewport = useViewport();
   const [playerPosition, setPlayerPosition] = useState<PlayerPosition>({ x: 100, y: 100 });
   const [isJumping, setIsJumping] = useState(false);
+  const [jumpHeight, setJumpHeight] = useState(0); // Vertical offset for jump animation
   const [projectiles, setProjectiles] = useState<Projectile[]>([]);
   const [bossProjectiles, setBossProjectiles] = useState<Projectile[]>([]);
   const [otherPlayersPositions, setOtherPlayersPositions] = useState<Record<string, { x: number; y: number }>>({});
@@ -83,6 +84,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         
         setTimeout(() => {
           setIsJumping(false);
+          setJumpHeight(0); // Reset jump height when landing
           // Send jumping state to server
           emit('player_jump', { isJumping: false });
           console.log('🦘 Stopped jumping - vulnerable to damage again!');
@@ -245,6 +247,45 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       window.removeEventListener('keyup', handleKeyUp);
     };
   }, [isJumping, jumpDuration, currentPlayer, viewport, playerPosition, characterSize]);
+
+  // Jump physics animation
+  useEffect(() => {
+    if (!isJumping) {
+      setJumpHeight(0);
+      return;
+    }
+
+    let velocity = 15; // Initial upward velocity
+    const gravity = 0.8; // Gravity pulling down
+    let currentHeight = 0;
+    let animationFrame: number;
+
+    const animateJump = () => {
+      velocity -= gravity; // Apply gravity
+      currentHeight += velocity; // Update height based on velocity
+      
+      // Prevent going below ground
+      if (currentHeight <= 0) {
+        currentHeight = 0;
+        velocity = 0;
+      }
+      
+      setJumpHeight(currentHeight);
+      
+      // Continue animation if still jumping and above ground
+      if (isJumping && (currentHeight > 0 || velocity > 0)) {
+        animationFrame = requestAnimationFrame(animateJump);
+      }
+    };
+
+    animationFrame = requestAnimationFrame(animateJump);
+
+    return () => {
+      if (animationFrame) {
+        cancelAnimationFrame(animationFrame);
+      }
+    };
+  }, [isJumping]);
 
   // Handle movement based on pressed keys
   // WebSocket listeners for multiplayer features
@@ -945,6 +986,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             onPositionChange={setPlayerPosition}
             onShoot={handleShoot}
             isJumping={isJumping}
+            jumpHeight={jumpHeight}
             isDead={false} // Could be tied to game state later
             containerWidth={viewport.viewportWidth}
             containerHeight={viewport.viewportHeight}
