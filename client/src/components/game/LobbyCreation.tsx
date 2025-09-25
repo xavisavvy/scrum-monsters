@@ -27,7 +27,7 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-screen px-4 py-8">
       <RetroCard title="Create Battle Lobby" className="w-full max-w-md">
         <div className="space-y-4">
           <div>
