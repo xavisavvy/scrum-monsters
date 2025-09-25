@@ -32,6 +32,10 @@ function App() {
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   
+  // Force remount mechanism for critical phase transitions
+  const [battleRemountKey, setBattleRemountKey] = useState(0);
+  const [lastGamePhase, setLastGamePhase] = useState<string | null>(null);
+  
   const { socket, connect, disconnect, isConnected } = useWebSocket();
   const { 
     currentLobby, 
@@ -204,6 +208,15 @@ function App() {
           setPlayer(updatedPlayer);
         }
       }
+      
+      // Force BattleScreen remount during critical next_level → battle transitions
+      if (lastGamePhase === 'next_level' && lobby.gamePhase === 'battle') {
+        console.log('🔄 Critical transition detected: next_level → battle. Forcing component remount...');
+        setBattleRemountKey(prev => prev + 1);
+      }
+      
+      // Track phase changes
+      setLastGamePhase(lobby.gamePhase);
       
       // Note: Removed auto-transition to battle - only transition on explicit battle_started event
     });
@@ -517,7 +530,7 @@ function App() {
         );
 
       case 'battle':
-        return <BattleScreen />;
+        return <BattleScreen key={`battle-${battleRemountKey}`} />;
 
       case 'character_tools':
         return (
