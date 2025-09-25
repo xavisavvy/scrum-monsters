@@ -107,7 +107,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   setYoutubeUrl: (url) => set({ youtubeUrl: url }),
   
   toggleMute: () => {
-    const { isMuted, menuMusic, walkingSound, isWalkingSoundPlaying, fadeTimer } = get();
+    const { isMuted, menuMusic, lobbyMusic, walkingSound, isWalkingSoundPlaying, fadeTimer } = get();
     const newMutedState = !isMuted;
     
     // Clear any running fade timer
@@ -116,7 +116,7 @@ export const useAudio = create<AudioState>((set, get) => ({
       set({ fadeTimer: null });
     }
     
-    // Pause or resume the audio
+    // Pause or resume the menu music
     if (menuMusic) {
       if (newMutedState) {
         // Muting - pause the audio
@@ -130,6 +130,24 @@ export const useAudio = create<AudioState>((set, get) => ({
             console.log("Menu music resume prevented:", error);
           });
           set({ isMenuMusicPlaying: true });
+        }
+      }
+    }
+    
+    // Pause or resume the lobby music
+    if (lobbyMusic) {
+      if (newMutedState) {
+        // Muting - pause the lobby music
+        lobbyMusic.pause();
+        console.log("🎵 Lobby music muted");
+      } else {
+        // Unmuting - resume the lobby music if it was playing
+        const wasPlaying = !lobbyMusic.paused || lobbyMusic.currentTime > 0;
+        if (wasPlaying) {
+          lobbyMusic.play().catch(error => {
+            console.log("Lobby music resume prevented:", error);
+          });
+          console.log("🎵 Lobby music unmuted");
         }
       }
     }
