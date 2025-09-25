@@ -209,10 +209,19 @@ function App() {
         }
       }
       
-      // Force BattleScreen remount during critical next_level → battle transitions
+      // Force BattleScreen remount during critical transitions to prevent DOM reconciliation errors
       if (lastGamePhase === 'next_level' && lobby.gamePhase === 'battle') {
-        console.log('🔄 Critical transition detected: next_level → battle. Forcing component remount...');
-        setBattleRemountKey(prev => prev + 1);
+        console.log('🔄 CRITICAL TRANSITION: next_level → battle. Forcing complete component tree remount...');
+        setBattleRemountKey(prev => {
+          const newKey = prev + 1;
+          console.log(`🎮 BattleScreen remount key: ${prev} → ${newKey}`);
+          return newKey;
+        });
+      }
+      
+      // Log all phase changes for debugging
+      if (lastGamePhase !== lobby.gamePhase) {
+        console.log(`📋 Phase transition: ${lastGamePhase} → ${lobby.gamePhase}`);
       }
       
       // Track phase changes
