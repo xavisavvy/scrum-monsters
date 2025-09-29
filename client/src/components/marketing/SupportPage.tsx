@@ -244,7 +244,10 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
               Can't find what you're looking for? We're here to help.
             </p>
             <RetroButton
-              onClick={() => {}}
+              onClick={() => {
+                playButtonSelect();
+                window.open('https://github.com/xavisavvy/scrum-monsters/issues', '_blank');
+              }}
               size="lg"
               className="text-xl px-8 py-4"
             >
