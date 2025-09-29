@@ -183,7 +183,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           targetX: percentTargetX,
           targetY: percentTargetY,
           emoji: getProjectileEmoji(currentPlayer.avatar),
-          targetPlayerId
+          targetPlayerId: targetPlayerId || undefined
         });
       }
       
@@ -582,95 +582,111 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     return projectileEmojis[avatarClass];
   };
 
+  // Find nearest downed player for revive
+  const findNearestDownedPlayer = useCallback(() => {
+    if (!currentLobby || !currentPlayer) return null;
+    
+    // Get all downed players with positions
+    const downedPlayers = currentLobby.players.filter(p => {
+      const combatState = currentLobby.playerCombatStates?.[p.id];
+      return combatState?.isDowned && currentLobby.playerPositions?.[p.id];
+    });
+    
+    if (downedPlayers.length === 0) return null;
+    
+    // Calculate distances using real positions from server
+    const currentX = playerPosition.x;
+    const currentY = playerPosition.y;
+    
+    let nearestPlayer = null;
+    let minDistance = Infinity;
+    const REVIVE_DISTANCE = 150; // Proximity threshold for revive
+    
+    for (const player of downedPlayers) {
+      const serverPos = currentLobby.playerPositions[player.id];
+      if (!serverPos) continue;
+      
+      const distance = Math.sqrt(
+        Math.pow(serverPos.x - currentX, 2) + Math.pow(serverPos.y - currentY, 2)
+      );
+      
+      if (distance < minDistance && distance <= REVIVE_DISTANCE) {
+        minDistance = distance;
+        nearestPlayer = { id: player.id, distance };
+      }
+    }
+    
+    return nearestPlayer;
+  }, [currentLobby, currentPlayer, playerPosition]);
+
   // Special attack system with class-specific effects
   const handleSpecialAttack = useCallback((avatarClass: AvatarClass) => {
-    console.log(`🌟 Casting special attack for ${avatarClass}!`);
+    console.log(`🌟 Q key pressed for ${avatarClass}!`);
     
-    // Calculate character center (corrected for top-based positioning)
-    const characterCenterX = playerPosition.x + characterSize / 2;
-    const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
+    // CLERIC: Heal entire party 50% HP
+    if (avatarClass === 'cleric') {
+      emit('heal_party', undefined as any);
+      console.log(`💫 Cleric heals entire party!`);
+      if (playHit) playHit();
+      return;
+    }
     
-    let effectEmoji = '✨';
-    let effectColor = '#ffffff';
-    let damage = 25; // Base damage
+    // OTHER CLASSES: Check for nearby downed players to revive
+    const nearestDowned = findNearestDownedPlayer();
+    if (nearestDowned) {
+      emit('revive_start', { targetId: nearestDowned.id });
+      console.log(`✨ Starting revive on downed player ${nearestDowned.id} (distance: ${nearestDowned.distance.toFixed(1)})`);
+      if (playHit) playHit();
+      return;
+    }
+    
+    // NO DOWNED PLAYERS NEARBY: Attack boss with special attack
+    let damage = 25;
     let effectText = 'Special Attack';
     
-    // Class-specific special attack effects
     switch (avatarClass) {
       case 'ranger':
-        effectEmoji = '🏹💨';
-        effectColor = '#228B22';
         damage = 30;
         effectText = 'ARROW STORM';
         break;
       case 'rogue':
-        effectEmoji = '🗡️💀';
-        effectColor = '#2F4F4F';
         damage = 35;
         effectText = 'SHADOW STRIKE';
         break;
       case 'bard':
-        effectEmoji = '🎵🎶';
-        effectColor = '#9370DB';
         damage = 20;
         effectText = 'SONIC BLAST';
         break;
       case 'sorcerer':
-        effectEmoji = '🔥💥';
-        effectColor = '#FF4500';
         damage = 40;
         effectText = 'FIREBALL';
         break;
       case 'wizard':
-        effectEmoji = '⚡🌩️';
-        effectColor = '#4169E1';
         damage = 38;
         effectText = 'LIGHTNING BOLT';
         break;
       case 'warrior':
-        effectEmoji = '⚔️🛡️';
-        effectColor = '#B22222';
         damage = 32;
         effectText = 'BERSERKER RAGE';
         break;
       case 'paladin':
-        effectEmoji = '✨⚡';
-        effectColor = '#FFD700';
         damage = 28;
         effectText = 'DIVINE SMITE';
         break;
-      case 'cleric':
-        effectEmoji = '💫🌟';
-        effectColor = '#F0F8FF';
-        damage = 25;
-        effectText = 'HOLY LIGHT';
-        break;
       case 'oathbreaker':
-        effectEmoji = '🖤💀';
-        effectColor = '#8A2BE2';
         damage = 42;
         effectText = 'DARK COVENANT';
         break;
       case 'monk':
-        effectEmoji = '👊💨';
-        effectColor = '#8B4513';
         damage = 33;
         effectText = 'CHI BLAST';
         break;
     }
     
-    // Attack the boss directly with higher damage - no DOM manipulation needed
     emit('attack_boss', { damage });
-    console.log(`🎯 Special attack deals ${damage} damage to boss!`);
-    
-    // Play audio feedback
-    if (playHit) {
-      playHit();
-    }
-    
-    // Create simple console effect instead of DOM manipulation 
-    console.log(`${effectEmoji} ${effectText} - ${damage} damage!`);
-  }, [playerPosition, characterSize, emit, playHit]);
+    console.log(`🎯 ${effectText} deals ${damage} damage to boss!`);
+    if (playHit) playHit();
+  }, [currentLobby, currentPlayer, playerPosition, emit, playHit, findNearestDownedPlayer]);
 
   // Removed createParticleExplosion function to prevent DOM manipulation errors
 
@@ -923,27 +939,17 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
           
           if (currentPlayer.team === 'spectators' && targetPlayerId) {
+            const damage = 0; // Damage calculated on server based on modifier
             emit('attack_player', {
-              targetPlayerId,
-              startX: percentStartX,
-              startY: percentStartY,
-              targetX: percentTargetX,
-              targetY: percentTargetY,
-              emoji,
-              projectileId: newProjectile.id
+              targetId: targetPlayerId,
+              damage
             });
           } else {
             // Calculate damage for boss attack (same as click attacks)
             const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
             
             emit('attack_boss', {
-              damage,
-              startX: percentStartX,
-              startY: percentStartY,
-              targetX: percentTargetX,
-              targetY: percentTargetY,
-              emoji,
-              projectileId: newProjectile.id
+              damage
             });
           }
         }

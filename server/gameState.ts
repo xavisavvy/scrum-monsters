@@ -918,6 +918,43 @@ class GameStateManager {
     return { lobby, targetHealth: targetState.hp, gameOver, modifier };
   }
 
+  healParty(healerId: string): { lobby: Lobby; healedPlayers: Array<{ playerId: string; newHealth: number }> } | null {
+    const lobby = this.getLobbyByPlayerId(healerId);
+    if (!lobby || lobby.gamePhase !== 'battle') return null;
+
+    const healer = lobby.players.find(p => p.id === healerId);
+    if (!healer || healer.avatar !== 'cleric') return null; // Only clerics can heal party
+
+    const healedPlayers: Array<{ playerId: string; newHealth: number }> = [];
+
+    // Heal all players (developers and QA) for 50% of max HP
+    for (const player of lobby.players) {
+      if (player.team !== 'developers' && player.team !== 'qa') continue;
+
+      const playerState = lobby.playerCombatStates[player.id];
+      if (!playerState) continue;
+
+      // Heal for 50% of max HP
+      const healAmount = Math.floor(playerState.maxHp * 0.5);
+      const oldHp = playerState.hp;
+      playerState.hp = Math.min(playerState.maxHp, playerState.hp + healAmount);
+
+      // If player was downed and healed, revive them
+      if (playerState.isDowned && playerState.hp > 0) {
+        playerState.isDowned = false;
+        console.log(`✨ Cleric ${healer.name} revived ${player.name}!`);
+      }
+
+      if (playerState.hp > oldHp) {
+        healedPlayers.push({ playerId: player.id, newHealth: playerState.hp });
+      }
+    }
+
+    console.log(`💫 Cleric ${healer.name} healed ${healedPlayers.length} party members!`);
+
+    return { lobby, healedPlayers };
+  }
+
   findNearestTarget(playerId: string): string | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
