@@ -415,8 +415,20 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       const result = gameState.attackBoss(playerId, damage);
       if (result) {
-        const { lobby, bossHealth, ringAttack } = result;
-        io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
+        const { lobby, bossHealth, ringAttack, healedBoss, modifier } = result;
+        
+        if (healedBoss) {
+          // Spectator healed the boss
+          io.to(lobby.id).emit('boss_healed', { bossHealth, healAmount: (modifier || 0) + 1 });
+        } else {
+          // Normal attack
+          io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
+        }
+        
+        // Emit modifier update if it changed
+        if (modifier !== undefined) {
+          io.to(lobby.id).emit('modifier_updated', { modifier });
+        }
         
         // If boss performs ring attack, broadcast it
         if (ringAttack) {
@@ -435,7 +447,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
       const result = gameState.bossDamagePlayer(playerId, damage);
       if (result) {
-        const { lobby, targetHealth } = result;
+        const { lobby, targetHealth, gameOver } = result;
         
         // Broadcast boss damage to room
         io.to(lobby.id).emit('player_attacked', { 
@@ -444,6 +456,11 @@ export function setupWebSocket(httpServer: HTTPServer) {
           damage, 
           targetHealth 
         });
+        
+        // Check for game over
+        if (gameOver) {
+          io.to(lobby.id).emit('game_over', { lobby });
+        }
         
         // Update lobby state
         io.to(lobby.id).emit('lobby_updated', { lobby });
@@ -682,13 +699,24 @@ export function setupWebSocket(httpServer: HTTPServer) {
       const result = gameState.attackPlayer(playerId, actualTargetId, damage);
       
       if (result) {
-        const { lobby: updatedLobby, targetHealth } = result;
+        const { lobby: updatedLobby, targetHealth, gameOver, modifier } = result;
         io.to(lobby.id).emit('player_attacked', { 
           attackerId: playerId, 
           targetId: actualTargetId, 
           damage, 
           targetHealth 
         });
+        
+        // Emit modifier update
+        if (modifier !== undefined) {
+          io.to(lobby.id).emit('modifier_updated', { modifier });
+        }
+        
+        // Check for game over
+        if (gameOver) {
+          io.to(lobby.id).emit('game_over', { lobby: updatedLobby });
+        }
+        
         io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
       }
     });
