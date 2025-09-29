@@ -29,8 +29,8 @@ export function GameOverPhase({
   const bossImage = lobby.boss?.sprite ? BOSS_IMAGE_MAP[lobby.boss.sprite] || '/images/defeat.png' : '/images/defeat.png';
 
   const mainContent = (
-    <div className="w-full space-y-6 p-6">
-      <div className="text-center">
+    <div className="p-6 max-h-screen overflow-y-auto">
+      <div className="text-center mb-6">
         <RetroCard>
           <div className="space-y-6">
             {/* Large Boss Image */}
@@ -142,7 +142,6 @@ export function GameOverPhase({
     <PhaseContainer
       layout="cinematic"
       mainContent={mainContent}
-      contentClassName="flex items-center justify-center min-h-screen"
       className={isTransitioning ? 'transitioning' : ''}
     />
   );
