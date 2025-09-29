@@ -721,6 +721,20 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Party healing (priest special ability)
+    socket.on('heal_party', () => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const result = gameState.healParty(playerId);
+      if (result) {
+        const { lobby, healedPlayers } = result;
+        io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        console.log(`💫 Priest ${playerId} healed party`);
+      }
+    });
+
     // Revival system
     socket.on('revive_start', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;

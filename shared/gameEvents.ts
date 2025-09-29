@@ -263,6 +263,7 @@ export interface ClientToServerEvents {
   revive_start: (data: { targetId: string }) => void;
   revive_cancel: (data: { targetId: string }) => void;
   revive_tick: (data: { targetId: string }) => void;
+  heal_party: () => void;
   player_jump: (data: { isJumping: boolean }) => void;
   boss_damage_player: (data: { playerId: string; damage: number }) => void;
   player_projectile: (data: {
@@ -339,6 +340,10 @@ export interface ServerToClientEvents {
     targetId: string;
     damage: number;
     targetHealth: number;
+  }) => void;
+  party_healed: (data: {
+    healerId: string;
+    healedPlayers: Array<{ playerId: string; newHealth: number }>;
   }) => void;
   revive_progress: (data: {
     targetId: string;
