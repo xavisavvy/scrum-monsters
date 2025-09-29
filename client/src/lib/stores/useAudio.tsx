@@ -38,6 +38,7 @@ interface AudioState {
   setHitSound: (sound: HTMLAudioElement) => void;
   setSuccessSound: (sound: HTMLAudioElement) => void;
   setButtonSelectSound: (sound: HTMLAudioElement) => void;
+  setExplosionSound: (sound: HTMLAudioElement) => void;
   setWalkingSound: (sound: HTMLAudioElement) => void;
   setMusicTracks: (tracks: MusicTrack[]) => void;
   setYoutubeUrl: (url: string) => void;
