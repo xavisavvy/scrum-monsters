@@ -1,5 +1,6 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
+import { createHash, createHmac } from 'crypto';
 
 interface RevivalSession {
   reviverId: string;
@@ -19,6 +20,14 @@ class GameStateManager {
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
   private io?: any; // SocketIO server instance
+  
+  // Reconnection system
+  private disconnectedPlayers: Map<string, DisconnectedPlayer> = new Map(); // key: playerId
+  private reconnectTokens: Map<string, ReconnectToken> = new Map(); // key: token string
+  private disconnectWatchdog: NodeJS.Timeout;
+  private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
+  private readonly TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
+  private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + Math.random();
 
   constructor(io?: any) {
     this.io = io;
@@ -26,6 +35,11 @@ class GameStateManager {
     this.revivalWatchdog = setInterval(() => {
       this.processRevivalSessions();
     }, 100); // Check every 100ms
+    
+    // Start disconnect watchdog timer
+    this.disconnectWatchdog = setInterval(() => {
+      this.processDisconnectedPlayers();
+    }, 30000); // Check every 30 seconds
   }
 
   generateLobbyId(): string {
@@ -90,6 +104,222 @@ class GameStateManager {
     }
 
     this.cancelRevivalSession(sessionKey);
+  }
+
+  // Reconnection Management Methods
+  private processDisconnectedPlayers(): void {
+    const now = Date.now();
+    const expiredPlayers: string[] = [];
+
+    for (const [playerId, disconnectedPlayer] of this.disconnectedPlayers) {
+      if (now > disconnectedPlayer.graceExpiresAt) {
+        expiredPlayers.push(playerId);
+      }
+    }
+
+    // Remove expired players permanently
+    for (const playerId of expiredPlayers) {
+      const disconnectedPlayer = this.disconnectedPlayers.get(playerId);
+      if (disconnectedPlayer) {
+        console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) grace period expired - removing permanently`);
+        this.disconnectedPlayers.delete(playerId);
+        
+        // Remove from lobby permanently
+        const lobby = this.removePlayer(playerId);
+        if (lobby && this.io) {
+          this.io.to(disconnectedPlayer.lobbyId).emit('lobby_updated', { lobby });
+        }
+      }
+    }
+
+    // Clean up expired tokens
+    this.cleanupExpiredTokens();
+  }
+
+  private generateReconnectToken(playerId: string, lobbyId: string, playerName: string): string {
+    const now = Date.now();
+    const tokenData = {
+      playerId,
+      lobbyId,
+      playerName,
+      issuedAt: now,
+      expiresAt: now + this.TOKEN_EXPIRY_TIME
+    };
+
+    // Create signature for token integrity
+    const tokenPayload = JSON.stringify(tokenData);
+    const signature = createHmac('sha256', this.TOKEN_SECRET).update(tokenPayload).digest('hex');
+    
+    const token: ReconnectToken = {
+      ...tokenData,
+      signature
+    };
+
+    const tokenString = Buffer.from(JSON.stringify(token)).toString('base64');
+    this.reconnectTokens.set(tokenString, token);
+    
+    return tokenString;
+  }
+
+  private validateReconnectToken(tokenString: string): ReconnectToken | null {
+    try {
+      const token = this.reconnectTokens.get(tokenString);
+      if (!token) {
+        console.log('🔑 Token not found in active tokens');
+        return null;
+      }
+
+      // Check expiry
+      if (Date.now() > token.expiresAt) {
+        console.log('🔑 Token expired');
+        this.reconnectTokens.delete(tokenString);
+        return null;
+      }
+
+      // Verify signature
+      const { signature, ...tokenData } = token;
+      const expectedSignature = createHmac('sha256', this.TOKEN_SECRET).update(JSON.stringify(tokenData)).digest('hex');
+      
+      if (signature !== expectedSignature) {
+        console.log('🔑 Token signature invalid');
+        this.reconnectTokens.delete(tokenString);
+        return null;
+      }
+
+      return token;
+    } catch (error) {
+      console.log('🔑 Token validation error:', error);
+      return null;
+    }
+  }
+
+  handlePlayerDisconnect(playerId: string): { disconnectedPlayer: DisconnectedPlayer; reconnectToken: string } | null {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) return null;
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player) return null;
+
+    const now = Date.now();
+    
+    // Create disconnected player record
+    const disconnectedPlayer: DisconnectedPlayer = {
+      playerId,
+      lobbyId,
+      playerName: player.name,
+      disconnectedAt: now,
+      graceExpiresAt: now + this.DISCONNECT_GRACE_PERIOD,
+      lastKnownPosition: lobby.playerPositions[playerId],
+      lastKnownCombatState: lobby.playerCombatStates[playerId]
+    };
+
+    // Generate reconnect token
+    const reconnectToken = this.generateReconnectToken(playerId, lobbyId, player.name);
+
+    // Store disconnected player but keep them in the lobby temporarily
+    this.disconnectedPlayers.set(playerId, disconnectedPlayer);
+
+    console.log(`🔌 Player ${player.name} (${playerId}) disconnected - grace period: ${this.DISCONNECT_GRACE_PERIOD / 60000} minutes`);
+
+    return { disconnectedPlayer, reconnectToken };
+  }
+
+  attemptPlayerReconnect(tokenString: string): ReconnectResponse {
+    // Validate token
+    const token = this.validateReconnectToken(tokenString);
+    if (!token) {
+      return { result: 'invalid_token', message: 'Invalid or expired reconnection token' };
+    }
+
+    // Check if lobby still exists
+    const lobby = this.lobbies.get(token.lobbyId);
+    if (!lobby) {
+      this.disconnectedPlayers.delete(token.playerId);
+      this.reconnectTokens.delete(tokenString);
+      return { result: 'lobby_closed', message: 'Lobby no longer exists' };
+    }
+
+    // Check if player was disconnected
+    const disconnectedPlayer = this.disconnectedPlayers.get(token.playerId);
+    if (!disconnectedPlayer) {
+      return { result: 'grace_expired', message: 'Reconnection grace period has expired' };
+    }
+
+    // Check if grace period expired
+    if (Date.now() > disconnectedPlayer.graceExpiresAt) {
+      this.disconnectedPlayers.delete(token.playerId);
+      this.reconnectTokens.delete(tokenString);
+      return { result: 'grace_expired', message: 'Reconnection grace period has expired' };
+    }
+
+    // Find player in lobby
+    const player = lobby.players.find(p => p.id === token.playerId);
+    if (!player) {
+      return { result: 'server_error', message: 'Player not found in lobby' };
+    }
+
+    // Restore player state
+    if (disconnectedPlayer.lastKnownPosition) {
+      lobby.playerPositions[token.playerId] = disconnectedPlayer.lastKnownPosition;
+    }
+    if (disconnectedPlayer.lastKnownCombatState) {
+      lobby.playerCombatStates[token.playerId] = disconnectedPlayer.lastKnownCombatState;
+    }
+
+    // Generate new token for next potential disconnect
+    const newReconnectToken = this.generateReconnectToken(token.playerId, token.lobbyId, token.playerName);
+
+    // Clean up old disconnect record and token
+    this.disconnectedPlayers.delete(token.playerId);
+    this.reconnectTokens.delete(tokenString);
+
+    // Create lobby sync response
+    const lobbySync: LobbySync = {
+      lobby,
+      yourPlayer: player,
+      reconnectToken: newReconnectToken,
+      pendingActions: {
+        timers: lobby.currentTimer,
+        consensus: lobby.consensusCountdown,
+        battleState: lobby.boss
+      },
+      stateChanges: {
+        phaseChanged: true, // Always assume phase might have changed
+        playersJoined: [], // TODO: Track players who joined during disconnect
+        playersLeft: [], // TODO: Track players who left during disconnect  
+        ticketsChanged: true // Always assume tickets might have changed
+      }
+    };
+
+    console.log(`🔌 Player ${token.playerName} (${token.playerId}) successfully reconnected to lobby ${token.lobbyId}`);
+
+    return { 
+      result: 'success', 
+      lobbySync,
+      message: 'Successfully reconnected to lobby'
+    };
+  }
+
+  private cleanupExpiredTokens(): void {
+    const now = Date.now();
+    const expiredTokens: string[] = [];
+
+    for (const [tokenString, token] of this.reconnectTokens) {
+      if (now > token.expiresAt) {
+        expiredTokens.push(tokenString);
+      }
+    }
+
+    for (const tokenString of expiredTokens) {
+      this.reconnectTokens.delete(tokenString);
+    }
+
+    if (expiredTokens.length > 0) {
+      console.log(`🔑 Cleaned up ${expiredTokens.length} expired reconnect tokens`);
+    }
   }
 
   createLobby(hostName: string, lobbyName: string, initialSettings?: { 
