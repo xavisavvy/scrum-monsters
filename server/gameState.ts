@@ -631,10 +631,13 @@ class GameStateManager {
       return { error: 'Cannot start battle: At least one Developer or QA team member is required to participate in estimation battles. Please assign players to active teams first.' };
     }
 
+    // Count active participants for health scaling
+    const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
+
     // Initialize game state
     lobby.gamePhase = 'battle';
     lobby.currentTicket = tickets[0];
-    lobby.boss = this.createBossFromTickets(tickets);
+    lobby.boss = this.createBossFromTickets(tickets, activeParticipants);
 
     // Reset player states for battle
     lobby.players.forEach(p => {
@@ -667,8 +670,11 @@ class GameStateManager {
     // Move to next ticket
     const nextTicketIndex = lobby.completedTickets.length;
     if (nextTicketIndex < lobby.tickets.length) {
+      // Count active participants for consistent health scaling
+      const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
+      
       lobby.currentTicket = lobby.tickets[nextTicketIndex];
-      lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex));
+      lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex), activeParticipants);
       lobby.gamePhase = 'battle';
       
       // Reset player states for new battle
@@ -877,7 +883,10 @@ class GameStateManager {
     // Initialize game state
     lobby.gamePhase = 'avatar_selection';
     lobby.currentTicket = lobby.tickets[0];
-    lobby.boss = this.createBossFromTickets(lobby.tickets);
+    
+    // Count active participants for health scaling (even in avatar selection phase)
+    const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
+    lobby.boss = this.createBossFromTickets(lobby.tickets, activeParticipants);
 
     return lobby;
   }
@@ -897,8 +906,11 @@ class GameStateManager {
         // Move to next ticket
         const nextTicketIndex = lobby.completedTickets.length;
         if (nextTicketIndex < lobby.tickets.length) {
+          // Count active participants for consistent health scaling
+          const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
+          
           lobby.currentTicket = lobby.tickets[nextTicketIndex];
-          lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex));
+          lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex), activeParticipants);
           lobby.gamePhase = 'battle';
           
           // Reset player states for new battle
@@ -922,8 +934,19 @@ class GameStateManager {
     return lobby;
   }
 
-  private createBossFromTickets(tickets: JiraTicket[]): Boss {
-    const totalComplexity = tickets.length * 100;
+  private createBossFromTickets(tickets: JiraTicket[], activeParticipants: number = 1): Boss {
+    // Base health: 100 points per ticket
+    const baseHealthPerTicket = 100;
+    const baseHealth = tickets.length * baseHealthPerTicket;
+    
+    // Player scaling: Square root of participant count for balanced scaling
+    // 1 player: 1x, 4 players: 2x, 9 players: 3x, 16 players: 4x
+    const participantScaling = Math.sqrt(Math.max(1, activeParticipants));
+    
+    // Final scaled health (minimum 1x base health)
+    const scaledHealth = Math.round(baseHealth * participantScaling);
+    
+    console.log(`🎯 Boss health scaling: ${activeParticipants} participants → ${participantScaling.toFixed(2)}x multiplier → ${scaledHealth} HP`);
     
     // Available boss types with simplified sprite names
     const availableBosses = [
@@ -957,11 +980,15 @@ class GameStateManager {
     // Randomly select a boss type
     const selectedBoss = availableBosses[Math.floor(Math.random() * availableBosses.length)];
     
+    const bossName = activeParticipants > 1 
+      ? `${selectedBoss.name} of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''} (${activeParticipants} Warriors)`
+      : `${selectedBoss.name} of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''}`;
+    
     return {
       id: Math.random().toString(36).substring(2, 15),
-      name: `${selectedBoss.name} of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''}`,
-      maxHealth: totalComplexity,
-      currentHealth: totalComplexity,
+      name: bossName,
+      maxHealth: scaledHealth,
+      currentHealth: scaledHealth,
       phase: 1,
       maxPhases: tickets.length,
       sprite: selectedBoss.sprite,
@@ -1410,8 +1437,11 @@ class GameStateManager {
       lobby.gamePhase = 'next_level';
       lobby.boss.defeated = true;
       // Progress to next phase/ticket
+      // Count active participants for consistent health scaling
+      const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
+      
       lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
-      lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length));
+      lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length), activeParticipants);
     }
   }
 
