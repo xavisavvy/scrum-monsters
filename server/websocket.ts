@@ -59,7 +59,19 @@ export function setupWebSocket(httpServer: HTTPServer) {
         // Join socket room
         socket.join(lobby.id);
         
+        // Generate reconnect token for the host
+        const reconnectToken = (gameState as any).generateReconnectToken?.(lobby.hostId, lobby.id, hostName) || '';
+        
         socket.emit('lobby_created', { lobby, inviteLink });
+        if (reconnectToken) {
+          socket.emit('lobby_sync', { 
+            lobby, 
+            yourPlayer: lobby.players[0], 
+            reconnectToken,
+            pendingActions: {},
+            stateChanges: {}
+          });
+        }
         console.log(`Lobby created: ${lobby.id} by ${hostName}`);
       } catch (error) {
         console.error('Error creating lobby:', error);
@@ -84,7 +96,19 @@ export function setupWebSocket(httpServer: HTTPServer) {
         // Join socket room
         socket.join(lobby.id);
         
+        // Generate reconnect token for the joining player
+        const reconnectToken = (gameState as any).generateReconnectToken?.(player.id, lobby.id, player.name) || '';
+        
         socket.emit('lobby_joined', { lobby, player });
+        if (reconnectToken) {
+          socket.emit('lobby_sync', { 
+            lobby, 
+            yourPlayer: player, 
+            reconnectToken,
+            pendingActions: {},
+            stateChanges: {}
+          });
+        }
         
         // Notify other players about the new player joining (for dropping animation)
         socket.to(lobby.id).emit('player_joined', { player, lobby });
@@ -700,15 +724,75 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Reconnection handler
+    socket.on('reconnect_with_token', ({ reconnectToken }) => {
+      try {
+        const response = (gameState as any).attemptPlayerReconnect(reconnectToken);
+        
+        if (response.result === 'success' && response.lobbySync) {
+          const { lobbySync } = response;
+          const playerId = lobbySync.yourPlayer.id;
+          const lobbyId = lobbySync.lobby.id;
+          
+          // Update socket data
+          socket.data.playerId = playerId;
+          socket.data.lobbyId = lobbyId;
+          
+          // Join socket room
+          socket.join(lobbyId);
+          
+          // Send successful reconnection response
+          socket.emit('lobby_sync', lobbySync);
+          socket.emit('reconnect_response', response);
+          
+          // Notify other players about the reconnection
+          socket.to(lobbyId).emit('player_reconnected', { 
+            playerId, 
+            playerName: lobbySync.yourPlayer.name 
+          });
+          socket.to(lobbyId).emit('lobby_updated', { lobby: lobbySync.lobby });
+          
+          console.log(`✅ Player ${lobbySync.yourPlayer.name} (${playerId}) reconnected successfully`);
+        } else {
+          // Send failed reconnection response
+          socket.emit('reconnect_response', response);
+          console.log(`❌ Reconnection failed: ${response.message}`);
+        }
+      } catch (error) {
+        console.error('Error handling reconnect:', error);
+        socket.emit('reconnect_response', { 
+          result: 'server_error', 
+          message: 'Server error during reconnection' 
+        });
+      }
+    });
+
     socket.on('disconnect', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       
       if (playerId) {
-        const lobby = gameState.removePlayer(playerId);
-        if (lobby && lobbyId) {
+        // Use new reconnection system instead of immediate removal
+        const disconnectResult = (gameState as any).handlePlayerDisconnect(playerId);
+        if (disconnectResult && lobbyId) {
+          const { disconnectedPlayer, reconnectToken } = disconnectResult;
+          
+          // Store reconnect token in the socket for potential reconnection
+          // (Note: This would typically be stored on client-side)
+          
+          // Notify other players about the disconnection (but keep player in lobby)
           io.to(lobbyId).emit('player_disconnected', { playerId });
-          io.to(lobbyId).emit('lobby_updated', { lobby });
+          
+          console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) disconnected - reconnection available for ${Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000)} minutes`);
+          
+          // Don't emit lobby_updated yet since player is still in lobby during grace period
+        } else {
+          // Fallback to old behavior if reconnection setup fails
+          const lobby = gameState.removePlayer(playerId);
+          if (lobby && lobbyId) {
+            io.to(lobbyId).emit('player_disconnected', { playerId });
+            io.to(lobbyId).emit('lobby_updated', { lobby });
+          }
         }
       }
       
