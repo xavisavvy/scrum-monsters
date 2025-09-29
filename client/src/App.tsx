@@ -587,12 +587,12 @@ function App() {
                     Consider Supporting my work
                   </p>
                   <RetroButton
-                    onClick={() => window.open('https://account.venmo.com/u/preston_farr', '_blank')}
+                    onClick={() => window.open('https://donate.stripe.com/5kQ00j4Up7yf7Nj9Uee7m00', '_blank')}
                     size="sm"
                     variant="secondary"
                     className="text-xs"
                   >
-                    💳 Donate via Venmo
+                    💳 Donate via Stripe
                   </RetroButton>
                 </div>
               </div>

@@ -193,11 +193,11 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                     you can help keep development going by making a small donation.
                   </p>
                   <RetroButton
-                    onClick={() => window.open('https://account.venmo.com/u/preston_farr', '_blank')}
+                    onClick={() => window.open('https://donate.stripe.com/5kQ00j4Up7yf7Nj9Uee7m00', '_blank')}
                     size="sm"
                     className="inline-flex items-center gap-2"
                   >
-                    💳 Donate via Venmo
+                    💳 Donate via Stripe
                   </RetroButton>
                   <p className="text-sm text-gray-400 mt-2">
                     Even a coffee-sized donation helps fund new features, boss packs, and server costs!
