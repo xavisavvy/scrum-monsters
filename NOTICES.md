@@ -45,4 +45,4 @@ For a complete list of development dependencies and their licenses, see the `pac
 All dependencies are used in compliance with their respective licenses. If you believe there is a license compliance issue, please contact: legal@scrummonsters.com
 
 ---
-Last updated: January 2025
+Last updated: September 2025
