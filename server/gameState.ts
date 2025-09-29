@@ -359,10 +359,21 @@ class GameStateManager {
 
     console.log(`🔌 Player ${token.playerName} (${token.playerId}) successfully reconnected to lobby ${token.lobbyId}`);
 
+    // Check if this player lost host status during disconnect
+    let newHostName: string | undefined;
+    if (!player.isHost && lobby.hostId !== token.playerId) {
+      const currentHost = lobby.players.find(p => p.id === lobby.hostId);
+      if (currentHost) {
+        newHostName = currentHost.name;
+        console.log(`ℹ️ Player ${token.playerName} reconnected but is no longer host. Current host: ${currentHost.name}`);
+      }
+    }
+
     return { 
       result: 'success', 
       lobbySync,
-      message: 'Successfully reconnected to lobby'
+      message: 'Successfully reconnected to lobby',
+      newHost: newHostName
     };
   }
 
