@@ -371,6 +371,23 @@ function App() {
       console.log(`Player ${playerId} disconnected`);
     });
 
+    socket.on('host_transferred', ({ oldHostId, newHostId, newHostName, reason }) => {
+      console.log(`👑 Host transferred from ${oldHostId} to ${newHostName} (${newHostId}). Reason: ${reason}`);
+      
+      // Show notification to all players
+      if (currentPlayer?.id === newHostId) {
+        toast.success(`You are now the host! You can manage the lobby and start battles.`, {
+          duration: 5000,
+          icon: '👑'
+        });
+      } else {
+        toast.info(`${newHostName} is now the host.`, {
+          duration: 3000,
+          icon: '👑'
+        });
+      }
+    });
+
     socket.on('boss_ring_attack', ({ bossX, bossY, projectiles }) => {
       console.log('💀 Boss ring attack received!', projectiles.length, 'projectiles');
       // Handle boss ring attack visual effects
@@ -408,6 +425,7 @@ function App() {
       socket.off('quest_abandoned');
       socket.off('game_error');
       socket.off('player_disconnected');
+      socket.off('host_transferred');
       socket.off('youtube_play_synced');
       socket.off('youtube_stop_synced');
     };
