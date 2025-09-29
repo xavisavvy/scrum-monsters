@@ -25,10 +25,10 @@
 - Any use suggesting official endorsement or affiliation
 
 ### Commercial Licensing
-For commercial use of trademarks, contact: licensing@scrummonsters.app
+For commercial use of trademarks, contact: licensing@scrummonsters.com
 
 ### Reporting Violations
-To report trademark violations, email: legal@scrummonsters.app
+To report trademark violations, email: legal@scrummonsters.com
 
 ---
 **© 2025 Preston Farr. All trademark rights reserved.**
