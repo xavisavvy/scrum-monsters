@@ -194,7 +194,56 @@ class GameStateManager {
     }
   }
 
-  handlePlayerDisconnect(playerId: string): { disconnectedPlayer: DisconnectedPlayer; reconnectToken: string } | null {
+  private promoteNewHost(lobby: Lobby, oldHostId: string): { newHostId: string; newHostName: string } | null {
+    // Get all connected players (excluding the disconnecting host and any other disconnected players)
+    const connectedPlayers = lobby.players.filter(
+      p => p.id !== oldHostId && !this.disconnectedPlayers.has(p.id)
+    );
+
+    if (connectedPlayers.length === 0) {
+      return null; // No eligible replacement
+    }
+
+    // Priority order: spectators → developers → qa
+    const spectators = connectedPlayers.filter(p => p.team === 'spectators');
+    const developers = connectedPlayers.filter(p => p.team === 'developers');
+    const qa = connectedPlayers.filter(p => p.team === 'qa');
+
+    let newHost: Player | undefined;
+    
+    if (spectators.length > 0) {
+      newHost = spectators[0];
+    } else if (developers.length > 0) {
+      newHost = developers[0];
+    } else if (qa.length > 0) {
+      newHost = qa[0];
+    }
+
+    if (!newHost) {
+      return null;
+    }
+
+    // Update host status
+    lobby.hostId = newHost.id;
+    
+    // Remove host flag from old host (if they're still in lobby during grace period)
+    const oldHost = lobby.players.find(p => p.id === oldHostId);
+    if (oldHost) {
+      oldHost.isHost = false;
+    }
+    
+    // Set new host flag
+    newHost.isHost = true;
+
+    console.log(`👑 Host transferred from ${oldHost?.name || 'unknown'} (${oldHostId}) to ${newHost.name} (${newHost.id})`);
+
+    return {
+      newHostId: newHost.id,
+      newHostName: newHost.name
+    };
+  }
+
+  handlePlayerDisconnect(playerId: string): { disconnectedPlayer: DisconnectedPlayer; reconnectToken: string; hostTransfer?: { oldHostId: string; newHostId: string; newHostName: string } } | null {
     const lobbyId = this.playerToLobby.get(playerId);
     if (!lobbyId) return null;
 
@@ -225,7 +274,20 @@ class GameStateManager {
 
     console.log(`🔌 Player ${player.name} (${playerId}) disconnected - grace period: ${this.DISCONNECT_GRACE_PERIOD / 60000} minutes`);
 
-    return { disconnectedPlayer, reconnectToken };
+    // If this was the host, immediately transfer host privileges
+    let hostTransfer: { oldHostId: string; newHostId: string; newHostName: string } | undefined;
+    if (lobby.hostId === playerId) {
+      const transfer = this.promoteNewHost(lobby, playerId);
+      if (transfer) {
+        hostTransfer = {
+          oldHostId: playerId,
+          newHostId: transfer.newHostId,
+          newHostName: transfer.newHostName
+        };
+      }
+    }
+
+    return { disconnectedPlayer, reconnectToken, hostTransfer };
   }
 
   attemptPlayerReconnect(tokenString: string): ReconnectResponse {
