@@ -833,7 +833,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
         // Use new reconnection system instead of immediate removal
         const disconnectResult = (gameState as any).handlePlayerDisconnect(playerId);
         if (disconnectResult && lobbyId) {
-          const { disconnectedPlayer, reconnectToken } = disconnectResult;
+          const { disconnectedPlayer, reconnectToken, hostTransfer } = disconnectResult;
           
           // Store reconnect token in the socket for potential reconnection
           // (Note: This would typically be stored on client-side)
@@ -843,7 +843,23 @@ export function setupWebSocket(httpServer: HTTPServer) {
           
           console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) disconnected - reconnection available for ${Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000)} minutes`);
           
-          // Don't emit lobby_updated yet since player is still in lobby during grace period
+          // If host was transferred, notify all players and update lobby
+          if (hostTransfer) {
+            io.to(lobbyId).emit('host_transferred', {
+              oldHostId: hostTransfer.oldHostId,
+              newHostId: hostTransfer.newHostId,
+              newHostName: hostTransfer.newHostName,
+              reason: 'Host disconnected'
+            });
+            
+            // Emit lobby update with new host information
+            const lobby = gameState.getLobby(lobbyId);
+            if (lobby) {
+              io.to(lobbyId).emit('lobby_updated', { lobby });
+            }
+            
+            console.log(`👑 Host transferred to ${hostTransfer.newHostName} (${hostTransfer.newHostId})`);
+          }
         } else {
           // Fallback to old behavior if reconnection setup fails
           const lobby = gameState.removePlayer(playerId);
