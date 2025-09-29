@@ -23,6 +23,9 @@ import { useBacktickKey } from '@/hooks/useBacktickKey';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import { CheatMenu } from '@/components/ui/CheatMenu';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { ReconnectionStatus } from '@/components/ui/ReconnectionStatus';
+import { ConnectionIndicator } from '@/components/ui/ConnectionIndicator';
+import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
 import '@/styles/retro.css';
 
 type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
@@ -32,13 +35,14 @@ function App() {
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   const [showCheatMenu, setShowCheatMenu] = useState(false);
+  const [showReconnectionDialog, setShowReconnectionDialog] = useState(false);
   
   // Force remount mechanism for critical phase transitions
   const [battleRemountKey, setBattleRemountKey] = useState(0);
   const [lastGamePhase, setLastGamePhase] = useState<string | null>(null);
   const [isBattleUnmounting, setIsBattleUnmounting] = useState(false);
   
-  const { socket, connect, disconnect, isConnected } = useWebSocket();
+  const { socket, connect, disconnect, isConnected, reconnection } = useWebSocket();
   const { 
     currentLobby, 
     currentPlayer, 
@@ -56,7 +60,6 @@ function App() {
     setMenuMusic, 
     setBossMusic,
     setButtonSelectSound,
-    setExplosionSound,
     setHitSound,
     setWalkingSound,
     setMusicTracks,
@@ -170,6 +173,15 @@ function App() {
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [appState]);
+
+  // Handle reconnection dialog visibility
+  useEffect(() => {
+    if (reconnection.status === 'failed' && reconnection.attempt >= reconnection.maxAttempts) {
+      setShowReconnectionDialog(true);
+    } else if (reconnection.status === 'connected') {
+      setShowReconnectionDialog(false);
+    }
+  }, [reconnection.status, reconnection.attempt, reconnection.maxAttempts]);
 
   // Handle menu music based on app state
   useEffect(() => {
@@ -635,6 +647,19 @@ function App() {
       <CheatMenu
         isOpen={showCheatMenu}
         onClose={() => setShowCheatMenu(false)}
+      />
+      
+      {/* Reconnection Status */}
+      <ReconnectionStatus />
+      
+      {/* Connection Indicator */}
+      <ConnectionIndicator />
+      
+      {/* Reconnection Dialog */}
+      <ReconnectionDialog
+        isOpen={showReconnectionDialog}
+        onClose={() => setShowReconnectionDialog(false)}
+        onRefreshPage={() => window.location.reload()}
       />
       
       {/* Toast Notifications */}
