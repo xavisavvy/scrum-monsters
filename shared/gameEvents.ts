@@ -71,6 +71,7 @@ export interface Lobby {
     remainingSeconds: number;
     startedAt: number;
   };
+  votingStartedAt?: number;
 }
 
 export interface TimerSettings {
@@ -253,6 +254,7 @@ export interface ClientToServerEvents {
   youtube_play: (data: { videoId: string; url: string }) => void;
   youtube_stop: () => void;
   advancePhaseNow: (data: { lobbyId: string; playerId: string }) => void;
+  forceVotingProgression: (data: { lobbyId: string }) => void;
   player_pos: (data: { x: number; y: number }) => void;
   attack_player: (data: { targetId: string; damage: number }) => void;
   revive_start: (data: { targetId: string }) => void;
@@ -315,6 +317,7 @@ export interface ServerToClientEvents {
   boss_defeated: (data: { lobby: Lobby }) => void;
   quest_abandoned: (data: { lobby: Lobby }) => void;
   game_error: (data: { message: string }) => void;
+  voting_timeout: (data: { submittedCount: number; totalCount: number; message: string }) => void;
   player_disconnected: (data: { playerId: string }) => void;
   timer_updated: (data: { timerState: TimerState | null }) => void;
   youtube_play_synced: (data: { videoId: string; url: string }) => void;
