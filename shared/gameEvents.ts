@@ -152,6 +152,59 @@ export type AvatarClass =
   | "oathbreaker"
   | "monk";
 
+// Reconnection System Types
+export interface ReconnectToken {
+  playerId: string;
+  lobbyId: string;
+  playerName: string;
+  issuedAt: number;
+  expiresAt: number;
+  signature: string; // Signed token to prevent tampering
+}
+
+export interface DisconnectedPlayer {
+  playerId: string;
+  lobbyId: string;
+  playerName: string;
+  disconnectedAt: number;
+  graceExpiresAt: number;
+  lastKnownPosition?: Position;
+  lastKnownCombatState?: PlayerCombatState;
+}
+
+export interface LobbySnapshot {
+  lobby: Lobby;
+  player: Player;
+  timestamp: number;
+  reconnectToken: string;
+}
+
+export interface LobbySync {
+  lobby: Lobby;
+  yourPlayer: Player;
+  reconnectToken: string;
+  pendingActions?: {
+    timers?: TimerState;
+    consensus?: any;
+    battleState?: any;
+  };
+  stateChanges?: {
+    playersJoined?: string[];
+    playersLeft?: string[];
+    phaseChanged?: boolean;
+    ticketsChanged?: boolean;
+  };
+}
+
+export type ReconnectResult = 'success' | 'lobby_closed' | 'host_changed' | 'invalid_token' | 'grace_expired' | 'server_error';
+
+export interface ReconnectResponse {
+  result: ReconnectResult;
+  lobbySync?: LobbySync;
+  message?: string;
+  newHost?: string; // If host changed during disconnect
+}
+
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
   create_lobby: (data: { 
@@ -215,6 +268,8 @@ export interface ClientToServerEvents {
     emoji: string;
     targetPlayerId?: string;
   }) => void;
+  // Reconnection events
+  reconnect_with_token: (data: { reconnectToken: string }) => void;
 }
 
 export interface TeamScores {
@@ -305,6 +360,12 @@ export interface ServerToClientEvents {
     targetPlayerId?: string;
     projectileId: string;
   }) => void;
+  // Reconnection events
+  player_reconnected: (data: { playerId: string; playerName: string }) => void;
+  lobby_sync: (data: LobbySync) => void;
+  reconnect_response: (data: ReconnectResponse) => void;
+  connection_lost: () => void;
+  reconnect_attempt: (data: { attempt: number; maxAttempts: number; nextRetryIn: number }) => void;
 }
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
