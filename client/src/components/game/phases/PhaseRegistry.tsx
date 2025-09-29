@@ -6,6 +6,7 @@ import { RevealPhase } from './RevealPhase';
 import { DiscussionPhase } from './DiscussionPhase';
 import { VictoryPhase } from './VictoryPhase';
 import { NextLevelPhase } from './NextLevelPhase';
+import { GameOverPhase } from './GameOverPhase';
 
 export interface PhaseConfig {
   name: string;
@@ -66,6 +67,15 @@ export class PhaseRegistry {
       component: NextLevelPhase,
       description: 'Transition screen between completed objectives',
       supportsTransitions: true,
+      requiresBoss: false,
+      requiresPlayer: false
+    });
+
+    this.register('game_over', {
+      name: 'Game Over',
+      component: GameOverPhase,
+      description: 'TPK screen shown when all team members are downed, allows continued voting',
+      supportsTransitions: false,
       requiresBoss: false,
       requiresPlayer: false
     });
