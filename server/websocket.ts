@@ -35,19 +35,20 @@ export function setupWebSocket(httpServer: HTTPServer) {
       try {
         const lobby = gameState.createLobby(hostName, lobbyName, initialSettings);
         // Get the correct host based on environment
-        const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NODE_ENV;
-        const isReplitPreview = process.env.REPLIT_DEV_DOMAIN;
+        const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+        const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
+        const isLocalDevelopment = !isReplitDeployment && !isReplitPreview;
         
         let host: string;
-        if (isDevelopment && !isReplitPreview) {
-          // Local development
-          host = 'http://localhost:5000';
+        if (isReplitDeployment) {
+          // Published/Production environment on Replit
+          host = 'https://scrummonsters.com';
         } else if (isReplitPreview) {
-          // Replit preview environment
+          // Replit preview/development environment  
           host = `https://${process.env.REPLIT_DEV_DOMAIN}`;
         } else {
-          // Production
-          host = 'https://scrummonsters.com';
+          // Local development
+          host = 'http://localhost:5000';
         }
         const inviteLink = `${host}/join/${lobby.id}`;
         
