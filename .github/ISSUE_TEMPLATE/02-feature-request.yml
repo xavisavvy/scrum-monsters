@@ -1,0 +1,104 @@
+name: ✨ Feature Request
+description: Suggest a new feature or improvement for Scrum Monsters
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        💡 Have an idea to make Scrum Monsters even better? We'd love to hear it!
+        
+        **Note:** For general feature discussions and community voting, consider using [GitHub Discussions](https://github.com/xavisavvy/scrum-monsters/discussions/categories/ideas) instead.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem Statement
+      description: What problem would this feature solve? Help us understand the "why" behind your request.
+      placeholder: I'm always frustrated when... / My team needs...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed Solution
+      description: Describe the feature or improvement you'd like to see
+      placeholder: I would love to see...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: feature-category
+    attributes:
+      label: Feature Category
+      description: Which area does this feature relate to?
+      options:
+        - 🎮 Gameplay Mechanics
+        - 👾 New Boss/Character
+        - 🎨 UI/UX Improvements
+        - 🔧 Technical/Performance
+        - 🔌 Integrations (Jira, Slack, etc.)
+        - 📊 Analytics/Reporting
+        - 🌐 Accessibility
+        - 🎵 Audio/Music
+        - 📱 Mobile Experience
+        - 🏢 Enterprise Features
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives Considered
+      description: Have you considered any alternative solutions or workarounds?
+      placeholder: I also thought about...
+
+  - type: dropdown
+    id: user-impact
+    attributes:
+      label: User Impact
+      description: How many users would benefit from this feature?
+      options:
+        - All users
+        - Most users
+        - Some users
+        - Power users/Teams
+        - Specific use case
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Priority Level (Your Opinion)
+      description: How important is this to you?
+      options:
+        - Low - Nice to have
+        - Medium - Would improve experience
+        - High - Important for adoption
+        - Critical - Blocking our team's use
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Add any other context, mockups, screenshots, or examples
+      placeholder: Here's how other tools handle this...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues and discussions to avoid duplicates
+          required: true
+        - label: I have clearly described the problem this solves
+          required: true
+        - label: I agree to follow the project's Code of Conduct
+          required: true

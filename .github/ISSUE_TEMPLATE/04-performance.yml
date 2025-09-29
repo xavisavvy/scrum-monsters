@@ -1,0 +1,124 @@
+name: ⚡ Performance Issue
+description: Report slow performance, lag, or resource usage problems
+title: "[Performance]: "
+labels: ["performance", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us optimize Scrum Monsters for better performance!
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Performance Issue Description
+      description: What performance problem are you experiencing?
+      placeholder: The game lags when... / Memory usage increases...
+    validations:
+      required: true
+
+  - type: dropdown
+    id: issue-type
+    attributes:
+      label: Performance Type
+      description: What kind of performance issue is this?
+      options:
+        - Slow page load
+        - Laggy animations/gameplay
+        - High memory usage
+        - Network/WebSocket delays
+        - Audio stuttering
+        - Frame drops
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: frequency
+    attributes:
+      label: How Often Does This Occur?
+      options:
+        - Always
+        - Frequently
+        - Sometimes
+        - Rarely
+        - Only under specific conditions
+    validations:
+      required: true
+
+  - type: textarea
+    id: conditions
+    attributes:
+      label: When Does This Happen?
+      description: What conditions trigger the performance issue?
+      placeholder: |
+        - Number of players in lobby: 8
+        - Game phase: Battle
+        - Duration before issue appears: 5 minutes
+    validations:
+      required: true
+
+  - type: dropdown
+    id: device
+    attributes:
+      label: Device Type
+      options:
+        - Desktop/Laptop
+        - Tablet
+        - Mobile Phone
+        - Multiple devices
+    validations:
+      required: true
+
+  - type: input
+    id: device-specs
+    attributes:
+      label: Device Specifications (if known)
+      description: OS, RAM, CPU, GPU (if relevant)
+      placeholder: "e.g., Windows 11, 16GB RAM, Intel i7"
+
+  - type: dropdown
+    id: browser
+    attributes:
+      label: Browser
+      options:
+        - Chrome
+        - Firefox
+        - Safari
+        - Edge
+        - Mobile Safari
+        - Mobile Chrome
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: performance-data
+    attributes:
+      label: Performance Metrics (if available)
+      description: |
+        Chrome DevTools Performance tab or browser profiling data
+        FPS measurements, memory usage, network timing, etc.
+      render: shell
+      placeholder: Paste performance data here...
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else that might help us diagnose this
+      placeholder: Screenshots, videos, or other details...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have described when and how the performance issue occurs
+          required: true
+        - label: I have included my device and browser information
+          required: true
+        - label: I agree to follow the project's Code of Conduct
+          required: true

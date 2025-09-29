@@ -49,6 +49,13 @@ Preferred communication style: Simple, everyday language.
 - **Development Server**: Hot reload with runtime error overlay and request logging
 - **Path Aliases**: Clean imports using @ for client code and @shared for common types
 
+## Community & Feedback Management
+- **GitHub Issue Templates**: Structured YAML forms for bug reports, feature requests, documentation, and performance issues
+- **Pull Request Template**: Standardized PR format with type classification, testing checklist, and DCO agreement
+- **Discussion Templates**: Community-driven feature voting and idea sharing via GitHub Discussions
+- **Security Policy**: Private vulnerability reporting process with defined scope and timeline (.github/SECURITY.md)
+- **Template Structure**: Uses 2025 best practices with auto-labeling, required fields, and dropdown validations
+
 # External Dependencies
 
 - **Database**: Neon PostgreSQL (serverless) via @neondatabase/serverless
