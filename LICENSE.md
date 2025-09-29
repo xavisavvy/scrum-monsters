@@ -27,7 +27,7 @@ You may share the assets with attribution for noncommercial use. No derivatives 
 License: https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode.en
 
 For commercial use (e.g., merchandise, paid packs, or white-label), contact:
-licensing@scrummonsters.app
+licensing@scrummonsters.com
 
 ## 3) Commercial Add-ons
 Pro integrations, trainer decks, and Boss Packs in `./commercial` are provided under a
