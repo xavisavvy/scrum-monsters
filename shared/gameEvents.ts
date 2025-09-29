@@ -72,6 +72,8 @@ export interface Lobby {
     startedAt: number;
   };
   votingStartedAt?: number;
+  battleModifier?: number; // Increases every 10s during battle
+  battleStartTime?: number; // Timestamp when battle started
 }
 
 export interface TimerSettings {
@@ -137,7 +139,8 @@ export type GamePhase =
   | "reveal"
   | "discussion"
   | "victory"
-  | "next_level";
+  | "next_level"
+  | "game_over";
 
 export type TeamType = "developers" | "qa" | "spectators";
 
@@ -316,6 +319,9 @@ export interface ServerToClientEvents {
   }) => void;
   boss_defeated: (data: { lobby: Lobby }) => void;
   quest_abandoned: (data: { lobby: Lobby }) => void;
+  game_over: (data: { lobby: Lobby }) => void;
+  boss_healed: (data: { bossHealth: number; healAmount: number }) => void;
+  modifier_updated: (data: { modifier: number }) => void;
   game_error: (data: { message: string }) => void;
   voting_timeout: (data: { submittedCount: number; totalCount: number; message: string }) => void;
   player_disconnected: (data: { playerId: string }) => void;

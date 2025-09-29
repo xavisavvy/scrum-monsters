@@ -20,6 +20,7 @@ class GameStateManager {
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
   private votingTimeouts = new Map<string, NodeJS.Timeout>(); // Store voting timeouts separately
+  private modifierIntervals = new Map<string, NodeJS.Timeout>(); // Track modifier intervals per lobby
   private io?: any; // SocketIO server instance
   
   // Reconnection system
@@ -241,6 +242,28 @@ class GameStateManager {
       newHostId: newHost.id,
       newHostName: newHost.name
     };
+  }
+
+  // Battle Modifier System
+  private getCurrentModifier(lobby: Lobby): number {
+    if (!lobby.battleStartTime || lobby.gamePhase !== 'battle') {
+      return 0;
+    }
+    const elapsedSeconds = Math.floor((Date.now() - lobby.battleStartTime) / 1000);
+    return Math.floor(elapsedSeconds / 10); // Increases every 10 seconds
+  }
+
+  private checkGameOver(lobby: Lobby): boolean {
+    // Game over if all developers and QA are downed
+    const activePlayers = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa');
+    if (activePlayers.length === 0) return false;
+    
+    const allDowned = activePlayers.every(p => {
+      const combatState = lobby.playerCombatStates[p.id];
+      return combatState && combatState.isDowned;
+    });
+    
+    return allDowned;
   }
 
   handlePlayerDisconnect(playerId: string): { disconnectedPlayer: DisconnectedPlayer; reconnectToken: string; hostTransfer?: { oldHostId: string; newHostId: string; newHostName: string } } | null {
@@ -711,6 +734,10 @@ class GameStateManager {
     lobby.gamePhase = 'battle';
     lobby.currentTicket = tickets[0];
     lobby.boss = this.createBossFromTickets(tickets, activeParticipants);
+    
+    // Initialize battle modifier system
+    lobby.battleModifier = 0;
+    lobby.battleStartTime = Date.now();
 
     // Reset player states for battle
     lobby.players.forEach(p => {
@@ -749,6 +776,10 @@ class GameStateManager {
       lobby.currentTicket = lobby.tickets[nextTicketIndex];
       lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex), activeParticipants);
       lobby.gamePhase = 'battle';
+      
+      // Reset battle modifier for new battle
+      lobby.battleModifier = 0;
+      lobby.battleStartTime = Date.now();
       
       // Reset player states for new battle
       lobby.players.forEach(p => {
@@ -847,7 +878,7 @@ class GameStateManager {
     return this.revealScores(lobby.id);
   }
 
-  attackPlayer(attackerId: string, targetId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
+  attackPlayer(attackerId: string, targetId: string, damage: number): { lobby: Lobby; targetHealth: number; gameOver?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(attackerId);
     if (!lobby || lobby.gamePhase !== 'battle') return null;
 
@@ -857,18 +888,34 @@ class GameStateManager {
 
     // Only spectators can attack players (boss role)
     if (attacker.team !== 'spectators') return null;
+    
+    // Spectators can only attack developers/QA
+    if (target.team === 'spectators') return null;
 
     const targetState = lobby.playerCombatStates[targetId];
     if (!targetState || targetState.isDowned) return null;
 
-    targetState.hp = Math.max(0, targetState.hp - damage);
+    // Get current modifier and calculate damage
+    const modifier = this.getCurrentModifier(lobby);
+    const actualDamage = 1 + modifier; // Spectator damage is 1 + modifier
+
+    targetState.hp = Math.max(0, targetState.hp - actualDamage);
     targetState.lastDamagedBy = attackerId;
 
     if (targetState.hp <= 0) {
       targetState.isDowned = true;
     }
 
-    return { lobby, targetHealth: targetState.hp };
+    console.log(`👁️ Spectator ${attacker.name} attacked ${target.name} for ${actualDamage} damage (modifier: ${modifier})`);
+
+    // Check for game over
+    const gameOver = this.checkGameOver(lobby);
+    if (gameOver) {
+      lobby.gamePhase = 'game_over';
+      console.log('💀 GAME OVER - All developers/QA are downed!');
+    }
+
+    return { lobby, targetHealth: targetState.hp, gameOver, modifier };
   }
 
   findNearestTarget(playerId: string): string | null {
@@ -905,7 +952,7 @@ class GameStateManager {
     return nearestTarget;
   }
 
-  bossDamagePlayer(playerId: string, damage: number): { lobby: Lobby; targetHealth: number } | null {
+  bossDamagePlayer(playerId: string, damage: number): { lobby: Lobby; targetHealth: number; gameOver?: boolean } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
 
@@ -919,7 +966,14 @@ class GameStateManager {
       targetState.isDowned = true;
     }
 
-    return { lobby, targetHealth: targetState.hp };
+    // Check for game over
+    const gameOver = this.checkGameOver(lobby);
+    if (gameOver) {
+      lobby.gamePhase = 'game_over';
+      console.log('💀 GAME OVER - All developers/QA are downed!');
+    }
+
+    return { lobby, targetHealth: targetState.hp, gameOver };
   }
 
   addTickets(playerId: string, tickets: JiraTicket[]): Lobby | null {
@@ -1552,12 +1606,33 @@ class GameStateManager {
     this.playerPerformanceMap.delete(lobby.id);
   }
 
-  attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any } | null {
+  attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any; healedBoss?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
 
-    // Damage the boss
-    lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - damage);
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player) return null;
+
+    // Get current modifier
+    const modifier = this.getCurrentModifier(lobby);
+    lobby.battleModifier = modifier;
+
+    // Calculate actual damage/heal based on team and modifier
+    let actualDamage = 0;
+    let healedBoss = false;
+
+    if (player.team === 'spectators') {
+      // Spectators heal the boss for 1 + modifier
+      const healAmount = 1 + modifier;
+      lobby.boss.currentHealth = Math.min(lobby.boss.maxHealth, lobby.boss.currentHealth + healAmount);
+      healedBoss = true;
+      console.log(`👁️ Spectator ${player.name} healed boss for ${healAmount} (modifier: ${modifier})`);
+    } else if (player.team === 'developers' || player.team === 'qa') {
+      // Developers and QA deal 15 - modifier damage (minimum 1)
+      actualDamage = Math.max(1, 15 - modifier);
+      lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - actualDamage);
+      console.log(`⚔️ ${player.team} ${player.name} dealt ${actualDamage} damage (modifier: ${modifier})`);
+    }
 
     // Check if boss is defeated when health reaches 0
     if (lobby.boss.currentHealth <= 0) {
@@ -1580,7 +1655,9 @@ class GameStateManager {
     return {
       lobby,
       bossHealth: lobby.boss.currentHealth,
-      ringAttack
+      ringAttack,
+      healedBoss,
+      modifier
     };
   }
 
