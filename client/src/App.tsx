@@ -255,13 +255,21 @@ function App() {
     });
 
     // Handle reconnection failures
-    socket.on('reconnect_response', ({ result, message }) => {
+    socket.on('reconnect_response', ({ result, message, newHost }) => {
       const urlParams = new URLSearchParams(window.location.search);
       const lobbyParam = urlParams.get('join');
       
       if (result !== 'success' && lobbyParam && appState === 'landing') {
         console.log('❌ Reconnection failed during URL join, proceeding with manual join:', message);
         setAppState('join_lobby');
+      }
+      
+      // Notify if player lost host status during disconnect
+      if (result === 'success' && newHost) {
+        toast.info(`${newHost} became the host while you were disconnected.`, {
+          duration: 5000,
+          icon: '👑'
+        });
       }
     });
 
