@@ -6,6 +6,7 @@ import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
 import { EmoteModal } from './EmoteModal';
+import { GameOverPhase } from './phases/GameOverPhase';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
@@ -658,6 +659,16 @@ export function BattleScreen() {
               </div>
             </div>
           </div>
+        );
+
+      case 'game_over':
+        return (
+          <GameOverPhase 
+            key={phaseKey}
+            lobby={currentLobby} 
+            currentPlayer={currentPlayer}
+            emit={emit}
+          />
         );
 
       default:
