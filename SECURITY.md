@@ -7,7 +7,7 @@ If you discover a security vulnerability in this multiplayer scrum poker game, p
 ### How to Report
 
 - **GitHub Security**: Use GitHub's built-in private vulnerability reporting feature by clicking "Report a vulnerability" in the Security tab
-- **Email**: Send details to [Preston](mailto:preston+scrummonsters-security@prestonfarr.com)
+- **Email**: Send details to [security@scrummonsters.com](mailto:security@scrummonsters.com)
 - **Response Time**: We aim to respond within 48 hours
 
 ### What to Include
