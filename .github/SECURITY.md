@@ -96,4 +96,4 @@ If you have questions about this policy, contact us at security@scrummonsters.co
 
 ---
 
-**Last Updated:** January 2025
+**Last Updated:** September 2025
