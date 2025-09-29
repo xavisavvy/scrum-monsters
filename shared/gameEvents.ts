@@ -319,6 +319,7 @@ export interface ServerToClientEvents {
   game_error: (data: { message: string }) => void;
   voting_timeout: (data: { submittedCount: number; totalCount: number; message: string }) => void;
   player_disconnected: (data: { playerId: string }) => void;
+  host_transferred: (data: { oldHostId: string; newHostId: string; newHostName: string; reason: string }) => void;
   timer_updated: (data: { timerState: TimerState | null }) => void;
   youtube_play_synced: (data: { videoId: string; url: string }) => void;
   youtube_stop_synced: () => void;
