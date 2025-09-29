@@ -153,7 +153,21 @@ function App() {
     
     if (lobbyParam) {
       setJoinLobbyId(lobbyParam);
-      setAppState('join_lobby');
+      
+      // Check if we need to wait for reconnection attempt
+      const storedToken = localStorage.getItem('scrum-monsters-reconnect-token');
+      const storedSnapshot = localStorage.getItem('scrum-monsters-lobby-snapshot');
+      
+      if (storedToken && storedSnapshot && isConnected) {
+        // There's a potential reconnection, wait for it to complete
+        console.log('🔄 URL join detected with stored token - waiting for reconnection attempt');
+        
+        // Don't set join_lobby state yet, wait for reconnection to complete
+        // The lobby_sync handler will handle this case
+      } else {
+        // No stored reconnection data, safe to proceed with manual join
+        setAppState('join_lobby');
+      }
     } else if (gameParam === 'menu') {
       setAppState('menu');
     } else if (pageParam === 'about') {
@@ -166,7 +180,7 @@ function App() {
       setAppState('support');
     }
     // Default stays on landing page
-  }, []);
+  }, [isConnected]);
 
   // Auto-scroll to top when navigating to marketing pages
   useEffect(() => {
@@ -212,6 +226,43 @@ function App() {
       setLobby(lobby);
       setPlayer(player);
       setAppState('avatar_selection');
+    });
+
+    // Handle lobby sync from reconnection attempts
+    socket.on('lobby_sync', ({ lobby, yourPlayer, reconnectToken }) => {
+      console.log('📥 App received lobby sync from reconnection');
+      setLobby(lobby);
+      setPlayer(yourPlayer);
+      
+      // Check if this was a URL join scenario that was waiting for reconnection
+      const urlParams = new URLSearchParams(window.location.search);
+      const lobbyParam = urlParams.get('join');
+      
+      if (lobbyParam && lobbyParam.toUpperCase() === lobby.id) {
+        console.log('✅ URL join reconnection successful, transitioning to appropriate state');
+        
+        // Determine the appropriate state based on lobby phase and player avatar
+        if (lobby.gamePhase === 'lobby' && (!yourPlayer.avatar || yourPlayer.avatar === 'warrior')) {
+          setAppState('avatar_selection');
+        } else if (lobby.gamePhase === 'lobby') {
+          setAppState('lobby');
+        } else if (lobby.gamePhase === 'battle' || lobby.gamePhase === 'scoring' || lobby.gamePhase === 'reveal' || lobby.gamePhase === 'discussion') {
+          setAppState('battle');
+        } else {
+          setAppState('lobby'); // Default fallback
+        }
+      }
+    });
+
+    // Handle reconnection failures
+    socket.on('reconnect_response', ({ result, message }) => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const lobbyParam = urlParams.get('join');
+      
+      if (result !== 'success' && lobbyParam && appState === 'landing') {
+        console.log('❌ Reconnection failed during URL join, proceeding with manual join:', message);
+        setAppState('join_lobby');
+      }
     });
 
     socket.on('lobby_updated', ({ lobby }) => {
@@ -346,6 +397,8 @@ function App() {
     return () => {
       socket.off('lobby_created');
       socket.off('lobby_joined');
+      socket.off('lobby_sync');
+      socket.off('reconnect_response');
       socket.off('lobby_updated');
       socket.off('avatar_selected');
       socket.off('battle_started');
