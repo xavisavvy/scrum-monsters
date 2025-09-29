@@ -116,12 +116,16 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                   <p className="text-gray-300 text-sm mb-4">
                     Join other teams, share tips, and get help from the community.
                   </p>
-                  <RetroButton size="sm" variant="secondary">
+                  <RetroButton 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => {
+                      playButtonSelect();
+                      window.open('https://discord.gg/d6vGXbzNZe', '_blank');
+                    }}
+                  >
                     Join Discord
                   </RetroButton>
-                  <p className="text-gray-400 text-xs mt-2">
-                    Coming soon
-                  </p>
                 </div>
                 
                 <div className="border border-orange-500 rounded-lg p-6 text-center">
