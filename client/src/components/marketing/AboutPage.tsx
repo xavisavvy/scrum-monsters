@@ -79,11 +79,23 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
                     I lead engineering teams, ship products, and facilitate agile ceremonies.
                   </p>
                   
-                  <p className="text-gray-300 leading-relaxed">
+                  <p className="text-gray-300 leading-relaxed mb-6">
                     I built Scrum Monsters after years of seeing planning poker lose energy and focus. 
                     Planning and estimation can feel dry, especially remote. Scrum Monsters keeps ceremonies 
                     short, engaging, and memorable while still producing reliable story points.
                   </p>
+                  
+                  <RetroButton 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => {
+                      playButtonSelect();
+                      window.open('https://prestonfarr.com', '_blank');
+                    }}
+                    className="inline-flex items-center gap-2"
+                  >
+                    🌐 Visit My Website
+                  </RetroButton>
                 </div>
                 
                 <div className="space-y-6">
