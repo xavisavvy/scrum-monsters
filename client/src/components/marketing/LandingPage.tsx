@@ -96,7 +96,14 @@ export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
         </RetroButton>
       </div>
       
-      <div className="relative z-20">
+      {/* Open Beta Banner */}
+      <div className="fixed top-0 left-0 right-0 z-40 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-center py-2 px-4">
+        <p className="text-sm font-medium">
+          🚀 <span className="font-bold">Open Beta</span> - Help us shape the future of sprint planning! Share feedback and report bugs.
+        </p>
+      </div>
+      
+      <div className="relative z-20 pt-12">
         {/* Hero Section */}
         <div className="flex flex-col items-center justify-center min-h-screen px-4 py-8 text-center">
           <div className="max-w-4xl mx-auto">
