@@ -28,3 +28,4 @@ export { RevealPhase } from './RevealPhase';
 export { DiscussionPhase } from './DiscussionPhase';
 export { VictoryPhase } from './VictoryPhase';
 export { NextLevelPhase } from './NextLevelPhase';
+export { GameOverPhase } from './GameOverPhase';
