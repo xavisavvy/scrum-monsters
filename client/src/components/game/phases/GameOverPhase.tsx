@@ -2,6 +2,7 @@ import React from 'react';
 import { PhaseContainer } from './PhaseContainer';
 import { PhaseComponentProps } from './index';
 import { RetroCard } from '@/components/ui/retro-card';
+import { RetroButton } from '@/components/ui/retro-button';
 import { ScoreSubmission } from '../ScoreSubmission';
 
 interface GameOverPhaseProps extends PhaseComponentProps {}
@@ -15,18 +16,29 @@ export function GameOverPhase({
   
   const currentTicket = lobby.currentTicket;
   const currentTicketIndex = lobby.tickets.findIndex(t => t.id === currentTicket?.id);
-  const defeatImage = '/images/defeat.png';
+  
+  // Boss images mapping
+  const BOSS_IMAGE_MAP: Record<string, string> = {
+    'bug-hydra.png': '/images/bosses/bug-hydra.png',
+    'sprint-demon.png': '/images/bosses/sprint-demon.png',
+    'deadline-dragon.png': '/images/bosses/deadline-dragon.png',
+    'technical-debt-golem.png': '/images/bosses/technical-debt-golem.png',
+    'scope-creep-beast.png': '/images/bosses/scope-creep-beast.png',
+  };
+  
+  const bossImage = lobby.boss?.sprite ? BOSS_IMAGE_MAP[lobby.boss.sprite] || '/images/defeat.png' : '/images/defeat.png';
 
   const mainContent = (
     <div className="p-6 max-h-screen overflow-y-auto">
       <div className="text-center mb-6">
-        <RetroCard title="💀 Total Party Kill">
-          <div className="space-y-4">
-            <div className="flex justify-center mb-4">
+        <RetroCard>
+          <div className="space-y-6">
+            {/* Large Boss Image */}
+            <div className="flex justify-center mb-6">
               <img 
-                src={defeatImage} 
-                alt="Defeat"
-                className="w-32 h-32 pixelated"
+                src={bossImage} 
+                alt="Boss"
+                className="w-64 h-64 pixelated animate-pulse"
                 style={{ imageRendering: 'pixelated' }}
                 onError={(e) => {
                   // Fallback if image doesn't exist
@@ -34,15 +46,44 @@ export function GameOverPhase({
                 }}
               />
             </div>
-            <h2 className="text-2xl font-bold retro-text-glow text-red-400">
-              All Team Members Down!
-            </h2>
-            <p className="text-lg text-gray-300">
-              The party has been defeated, but the quest continues...
-            </p>
-            <p className="text-sm text-gray-400">
-              You can still vote on the story points estimate!
-            </p>
+            
+            {/* Total Party Kill Text */}
+            <div className="space-y-4">
+              <h1 className="text-5xl font-bold retro-text-glow text-red-500 uppercase tracking-wider">
+                💀 Total Party Kill 💀
+              </h1>
+              <h2 className="text-2xl font-bold text-red-400">
+                All Team Members Down!
+              </h2>
+              <p className="text-lg text-gray-300">
+                {lobby.boss?.name ? `${lobby.boss.name} has proven too powerful...` : 'The boss has proven too powerful...'}
+              </p>
+              <p className="text-sm text-gray-400">
+                You can still vote on the story points estimate!
+              </p>
+            </div>
+            
+            {/* Try Again Button - Host Only */}
+            {currentPlayer?.isHost && (
+              <div className="mt-6">
+                <RetroButton 
+                  onClick={() => emit('return_to_lobby')}
+                  variant="primary"
+                  className="px-8 py-4 text-xl"
+                >
+                  🔄 Try Again
+                </RetroButton>
+                <p className="text-xs text-gray-500 mt-2">
+                  Return to lobby and prepare for another attempt
+                </p>
+              </div>
+            )}
+            
+            {!currentPlayer?.isHost && (
+              <p className="text-sm text-gray-500 mt-4">
+                Waiting for host to decide next steps...
+              </p>
+            )}
           </div>
         </RetroCard>
       </div>
