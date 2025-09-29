@@ -1,0 +1,61 @@
+name: 📚 Documentation Issue
+description: Report missing, unclear, or incorrect documentation
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Help us improve the Scrum Monsters documentation!
+
+  - type: dropdown
+    id: doc-type
+    attributes:
+      label: Documentation Type
+      description: What type of documentation needs attention?
+      options:
+        - README
+        - API Documentation
+        - User Guide/Tutorial
+        - Code Comments
+        - Contributing Guidelines
+        - License/Legal
+        - Setup/Installation
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's Wrong?
+      description: Describe the documentation issue
+      placeholder: The documentation says X, but it should say Y because...
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Link to the file or page with the issue
+      placeholder: https://github.com/xavisavvy/scrum-monsters/blob/main/README.md#L123
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested Improvement
+      description: How should we fix or improve this documentation?
+      placeholder: I suggest changing it to...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have identified the specific documentation that needs updating
+          required: true
+        - label: I agree to follow the project's Code of Conduct
+          required: true
