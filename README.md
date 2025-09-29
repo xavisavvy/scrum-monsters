@@ -280,7 +280,7 @@ npm run db:push      # Update database schema
 - Usage requires permission to avoid confusion or implied endorsement
 
 For complete licensing details, see [LICENSE.md](LICENSE.md).
-For commercial licensing inquiries, contact: licensing@scrummonsters.app
+For commercial licensing inquiries, contact: licensing@scrummonsters.com
 
 ## 🙏 Acknowledgments
 

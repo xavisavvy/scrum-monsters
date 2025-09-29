@@ -42,7 +42,7 @@ This project includes third-party software components with the following license
 For a complete list of development dependencies and their licenses, see the `package.json` files in the repository.
 
 ## License Compliance
-All dependencies are used in compliance with their respective licenses. If you believe there is a license compliance issue, please contact: legal@scrummonsters.app
+All dependencies are used in compliance with their respective licenses. If you believe there is a license compliance issue, please contact: legal@scrummonsters.com
 
 ---
 Last updated: January 2025
