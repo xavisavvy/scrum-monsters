@@ -19,6 +19,7 @@ class GameStateManager {
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
+  private votingTimeouts = new Map<string, NodeJS.Timeout>(); // Store voting timeouts separately
   private io?: any; // SocketIO server instance
   
   // Reconnection system
@@ -648,6 +649,9 @@ class GameStateManager {
       }
     });
 
+    // Start voting timeout for this battle
+    this.startVotingPhase(lobby.id);
+
     return { lobby, boss: lobby.boss };
   }
 
@@ -1000,15 +1004,154 @@ class GameStateManager {
     player.currentScore = score;
     player.hasSubmittedScore = true;
 
-    // Check if all non-spectator players have submitted scores
-    const nonSpectatorPlayers = lobby.players.filter(p => p.team !== 'spectators');
-    const submittedPlayers = nonSpectatorPlayers.filter(p => p.hasSubmittedScore);
-
-    if (submittedPlayers.length === nonSpectatorPlayers.length && nonSpectatorPlayers.length > 0) {
+    // Enhanced voting logic with deadlock prevention
+    const shouldAdvanceToReveal = this.checkVotingCompletion(lobby);
+    if (shouldAdvanceToReveal) {
       lobby.gamePhase = 'reveal';
+      // Clear any existing voting timeout
+      const existingTimeout = this.votingTimeouts.get(lobby.id);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
+        this.votingTimeouts.delete(lobby.id);
+      }
     }
 
     return lobby;
+  }
+
+  // Enhanced voting completion check with multiple strategies
+  private checkVotingCompletion(lobby: Lobby): boolean {
+    const nonSpectatorPlayers = lobby.players.filter(p => p.team !== 'spectators');
+    const connectedPlayers = nonSpectatorPlayers.filter(p => !this.isPlayerDisconnected(p.id));
+    const submittedPlayers = nonSpectatorPlayers.filter(p => p.hasSubmittedScore);
+
+    // Strategy 1: All players submitted (original logic)
+    if (submittedPlayers.length === nonSpectatorPlayers.length && nonSpectatorPlayers.length > 0) {
+      console.log(`✅ All ${nonSpectatorPlayers.length} players voted - advancing to reveal`);
+      return true;
+    }
+
+    // Strategy 2: All connected players submitted (exclude disconnected)
+    if (connectedPlayers.length > 0 && submittedPlayers.length === connectedPlayers.length) {
+      const disconnectedCount = nonSpectatorPlayers.length - connectedPlayers.length;
+      console.log(`✅ All ${connectedPlayers.length} connected players voted (${disconnectedCount} disconnected) - advancing to reveal`);
+      return true;
+    }
+
+    // Strategy 3: Majority threshold (75%) with minimum time elapsed
+    const votingStartTime = lobby.votingStartedAt || 0;
+    const minVotingTime = 30000; // 30 seconds minimum voting time
+    const timeElapsed = Date.now() - votingStartTime;
+    
+    if (timeElapsed >= minVotingTime && connectedPlayers.length >= 2) {
+      const votePercentage = submittedPlayers.length / connectedPlayers.length;
+      if (votePercentage >= 0.75) { // 75% threshold
+        console.log(`✅ Majority vote reached: ${submittedPlayers.length}/${connectedPlayers.length} (${Math.round(votePercentage * 100)}%) after ${Math.round(timeElapsed/1000)}s`);
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  // Helper to check if a player is currently disconnected (using reconnection grace period)
+  private isPlayerDisconnected(playerId: string): boolean {
+    const disconnectedPlayer = this.disconnectedPlayers.get(playerId);
+    return !!disconnectedPlayer && disconnectedPlayer.graceExpiresAt > Date.now();
+  }
+
+  // Start voting timeout when battle begins
+  startVotingPhase(lobbyId: string): void {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) return;
+
+    // Set voting start time
+    lobby.votingStartedAt = Date.now();
+
+    // Clear any existing timeout
+    const existingTimeout = this.votingTimeouts.get(lobbyId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    // Set voting timeout (3 minutes)
+    const votingTimeoutMs = 3 * 60 * 1000; // 3 minutes
+    const timeout = setTimeout(() => {
+      this.handleVotingTimeout(lobbyId);
+    }, votingTimeoutMs);
+    this.votingTimeouts.set(lobbyId, timeout);
+
+    console.log(`⏱️ Voting timeout started for lobby ${lobbyId} - 3 minutes until auto-advance`);
+  }
+
+  // Handle voting timeout - force progression with available votes
+  private handleVotingTimeout(lobbyId: string): void {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby || lobby.gamePhase !== 'battle') return;
+
+    const nonSpectatorPlayers = lobby.players.filter(p => p.team !== 'spectators');
+    const submittedPlayers = nonSpectatorPlayers.filter(p => p.hasSubmittedScore);
+    const connectedPlayers = nonSpectatorPlayers.filter(p => !this.isPlayerDisconnected(p.id));
+
+    console.log(`⏰ Voting timeout reached for lobby ${lobbyId}: ${submittedPlayers.length}/${connectedPlayers.length} voted`);
+
+    // Force advancement if at least one person voted
+    if (submittedPlayers.length > 0) {
+      lobby.gamePhase = 'reveal';
+      this.votingTimeouts.delete(lobbyId);
+      
+      // Emit update via IO
+      if (this.io) {
+        this.io.to(lobbyId).emit('voting_timeout', {
+          submittedCount: submittedPlayers.length,
+          totalCount: connectedPlayers.length,
+          message: `Voting time expired. Proceeding with ${submittedPlayers.length} votes.`
+        });
+        this.io.to(lobbyId).emit('lobby_updated', { lobby });
+      }
+
+      console.log(`✅ Auto-advanced to reveal phase with ${submittedPlayers.length} votes`);
+    } else {
+      console.log(`❌ No votes submitted - keeping in battle phase`);
+    }
+  }
+
+  // Host override to force voting progression
+  forceVotingProgression(playerId: string): { lobby: Lobby; message: string } | null {
+    const lobby = this.getLobbyByPlayerId(playerId);
+    if (!lobby) return null;
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) {
+      return null; // Only hosts can force progression
+    }
+
+    if (lobby.gamePhase !== 'battle') {
+      return { lobby, message: 'Can only force progression during voting phase' };
+    }
+
+    const nonSpectatorPlayers = lobby.players.filter(p => p.team !== 'spectators');
+    const submittedPlayers = nonSpectatorPlayers.filter(p => p.hasSubmittedScore);
+    const connectedPlayers = nonSpectatorPlayers.filter(p => !this.isPlayerDisconnected(p.id));
+
+    if (submittedPlayers.length === 0) {
+      return { lobby, message: 'Cannot advance - no votes submitted yet' };
+    }
+
+    // Clear voting timeout
+    const existingTimeout = this.votingTimeouts.get(lobby.id);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      this.votingTimeouts.delete(lobby.id);
+    }
+
+    // Force advancement to reveal phase
+    lobby.gamePhase = 'reveal';
+
+    const message = `Host forced voting progression with ${submittedPlayers.length}/${connectedPlayers.length} votes`;
+    console.log(`🚀 ${message} in lobby ${lobby.id}`);
+
+    return { lobby, message };
   }
 
   revealScores(lobbyId: string): { lobby: Lobby; teamScores: TeamScores; teamConsensus: TeamConsensus } | null {

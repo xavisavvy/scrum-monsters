@@ -616,6 +616,44 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    socket.on('forceVotingProgression', ({ lobbyId }) => {
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) {
+          socket.emit('game_error', { message: 'Player not authenticated' });
+          return;
+        }
+
+        const result = gameState.forceVotingProgression(playerId);
+        if (result) {
+          const { lobby, message } = result;
+          
+          // Broadcast the updated lobby state to all players
+          io.to(lobbyId).emit('lobby_updated', { lobby });
+          
+          // Notify everyone about the forced progression
+          io.to(lobbyId).emit('game_error', { message });
+          
+          console.log(`${message} in lobby ${lobbyId}`);
+          
+          // If phase changed to reveal, trigger reveal logic
+          if (lobby.gamePhase === 'reveal') {
+            const revealResult = gameState.revealScores(lobby.id);
+            if (revealResult) {
+              const { lobby: updatedLobby, teamScores, teamConsensus } = revealResult;
+              io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+              io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+            }
+          }
+        } else {
+          socket.emit('game_error', { message: 'Cannot force voting progression - insufficient permissions or invalid state' });
+        }
+      } catch (error) {
+        console.error('Error in forceVotingProgression:', error);
+        socket.emit('game_error', { message: 'Failed to force voting progression' });
+      }
+    });
+
     // Position sync for combat
     socket.on('player_pos', ({ x, y }: { x: number; y: number }) => {
       const playerId = socket.data.playerId;
