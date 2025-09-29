@@ -99,7 +99,27 @@ export function setupWebSocket(httpServer: HTTPServer) {
         // Generate reconnect token for the joining player
         const reconnectToken = (gameState as any).generateReconnectToken?.(player.id, lobby.id, player.name) || '';
         
-        socket.emit('lobby_joined', { lobby, player });
+        // Handle late joiners - emit appropriate events based on current lobby phase
+        const currentPhase = lobby.gamePhase;
+        
+        if (currentPhase === 'lobby' || currentPhase === 'avatar_selection') {
+          // Normal flow - player goes through avatar selection first
+          socket.emit('lobby_joined', { lobby, player });
+        } else {
+          // Late joiner - skip directly to current phase
+          console.log(`⚡ Late joiner ${playerName} joining active ${currentPhase} phase`);
+          
+          // Emit lobby_joined first for state setup
+          socket.emit('lobby_joined', { lobby, player });
+          
+          // Then immediately emit the phase-specific event to advance them
+          if (currentPhase === 'battle' || currentPhase === 'voting' || currentPhase === 'discussion' || currentPhase === 'reveal') {
+            // Emit battle_started to transition client to battle screen
+            socket.emit('battle_started', { lobby, boss: lobby.boss });
+            console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+          }
+        }
+        
         if (reconnectToken) {
           socket.emit('lobby_sync', { 
             lobby, 
@@ -115,7 +135,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
         
         socket.to(lobby.id).emit('lobby_updated', { lobby });
         
-        console.log(`Player ${playerName} joined lobby ${lobbyId}`);
+        console.log(`Player ${playerName} joined lobby ${lobbyId} in phase ${currentPhase}`);
       } catch (error) {
         socket.emit('game_error', { message: error instanceof Error ? error.message : 'Failed to join lobby' });
       }
