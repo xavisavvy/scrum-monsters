@@ -134,7 +134,14 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                   <p className="text-gray-300 text-sm mb-4">
                     Have an idea for a new boss, feature, or improvement?
                   </p>
-                  <RetroButton size="sm" variant="secondary">
+                  <RetroButton 
+                    size="sm" 
+                    variant="secondary"
+                    onClick={() => {
+                      playButtonSelect();
+                      window.open('https://github.com/xavisavvy/scrum-monsters/discussions/categories/ideas', '_blank');
+                    }}
+                  >
                     Submit Idea
                   </RetroButton>
                   <p className="text-gray-400 text-xs mt-2">
