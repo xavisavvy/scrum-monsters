@@ -37,10 +37,11 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
       <RetroCard title="Create Battle Lobby" className="w-full max-w-md">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold mb-2">
+            <label className="block text-sm font-bold mb-2" htmlFor='hostName'>
               Your Name:
             </label>
             <input
+              name='hostName'
               type="text"
               value={hostName}
               onChange={(e) => setHostName(e.target.value)}
@@ -51,10 +52,11 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
           </div>
           
           <div>
-            <label className="block text-sm font-bold mb-2">
+            <label className="block text-sm font-bold mb-2" htmlFor='lobbyName'>
               Lobby Name:
             </label>
             <input
+              name='lobbyName'
               type="text"
               value={lobbyName}
               onChange={(e) => setLobbyName(e.target.value)}
