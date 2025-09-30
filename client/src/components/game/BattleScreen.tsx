@@ -7,7 +7,6 @@ import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
 import { EmoteModal } from './EmoteModal';
 import { GameOverPhase } from './phases/GameOverPhase';
-import { Lobby } from './Lobby';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
@@ -292,13 +291,6 @@ export function BattleScreen() {
     const phaseKey = `phase-${currentLobby.gamePhase}`;
     
     switch (currentLobby.gamePhase) {
-      case 'lobby':
-        return (
-          <div key={phaseKey} className="relative h-full w-full">
-            <Lobby />
-          </div>
-        );
-
       case 'battle':
         if (!currentLobby?.boss) return null;
         return (
