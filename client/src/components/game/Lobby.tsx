@@ -36,7 +36,7 @@ function TavernLighting() {
   const particlesRef = React.useRef<THREE.Points>(null);
   
   const particles = React.useMemo(() => {
-    const particleCount = 250;
+    const particleCount = 50;
     const positions = new Float32Array(particleCount * 3);
     
     for (let i = 0; i < particleCount; i++) {
@@ -1067,6 +1067,33 @@ export function Lobby() {
         >
           {/* Layer 1: Pixel Art Tavern Background (Furthest Back) */}
           <div className="absolute inset-0" style={{ zIndex: 1 }}>
+            {/* Clouds Background */}
+            <div 
+              className="absolute bottom-0 h-full"
+              style={{
+                height: '500px',
+                width: '100%',
+                backgroundImage: 'url(/textures/sky.png)',
+                backgroundSize: 'contain',
+                backgroundPosition: 'center bottom',
+                backgroundRepeat: 'repeat-x',
+                imageRendering: 'pixelated',
+                zIndex: 4,
+                bottom: '250px',
+                //Fade out at top
+                WebkitMaskImage: 'linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0))',
+                WebkitMaskRepeat: 'no-repeat',
+                WebkitMaskSize: '100% 100%',
+                maskImage: 'linear-gradient(to top, rgba(0,0,0,1), rgba(0,0,0,0))',
+                maskRepeat: 'no-repeat',
+                maskSize: '100% 100%',
+                // animation
+                animation: 'moveClouds 60s linear infinite',
+                opacity: 0.6
+              }}
+            >
+            </div>
+
             {/* Center Door Section */}
             <div 
               className="absolute bottom-0 left-1/2 transform -translate-x-1/2"
@@ -1080,9 +1107,10 @@ export function Lobby() {
                 imageRendering: 'pixelated',
                 zIndex: 5
               }}
-            />
+            >
+            </div>
             
-            {/* Left Extension - Window & Weapons Section */}
+            {/* Left Background Extension */}
             <div 
               className="absolute bottom-0 left-1/2 h-full"
               style={{
@@ -1093,12 +1121,12 @@ export function Lobby() {
                 backgroundPosition: 'center bottom',
                 backgroundRepeat: 'repeat-x',
                 imageRendering: 'pixelated',
-                zIndex: 1
+                zIndex: 2
               }}
             >
             </div>
             
-            {/* Right Extension - Trophy & Decorations Section */}
+            {/* Right Background Extension */}
             <div 
               className="absolute bottom-0 right-1/2 h-full"
               style={{
@@ -1111,7 +1139,7 @@ export function Lobby() {
                 imageRendering: 'pixelated',
                 scale: -1,
                 transform: 'scaleX(-1)',
-                zIndex: 1
+                zIndex: 2
               }}
             >
             </div>
@@ -1129,9 +1157,9 @@ export function Lobby() {
           </div>
           
           {/* Layer 2: Particle Lighting Effects */}
-          <div className="absolute inset-0" style={{ zIndex: 2 }}>
+          <div className="absolute inset-0" style={{ zIndex: 8 }}>
             <Canvas
-              camera={{ position: [0, 2, 8], fov: 50 }}
+              camera={{ position: [0, 2, 8], fov: 120 }}
               style={{ width: '100%', height: '100%' }}
               gl={{ antialias: true, alpha: true }}
             >
