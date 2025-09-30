@@ -285,9 +285,9 @@ function App() {
       }
       
       // Handle Return Home functionality: transition from any battle-related phase back to lobby
-      if (lobby.gamePhase === 'lobby' && appState === 'battle' && 
-          (lastGamePhase === 'victory' || lastGamePhase === 'discussion' || lastGamePhase === 'reveal' || lastGamePhase === 'game_over')) {
-        console.log(`🏠 Return Home: transitioning from ${lastGamePhase} to lobby`);
+      // If game phase is 'lobby' but we're still showing battle screen, return to lobby
+      if (lobby.gamePhase === 'lobby' && appState === 'battle') {
+        console.log(`🏠 Return Home: transitioning from battle to lobby (was in ${lastGamePhase})`);
         setAppState('lobby');
       }
       
