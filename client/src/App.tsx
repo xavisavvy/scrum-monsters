@@ -628,30 +628,22 @@ function App() {
 
       case 'create_lobby':
         return (
-          <div className="p-6">
-            <LobbyCreation onLobbyCreated={() => {}} />
-          </div>
+          <LobbyCreation onLobbyCreated={() => {}} />
         );
 
       case 'join_lobby':
         return (
-          <div className="p-6">
-            <LobbyJoin lobbyId={joinLobbyId} onLobbyJoined={() => {}} />
-          </div>
+          <LobbyJoin lobbyId={joinLobbyId} onLobbyJoined={() => {}} />
         );
 
       case 'avatar_selection':
         return (
-          <div className="p-6">
-            <AvatarSelection />
-          </div>
+          <AvatarSelection />
         );
 
       case 'lobby':
         return (
-          <div className="p-6">
-            <Lobby />
-          </div>
+          <Lobby />
         );
 
       case 'battle':
