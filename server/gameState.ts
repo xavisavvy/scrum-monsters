@@ -841,9 +841,9 @@ class GameStateManager {
     }
 
     console.log(`🏠 Current lobby phase: ${lobby.gamePhase}`);
-    // Only allow return to lobby from victory phase
-    if (lobby.gamePhase !== 'victory') {
-      console.log('❌ Can only return to lobby from victory phase');
+    // Only allow return to lobby from victory or game_over phase
+    if (lobby.gamePhase !== 'victory' && lobby.gamePhase !== 'game_over') {
+      console.log('❌ Can only return to lobby from victory or game_over phase');
       return null;
     }
 
