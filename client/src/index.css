@@ -92,3 +92,12 @@ body.battle-mode-no-scroll {
     filter: brightness(2.5) contrast(2) saturate(3) hue-rotate(15deg) drop-shadow(0 0 30px #ff6600);
   }
 }
+
+@keyframes moveClouds {
+  from {
+    background-position-x: 0;
+  }
+  to {
+    background-position-x: 100%;
+  }
+}
