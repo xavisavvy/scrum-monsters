@@ -8,7 +8,7 @@ interface LobbyJoinProps {
   onLobbyJoined: () => void;
 }
 
-export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: LobbyJoinProps) {
+export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: Readonly<LobbyJoinProps>) {
   const [lobbyId, setLobbyId] = useState(initialLobbyId || '');
   const [playerName, setPlayerName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
@@ -32,10 +32,11 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: LobbyJoinP
       <RetroCard title="Join Battle" className="w-full max-w-md">
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-bold mb-2">
+            <label className="block text-sm font-bold mb-2" htmlFor='playerName'>
               Your Name:
             </label>
             <input
+              id='playerName'
               type="text"
               value={playerName}
               onChange={(e) => setPlayerName(e.target.value)}
@@ -46,10 +47,11 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: LobbyJoinP
           </div>
           
           <div>
-            <label className="block text-sm font-bold mb-2">
+            <label className="block text-sm font-bold mb-2" htmlFor='lobbyId'>
               Lobby Code:
             </label>
             <input
+              id='lobbyId'
               type="text"
               value={lobbyId}
               onChange={(e) => setLobbyId(e.target.value.toUpperCase())}
