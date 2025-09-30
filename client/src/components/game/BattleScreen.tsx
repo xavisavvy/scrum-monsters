@@ -48,7 +48,7 @@ export function BattleScreen() {
       {/* Sidebar Panel */}
       <div
         className={`bg-black bg-opacity-95 border-l-2 border-retro-border border-t-2 border-b-2 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl ${
-          sidebarExpanded ? 'w-[30vw]' : 'w-0'
+          sidebarExpanded ? 'w-[40vw]' : 'w-0'
         }`}
         data-no-shoot
       >
@@ -62,7 +62,7 @@ export function BattleScreen() {
         onClick={() => setSidebarExpanded(!sidebarExpanded)}
         className="absolute bg-black bg-opacity-95 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-100 hover:border-retro-accent-bright transition-all duration-300 shadow-2xl"
         style={{ 
-          left: sidebarExpanded ? '-48px' : '-48px', // Always positioned at left edge of sidebar
+          left: '-45px', // Always positioned at left edge of sidebar
           top: '60px' // Position below boss music controls
         }}
         data-no-shoot

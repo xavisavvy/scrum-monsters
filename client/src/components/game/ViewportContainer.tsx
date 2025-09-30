@@ -26,7 +26,6 @@ export function ViewportContainer({ children, className = '' }: ViewportContaine
         left: 0,
         width: '100vw',
         height: '100vh',
-        overflow: 'hidden',
         background: '#000' // Black background outside game world
       }}
     >

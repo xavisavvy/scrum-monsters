@@ -1066,7 +1066,11 @@ export function Lobby() {
           style={{ zIndex: 1 }}
         >
           {/* Layer 1: Pixel Art Tavern Background (Furthest Back) */}
-          <div className="absolute inset-0" style={{ zIndex: 1 }}>
+          <div className="absolute inset-0" style={{ 
+              zIndex: 5,
+              boxShadow: 'inset 0 0 100px 20px rgba(0,0,0,0.8)'  // Darken edges for focus
+            }}
+            >
             {/* Clouds Background */}
             <div 
               className="absolute bottom-0 h-full"
