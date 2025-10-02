@@ -11,11 +11,11 @@ const deadlineDragonImg = '/images/bosses/deadline-dragon.png';
 const techDebtGolemImg = '/images/bosses/technical-debt-golem.png';
 const scopeCreepBeastImg = '/images/bosses/scope-creep-beast.png';
 
-const bugHydraLair = '/images/lairs/Bug_Hydra_Cave_Lair_a07f8108.png';
-const sprintDemonLair = '/images/lairs/Sprint_Demon_Volcano_Lair_01853ccf.png';
-const deadlineDragonLair = '/images/lairs/Deadline_Dragon_Clocktower_Lair_5c2916e4.png';
-const techDebtGolemLair = '/images/lairs/Technical_Debt_Golem_Temple_f7e377fe.png';
-const scopeCreepBeastLair = '/images/lairs/Scope_Creep_Beast_Void_bd13cec0.png';
+const bugHydraLair = '/images/lairs/cave-lair.png';
+const sprintDemonLair = '/images/lairs/volcano-lair.png';
+const deadlineDragonLair = '/images/lairs/clocktower-lair.png';
+const techDebtGolemLair = '/images/lairs/golem_temple-lair.png';
+const scopeCreepBeastLair = '/images/lairs/void-lair.png';
 
 // Boss image mapping with simplified names
 const BOSS_IMAGE_MAP: Record<string, string> = {

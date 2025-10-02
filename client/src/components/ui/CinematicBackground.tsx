@@ -5,11 +5,11 @@ interface CinematicBackgroundProps {
 }
 
 const BOSS_LAIR_IMAGES = [
-  '/images/lairs/Bug_Hydra_Cave_Lair_a07f8108.png',
-  '/images/lairs/Sprint_Demon_Volcano_Lair_01853ccf.png',
-  '/images/lairs/Deadline_Dragon_Clocktower_Lair_5c2916e4.png',
-  '/images/lairs/Technical_Debt_Golem_Temple_f7e377fe.png',
-  '/images/lairs/Scope_Creep_Beast_Void_bd13cec0.png',
+  '/images/lairs/cave-lair.png',
+  '/images/lairs/volcano-lair.png',
+  '/images/lairs/clocktower-lair.png',
+  '/images/lairs/golem_temple-lair.png',
+  '/images/lairs/void-lair.png',
 ];
 
 // Timing constants for smooth cinematic experience
