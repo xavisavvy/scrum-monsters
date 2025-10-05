@@ -546,7 +546,7 @@ function App() {
                   />
                 </div>
                 <p className="text-lg text-gray-400 mb-8">
-                  Battle Jira Tickets in Epic JRPG Style!
+                  Battle Tickets in Epic JRPG Style!
                 </p>
                 
                 <div className="space-y-4">
