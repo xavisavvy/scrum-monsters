@@ -6,7 +6,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-blue.svg)](https://www.typescriptlang.org/)
 [![Trademark](https://img.shields.io/badge/Trademark-Scrum%20Monsters%E2%84%A2-red.svg)](TRADEMARKS.md)
 
-A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that gamifies story point estimation. Players create or join lobbies, select fantasy avatar classes, and estimate Jira tickets by "battling" pixel art bosses in real-time combat scenarios.
+A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that gamifies story point estimation. Players create or join lobbies, select fantasy avatar classes, and estimate tickets by "battling" pixel art bosses in real-time combat scenarios.
 
 ## 🌟 Features
 
