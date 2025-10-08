@@ -1157,7 +1157,7 @@ export function Lobby() {
           </div>
           
           {/* Layer 2: Particle Lighting Effects */}
-          <div className="absolute inset-0" style={{ zIndex: 8 }}>
+          <div className="absolute inset-0" style={{ zIndex: 8, pointerEvents: 'none' }}>
             <Canvas
               camera={{ position: [0, 2, 8], fov: 120 }}
               style={{ width: '100%', height: '100%' }}
@@ -1170,7 +1170,7 @@ export function Lobby() {
           </div>
           
           {/* Layer 3: Player Movement Area */}
-          <div className="absolute inset-0" style={{ zIndex: 10 }}>
+          <div className="absolute inset-0" style={{ zIndex: 10, pointerEvents: 'none' }}>
           
           {/* Dropping Avatars */}
           {droppingAvatars.map(avatar => {
