@@ -13,11 +13,17 @@ export function setupWebSocket(httpServer: HTTPServer) {
       methods: ["GET", "POST"]
     },
     // Aggressive keepalive settings to prevent disconnections when tabs are backgrounded
-    pingTimeout: 60000,      // 60 seconds - how long to wait for pong before considering connection dead
-    pingInterval: 25000,     // 25 seconds - how often to send ping packets
+    // Chrome can stall WebSocket processing for 90+ seconds in background tabs
+    pingTimeout: 180000,     // 3 minutes - tolerate browser throttling delays
+    pingInterval: 30000,     // 30 seconds - how often to send ping packets
     upgradeTimeout: 30000,   // 30 seconds - time to wait for upgrade
     connectTimeout: 45000,   // 45 seconds - time to wait for initial connection
-    transports: ['websocket', 'polling'] // Allow fallback to polling if websocket fails
+    transports: ['websocket', 'polling'], // Allow fallback to polling if websocket fails
+    // Connection state recovery - keeps message buffers and room state during brief disconnects
+    connectionStateRecovery: {
+      maxDisconnectionDuration: 180000, // 3 minutes - buffer messages during disconnects
+      skipMiddlewares: true              // Skip auth middleware on recovery (already authenticated)
+    }
   });
 
   // Pass the io instance to GameState for emitting events
@@ -873,7 +879,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       
@@ -889,7 +895,7 @@ export function setupWebSocket(httpServer: HTTPServer) {
           // Notify other players about the disconnection (but keep player in lobby)
           io.to(lobbyId).emit('player_disconnected', { playerId });
           
-          console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) disconnected - reconnection available for ${Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000)} minutes`);
+          console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) disconnected [${reason}] - reconnection available for ${Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000)} minutes`);
           
           // If host was transferred, notify all players and update lobby
           if (hostTransfer) {

@@ -1,0 +1,110 @@
+
+👑 Host transferred from Benner (mdvx404e74) to Abel (dvjty7dx4u)
+2025-10-09 09:50:46.80
+097cdb90
+User
+🔌 Player Benner (mdvx404e74) disconnected - reconnection available for 10 minutes
+2025-10-09 09:50:46.81
+097cdb90
+User
+👑 Host transferred to Abel (dvjty7dx4u)
+2025-10-09 09:50:46.81
+097cdb90
+User
+Player disconnected: snXK4NWOB0qirNdkAACL
+2025-10-09 09:50:47.23
+097cdb90
+User
+Player connected: 38ikeCzY9Af_z4soAAC9
+2025-10-09 09:50:48.21
+097cdb90
+User
+🔌 Player Abel (dvjty7dx4u) disconnected - grace period: 10 minutes
+2025-10-09 09:50:48.21
+097cdb90
+User
+👑 Host transferred from Abel (dvjty7dx4u) to Claudia (e7irw91gubp)
+2025-10-09 09:50:48.21
+097cdb90
+User
+🔌 Player Abel (dvjty7dx4u) disconnected - reconnection available for 9 minutes
+2025-10-09 09:50:48.21
+097cdb90
+User
+👑 Host transferred to Claudia (e7irw91gubp)
+2025-10-09 09:50:48.21
+097cdb90
+User
+Player disconnected: YBS8ScDWrZ-482b5AACN
+2025-10-09 09:50:48.89
+097cdb90
+User
+Player disconnected: -GJrBw5rppSc7mWbAACP
+2025-10-09 09:50:49.61
+097cdb90
+User
+⚡ Late joiner devin joining active discussion phase
+2025-10-09 09:50:49.61
+097cdb90
+User
+🎮 Late joiner devin advanced to battle phase
+2025-10-09 09:50:49.61
+097cdb90
+User
+Player devin joined lobby KDRLXH in phase discussion
+2025-10-09 09:50:49.77
+097cdb90
+User
+Player connected: 3Z4WYAIpFp6Ce7eSAAC_
+2025-10-09 09:50:50.65
+097cdb90
+User
+Player connected: vmKIabkL8qQAho0_AADB
+2025-10-09 09:50:51.68
+097cdb90
+User
+Player connected: fAMupns0WAwQLd0CAADD
+2025-10-09 09:50:54.63
+097cdb90
+User
+⚡ Late joiner Abel joining active discussion phase
+2025-10-09 09:50:54.63
+097cdb90
+User
+🎮 Late joiner Abel advanced to battle phase
+2025-10-09 09:50:54.63
+097cdb90
+User
+Player Abel joined lobby KDRLXH in phase discussion
+2025-10-09 09:50:54.81
+097cdb90
+User
+Lobby created: 2YQN7Z by Test
+2025-10-09 09:50:56.46
+097cdb90
+User
+⚡ Late joiner Esteban joining active discussion phase
+2025-10-09 09:50:56.46
+097cdb90
+User
+🎮 Late joiner Esteban advanced to battle phase
+2025-10-09 09:50:56.46
+097cdb90
+User
+Player Esteban joined lobby KDRLXH in phase discussion
+2025-10-09 09:50:59.84
+097cdb90
+User
+⚡ Late joiner Beni joining active discussion phase
+2025-10-09 09:50:59.84
+097cdb90
+User
+🎮 Late joiner Beni advanced to battle phase
+2025-10-09 09:50:59.84
+097cdb90
+User
+Player Beni joined lobby KDRLXH in phase discussion
+2025-10-09 09:51:08.45
+097cdb90
+User
+🔌 Player Claudia (e7irw91gubp) disconnected - grace period: 10 minutes
