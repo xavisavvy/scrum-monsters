@@ -879,6 +879,12 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
+    // Client heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
+    socket.on('client_heartbeat' as any, () => {
+      // Simply acknowledge - the act of receiving this message resets infrastructure idle timers
+      // No response needed, but we could log for debugging if needed
+    });
+
     socket.on('disconnect', (reason) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
