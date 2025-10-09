@@ -11,7 +11,13 @@ export function setupWebSocket(httpServer: HTTPServer) {
     cors: {
       origin: "*",
       methods: ["GET", "POST"]
-    }
+    },
+    // Aggressive keepalive settings to prevent disconnections when tabs are backgrounded
+    pingTimeout: 60000,      // 60 seconds - how long to wait for pong before considering connection dead
+    pingInterval: 25000,     // 25 seconds - how often to send ping packets
+    upgradeTimeout: 30000,   // 30 seconds - time to wait for upgrade
+    connectTimeout: 45000,   // 45 seconds - time to wait for initial connection
+    transports: ['websocket', 'polling'] // Allow fallback to polling if websocket fails
   });
 
   // Pass the io instance to GameState for emitting events

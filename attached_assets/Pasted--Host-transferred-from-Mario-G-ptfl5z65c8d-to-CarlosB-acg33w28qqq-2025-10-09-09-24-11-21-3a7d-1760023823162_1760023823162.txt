@@ -1,0 +1,141 @@
+ Host transferred from Mario G. (ptfl5z65c8d) to CarlosB (acg33w28qqq)
+2025-10-09 09:24:11.21
+3a7d551a
+User
+🔌 Player Mario G. (ptfl5z65c8d) disconnected - reconnection available for 10 minutes
+2025-10-09 09:24:11.22
+3a7d551a
+User
+👑 Host transferred to CarlosB (acg33w28qqq)
+2025-10-09 09:24:11.22
+3a7d551a
+User
+Player disconnected: fpw4W69bU5F1o4mmAAAz
+2025-10-09 09:24:17.19
+3a7d551a
+User
+Player connected: 8JylQb924BF-x123AAA5
+2025-10-09 09:25:10.86
+3a7d551a
+User
+🔌 Player Abel (6dycp2pbkaq) disconnected - grace period: 10 minutes
+2025-10-09 09:25:10.86
+3a7d551a
+User
+🔌 Player Abel (6dycp2pbkaq) disconnected - reconnection available for 9 minutes
+2025-10-09 09:25:10.86
+3a7d551a
+User
+Player disconnected: IcHoyIeZKEYPvrH6AAAl
+2025-10-09 09:25:14.22
+3a7d551a
+User
+Player connected: yclURijYWtFeaHcQAAA7
+2025-10-09 09:25:22.13
+3a7d551a
+User
+🔌 Player Preston (8x1rfvpoi7c) disconnected - grace period: 10 minutes
+2025-10-09 09:25:22.13
+3a7d551a
+User
+🔌 Player Preston (8x1rfvpoi7c) disconnected - reconnection available for 10 minutes
+2025-10-09 09:25:22.13
+3a7d551a
+User
+Player disconnected: xvIIIJfphQZInD1jAAAn
+2025-10-09 09:25:24.27
+3a7d551a
+User
+Player connected: EnsqEr4dES7UVxLrAAA9
+2025-10-09 09:25:33.33
+3a7d551a
+User
+Player Mario joined lobby KJIU7G in phase lobby
+2025-10-09 09:25:34.63
+3a7d551a
+User
+Player Preston joined lobby KJIU7G in phase lobby
+2025-10-09 09:26:17.82
+3a7d551a
+User
+Player acg33w28qqq emoted in lobby KJIU7G: "fireball"
+2025-10-09 09:26:22.00
+3a7d551a
+User
+🔑 Cleaned up 2 expired reconnect tokens
+2025-10-09 09:26:40.73
+3a7d551a
+User
+Player disconnected: ITu_gvBQMlDDdnAtAAAt
+2025-10-09 09:26:44.01
+3a7d551a
+User
+Player connected: SD93ZDlXhIgKXZP9AAA_
+2025-10-09 09:26:45.71
+3a7d551a
+User
+Player disconnected: wE8dQj6eVcGG88FSAAAv
+2025-10-09 09:26:48.17
+3a7d551a
+User
+Player connected: dtQ_dSYDKPbq10NEAABB
+2025-10-09 09:27:07.78
+3a7d551a
+User
+Player disconnected: mop9MN0l_5LgY3Z1AAAx
+2025-10-09 09:27:11.13
+3a7d551a
+User
+Player connected: 7IMoaY6sJ26cKNCEAABD
+2025-10-09 09:27:38.69
+3a7d551a
+User
+🔌 Player CarlosB (acg33w28qqq) disconnected - grace period: 10 minutes
+2025-10-09 09:27:38.69
+3a7d551a
+User
+👑 Host transferred from CarlosB (acg33w28qqq) to Mario (lr9nl3uwuu)
+2025-10-09 09:27:38.69
+3a7d551a
+User
+🔌 Player CarlosB (acg33w28qqq) disconnected - reconnection available for 10 minutes
+2025-10-09 09:27:38.69
+3a7d551a
+User
+👑 Host transferred to Mario (lr9nl3uwuu)
+2025-10-09 09:27:38.69
+3a7d551a
+User
+Player disconnected: iLHF1flhhmFil6GdAAA1
+2025-10-09 09:27:40.32
+3a7d551a
+User
+Player Abel joined lobby KJIU7G in phase lobby
+2025-10-09 09:27:41.50
+3a7d551a
+User
+Player connected: GuFROZQHdtBADFrbAABF
+2025-10-09 09:27:52.00
+3a7d551a
+User
+🔌 Player Luis (oyfofzem4q) grace period expired - removing permanently
+2025-10-09 09:29:05.07
+3a7d551a
+User
+Player disconnected: qCUR3bAWzBJisIZfAAA3
+2025-10-09 09:29:08.03
+3a7d551a
+User
+Player connected: 1z8ryZRPJblM1r95AABH
+2025-10-09 09:29:18.04
+3a7d551a
+User
+🔌 Player Mario (lr9nl3uwuu) disconnected - grace period: 10 minutes
+2025-10-09 09:29:18.04
+3a7d551a
+User
+🔌 Player Mario (lr9nl3uwuu) disconnected - reconnection available for 10 minutes
+2025-10-09 09:29:18.04
+3a7d551a
+User
+Player disconnected: 8JylQb924BF-x123AAA5
