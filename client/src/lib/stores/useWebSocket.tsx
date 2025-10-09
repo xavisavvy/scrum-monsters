@@ -18,6 +18,7 @@ interface WebSocketState {
   isConnected: boolean;
   reconnection: ReconnectionState;
   lastLobbySnapshot: LobbySnapshot | null;
+  heartbeatInterval: NodeJS.Timeout | null; // Keeps connection alive against infrastructure timeouts
   
   // Core connection methods
   connect: () => void;
@@ -70,6 +71,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     nextRetryIn: 0
   },
   lastLobbySnapshot: null,
+  heartbeatInterval: null,
 
   connect: () => {
     const socket = io(window.location.origin, {
@@ -100,6 +102,16 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         clearTimeout(reconnection.retryTimeout);
       }
 
+      // Start heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
+      const { heartbeatInterval } = get();
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+      const newHeartbeat = setInterval(() => {
+        socket.emit('client_heartbeat' as any);
+      }, 40000); // Every 40 seconds
+      set({ heartbeatInterval: newHeartbeat });
+
       // Attempt auto-reconnection if we have stored data
       const storedToken = getStoredReconnectToken();
       const { lastLobbySnapshot } = get();
@@ -112,6 +124,14 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
 
     socket.on('disconnect', (reason) => {
       console.log('Disconnected from server:', reason);
+      
+      // Clear heartbeat when disconnected
+      const { heartbeatInterval } = get();
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+        set({ heartbeatInterval: null });
+      }
+      
       set({ isConnected: false });
       
       // Only attempt reconnection for unexpected disconnects
@@ -198,11 +218,16 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   },
 
   disconnect: () => {
-    const { socket, reconnection } = get();
+    const { socket, reconnection, heartbeatInterval } = get();
     
     // Clear any retry timeout
     if (reconnection.retryTimeout) {
       clearTimeout(reconnection.retryTimeout);
+    }
+    
+    // Clear heartbeat
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
     }
     
     if (socket) {
@@ -210,6 +235,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       set({ 
         socket: null, 
         isConnected: false,
+        heartbeatInterval: null,
         reconnection: {
           status: 'disconnected',
           attempt: 0,
@@ -281,15 +307,20 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   },
 
   clearReconnectionState: () => {
-    const { reconnection } = get();
+    const { reconnection, heartbeatInterval } = get();
     
     if (reconnection.retryTimeout) {
       clearTimeout(reconnection.retryTimeout);
     }
     
+    if (heartbeatInterval) {
+      clearInterval(heartbeatInterval);
+    }
+    
     clearStoredReconnectToken();
     set({ 
       lastLobbySnapshot: null,
+      heartbeatInterval: null,
       reconnection: {
         status: 'disconnected',
         attempt: 0,

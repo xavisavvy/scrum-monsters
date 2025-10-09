@@ -37,6 +37,12 @@ Preferred communication style: Simple, everyday language.
 - **WebSocket Events**: Typed event system for lobby management, player actions, and game progression
 - **Attack Animations**: Visual feedback system for player interactions with boss battles
 - **Live Updates**: Real-time synchronization of player scores, game phases, and lobby state
+- **Connection Stability**: 
+  - 3-minute ping timeout (180s) to tolerate browser tab throttling
+  - Client-side heartbeat every 40 seconds to prevent infrastructure idle timeouts
+  - Connection state recovery buffers messages for 3 minutes during brief disconnects
+  - Automatic reconnection with exponential backoff and token-based session restoration
+  - Graceful handling of WebGL context loss during reconnection
 
 ## Audio System
 - **Sound Management**: Zustand-based audio store with mute/unmute functionality
