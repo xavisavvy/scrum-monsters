@@ -327,25 +327,38 @@ export function setupWebSocket(httpServer: HTTPServer) {
 
     socket.on('start_battle', () => {
       const playerId = socket.data.playerId;
-      if (!playerId) return;
+      console.log(`🎮 start_battle received from socket ${socket.id}, playerId: ${playerId}`);
+      
+      if (!playerId) {
+        console.log('❌ No playerId found in socket data');
+        return;
+      }
 
       const lobby = gameState.getLobbyByPlayerId(playerId);
-      if (!lobby) return;
+      if (!lobby) {
+        console.log(`❌ No lobby found for player ${playerId}`);
+        return;
+      }
 
+      console.log(`🎮 Starting battle for lobby ${lobby.id} with ${lobby.tickets.length} tickets`);
       const result = gameState.startBattle(playerId, lobby.tickets);
       if (result) {
         if ('error' in result) {
           // Send error message to the client
+          console.log(`❌ Battle start error: ${result.error}`);
           socket.emit('game_error', { message: result.error });
         } else {
           const { lobby, boss } = result;
           
+          console.log(`✅ Battle started successfully for lobby ${lobby.id}`);
           // Update all players with the new lobby state including tickets
           io.to(lobby.id).emit('lobby_updated', { lobby });
           
           // Then start the battle (synchronous - relies on socket.io event ordering)
           io.to(lobby.id).emit('battle_started', { lobby, boss });
         }
+      } else {
+        console.log(`❌ startBattle returned null/undefined`);
       }
     });
 
@@ -882,7 +895,10 @@ export function setupWebSocket(httpServer: HTTPServer) {
     // Client heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
     socket.on('client_heartbeat' as any, () => {
       // Simply acknowledge - the act of receiving this message resets infrastructure idle timers
-      // No response needed, but we could log for debugging if needed
+      const playerId = socket.data.playerId;
+      if (playerId) {
+        console.log(`💓 Heartbeat received from ${playerId}`);
+      }
     });
 
     socket.on('disconnect', (reason) => {
