@@ -162,8 +162,15 @@ function App() {
         // There's a potential reconnection, wait for it to complete
         console.log('🔄 URL join detected with stored token - waiting for reconnection attempt');
         
-        // Don't set join_lobby state yet, wait for reconnection to complete
-        // The lobby_sync handler will handle this case
+        // Set a timeout to fallback to manual join if reconnection doesn't complete
+        const reconnectionTimeout = setTimeout(() => {
+          // If we're still on landing page after 5 seconds, the reconnection didn't work
+          console.log('⏱️ Reconnection timeout - falling back to manual join');
+          setAppState('join_lobby');
+        }, 5000);
+        
+        // Store timeout so it can be cleared if lobby_sync arrives
+        (window as any).__reconnectionTimeout = reconnectionTimeout;
       } else {
         // No stored reconnection data, safe to proceed with manual join
         setAppState('join_lobby');
@@ -234,6 +241,12 @@ function App() {
       setLobby(lobby);
       setPlayer(yourPlayer);
       
+      // Clear the reconnection timeout if it exists
+      if ((window as any).__reconnectionTimeout) {
+        clearTimeout((window as any).__reconnectionTimeout);
+        (window as any).__reconnectionTimeout = null;
+      }
+      
       // Check if this was a URL join scenario that was waiting for reconnection
       const urlParams = new URLSearchParams(window.location.search);
       const lobbyParam = urlParams.get('join');
@@ -258,6 +271,12 @@ function App() {
     socket.on('reconnect_response', ({ result, message, newHost }) => {
       const urlParams = new URLSearchParams(window.location.search);
       const lobbyParam = urlParams.get('join');
+      
+      // Clear the reconnection timeout if it exists
+      if ((window as any).__reconnectionTimeout) {
+        clearTimeout((window as any).__reconnectionTimeout);
+        (window as any).__reconnectionTimeout = null;
+      }
       
       if (result !== 'success' && lobbyParam && appState === 'landing') {
         console.log('❌ Reconnection failed during URL join, proceeding with manual join:', message);
