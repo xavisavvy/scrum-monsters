@@ -73,9 +73,13 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
 
   connect: () => {
     const socket = io(window.location.origin, {
-      transports: ['websocket'],
-      timeout: 10000, // 10 second timeout
-      reconnection: false // Disable automatic reconnection, we handle it ourselves
+      transports: ['websocket', 'polling'], // Allow fallback to polling if websocket fails
+      timeout: 45000, // 45 seconds - matches server connectTimeout
+      reconnection: false, // Disable automatic reconnection, we handle it ourselves
+      // Additional settings to improve connection stability
+      reconnectionDelay: 2000,
+      reconnectionDelayMax: 10000,
+      randomizationFactor: 0.5
     });
 
     socket.on('connect', () => {
