@@ -1,0 +1,135 @@
+Connected to server
+index-CY6_4Q2g.js:41 📂 Loaded lobby settings from localStorage
+index-CY6_4Q2g.js:4076 📥 App received lobby sync from reconnection
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:4076 📋 Phase transition: null → lobby
+2index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:4076 📋 Phase transition: null → lobby
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:41 Disconnected from server: transport close
+index-CY6_4Q2g.js:41 🔄 Scheduling reconnection attempt 1/8 in 2s
+index-CY6_4Q2g.js:160 🎵 Lobby music stopped
+index-CY6_4Q2g.js:3987 THREE.WebGLRenderer: Context Lost.
+index-CY6_4Q2g.js:41 🔄 Executing reconnection attempt 1
+index-CY6_4Q2g.js:41 Connected to server
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎵 Lobby music started
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 📏 Image dimensions for /images/sprites/warrior.png: 1024x1024
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=64x64
+index-CY6_4Q2g.js:160 🎯 warrior: frame(0,0) size=256x256
