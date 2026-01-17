@@ -44,3 +44,4 @@ coverage
 
 # Versioning (CHANGELOG is auto-generated, don't manually edit)
 # CHANGELOG.md is tracked but should only be modified by standard-version
+bd.exe

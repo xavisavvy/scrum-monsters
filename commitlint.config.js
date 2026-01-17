@@ -1,6 +1,9 @@
-{
-  "extends": ["@commitlint/config-conventional"],
-  "rules": {
+export default {
+  extends: ["@commitlint/config-conventional"],
+  ignores: [
+    (message) => message.startsWith("bd "),
+  ],
+  rules: {
     "type-enum": [
       2,
       "always",
@@ -15,12 +18,12 @@
         "build",
         "ci",
         "chore",
-        "revert"
-      ]
+        "revert",
+      ],
     ],
     "subject-case": [2, "never", ["upper-case"]],
     "subject-empty": [2, "never"],
     "subject-full-stop": [2, "never", "."],
-    "header-max-length": [2, "always", 100]
-  }
-}
+    "header-max-length": [2, "always", 100],
+  },
+};
