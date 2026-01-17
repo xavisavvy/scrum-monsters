@@ -74,6 +74,21 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   heartbeatInterval: null,
 
   connect: () => {
+    // Clean up existing socket if any
+    const existingSocket = get().socket;
+    if (existingSocket) {
+      console.log('🔌 Cleaning up existing socket before reconnection');
+      existingSocket.removeAllListeners();
+      existingSocket.disconnect();
+    }
+    
+    // Clear any existing heartbeat
+    const existingHeartbeat = get().heartbeatInterval;
+    if (existingHeartbeat) {
+      clearInterval(existingHeartbeat);
+      set({ heartbeatInterval: null });
+    }
+
     // Detect if we're on Replit production (scrummonsters.com domain)
     const isReplitProduction = window.location.hostname.includes('scrummonsters.com') ||
                                window.location.hostname.includes('.replit.dev') ||
