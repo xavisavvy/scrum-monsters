@@ -4,6 +4,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "dev": "tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
@@ -115,6 +118,8 @@
     "@commitlint/config-conventional": "^20.3.1",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.3",
     "@tailwindcss/typography": "^0.5.15",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
     "@types/connect-pg-simple": "^7.0.3",
     "@types/express": "4.17.21",
     "@types/express-session": "^1.18.0",
@@ -125,16 +130,19 @@
     "@types/react-dom": "^18.3.1",
     "@types/ws": "^8.5.13",
     "@vitejs/plugin-react": "^4.3.2",
+    "@vitest/coverage-v8": "^4.0.17",
     "autoprefixer": "^10.4.20",
     "drizzle-kit": "^0.31.4",
     "esbuild": "^0.25.0",
+    "happy-dom": "^20.3.1",
     "husky": "^9.1.7",
     "postcss": "^8.4.47",
     "standard-version": "^9.5.0",
     "tailwindcss": "^3.4.14",
     "tsx": "^4.19.1",
     "typescript": "5.6.3",
-    "vite": "^6.3.6"
+    "vite": "^6.3.6",
+    "vitest": "^4.0.17"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8"
