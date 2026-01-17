@@ -246,44 +246,26 @@ npm run db:push      # Update database schema
 
 ## 🤝 Contributing
 
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/amazing-feature`
-3. **Commit** your changes: `git commit -m 'Add amazing feature'`
-4. **Push** to the branch: `git push origin feature/amazing-feature`
-5. **Open** a Pull Request
-
-### Development Guidelines
-- Follow TypeScript strict mode conventions
-- Use meaningful commit messages
-- Test multiplayer functionality thoroughly
-- Maintain compatibility with existing save data
-- Document new features and API changes
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for complete guidelines, including:
+- Development setup and prerequisites
+- Code style and commit conventions ([Conventional Commits](https://conventionalcommits.org))
+- Pull request process
+- Asset contribution guidelines
+- Developer Certificate of Origin (DCO)
 
 ## 📝 License
 
-**Scrum Monsters** uses a comprehensive dual-licensing approach to protect intellectual property while maintaining open source principles:
+**Scrum Monsters** uses a dual-licensing approach:
 
-### 🔓 Open Source Components
-- **Code** (client, server, shared): **GNU AGPL-3.0-or-later**
-  - Full source code availability required for network-deployed modifications
-  - Ensures community contributions remain open
+| Component | License |
+|-----------|---------|
+| **Code** (client, server, shared) | [GNU AGPL-3.0-or-later](licenses/AGPL-3.0-or-later.txt) |
+| **Art & Media** (sprites, sounds, images) | [CC BY-NC-ND 4.0](https://creativecommons.org/licenses/by-nc-nd/4.0/) |
+| **Commercial Add-ons** | Proprietary EULA |
 
-### 🎨 Creative Assets
-- **Art & Media** (sprites, sounds, images): **CC BY-NC-ND 4.0**
-  - Attribution required for non-commercial use
-  - No derivatives or commercial resales permitted
+See [LICENSE.md](LICENSE.md) for complete details, [TRADEMARKS.md](TRADEMARKS.md) for trademark information, and [NOTICES.md](NOTICES.md) for third-party attributions.
 
-### 💼 Commercial Components
-- **Pro Integrations & Add-ons**: **Proprietary EULA**
-  - Boss packs, trainer materials, commercial integrations
-  - All rights reserved for commercial use
-
-### ™️ Trademark Protection
-- **"Scrum Monsters"** name and logos are protected trademarks
-- Usage requires permission to avoid confusion or implied endorsement
-
-For complete licensing details, see [LICENSE.md](LICENSE.md).
-For commercial licensing inquiries, contact: licensing@scrummonsters.com
+For commercial licensing inquiries: licensing@scrummonsters.com
 
 ## 🙏 Acknowledgments
 
