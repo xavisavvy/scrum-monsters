@@ -39,6 +39,19 @@ app.use((req, res, next) => {
 (async () => {
   const server = await registerRoutes(app);
 
+  // Configure server timeouts for production stability
+  // Replit-specific: More generous timeouts for their proxy layer
+  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+
+  server.keepAliveTimeout = isReplitDeployment ? 95000 : 65000; // 95s for Replit (> 90s ping cycle)
+  server.headersTimeout = isReplitDeployment ? 96000 : 66000; // Slightly higher than keepAliveTimeout
+  server.requestTimeout = 120000; // 2 minutes for long-running requests
+
+  console.log(`⚙️  Server timeouts configured:`);
+  console.log(`   - Keep-alive: ${server.keepAliveTimeout}ms`);
+  console.log(`   - Headers: ${server.headersTimeout}ms`);
+  console.log(`   - Request: ${server.requestTimeout}ms`);
+
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
@@ -62,7 +75,8 @@ app.use((req, res, next) => {
   server.listen({
     port,
     host: "0.0.0.0",
-    reusePort: true,
+    // Remove reusePort in production to avoid load balancer issues
+    reusePort: process.env.NODE_ENV === "development",
   }, () => {
     log(`serving on port ${port}`);
   });

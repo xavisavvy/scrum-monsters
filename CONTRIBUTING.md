@@ -87,13 +87,66 @@ Thank you for your interest in contributing to our multiplayer scrum poker game!
 
 ### Commit Messages
 
-Use clear, descriptive commit messages:
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning and changelog generation.
+
+#### Format
+
 ```
-feat: add discussion phase for vote refinement
-fix: resolve WebSocket connection drops during battle
-docs: update setup instructions for contributors
-style: improve mobile avatar selection carousel
+<type>(<scope>): <subject>
+
+[optional body]
+
+[optional footer(s)]
 ```
+
+#### Types
+
+- **feat**: New feature (triggers MINOR version bump)
+- **fix**: Bug fix (triggers PATCH version bump)
+- **docs**: Documentation changes
+- **style**: Code style/formatting (no logic change)
+- **refactor**: Code refactoring
+- **perf**: Performance improvement (triggers PATCH version bump)
+- **test**: Adding or updating tests
+- **build**: Build system or dependency changes
+- **ci**: CI configuration changes
+- **chore**: Other changes
+- **revert**: Revert a previous commit
+
+#### Scopes (examples)
+
+- `client`, `server`, `websocket`, `lobby`, `battle`, `audio`, `ui`, `docs`
+
+#### Examples
+
+```bash
+feat(lobby): add copy lobby code button
+fix(websocket): resolve host timeout on Replit
+docs(readme): update recurring rooms documentation
+perf(battle): optimize projectile rendering
+```
+
+#### Breaking Changes
+
+For breaking changes, include `BREAKING CHANGE:` in the footer:
+
+```bash
+feat(api): change lobby creation endpoint
+
+BREAKING CHANGE: The lobby creation endpoint now requires customLobbyId
+parameter. Existing clients must be updated.
+```
+
+#### Commit Validation
+
+Your commits are automatically validated by **commitlint**. Invalid commits will be rejected:
+
+```bash
+✖   subject may not be empty [subject-empty]
+✖   type may not be empty [type-empty]
+```
+
+See [VERSIONING.md](./docs/contributing/VERSIONING.md) for detailed versioning documentation.
 
 ## 🐛 Bug Reports
 

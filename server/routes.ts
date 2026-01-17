@@ -3,9 +3,42 @@ import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket.js";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Create HTTP server first
+  const httpServer = createServer(app);
+
   // Health check endpoint
   app.get('/api/health', (req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // WebSocket health check endpoint
+  app.get('/api/ws-health', (req, res) => {
+    const io = (httpServer as any).io;
+    if (!io) {
+      return res.status(503).json({
+        status: 'error',
+        message: 'WebSocket server not initialized',
+        timestamp: new Date().toISOString()
+      });
+    }
+
+    const sockets = Array.from(io.sockets.sockets.values());
+    const connectedCount = sockets.length;
+
+    // Import gameState to check lobby status
+    const { gameState } = require('./gameState.js');
+    const lobbies = (gameState as any).lobbies;
+    const lobbyCount = lobbies ? lobbies.size : 0;
+
+    res.json({
+      status: 'ok',
+      websocket: {
+        connected: connectedCount,
+        lobbies: lobbyCount,
+        transports: sockets.map((s: any) => s.conn.transport.name),
+      },
+      timestamp: new Date().toISOString()
+    });
   });
 
   // Lobby invite redirect endpoint
@@ -51,10 +84,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/?page=support');
   });
 
-  const httpServer = createServer(app);
-  
-  // Setup WebSocket server
-  setupWebSocket(httpServer);
+  // Recurring lobby route - for bookmarkable meeting rooms
+  app.get('/room/:roomId', (req, res) => {
+    const { roomId } = req.params;
+    // Validate roomId format (alphanumeric, hyphens, 3-30 chars)
+    if (!/^[a-zA-Z0-9-]{3,30}$/.test(roomId)) {
+      return res.redirect('/?error=invalid-room-id');
+    }
+    // Redirect to frontend with room parameter
+    res.redirect(`/?room=${roomId.toLowerCase()}`);
+  });
+
+  // Setup WebSocket server and attach to httpServer for health checks
+  const io = setupWebSocket(httpServer);
+  (httpServer as any).io = io; // Attach for health check access
 
   return httpServer;
 }
