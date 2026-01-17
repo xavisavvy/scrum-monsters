@@ -70,6 +70,7 @@
     "gsap": "^3.12.5",
     "howler": "^2.2.4",
     "input-otp": "^1.2.4",
+    "ioredis": "^5.9.2",
     "lucide-react": "^0.453.0",
     "matter-js": "^0.20.0",
     "memorystore": "^1.6.7",
