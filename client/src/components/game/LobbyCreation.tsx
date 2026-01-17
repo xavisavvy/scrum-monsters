@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
+import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 
 interface LobbyCreationProps {
   onLobbyCreated: () => void;
@@ -14,20 +15,31 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
   const [isCreating, setIsCreating] = useState(false);
   const { emit } = useWebSocket();
 
+  // Load saved player name on mount
+  useEffect(() => {
+    const savedName = PlayerNameStorage.loadName();
+    if (savedName) {
+      setHostName(savedName);
+    }
+  }, []);
+
   const handleCreateLobby = () => {
     if (!lobbyName.trim() || !hostName.trim()) return;
-    
+
     setIsCreating(true);
-    
+
+    // Save player name for future sessions
+    PlayerNameStorage.saveName(hostName.trim());
+
     // Load saved settings and send them with lobby creation
     const savedSettings = LobbySettingsStorage.loadSettings();
-    
-    emit('create_lobby', { 
-      lobbyName: lobbyName.trim(), 
+
+    emit('create_lobby', {
+      lobbyName: lobbyName.trim(),
       hostName: hostName.trim(),
       initialSettings: savedSettings
     });
-    
+
     // onLobbyCreated will be called when server responds
     setTimeout(() => setIsCreating(false), 1000);
   };

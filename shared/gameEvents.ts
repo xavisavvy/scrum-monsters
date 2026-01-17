@@ -211,13 +211,14 @@ export interface ReconnectResponse {
 
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
-  create_lobby: (data: { 
-    lobbyName: string; 
-    hostName: string; 
+  create_lobby: (data: {
+    lobbyName: string;
+    hostName: string;
     initialSettings?: {
       timerSettings?: TimerSettings;
       jiraSettings?: JiraSettings;
       estimationSettings?: EstimationSettings;
+      customLobbyId?: string;
     };
   }) => void;
   join_lobby: (data: { lobbyId: string; playerName: string }) => void;

@@ -71,6 +71,38 @@ interface AudioState {
   getCurrentTrackName: () => string;
 }
 
+// LocalStorage keys for persisting mute settings
+const MUTE_SETTINGS_KEY = 'scrum-monsters-mute-settings';
+
+// Helper to load mute settings from localStorage
+const loadMuteSettings = (): { isMuted: boolean; isBossMusicMuted: boolean } => {
+  try {
+    const stored = localStorage.getItem(MUTE_SETTINGS_KEY);
+    if (stored) {
+      const settings = JSON.parse(stored);
+      return {
+        isMuted: settings.isMuted ?? false,
+        isBossMusicMuted: settings.isBossMusicMuted ?? false
+      };
+    }
+  } catch (error) {
+    console.warn('Failed to load mute settings:', error);
+  }
+  return { isMuted: false, isBossMusicMuted: false };
+};
+
+// Helper to save mute settings to localStorage
+const saveMuteSettings = (isMuted: boolean, isBossMusicMuted: boolean) => {
+  try {
+    localStorage.setItem(MUTE_SETTINGS_KEY, JSON.stringify({ isMuted, isBossMusicMuted }));
+  } catch (error) {
+    console.warn('Failed to save mute settings:', error);
+  }
+};
+
+// Load initial mute settings from localStorage
+const initialMuteSettings = loadMuteSettings();
+
 export const useAudio = create<AudioState>((set, get) => ({
   backgroundMusic: null,
   menuMusic: null,
@@ -84,8 +116,8 @@ export const useAudio = create<AudioState>((set, get) => ({
   walkingSound: null,
   musicTracks: [],
   currentTrackIndex: 0,
-  isMuted: false, // Start unmuted by default
-  isBossMusicMuted: false,
+  isMuted: initialMuteSettings.isMuted, // Load from localStorage
+  isBossMusicMuted: initialMuteSettings.isBossMusicMuted, // Load from localStorage
   isMenuMusicPlaying: false,
   isBossMusicPlaying: false,
   isYoutubeAudioActive: false,
@@ -108,15 +140,15 @@ export const useAudio = create<AudioState>((set, get) => ({
   setYoutubeUrl: (url) => set({ youtubeUrl: url }),
   
   toggleMute: () => {
-    const { isMuted, menuMusic, lobbyMusic, walkingSound, isWalkingSoundPlaying, fadeTimer } = get();
+    const { isMuted, isBossMusicMuted, menuMusic, lobbyMusic, walkingSound, isWalkingSoundPlaying, fadeTimer } = get();
     const newMutedState = !isMuted;
-    
+
     // Clear any running fade timer
     if (fadeTimer) {
       clearInterval(fadeTimer);
       set({ fadeTimer: null });
     }
-    
+
     // Pause or resume the menu music
     if (menuMusic) {
       if (newMutedState) {
@@ -134,7 +166,7 @@ export const useAudio = create<AudioState>((set, get) => ({
         }
       }
     }
-    
+
     // Pause or resume the lobby music
     if (lobbyMusic) {
       if (newMutedState) {
@@ -152,7 +184,7 @@ export const useAudio = create<AudioState>((set, get) => ({
         }
       }
     }
-    
+
     // Handle walking sound mute state
     if (walkingSound && isWalkingSoundPlaying) {
       if (newMutedState) {
@@ -165,10 +197,13 @@ export const useAudio = create<AudioState>((set, get) => ({
         });
       }
     }
-    
+
     // Update the muted state
     set({ isMuted: newMutedState });
-    
+
+    // Persist to localStorage
+    saveMuteSettings(newMutedState, isBossMusicMuted);
+
     // Log the change
     console.log(`Sound ${newMutedState ? 'muted' : 'unmuted'}`);
   },
@@ -453,9 +488,9 @@ export const useAudio = create<AudioState>((set, get) => ({
   },
 
   toggleBossMusicMute: () => {
-    const { isBossMusicMuted, bossMusic, youtubePlayer, isYoutubeAudioActive, isBossMusicPlaying } = get();
+    const { isMuted, isBossMusicMuted, bossMusic, youtubePlayer, isYoutubeAudioActive, isBossMusicPlaying } = get();
     const newMutedState = !isBossMusicMuted;
-    
+
     if (isYoutubeAudioActive && youtubePlayer) {
       if (newMutedState) {
         youtubePlayer.pauseVideo();
@@ -481,8 +516,12 @@ export const useAudio = create<AudioState>((set, get) => ({
         }
       }
     }
-    
+
     set({ isBossMusicMuted: newMutedState });
+
+    // Persist to localStorage
+    saveMuteSettings(isMuted, newMutedState);
+
     console.log(`Boss music ${newMutedState ? 'muted' : 'unmuted'}`);
   },
 

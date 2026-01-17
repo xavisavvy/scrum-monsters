@@ -44,7 +44,18 @@ class GameStateManager {
     }, 30000); // Check every 30 seconds
   }
 
-  generateLobbyId(): string {
+  generateLobbyId(customId?: string): string {
+    // If a custom ID is provided, validate and use it
+    if (customId) {
+      const normalized = customId.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+      // Check if lobby already exists
+      if (this.lobbies.has(normalized.toUpperCase())) {
+        // Return existing lobby ID if it exists
+        return normalized.toUpperCase();
+      }
+      return normalized.toUpperCase();
+    }
+    // Otherwise, generate random 6-character ID
     return Math.random().toString(36).substring(2, 8).toUpperCase();
   }
 
@@ -419,12 +430,13 @@ class GameStateManager {
     }
   }
 
-  createLobby(hostName: string, lobbyName: string, initialSettings?: { 
-    timerSettings?: TimerSettings; 
-    jiraSettings?: JiraSettings; 
-    estimationSettings?: EstimationSettings; 
+  createLobby(hostName: string, lobbyName: string, initialSettings?: {
+    timerSettings?: TimerSettings;
+    jiraSettings?: JiraSettings;
+    estimationSettings?: EstimationSettings;
+    customLobbyId?: string;
   }): Lobby {
-    const lobbyId = this.generateLobbyId();
+    const lobbyId = this.generateLobbyId(initialSettings?.customLobbyId);
     const hostId = Math.random().toString(36).substring(2, 15);
     
     const lobby: Lobby = {

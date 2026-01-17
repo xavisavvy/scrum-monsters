@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
+import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 
 interface LobbyJoinProps {
   lobbyId?: string;
@@ -14,15 +15,27 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: Readonly<L
   const [isJoining, setIsJoining] = useState(false);
   const { emit } = useWebSocket();
 
+  // Load saved player name on mount
+  useEffect(() => {
+    const savedName = PlayerNameStorage.loadName();
+    if (savedName) {
+      setPlayerName(savedName);
+    }
+  }, []);
+
   const handleJoinLobby = () => {
     if (!lobbyId.trim() || !playerName.trim()) return;
-    
+
     setIsJoining(true);
-    emit('join_lobby', { 
-      lobbyId: lobbyId.trim().toUpperCase(), 
-      playerName: playerName.trim() 
+
+    // Save player name for future sessions
+    PlayerNameStorage.saveName(playerName.trim());
+
+    emit('join_lobby', {
+      lobbyId: lobbyId.trim().toUpperCase(),
+      playerName: playerName.trim()
     });
-    
+
     // onLobbyJoined will be called when server responds
     setTimeout(() => setIsJoining(false), 1000);
   };

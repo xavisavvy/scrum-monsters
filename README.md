@@ -4,6 +4,7 @@
 [![Assets License: CC BY-NC-ND 4.0](https://img.shields.io/badge/Assets%20License-CC%20BY--NC--ND%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc-nd/4.0/)
 [![Node.js Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.6.3-blue.svg)](https://www.typescriptlang.org/)
+[![Conventional Commits](https://img.shields.io/badge/Conventional%20Commits-1.0.0-yellow.svg)](https://conventionalcommits.org)
 [![Trademark](https://img.shields.io/badge/Trademark-Scrum%20Monsters%E2%84%A2-red.svg)](TRADEMARKS.md)
 
 A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that gamifies story point estimation. Players create or join lobbies, select fantasy avatar classes, and estimate tickets by "battling" pixel art bosses in real-time combat scenarios.
@@ -12,6 +13,7 @@ A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that g
 
 ### 🎯 Core Gameplay
 - **Multiplayer Lobbies**: Support for up to 32 players with unique invite codes
+- **Recurring Meeting Rooms**: Bookmarkable URLs for daily standups and recurring scrum sessions
 - **Avatar Classes**: Choose from Warrior, Wizard, Rogue, Paladin, and Archer classes
 - **Boss Battles**: Fight pixel art bosses that scale with ticket complexity
 - **Real-time Combat**: Live projectile attacks with visual effects and sound
@@ -28,6 +30,7 @@ A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that g
 - **Retro JRPG Aesthetic**: Pixel art style with nostalgic animations
 - **3D Avatar Models**: React Three Fiber-powered character rendering
 - **Dynamic Audio**: Background music, hit effects, and ambient sounds
+- **Persistent Audio Preferences**: Mute settings automatically saved across sessions
 - **Visual Effects**: Attack animations, damage numbers, and particle effects
 
 ### 🔧 Technical Features

@@ -3,6 +3,7 @@ import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { LobbyCreation } from '@/components/game/LobbyCreation';
 import { LobbyJoin } from '@/components/game/LobbyJoin';
+import { RoomJoin } from '@/components/game/RoomJoin';
 import { Lobby } from '@/components/game/Lobby';
 import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
@@ -26,16 +27,19 @@ import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ReconnectionStatus } from '@/components/ui/ReconnectionStatus';
 import { ConnectionIndicator } from '@/components/ui/ConnectionIndicator';
 import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
+import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
 import '@/styles/retro.css';
 
-type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
+type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'room_join' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
 
 function App() {
   const [appState, setAppState] = useState<AppState>('landing');
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
+  const [roomId, setRoomId] = useState<string>('');
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   const [showReconnectionDialog, setShowReconnectionDialog] = useState(false);
+  const [lastLobby, setLastLobby] = useState(LastLobbyStorage.loadLastLobby());
   
   // Force remount mechanism for critical phase transitions
   const [battleRemountKey, setBattleRemountKey] = useState(0);
@@ -148,32 +152,48 @@ function App() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const lobbyParam = urlParams.get('join');
+    const roomParam = urlParams.get('room');
     const gameParam = urlParams.get('game');
     const pageParam = urlParams.get('page');
-    
+
     if (lobbyParam) {
       setJoinLobbyId(lobbyParam);
-      
+
       // Check if we need to wait for reconnection attempt
       const storedToken = localStorage.getItem('scrum-monsters-reconnect-token');
       const storedSnapshot = localStorage.getItem('scrum-monsters-lobby-snapshot');
-      
+
       if (storedToken && storedSnapshot && isConnected) {
         // There's a potential reconnection, wait for it to complete
         console.log('🔄 URL join detected with stored token - waiting for reconnection attempt');
-        
+
         // Set a timeout to fallback to manual join if reconnection doesn't complete
         const reconnectionTimeout = setTimeout(() => {
           // If we're still on landing page after 5 seconds, the reconnection didn't work
           console.log('⏱️ Reconnection timeout - falling back to manual join');
           setAppState('join_lobby');
         }, 5000);
-        
+
         // Store timeout so it can be cleared if lobby_sync arrives
         (window as any).__reconnectionTimeout = reconnectionTimeout;
       } else {
         // No stored reconnection data, safe to proceed with manual join
         setAppState('join_lobby');
+      }
+    } else if (roomParam) {
+      // Recurring meeting room - store room ID for lobby creation/join
+      setRoomId(roomParam);
+
+      // Check if this lobby already exists via reconnection
+      const storedToken = localStorage.getItem('scrum-monsters-reconnect-token');
+      const storedSnapshot = localStorage.getItem('scrum-monsters-lobby-snapshot');
+
+      if (storedToken && storedSnapshot && isConnected) {
+        console.log('🔄 Room join detected with stored token - waiting for reconnection attempt');
+        // Wait for reconnection to complete
+      } else {
+        // Show create/join UI for recurring room
+        setAppState('room_join');
       }
     } else if (gameParam === 'menu') {
       setAppState('menu');
@@ -226,12 +246,18 @@ function App() {
       setInviteLink(inviteLink);
       const host = lobby.players.find(p => p.isHost);
       if (host) setPlayer(host);
+      // Save last lobby for quick rejoin
+      LastLobbyStorage.saveLastLobby(lobby.id, lobby.name);
+      setLastLobby({ lobbyId: lobby.id, lobbyName: lobby.name, timestamp: Date.now() });
       setAppState('avatar_selection'); // Host also goes through avatar selection
     });
 
     socket.on('lobby_joined', ({ lobby, player }) => {
       setLobby(lobby);
       setPlayer(player);
+      // Save last lobby for quick rejoin
+      LastLobbyStorage.saveLastLobby(lobby.id, lobby.name);
+      setLastLobby({ lobbyId: lobby.id, lobbyName: lobby.name, timestamp: Date.now() });
       setAppState('avatar_selection');
     });
 
@@ -567,8 +593,28 @@ function App() {
                 <p className="text-lg text-gray-400 mb-8">
                   Battle Tickets in Epic JRPG Style!
                 </p>
-                
+
                 <div className="space-y-4">
+                  {lastLobby && (
+                    <div className="mb-2">
+                      <RetroButton
+                        onClick={() => {
+                          playButtonSelect();
+                          fadeOutMenuMusic();
+                          setJoinLobbyId(lastLobby.lobbyId);
+                          setAppState('join_lobby');
+                        }}
+                        className="w-full"
+                        variant="primary"
+                      >
+                        🔄 Rejoin: {lastLobby.lobbyName}
+                      </RetroButton>
+                      <p className="text-xs text-gray-500 mt-1 text-center">
+                        Lobby Code: {lastLobby.lobbyId}
+                      </p>
+                    </div>
+                  )}
+
                   <RetroButton
                     onClick={() => {
                       playButtonSelect();
@@ -579,7 +625,7 @@ function App() {
                   >
                     Create Battle Lobby
                   </RetroButton>
-                  
+
                   <RetroButton
                     onClick={() => {
                       playButtonSelect();
@@ -653,6 +699,11 @@ function App() {
       case 'join_lobby':
         return (
           <LobbyJoin lobbyId={joinLobbyId} onLobbyJoined={() => {}} />
+        );
+
+      case 'room_join':
+        return (
+          <RoomJoin roomId={roomId} onLobbyCreatedOrJoined={() => {}} />
         );
 
       case 'avatar_selection':

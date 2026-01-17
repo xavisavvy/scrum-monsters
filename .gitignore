@@ -1,7 +1,46 @@
+# Dependencies
 node_modules
+
+# Build outputs
 dist
-.DS_Store
 server/public
-vite.config.ts.*
-*.tar.gz
+
+# Environment variables
 .env
+.env.local
+.env.*.local
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea
+*.swp
+*.swo
+*~
+
+# Temporary files
+*.tar.gz
+vite.config.ts.*
+*.log
+*.tmp
+
+# Claude Code files (conversation history and sessions)
+.claude/
+
+# Test coverage
+coverage
+*.lcov
+
+# Database
+*.sqlite
+*.db
+
+# Versioning (CHANGELOG is auto-generated, don't manually edit)
+# CHANGELOG.md is tracked but should only be modified by standard-version

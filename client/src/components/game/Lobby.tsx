@@ -553,7 +553,19 @@ export function Lobby() {
     if (inviteLink) {
       navigator.clipboard.writeText(inviteLink);
       setShowCopiedNotification(true);
-      
+
+      // Auto-hide notification after 2 seconds
+      setTimeout(() => {
+        setShowCopiedNotification(false);
+      }, 2000);
+    }
+  };
+
+  const copyLobbyCode = () => {
+    if (currentLobby?.id) {
+      navigator.clipboard.writeText(currentLobby.id);
+      setShowCopiedNotification(true);
+
       // Auto-hide notification after 2 seconds
       setTimeout(() => {
         setShowCopiedNotification(false);
@@ -680,9 +692,18 @@ export function Lobby() {
           <h1 className="text-3xl font-bold retro-text-glow mb-2">
             {currentLobby.name}
           </h1>
-          <p className="text-gray-400">
-            Lobby Code: <span className="retro-text-glow-light text-xl font-mono">{currentLobby.id}</span>
-          </p>
+          <div className="flex items-center justify-center gap-2">
+            <p className="text-gray-400">
+              Lobby Code: <span className="retro-text-glow-light text-xl font-mono">{currentLobby.id}</span>
+            </p>
+            <button
+              onClick={copyLobbyCode}
+              className="text-gray-400 hover:text-white transition-colors p-1"
+              title="Copy lobby code"
+            >
+              📋
+            </button>
+          </div>
           {inviteLink && (
             <div className="mt-4 space-y-3">
               <div className="relative">

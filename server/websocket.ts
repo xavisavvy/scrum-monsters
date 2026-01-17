@@ -7,41 +7,108 @@ type InterServerEvents = {};
 type SocketData = { playerId?: string; lobbyId?: string };
 
 export function setupWebSocket(httpServer: HTTPServer) {
+  // Configure CORS based on environment
+  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
+  const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
+
+  const allowedOrigins = process.env.ALLOWED_ORIGINS
+    ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
+    : (process.env.NODE_ENV === 'production' || isReplitDeployment
+        ? ['https://scrummonsters.com', 'https://www.scrummonsters.com']
+        : '*');
+
+  // Replit-specific: More aggressive timeouts due to proxy layer
+  const pingTimeout = isReplitDeployment ? 90000 : 60000; // 90s for Replit production
+  const pingInterval = isReplitDeployment ? 30000 : 25000; // 30s for Replit production
+  const connectTimeout = isReplitDeployment ? 60000 : 45000; // 60s for Replit production
+
   const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {
-      origin: "*",
-      methods: ["GET", "POST"]
+      origin: allowedOrigins,
+      methods: ["GET", "POST"],
+      credentials: true
     },
-    // Aggressive keepalive settings to prevent disconnections when tabs are backgrounded
-    // Chrome can stall WebSocket processing for 90+ seconds in background tabs
-    pingTimeout: 180000,     // 3 minutes - tolerate browser throttling delays
-    pingInterval: 30000,     // 30 seconds - how often to send ping packets
-    upgradeTimeout: 30000,   // 30 seconds - time to wait for upgrade
-    connectTimeout: 45000,   // 45 seconds - time to wait for initial connection
-    transports: ['websocket', 'polling'], // Allow fallback to polling if websocket fails
-    // Connection state recovery - keeps message buffers and room state during brief disconnects
-    connectionStateRecovery: {
-      maxDisconnectionDuration: 180000, // 3 minutes - buffer messages during disconnects
-      skipMiddlewares: true              // Skip auth middleware on recovery (already authenticated)
-    }
+    // Replit-optimized timeout configuration
+    pingTimeout,
+    pingInterval,
+    connectTimeout,
+    transports: ['websocket', 'polling'], // Fallback to polling if websocket fails
+    allowUpgrades: true, // Allow upgrading from polling to websocket
+    perMessageDeflate: false, // Disable compression for better performance
+    httpCompression: false,
+    // Handle proxy headers (critical for Replit)
+    path: '/socket.io/',
+    serveClient: false,
+    // Replit-specific: Trust proxy headers
+    allowEIO3: true, // Support older clients
+    cookie: false, // Disable cookies for stateless scaling
+    // Max HTTP buffer size for polling fallback
+    maxHttpBufferSize: 1e6, // 1MB
+    // Replit autoscale: Be more forgiving with upgrades
+    upgradeTimeout: 30000
   });
+
+  console.log(`🔌 WebSocket server initialized (Replit: ${isReplitDeployment ? 'Production' : isReplitPreview ? 'Preview' : 'Local'})`);
+  console.log(`   - Ping interval: ${pingInterval}ms`);
+  console.log(`   - Ping timeout: ${pingTimeout}ms`);
+  console.log(`   - Connect timeout: ${connectTimeout}ms`);
 
   // Pass the io instance to GameState for emitting events
   setGameStateIO(io);
+
+  // Connection monitoring for Replit
+  let totalConnections = 0;
+  let activeConnections = 0;
+  let disconnectReasons = new Map<string, number>();
+
+  // Log connection stats every 5 minutes
+  setInterval(() => {
+    const connectedSockets = Array.from(io.sockets.sockets.values());
+    const hostConnections = connectedSockets.filter(s => {
+      const lobby = gameState.getLobbyByPlayerId(s.data.playerId || '');
+      return lobby && lobby.hostId === s.data.playerId;
+    });
+
+    console.log('📊 Connection Statistics:');
+    console.log(`   - Total connections since start: ${totalConnections}`);
+    console.log(`   - Currently active: ${activeConnections}`);
+    console.log(`   - Host connections: ${hostConnections.length}`);
+    console.log(`   - Active lobbies: ${(gameState as any).lobbies?.size || 0}`);
+
+    if (disconnectReasons.size > 0) {
+      console.log('   - Disconnect reasons:');
+      disconnectReasons.forEach((count, reason) => {
+        console.log(`     - ${reason}: ${count}`);
+      });
+    }
+  }, 5 * 60 * 1000);
 
   // Set up revival completion watchdog
   setInterval(() => {
     const completedRevivals = (gameState as any).processRevivalSessions();
     for (const revival of completedRevivals) {
-      io.to(revival.lobbyId).emit('revive_complete', { 
-        targetId: revival.targetId, 
-        reviverId: revival.reviverId 
+      io.to(revival.lobbyId).emit('revive_complete', {
+        targetId: revival.targetId,
+        reviverId: revival.reviverId
       });
     }
   }, 100);
 
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
-    console.log(`Player connected: ${socket.id}`);
+    totalConnections++;
+    activeConnections++;
+
+    // Log connection details
+    const transport = socket.conn.transport.name;
+    const headers = socket.handshake.headers;
+    const userAgent = headers['user-agent'] || 'unknown';
+    const forwardedFor = headers['x-forwarded-for'] || socket.handshake.address;
+
+    console.log(`✅ Player connected: ${socket.id}`);
+    console.log(`   - Transport: ${transport}`);
+    console.log(`   - IP: ${forwardedFor}`);
+    console.log(`   - User-Agent: ${userAgent.substring(0, 50)}...`);
+    console.log(`   - Active connections: ${activeConnections}`);
 
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
@@ -902,23 +969,38 @@ export function setupWebSocket(httpServer: HTTPServer) {
     });
 
     socket.on('disconnect', (reason) => {
+      activeConnections--;
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
-      
+
+      // Track disconnect reasons for monitoring
+      disconnectReasons.set(reason, (disconnectReasons.get(reason) || 0) + 1);
+
+      // Enhanced logging for host disconnects
+      const lobby = lobbyId ? gameState.getLobby(lobbyId) : null;
+      const isHost = lobby && lobby.hostId === playerId;
+
+      console.log(`❌ Player disconnected: ${socket.id}`);
+      console.log(`   - Reason: ${reason}`);
+      console.log(`   - Is Host: ${isHost ? 'YES ⚠️' : 'no'}`);
+      console.log(`   - Lobby: ${lobbyId || 'none'}`);
+      console.log(`   - Active connections: ${activeConnections}`);
+
       if (playerId) {
         // Use new reconnection system instead of immediate removal
         const disconnectResult = (gameState as any).handlePlayerDisconnect(playerId);
         if (disconnectResult && lobbyId) {
           const { disconnectedPlayer, reconnectToken, hostTransfer } = disconnectResult;
-          
+
           // Store reconnect token in the socket for potential reconnection
           // (Note: This would typically be stored on client-side)
-          
+
           // Notify other players about the disconnection (but keep player in lobby)
           io.to(lobbyId).emit('player_disconnected', { playerId });
-          
-          console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) disconnected [${reason}] - reconnection available for ${Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000)} minutes`);
-          
+
+          const graceMinutes = Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
+          console.log(`🔄 Player ${disconnectedPlayer.playerName} (${playerId}) can reconnect for ${graceMinutes} minutes`);
+
           // If host was transferred, notify all players and update lobby
           if (hostTransfer) {
             io.to(lobbyId).emit('host_transferred', {
@@ -927,14 +1009,14 @@ export function setupWebSocket(httpServer: HTTPServer) {
               newHostName: hostTransfer.newHostName,
               reason: 'Host disconnected'
             });
-            
+
             // Emit lobby update with new host information
             const lobby = gameState.getLobby(lobbyId);
             if (lobby) {
               io.to(lobbyId).emit('lobby_updated', { lobby });
             }
-            
-            console.log(`👑 Host transferred to ${hostTransfer.newHostName} (${hostTransfer.newHostId})`);
+
+            console.log(`👑 Host transferred from ${hostTransfer.oldHostId} → ${hostTransfer.newHostName} (${hostTransfer.newHostId})`);
           }
         } else {
           // Fallback to old behavior if reconnection setup fails
@@ -943,10 +1025,9 @@ export function setupWebSocket(httpServer: HTTPServer) {
             io.to(lobbyId).emit('player_disconnected', { playerId });
             io.to(lobbyId).emit('lobby_updated', { lobby });
           }
+          console.log(`⚠️ Player ${playerId} removed immediately (reconnection unavailable)`);
         }
       }
-      
-      console.log(`Player disconnected: ${socket.id}`);
     });
   });
 

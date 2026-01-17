@@ -67,31 +67,49 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   reconnection: {
     status: 'disconnected',
     attempt: 0,
-    maxAttempts: 8, // Up to ~8.5 minutes of retries
+    maxAttempts: 12, // Up to ~13 minutes of retries (Replit containers can sleep)
     nextRetryIn: 0
   },
   lastLobbySnapshot: null,
   heartbeatInterval: null,
 
   connect: () => {
+    // Detect if we're on Replit production (scrummonsters.com domain)
+    const isReplitProduction = window.location.hostname.includes('scrummonsters.com') ||
+                               window.location.hostname.includes('.replit.dev') ||
+                               window.location.hostname.includes('.repl.co');
+
+    // Replit-optimized settings: More forgiving timeouts
     const socket = io(window.location.origin, {
-      transports: ['websocket', 'polling'], // Allow fallback to polling if websocket fails
-      timeout: 45000, // 45 seconds - matches server connectTimeout
+      transports: ['websocket', 'polling'], // Allow fallback to polling (important for Replit)
+      timeout: isReplitProduction ? 60000 : 45000, // 60s for Replit production
       reconnection: false, // Disable automatic reconnection, we handle it ourselves
-      // Additional settings to improve connection stability
-      reconnectionDelay: 2000,
-      reconnectionDelayMax: 10000,
-      randomizationFactor: 0.5
+      path: '/socket.io/',
+      upgrade: true, // Allow upgrading transport
+      rememberUpgrade: true, // Remember successful upgrade
+      // Increase ping/pong timeout to match server
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      randomizationFactor: 0.5,
+      // Replit-specific: Force new connection (don't reuse)
+      forceNew: false,
+      // Add extra headers for Replit proxy
+      extraHeaders: isReplitProduction ? {
+        'X-Requested-With': 'XMLHttpRequest'
+      } : undefined
     });
 
+    console.log(`🔌 Connecting to WebSocket (Replit: ${isReplitProduction ? 'Yes' : 'No'}, timeout: ${isReplitProduction ? 60000 : 45000}ms)`);
+
     socket.on('connect', () => {
-      console.log('Connected to server');
-      set({ 
+      console.log('✅ Connected to server');
+      console.log(`   - Transport: ${socket.io.engine.transport.name}`);
+      set({
         isConnected: true,
         reconnection: {
           status: 'connected',
           attempt: 0,
-          maxAttempts: 8,
+          maxAttempts: 12,
           nextRetryIn: 0
         }
       });
@@ -125,25 +143,33 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('Disconnected from server:', reason);
-      
+      console.log('❌ Disconnected from server:', reason);
+      console.log(`   - Transport was: ${socket.io.engine?.transport?.name || 'unknown'}`);
+
       // Clear heartbeat when disconnected
       const { heartbeatInterval } = get();
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
         set({ heartbeatInterval: null });
       }
-      
+
       set({ isConnected: false });
-      
+
       // Only attempt reconnection for unexpected disconnects
       if (reason === 'io server disconnect') {
         // Server initiated disconnect - don't retry
+        console.log('⚠️  Server initiated disconnect - not retrying');
         set(state => ({
           reconnection: { ...state.reconnection, status: 'failed' }
         }));
+      } else if (reason === 'transport close' || reason === 'transport error' || reason === 'ping timeout') {
+        // Network issues common on Replit - always retry
+        console.log('🔄 Network issue detected - will attempt reconnection');
+        const { attemptReconnection } = get();
+        attemptReconnection();
       } else {
-        // Network or client issue - attempt reconnection
+        // Other client issues - attempt reconnection
+        console.log('🔄 Client issue detected - will attempt reconnection');
         const { attemptReconnection } = get();
         attemptReconnection();
       }
