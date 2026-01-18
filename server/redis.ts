@@ -1,18 +1,7 @@
-import Redis from 'ioredis';
-import { spawn, execSync } from 'child_process';
+import { Redis } from '@upstash/redis';
 
 let redisClient: Redis | null = null;
 let isConnected = false;
-let redisProcess: ReturnType<typeof spawn> | null = null;
-
-const REDIS_CONFIG = {
-  host: '127.0.0.1',
-  port: 6379,
-  maxRetriesPerRequest: 3,
-  retryDelayOnFailover: 100,
-  enableReadyCheck: true,
-  lazyConnect: true,
-};
 
 const CACHE_TTL = {
   LOBBY: 3600,
@@ -20,76 +9,29 @@ const CACHE_TTL = {
   GAME_STATE: 1800,
 };
 
-async function startRedisServer(): Promise<boolean> {
-  try {
-    execSync('redis-cli ping', { stdio: 'pipe' });
-    console.log('🔴 Redis already running');
-    return true;
-  } catch {
-    console.log('🔴 Starting Redis server...');
-    try {
-      redisProcess = spawn('redis-server', ['--bind', '127.0.0.1', '--port', '6379', '--loglevel', 'warning'], {
-        detached: true,
-        stdio: 'ignore',
-      });
-      redisProcess.unref();
-      
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      try {
-        execSync('redis-cli ping', { stdio: 'pipe' });
-        console.log('✅ Redis server started');
-        return true;
-      } catch {
-        console.log('⚠️  Redis server failed to start');
-        return false;
-      }
-    } catch (error) {
-      console.log('⚠️  Could not spawn Redis server');
-      return false;
-    }
-  }
-}
-
 export async function initializeRedis(): Promise<boolean> {
-  const serverStarted = await startRedisServer();
-  if (!serverStarted) {
+  const url = process.env.UPSTASH_REDIS_REST_URL;
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN;
+
+  if (!url || !token) {
+    console.log('⚠️  Upstash Redis credentials not configured - running without cache');
+    console.log('   Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to enable caching');
     return false;
   }
 
   try {
     redisClient = new Redis({
-      ...REDIS_CONFIG,
-      retryStrategy: (times: number) => {
-        if (times > 3) {
-          console.log('⚠️  Redis connection failed after 3 attempts - running without cache');
-          return null;
-        }
-        return Math.min(times * 200, 1000);
-      },
+      url,
+      token,
     });
 
-    redisClient.on('connect', () => {
-      console.log('🔴 Redis connected');
-      isConnected = true;
-    });
-
-    redisClient.on('error', (err) => {
-      if (isConnected) {
-        console.error('Redis error:', err.message);
-      }
-    });
-
-    redisClient.on('close', () => {
-      isConnected = false;
-    });
-
-    await redisClient.connect();
     await redisClient.ping();
-    console.log('✅ Redis initialized successfully');
+    isConnected = true;
+    console.log('✅ Upstash Redis initialized successfully');
     return true;
   } catch (error) {
-    console.log('⚠️  Redis not available - running without cache');
+    console.log('⚠️  Upstash Redis connection failed - running without cache');
+    console.error('   Error:', error instanceof Error ? error.message : error);
     redisClient = null;
     isConnected = false;
     return false;
@@ -125,7 +67,7 @@ export async function getCachedLobby(lobbyId: string): Promise<any | null> {
 
   try {
     const data = await client.get(`lobby:${lobbyId}`);
-    return data ? JSON.parse(data) : null;
+    return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
   } catch (error) {
     console.error('Redis get lobby error:', error);
     return null;
@@ -172,7 +114,7 @@ export async function getCachedPlayerSession(playerId: string): Promise<any | nu
 
   try {
     const data = await client.get(`player:${playerId}`);
-    return data ? JSON.parse(data) : null;
+    return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
   } catch (error) {
     console.error('Redis get player session error:', error);
     return null;
@@ -184,7 +126,8 @@ export async function getPlayerIdByToken(reconnectToken: string): Promise<string
   if (!client) return null;
 
   try {
-    return await client.get(`token:${reconnectToken}`);
+    const playerId = await client.get(`token:${reconnectToken}`);
+    return playerId as string | null;
   } catch (error) {
     console.error('Redis get player by token error:', error);
     return null;
@@ -227,7 +170,7 @@ export async function getCachedGameState(lobbyId: string): Promise<any | null> {
 
   try {
     const data = await client.get(`game:${lobbyId}`);
-    return data ? JSON.parse(data) : null;
+    return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
   } catch (error) {
     console.error('Redis get game state error:', error);
     return null;
@@ -249,12 +192,7 @@ export async function getAllActiveLobbies(): Promise<string[]> {
 
 export async function shutdownRedis(): Promise<void> {
   if (redisClient) {
-    try {
-      await redisClient.quit();
-      console.log('🔴 Redis connection closed');
-    } catch (error) {
-      console.error('Redis shutdown error:', error);
-    }
+    console.log('🔴 Upstash Redis connection closed');
     redisClient = null;
     isConnected = false;
   }
