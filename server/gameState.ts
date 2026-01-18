@@ -1,6 +1,7 @@
 import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 import { createHash, createHmac } from 'crypto';
+import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 
 interface RevivalSession {
   reviverId: string;
@@ -42,6 +43,24 @@ class GameStateManager {
     this.disconnectWatchdog = setInterval(() => {
       this.processDisconnectedPlayers();
     }, 30000); // Check every 30 seconds
+  }
+
+  private syncLobbyToCache(lobby: Lobby): void {
+    if (isRedisConnected()) {
+      cacheLobby(lobby.id, lobby).catch(() => {});
+    }
+  }
+
+  private removeLobbyFromCache(lobbyId: string): void {
+    if (isRedisConnected()) {
+      deleteCachedLobby(lobbyId).catch(() => {});
+    }
+  }
+
+  private removePlayerSessionFromCache(playerId: string): void {
+    if (isRedisConnected()) {
+      deletePlayerSession(playerId).catch(() => {});
+    }
   }
 
   generateLobbyId(customId?: string): string {
@@ -513,6 +532,9 @@ class GameStateManager {
     this.updateTeamAssignments(lobby);
     this.lobbies.set(lobbyId, lobby);
     this.playerToLobby.set(hostId, lobbyId);
+    
+    this.syncLobbyToCache(lobby);
+    
     return lobby;
   }
 
@@ -557,6 +579,8 @@ class GameStateManager {
       };
     }
 
+    this.syncLobbyToCache(lobby);
+
     return { lobby, player };
   }
 
@@ -579,10 +603,13 @@ class GameStateManager {
     // Clean up combat state and position
     delete lobby.playerCombatStates[playerId];
     delete lobby.playerPositions[playerId];
+    
+    this.removePlayerSessionFromCache(playerId);
 
     // If no players left, remove lobby
     if (lobby.players.length === 0) {
       this.lobbies.delete(lobbyId);
+      this.removeLobbyFromCache(lobbyId);
       return null;
     }
 
@@ -592,6 +619,8 @@ class GameStateManager {
       lobby.players[0].isHost = true;
     }
 
+    this.syncLobbyToCache(lobby);
+    
     return lobby;
   }
 
