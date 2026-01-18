@@ -1,6 +1,7 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { initializeRedis, shutdownRedis, isRedisConnected } from "./redis";
 
 const app = express();
 app.use(express.json());
@@ -37,6 +38,14 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // Initialize Redis (optional - app works without it)
+  const redisAvailable = await initializeRedis();
+  if (redisAvailable) {
+    console.log('📦 Redis caching enabled');
+  } else {
+    console.log('📦 Running without Redis cache (in-memory only)');
+  }
+
   const server = await registerRoutes(app);
 
   // Configure server timeouts for production stability
@@ -80,4 +89,17 @@ app.use((req, res, next) => {
   }, () => {
     log(`serving on port ${port}`);
   });
+
+  // Graceful shutdown handling
+  const gracefulShutdown = async (signal: string) => {
+    console.log(`\n${signal} received, shutting down gracefully...`);
+    await shutdownRedis();
+    server.close(() => {
+      console.log('Server closed');
+      process.exit(0);
+    });
+  };
+
+  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 })();
