@@ -26,7 +26,7 @@ Preferred communication style: Simple, everyday language.
 - **Database ORM**: Drizzle ORM configured for PostgreSQL with schema migrations
 - **Current Implementation**: In-memory storage with Redis caching layer
 - **Session Management**: Express sessions with PostgreSQL session store (connect-pg-simple)
-- **Redis Caching**: Local Redis server auto-started by the app for caching lobbies and player sessions (gracefully degrades if unavailable)
+- **Redis Caching**: Upstash Redis (cloud) via @upstash/redis for caching lobbies and player sessions (gracefully degrades if unavailable)
 
 ## Game State Management
 - **Lobby System**: Dynamic lobby creation with unique invite codes and host privileges
@@ -66,7 +66,7 @@ Preferred communication style: Simple, everyday language.
 # External Dependencies
 
 - **Database**: Neon PostgreSQL (serverless) via @neondatabase/serverless
-- **Cache**: Redis (local) via ioredis for lobby and session caching
+- **Cache**: Upstash Redis (cloud) via @upstash/redis for lobby and session caching
 - **WebSocket**: Socket.IO for real-time multiplayer communication
 - **UI Framework**: Radix UI component primitives for accessible interface elements
 - **3D Rendering**: React Three Fiber ecosystem for 3D graphics and animations
