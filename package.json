@@ -81,7 +81,7 @@
     "openai": "^5.19.1",
     "passport": "^0.7.0",
     "passport-local": "^1.0.0",
-    "pixi.js": "^8.8.1",
+    "pixi.js": "^8.14.3",
     "postprocessing": "^6.36.0",
     "r3f-perf": "^7.2.3",
     "react": "^18.3.1",
