@@ -17,10 +17,10 @@ export function setupWebSocket(httpServer: HTTPServer) {
         ? ['https://scrummonsters.com', 'https://www.scrummonsters.com']
         : '*');
 
-  // Replit-specific: More aggressive timeouts due to proxy layer
-  const pingTimeout = isReplitDeployment ? 90000 : 60000; // 90s for Replit production
-  const pingInterval = isReplitDeployment ? 30000 : 25000; // 30s for Replit production
-  const connectTimeout = isReplitDeployment ? 60000 : 45000; // 60s for Replit production
+  // Office network compatible: More frequent pings to keep connections alive through corporate proxies
+  const pingTimeout = isReplitDeployment ? 60000 : 45000; // 60s/45s - faster detection of dead connections
+  const pingInterval = isReplitDeployment ? 20000 : 20000; // 20s - under most proxy idle timeouts (30-60s)
+  const connectTimeout = isReplitDeployment ? 45000 : 30000; // 45s/30s for initial connection
 
   const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {

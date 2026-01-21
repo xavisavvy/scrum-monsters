@@ -141,11 +141,13 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         clearInterval(heartbeatInterval);
       }
       const newHeartbeat = setInterval(() => {
-        console.log('💓 Sending heartbeat to keep connection alive');
+        if (document.visibilityState === 'visible') {
+          console.log('💓 Sending heartbeat to keep connection alive');
+        }
         socket.emit('client_heartbeat' as any);
-      }, 40000); // Every 40 seconds
+      }, 25000); // Every 25 seconds - office networks often have 30-60s proxy timeouts
       set({ heartbeatInterval: newHeartbeat });
-      console.log('💓 Heartbeat started - will ping every 40 seconds');
+      console.log('💓 Heartbeat started - will ping every 25 seconds');
 
       // Attempt auto-reconnection if we have stored data
       const storedToken = getStoredReconnectToken();
