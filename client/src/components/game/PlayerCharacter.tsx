@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { AvatarClass, AVATAR_CLASSES } from '@/lib/gameTypes';
 import { useGameState } from '@/lib/stores/useGameState';
 import { SpriteRenderer } from './SpriteRenderer';
@@ -37,7 +37,7 @@ interface PlayerCharacterProps {
 }
 
 
-export function PlayerCharacter({
+export const PlayerCharacter = memo(function PlayerCharacter({
   avatarClass,
   playerName,
   position,
@@ -200,4 +200,4 @@ export function PlayerCharacter({
       </div>
     </div>
   );
-}
+});
