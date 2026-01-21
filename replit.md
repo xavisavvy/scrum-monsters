@@ -98,9 +98,9 @@ The project uses a comprehensive dual-licensing approach to protect intellectual
 # Roadmap
 
 ## Priority 1: Connection Stability (High Impact)
-- [ ] **Visibility change handling** - Proactively check/restore connection when browser tab returns from background
-- [ ] **Visual reconnection indicators** - Show players a clear UI when connection is recovering
-- [ ] **Office network optimization** - Further tune heartbeat/ping intervals based on production telemetry
+- [x] **Visibility change handling** - Proactively check/restore connection when browser tab returns from background
+- [x] **Visual reconnection indicators** - Show players a clear UI when connection is recovering (ReconnectionStatus component)
+- [x] **Office network optimization** - Heartbeat 25s client, 20s server ping, 60s timeout (tuned for corporate proxies)
 
 ## Priority 2: Performance Optimization
 - [ ] **Lazy load heavy components** - Split 3D assets, battle screens, and avatar selection into separate chunks
@@ -130,3 +130,5 @@ The project uses a comprehensive dual-licensing approach to protect intellectual
 - [x] Upstash Redis caching for lobbies and sessions
 - [x] Office network heartbeat optimization (25s client, 20s server)
 - [x] Removed verbose player movement console.logs
+- [x] Visibility change handling (auto-reconnect when tab returns from background)
+- [x] Visual reconnection indicators (ReconnectionStatus banner component)
