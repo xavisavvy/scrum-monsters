@@ -97,7 +97,6 @@ export function PlayerCharacter({
                                      latestAttack.playerId === playerId; // Direct player attacks
         
         if (isTargetedAtThisPlayer) {
-          console.log('🎨 Player damage effect triggered for attack:', latestAttack.id);
           lastProcessedAttackId.current = latestAttack.id;
           setIsDamaged(true);
           
