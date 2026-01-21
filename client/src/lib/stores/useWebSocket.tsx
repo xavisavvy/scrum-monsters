@@ -36,6 +36,9 @@ interface WebSocketState {
 const RECONNECT_TOKEN_KEY = 'scrum-monsters-reconnect-token';
 const LOBBY_SNAPSHOT_KEY = 'scrum-monsters-lobby-snapshot';
 
+// Module-level visibility handler reference for cleanup
+let visibilityHandler: (() => void) | null = null;
+
 const storeReconnectToken = (token: string) => {
   try {
     localStorage.setItem(RECONNECT_TOKEN_KEY, token);
@@ -259,6 +262,51 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       }));
     });
 
+    // Remove any existing visibility handler before adding new one
+    if (visibilityHandler) {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+    }
+
+    // Handle visibility change - check connection when tab becomes visible
+    visibilityHandler = () => {
+      if (document.visibilityState === 'visible') {
+        const currentSocket = get().socket;
+        const { reconnection } = get();
+        
+        // Skip if already reconnecting
+        if (reconnection.status === 'reconnecting') {
+          console.log('👁️ Tab visible - already reconnecting, skipping');
+          return;
+        }
+        
+        if (!currentSocket) {
+          console.log('👁️ Tab visible - no socket, triggering reconnection');
+          // Mark as disconnected and reset attempt count before reconnecting
+          set(state => ({
+            isConnected: false,
+            reconnection: { ...state.reconnection, status: 'disconnected', attempt: 0 }
+          }));
+          get().attemptReconnection();
+          return;
+        }
+        
+        if (!currentSocket.connected) {
+          console.log('👁️ Tab visible - socket disconnected, triggering reconnection');
+          // Mark as disconnected and reset attempt count before reconnecting
+          set(state => ({
+            isConnected: false,
+            reconnection: { ...state.reconnection, status: 'disconnected', attempt: 0 }
+          }));
+          get().attemptReconnection();
+        } else {
+          // Socket appears connected - send heartbeat to verify
+          console.log('👁️ Tab visible - verifying connection with heartbeat');
+          currentSocket.emit('client_heartbeat' as any);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', visibilityHandler);
+
     set({ socket });
   },
 
@@ -273,6 +321,12 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     // Clear heartbeat
     if (heartbeatInterval) {
       clearInterval(heartbeatInterval);
+    }
+    
+    // Remove visibility handler
+    if (visibilityHandler) {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
     }
     
     if (socket) {
