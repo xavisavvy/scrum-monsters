@@ -370,7 +370,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
 
   // Throttled network updates - more responsive
   const lastNetworkUpdate = useRef({ x: 0, y: 0, time: 0 });
-  const networkUpdateThrottle = 50; // 20 updates per second for better responsiveness
+  const networkUpdateThrottle = 100; // 10 updates per second - balanced for performance
 
   useEffect(() => {
     const movePlayer = () => {

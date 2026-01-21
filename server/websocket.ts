@@ -61,6 +61,22 @@ export function setupWebSocket(httpServer: HTTPServer) {
   let activeConnections = 0;
   let disconnectReasons = new Map<string, number>();
 
+  // Position batching for performance - aggregate updates and broadcast every 100ms
+  const pendingPositionUpdates = new Map<string, boolean>(); // lobbyId -> hasPendingUpdates
+  
+  setInterval(() => {
+    // Broadcast batched position updates for each lobby with pending changes
+    pendingPositionUpdates.forEach((hasPending, lobbyId) => {
+      if (hasPending) {
+        const lobby = gameState.getLobby(lobbyId);
+        if (lobby && lobby.playerPositions) {
+          io.to(lobbyId).emit('players_pos', { positions: lobby.playerPositions });
+        }
+        pendingPositionUpdates.set(lobbyId, false);
+      }
+    });
+  }, 100); // Batch broadcast every 100ms
+
   // Log connection stats every 5 minutes
   setInterval(() => {
     const connectedSockets = Array.from(io.sockets.sockets.values());
@@ -763,15 +779,15 @@ export function setupWebSocket(httpServer: HTTPServer) {
       }
     });
 
-    // Position sync for combat
+    // Position sync for combat - batched for performance
     socket.on('player_pos', ({ x, y }: { x: number; y: number }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
       const lobby = gameState.updatePlayerPosition(playerId, { x, y });
       if (lobby) {
-        // Broadcast position updates to room (throttled)
-        socket.to(lobby.id).emit('players_pos', { positions: lobby.playerPositions });
+        // Mark lobby as having pending position updates (will be broadcast in batch)
+        pendingPositionUpdates.set(lobby.id, true);
       }
     });
 
