@@ -1,0 +1,120 @@
+name: PR Checks
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  pr-title:
+    name: Validate PR Title
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Check PR title follows Conventional Commits
+        uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          types: |
+            feat
+            fix
+            docs
+            style
+            refactor
+            perf
+            test
+            build
+            ci
+            chore
+            revert
+          scopes: |
+            auth
+            game
+            ui
+            api
+            db
+            infra
+            deps
+            ci
+          requireScope: false
+          subjectPattern: ^.{1,80}$
+          subjectPatternError: |
+            PR title must be 80 characters or less.
+
+  size-label:
+    name: PR Size Label
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Add size label
+        uses: codelytv/pr-size-labeler@v1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          xs_label: "size/XS"
+          xs_max_size: 10
+          s_label: "size/S"
+          s_max_size: 100
+          m_label: "size/M"
+          m_max_size: 500
+          l_label: "size/L"
+          l_max_size: 1000
+          xl_label: "size/XL"
+          fail_if_xl: false
+          message_if_xl: |
+            ⚠️ This PR is quite large. Consider breaking it into smaller PRs for easier review.
+
+  files-changed:
+    name: Detect Changed Files
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    outputs:
+      docs_only: ${{ steps.filter.outputs.docs_only }}
+      src_changed: ${{ steps.filter.outputs.src }}
+      k8s_changed: ${{ steps.filter.outputs.k8s }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Filter paths
+        id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            docs_only:
+              - '**.md'
+              - 'docs/**'
+            src:
+              - 'client/**'
+              - 'server/**'
+              - 'shared/**'
+              - 'package*.json'
+            k8s:
+              - 'k8s/**'
+              - 'Dockerfile'
+              - 'docker-compose.yml'
+
+      - name: Add labels based on changes
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = [];
+            if ('${{ steps.filter.outputs.src }}' === 'true') labels.push('area/code');
+            if ('${{ steps.filter.outputs.k8s }}' === 'true') labels.push('area/infrastructure');
+            if ('${{ steps.filter.outputs.docs_only }}' === 'true') labels.push('area/documentation');
+
+            if (labels.length > 0) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.issue.number,
+                labels: labels
+              });
+            }
