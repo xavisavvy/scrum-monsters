@@ -1,12 +1,18 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
+import type { RequestHandler } from 'express';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
 import { gameState, setGameStateIO } from './gameState.js';
 
 type InterServerEvents = {};
-type SocketData = { playerId?: string; lobbyId?: string };
+type SocketData = {
+  playerId?: string;
+  lobbyId?: string;
+  userId?: number; // Authenticated user ID
+  username?: string; // Authenticated username
+};
 
-export function setupWebSocket(httpServer: HTTPServer) {
+export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: RequestHandler | null) {
   // Configure CORS based on environment
   const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
   const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
@@ -52,6 +58,12 @@ export function setupWebSocket(httpServer: HTTPServer) {
   console.log(`   - Ping interval: ${pingInterval}ms`);
   console.log(`   - Ping timeout: ${pingTimeout}ms`);
   console.log(`   - Connect timeout: ${connectTimeout}ms`);
+
+  // Share session with Socket.IO for authenticated user detection
+  if (sessionMiddleware) {
+    io.engine.use(sessionMiddleware);
+    console.log(`🔐 Session middleware attached to Socket.IO`);
+  }
 
   // Pass the io instance to GameState for emitting events
   setGameStateIO(io);
@@ -104,11 +116,21 @@ export function setupWebSocket(httpServer: HTTPServer) {
     const userAgent = headers['user-agent'] || 'unknown';
     const forwardedFor = headers['x-forwarded-for'] || socket.handshake.address;
 
+    // Extract authenticated user from session (if available)
+    // The session is attached via express-session middleware sharing
+    const req = socket.request as any;
+    if (req.session?.passport?.user) {
+      const userId = req.session.passport.user;
+      socket.data.userId = userId;
+      console.log(`🔐 Authenticated user connected: userId=${userId}`);
+    }
+
     console.log(`✅ Player connected: ${socket.id}`);
     console.log(`   - Transport: ${transport}`);
     console.log(`   - IP: ${forwardedFor}`);
     console.log(`   - User-Agent: ${userAgent.substring(0, 50)}...`);
     console.log(`   - Active connections: ${activeConnections}`);
+    console.log(`   - Authenticated: ${socket.data.userId ? `Yes (${socket.data.userId})` : 'No (guest)'}`);
 
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {

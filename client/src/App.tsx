@@ -17,9 +17,11 @@ import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
 import { CharacterTools } from '@/components/utils/CharacterTools';
 import { BossTools } from '@/components/utils/BossTools';
+import { UserMenu } from '@/components/auth/UserMenu';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
+import { useAuth } from '@/lib/stores/useAuth';
 import { useBacktickKey } from '@/hooks/useBacktickKey';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
 import { CheatMenu } from '@/components/ui/CheatMenu';
@@ -77,9 +79,46 @@ function App() {
   } = useAudio();
   
   // Direct selector for current track name to ensure re-renders
-  const currentTrackName = useAudio(state => 
+  const currentTrackName = useAudio(state =>
     state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
   );
+
+  // Auth state
+  const { checkAuth, isInitialized: authInitialized } = useAuth();
+
+  // Check auth on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Handle OAuth redirect params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authStatus = urlParams.get('auth');
+    const authProvider = urlParams.get('provider');
+
+    if (authStatus === 'success' && authProvider) {
+      toast.success(`Signed in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
+        duration: 3000,
+      });
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('auth');
+      newUrl.searchParams.delete('provider');
+      window.history.replaceState(null, '', newUrl.toString());
+      // Refresh auth state
+      checkAuth();
+    } else if (authStatus === 'error' && authProvider) {
+      toast.error(`Failed to sign in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
+        duration: 5000,
+      });
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('auth');
+      newUrl.searchParams.delete('provider');
+      window.history.replaceState(null, '', newUrl.toString());
+    }
+  }, [checkAuth]);
 
   // Developer menu hotkey
   useBacktickKey(() => {
@@ -773,6 +812,13 @@ function App() {
           >
             ← Back to Menu
           </RetroButton>
+        </div>
+      )}
+
+      {/* User Menu (top right) - show on menu and marketing pages */}
+      {['landing', 'menu', 'about', 'features', 'pricing', 'support'].includes(appState) && (
+        <div className="absolute top-4 right-4 z-[100]">
+          <UserMenu />
         </div>
       )}
 
