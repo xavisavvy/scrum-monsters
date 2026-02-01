@@ -1,10 +1,25 @@
-import type { Express } from "express";
+import type { Express, RequestHandler } from "express";
 import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket.js";
+import authRoutes from "./auth/routes.js";
+import profileRoutes from "./auth/profileRoutes.js";
+
+// Import session middleware from index (circular import avoided by lazy loading)
+let sessionMiddlewareRef: RequestHandler | null = null;
+export function setSessionMiddleware(middleware: RequestHandler) {
+  sessionMiddlewareRef = middleware;
+}
+export function getSessionMiddleware(): RequestHandler | null {
+  return sessionMiddlewareRef;
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server first
   const httpServer = createServer(app);
+
+  // Mount auth routes
+  app.use("/api/auth", authRoutes);
+  app.use("/api/user", profileRoutes);
 
   // Health check endpoint
   app.get('/api/health', (req, res) => {
@@ -96,7 +111,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Setup WebSocket server and attach to httpServer for health checks
-  const io = setupWebSocket(httpServer);
+  const io = setupWebSocket(httpServer, sessionMiddlewareRef);
   (httpServer as any).io = io; // Attach for health check access
 
   return httpServer;
