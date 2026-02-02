@@ -1,3 +1,6 @@
+// TODO (Phase 5 cleanup): Once all state updates flow through fine-grained events,
+// completely remove the 'lobby_updated' event from ServerToClientEvents
+
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import type { RequestHandler } from 'express';
@@ -258,7 +261,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Notify other players about the new player joining (for dropping animation)
         socket.to(lobby.id).emit('player_joined', { player, lobby });
 
-        socket.to(lobby.id).emit('lobby_updated', { lobby });
+        // Removed lobby_updated: session:player_joined event emitted by sessionManager.joinLobby
 
         console.log(`Player ${playerName} joined lobby ${lobbyId} in phase ${currentPhase}`);
       } catch (error) {
@@ -283,7 +286,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = gameState.selectAvatar(playerId, avatarClass);
       if (lobby) {
         io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Removed lobby_updated: avatar_selected contains full info
       }
     });
 
@@ -307,7 +310,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           estimationManager.handleTeamChange(lobby.id, targetPlayerId, oldTeam, team);
         }
 
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Removed lobby_updated: session:team_changed event emitted by sessionManager.assignTeam
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can assign teams' });
@@ -340,7 +343,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           estimationManager.handleTeamChange(lobby.id, playerId, oldTeam, team);
         }
 
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Removed lobby_updated: session:team_changed event emitted by sessionManager.changeOwnTeam
       } catch (error) {
         if (error instanceof SessionError) {
           socket.emit('game_error', { message: error.message });
@@ -357,6 +360,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.addTicketsToLobby(playerId, tickets);
       if (lobby) {
+        // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
         io.to(lobby.id).emit('lobby_updated', { lobby });
         console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
       }
@@ -368,6 +372,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.removeTicketFromLobby(playerId, ticketId);
       if (lobby) {
+        // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
         io.to(lobby.id).emit('lobby_updated', { lobby });
         console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
       }
@@ -516,12 +521,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('game_error', { message: result.error });
         } else {
           const { lobby, boss } = result;
-          
+
           console.log(`✅ Battle started successfully for lobby ${lobby.id}`);
-          // Update all players with the new lobby state including tickets
-          io.to(lobby.id).emit('lobby_updated', { lobby });
-          
-          // Then start the battle (synchronous - relies on socket.io event ordering)
+          // Removed lobby_updated: battle_started event contains lobby
+
+          // Start the battle (synchronous - relies on socket.io event ordering)
           io.to(lobby.id).emit('battle_started', { lobby, boss });
         }
       } else {
@@ -542,9 +546,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (player) {
           socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
         }
-        
-        // Emit lobby_updated after each score submission for real-time UI updates
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+
+        // Removed lobby_updated: estimation:vote_cast event emitted by estimationManager
         
         // Check if all scores submitted and reveal
         if (lobby.gamePhase === 'reveal') {
@@ -552,6 +555,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (result) {
             const { lobby: updatedLobby, teamScores, teamConsensus } = result;
             io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+            // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
             io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
             
             // Check if teams agreed using same logic as gameState
@@ -583,6 +587,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateDiscussionVote(playerId, score);
       if (lobby) {
+        // Keep lobby_updated for discussion phase updates (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
         
         // Check for consensus and auto-advance - rely on gameState for consensus logic
@@ -594,6 +599,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (updatedLobby.gamePhase !== 'discussion') {
             // Auto-advance after a brief delay for players to see the consensus
             setTimeout(() => {
+              // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
               io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
               if (updatedLobby.boss?.defeated) {
                 io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
@@ -629,9 +635,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (ringAttack) {
           io.to(lobby.id).emit('boss_ring_attack', ringAttack);
         }
-        
-        // Send updated lobby state so clients get the new boss health
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+
+        // Removed lobby_updated: combat:boss_damaged event emitted by combatManager
       }
     });
     
@@ -656,9 +661,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (gameOver) {
           io.to(lobby.id).emit('game_over', { lobby });
         }
-        
-        // Update lobby state
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+
+        // Removed lobby_updated: combat:player_damaged event emitted by combatManager
       }
     });
 
@@ -696,6 +700,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.proceedNextLevel(playerId);
       if (lobby) {
+        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });
@@ -707,6 +712,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = gameState.abandonQuest(playerId);
       if (lobby) {
         io.to(lobby.id).emit('quest_abandoned', { lobby });
+        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });
@@ -723,6 +729,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = gameState.returnToLobby(playerId);
       if (lobby) {
         console.log(`✅ Returned to lobby: ${lobby.id}, new phase: ${lobby.gamePhase}`);
+        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
       } else {
         console.log('❌ Failed to return to lobby - gameState.returnToLobby returned null');
@@ -737,6 +744,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (result) {
         const { lobby: updatedLobby, teamScores, teamConsensus } = result;
         io.to(updatedLobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
         io.to(updatedLobby.id).emit('lobby_updated', { lobby: updatedLobby });
         
         // Check if teams agreed using same logic as gameState
@@ -814,10 +822,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const result = gameState.manualAdvancePhase(lobbyId);
         if (result) {
           const { lobby: updatedLobby } = result;
-          
-          // Broadcast the updated lobby state to all players
+
+          // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
           io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
-          
+
           console.log(`Host ${playerId} manually advanced phase in lobby ${lobbyId}`);
         } else {
           socket.emit('game_error', { message: 'Cannot advance phase - consensus not reached' });
@@ -839,21 +847,22 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const result = gameState.forceVotingProgression(playerId);
         if (result) {
           const { lobby, message } = result;
-          
-          // Broadcast the updated lobby state to all players
+
+          // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
           io.to(lobbyId).emit('lobby_updated', { lobby });
-          
+
           // Notify everyone about the forced progression
           io.to(lobbyId).emit('game_error', { message });
-          
+
           console.log(`${message} in lobby ${lobbyId}`);
-          
+
           // If phase changed to reveal, trigger reveal logic
           if (lobby.gamePhase === 'reveal') {
             const revealResult = gameState.revealScores(lobby.id);
             if (revealResult) {
               const { lobby: updatedLobby, teamScores, teamConsensus } = revealResult;
               io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+              // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
               io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
             }
           }
@@ -911,8 +920,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (gameOver) {
           io.to(lobby.id).emit('game_over', { lobby: updatedLobby });
         }
-        
-        io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+
+        // Removed lobby_updated: combat:player_damaged event emitted by combatManager
       }
     });
 
@@ -925,7 +934,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (result) {
         const { lobby, healedPlayers } = result;
         io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Removed lobby_updated: party_healed event contains all necessary info
         console.log(`💫 Priest ${playerId} healed party`);
       }
     });
@@ -979,8 +988,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.setPlayerJumping(playerId, isJumping);
       if (lobby) {
-        // Broadcast to all players in the lobby
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Removed lobby_updated: jumping state is transient, not critical for sync
       }
     });
 
@@ -991,7 +999,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateTimerSettings(playerId, timerSettings);
       if (lobby) {
-        // Broadcast updated lobby settings to all players
+        // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });
@@ -1002,7 +1010,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateJiraSettings(playerId, jiraSettings);
       if (lobby) {
-        // Broadcast updated lobby settings to all players
+        // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
       }
     });
@@ -1013,7 +1021,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateEstimationSettings(playerId, estimationSettings);
       if (lobby) {
-        // Broadcast updated lobby settings to all players
+        // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
         console.log(`Estimation settings updated by ${playerId} in lobby ${lobby.id}`);
       }
@@ -1049,6 +1057,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             playerId,
             playerName: lobbySync.yourPlayer.name
           });
+          // Keep lobby_updated for reconnection notifications (not yet covered by fine-grained events)
           socket.to(lobbyId).emit('lobby_updated', { lobby: lobbySync.lobby });
 
           console.log(`✅ Player ${lobbySync.yourPlayer.name} (${playerId}) reconnected successfully`);
@@ -1543,6 +1552,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             // Emit lobby update with new host information
             const updatedLobby = sessionManager.getLobby(lobbyId);
             if (updatedLobby) {
+              // Keep lobby_updated for host transfer (not yet covered by fine-grained events)
               io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
             }
 
@@ -1553,6 +1563,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           const updatedLobby = sessionManager.removePlayer(playerId);
           if (updatedLobby && lobbyId) {
             io.to(lobbyId).emit('player_disconnected', { playerId });
+            // Keep lobby_updated for player removal fallback (not yet covered by fine-grained events)
             io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
           }
           console.log(`⚠️ Player ${playerId} removed immediately (reconnection unavailable)`);
