@@ -85,6 +85,19 @@ export interface EstimationConsensusReachedPayload {
   teams: TeamType[];
 }
 
+/** Emitted when a single team reaches consensus */
+export interface EstimationTeamConsensusReachedPayload {
+  lobbyId: string;
+  team: TeamType;
+  consensusValue: number;
+}
+
+/** Emitted when both teams reach consensus */
+export interface EstimationFullConsensusReachedPayload {
+  lobbyId: string;
+  ticketId: string;
+}
+
 /** Emitted when voting begins for a ticket */
 export interface EstimationVotingStartedPayload {
   lobbyId: string;
@@ -96,6 +109,46 @@ export interface EstimationVotingTimeoutPayload {
   lobbyId: string;
   submittedCount: number;
   totalCount: number;
+}
+
+/** Emitted when voting timer starts for a team */
+export interface EstimationTimerStartedPayload {
+  lobbyId: string;
+  team: TeamType;
+  durationMs: number;
+  startedAt: number;
+}
+
+/** Emitted when host pauses the voting timer */
+export interface EstimationTimerPausedPayload {
+  lobbyId: string;
+  team: TeamType;
+  remainingMs: number;
+  pausedBy: string;
+}
+
+/** Emitted when host resumes the voting timer */
+export interface EstimationTimerResumedPayload {
+  lobbyId: string;
+  team: TeamType;
+  remainingMs: number;
+  resumedBy: string;
+}
+
+/** Emitted when host extends the voting timer */
+export interface EstimationTimerExtendedPayload {
+  lobbyId: string;
+  team: TeamType;
+  additionalMs: number;
+  extendedBy: string;
+}
+
+/** Emitted when voting timer expires */
+export interface EstimationTimerExpiredPayload {
+  lobbyId: string;
+  team: TeamType;
+  votedCount: number;
+  eligibleCount: number;
 }
 
 // =============================================================================
@@ -190,8 +243,15 @@ export interface DomainEventMap {
   'estimation:vote_cast': EstimationVoteCastPayload;
   'estimation:vote_changed': EstimationVoteChangedPayload;
   'estimation:consensus_reached': EstimationConsensusReachedPayload;
+  'estimation:team_consensus_reached': EstimationTeamConsensusReachedPayload;
+  'estimation:full_consensus_reached': EstimationFullConsensusReachedPayload;
   'estimation:voting_started': EstimationVotingStartedPayload;
   'estimation:voting_timeout': EstimationVotingTimeoutPayload;
+  'estimation:timer_started': EstimationTimerStartedPayload;
+  'estimation:timer_paused': EstimationTimerPausedPayload;
+  'estimation:timer_resumed': EstimationTimerResumedPayload;
+  'estimation:timer_extended': EstimationTimerExtendedPayload;
+  'estimation:timer_expired': EstimationTimerExpiredPayload;
 
   // Combat events
   'combat:boss_damaged': CombatBossDamagedPayload;
