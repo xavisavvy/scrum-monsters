@@ -281,6 +281,8 @@ export interface ClientToServerEvents {
   request_missed_events: (data: { lastSeq: number }) => void;
   // Minion interaction
   attack_minion: (data: { minionPlayerId: string }) => void;
+  // Discussion finalization
+  finalize_estimate: (data: { estimate: number }) => void;
 }
 
 export interface TeamScores {
@@ -404,6 +406,8 @@ export interface ServerToClientEvents {
   'estimation:timer_resumed': (data: { team: TeamType; endsAt: number; seq: number; timestamp: number }) => void;
   'estimation:timer_expired': (data: { team: TeamType; votedCount: number; eligibleCount: number; seq: number; timestamp: number }) => void;
   'estimation:estimate_forced': (data: { team: TeamType; consensusValue: number; seq: number; timestamp: number }) => void;
+  'estimation:discussion_timer_started': (data: { durationMs: number; endsAt: number; seq: number; timestamp: number }) => void;
+  'estimation:discussion_ended': (data: { reason: string; finalEstimate: number; seq: number; timestamp: number }) => void;
 
   // Fine-grained combat events
   'combat:boss_damaged': (data: { playerId: string; damage: number; newHp: number; seq: number; timestamp: number }) => void;
