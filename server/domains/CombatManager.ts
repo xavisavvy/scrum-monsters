@@ -19,6 +19,7 @@ import type {
   SessionLobbyDestroyedPayload,
   EstimationVoteCastPayload,
   EstimationFullConsensusReachedPayload,
+  MinionState,
 } from '../events';
 import { TeamType, AvatarClass } from '../../shared/gameEvents';
 import {
@@ -102,6 +103,8 @@ interface LobbyCombatState {
   lobbyId: string;
   boss?: BossCombat;
   players: Map<string, PlayerCombat>;
+  minions: Map<string, MinionState>;
+  minionAttackIntervalHandle?: NodeJS.Timeout;
   battleModifier: number;
   battleStartTime?: number;
   modifierIntervalHandle?: NodeJS.Timeout;
@@ -152,6 +155,13 @@ export class CombatManager {
   private readonly COUNTDOWN_DURATION_SECONDS = 10;
   private readonly MAX_MULTIPLIER = 3.0;
   private readonly MIN_MULTIPLIER = 1.5;
+
+  // Minion constants
+  private readonly MINION_BASE_HP = 50;
+  private readonly MINION_HP_SCALE_PER_VOTER = 10;
+  private readonly MINION_ATTACK_DAMAGE = 15;
+  private readonly MINION_BOSS_HEAL = 25;
+  private readonly MINION_ATTACK_INTERVAL_MS = 4000;
 
   // Dependencies
   private readonly eventBus: ScopedEventBus;
@@ -404,6 +414,7 @@ export class CombatManager {
       lobbyId,
       boss,
       players: playerStates,
+      minions: new Map(),
       battleModifier: 1.0,
       ticketIndex,
       countdownActive: false,

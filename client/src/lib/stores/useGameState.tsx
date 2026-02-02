@@ -2,6 +2,12 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Lobby, Player, Boss, AttackAnimation } from '../gameTypes';
 
+interface CountdownState {
+  active: boolean;
+  remainingSeconds: number;
+  multiplier: number;
+}
+
 interface GameState {
   currentLobby: Lobby | null;
   currentPlayer: Player | null;
@@ -9,6 +15,7 @@ interface GameState {
   attackAnimations: AttackAnimation[];
   inviteLink: string | null;
   error: string | null;
+  countdown: CountdownState | null;
   
   // Actions
   setLobby: (lobby: Lobby) => void;
@@ -18,6 +25,7 @@ interface GameState {
   setError: (error: string | null) => void;
   addAttackAnimation: (animation: AttackAnimation) => void;
   removeAttackAnimation: (id: string) => void;
+  setCountdown: (countdown: CountdownState | null) => void;
   clearAll: () => void;
 }
 
@@ -29,6 +37,7 @@ export const useGameState = create<GameState>()(
     attackAnimations: [],
     inviteLink: null,
     error: null,
+    countdown: null,
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -54,14 +63,17 @@ export const useGameState = create<GameState>()(
       const { attackAnimations } = get();
       set({ attackAnimations: attackAnimations.filter(a => a.id !== id) });
     },
-    
+
+    setCountdown: (countdown) => set({ countdown }),
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
       currentBoss: null,
       attackAnimations: [],
       inviteLink: null,
-      error: null
+      error: null,
+      countdown: null
     })
   }))
 );

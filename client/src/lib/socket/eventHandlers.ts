@@ -402,6 +402,70 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
+  socket.on('combat:countdown_started', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:countdown_started', data, socket);
+
+    if (processed) {
+      const { setCountdown } = useGameState.getState();
+      setCountdown({
+        active: true,
+        remainingSeconds: data.durationSeconds,
+        multiplier: 3.0,
+      });
+    }
+  });
+
+  socket.on('combat:countdown_tick', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:countdown_tick', data, socket);
+
+    if (processed) {
+      const { setCountdown } = useGameState.getState();
+      setCountdown({
+        active: true,
+        remainingSeconds: data.remainingSeconds,
+        multiplier: data.multiplier,
+      });
+    }
+  });
+
+  socket.on('combat:countdown_complete', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:countdown_complete', data, socket);
+
+    if (processed) {
+      const { setCountdown } = useGameState.getState();
+      // Keep countdown visible briefly for team attack animation
+      setCountdown({
+        active: false,
+        remainingSeconds: 0,
+        multiplier: data.finalMultiplier,
+      });
+
+      // Clear after animation
+      setTimeout(() => {
+        useGameState.getState().setCountdown(null);
+      }, 2000);
+    }
+  });
+
+  socket.on('combat:team_attack', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:team_attack', data, socket);
+
+    if (processed) {
+      const { currentBoss, setBoss } = useGameState.getState();
+      if (currentBoss) {
+        const updatedBoss: Boss = {
+          ...currentBoss,
+          currentHealth: data.newBossHp
+        };
+        setBoss(updatedBoss);
+      }
+    }
+  });
+
   // ============================================================================
   // SYSTEM EVENTS
   // ============================================================================
@@ -453,6 +517,10 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:player_downed');
   socket.off('combat:player_revived');
   socket.off('combat:modifier_updated');
+  socket.off('combat:countdown_started');
+  socket.off('combat:countdown_tick');
+  socket.off('combat:countdown_complete');
+  socket.off('combat:team_attack');
 
   // System events
   socket.off('system:full_state');
