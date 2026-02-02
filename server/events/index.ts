@@ -60,6 +60,11 @@ export type {
   CombatCleanupCompletePayload,
   CombatPlayerHealedPayload,
   CombatTeamAttackPayload,
+  // Minion types and events
+  MinionState,
+  CombatMinionSpawnedPayload,
+  CombatMinionAttackPayload,
+  CombatMinionHealBossPayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';
