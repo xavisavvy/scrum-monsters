@@ -204,6 +204,7 @@ export interface CombatPlayerDamagedPayload {
 export interface CombatPlayerDownedPayload {
   lobbyId: string;
   playerId: string;
+  countdownSeconds: number;
 }
 
 /** Emitted when a downed player is revived */
@@ -223,6 +224,72 @@ export interface CombatBattleStartedPayload {
 export interface CombatModifierUpdatedPayload {
   lobbyId: string;
   modifier: number;
+}
+
+/** Emitted when combat is initialized for a lobby */
+export interface CombatBattleInitializedPayload {
+  lobbyId: string;
+  bossId: string;
+  bossMaxHp: number;
+}
+
+/** Emitted when a player enters battle (after voting) */
+export interface CombatPlayerEnteredBattlePayload {
+  lobbyId: string;
+  playerId: string;
+  transitionDurationMs: number;
+}
+
+/** Emitted when boss becomes enraged (50% HP) */
+export interface CombatBossEnragedPayload {
+  lobbyId: string;
+  message: string;
+}
+
+/** Emitted when boss telegraphs a big attack */
+export interface CombatBossTelegraphPayload {
+  lobbyId: string;
+  targetId: string;
+  attackType: 'light' | 'heavy' | 'special';
+  message: string;
+  delayMs: number;
+}
+
+/** Emitted when revival channeling starts */
+export interface CombatRevivalStartedPayload {
+  lobbyId: string;
+  reviverId: string;
+  targetId: string;
+  durationMs: number;
+}
+
+/** Emitted when revival is cancelled (moved, took damage, target died) */
+export interface CombatRevivalCancelledPayload {
+  lobbyId: string;
+  reviverId: string;
+  targetId: string;
+  reason: string;
+}
+
+/** Emitted when player enters ghost mode (permanent down) */
+export interface CombatPlayerPermanentlyDownedPayload {
+  lobbyId: string;
+  playerId: string;
+  message: string;
+}
+
+/** Emitted when combat cleanup completes */
+export interface CombatCleanupCompletePayload {
+  lobbyId: string;
+}
+
+/** Emitted when player is healed by a healer */
+export interface CombatPlayerHealedPayload {
+  lobbyId: string;
+  playerId: string;
+  healerId: string;
+  healAmount: number;
+  newHealth: number;
 }
 
 // =============================================================================
@@ -280,6 +347,15 @@ export interface DomainEventMap {
   'combat:player_revived': CombatPlayerRevivedPayload;
   'combat:battle_started': CombatBattleStartedPayload;
   'combat:modifier_updated': CombatModifierUpdatedPayload;
+  'combat:battle_initialized': CombatBattleInitializedPayload;
+  'combat:player_entered_battle': CombatPlayerEnteredBattlePayload;
+  'combat:boss_enraged': CombatBossEnragedPayload;
+  'combat:boss_telegraph': CombatBossTelegraphPayload;
+  'combat:revival_started': CombatRevivalStartedPayload;
+  'combat:revival_cancelled': CombatRevivalCancelledPayload;
+  'combat:player_permanently_downed': CombatPlayerPermanentlyDownedPayload;
+  'combat:cleanup_complete': CombatCleanupCompletePayload;
+  'combat:player_healed': CombatPlayerHealedPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;

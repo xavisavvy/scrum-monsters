@@ -45,6 +45,15 @@ export type {
   CombatPlayerRevivedPayload,
   CombatBattleStartedPayload,
   CombatModifierUpdatedPayload,
+  CombatBattleInitializedPayload,
+  CombatPlayerEnteredBattlePayload,
+  CombatBossEnragedPayload,
+  CombatBossTelegraphPayload,
+  CombatRevivalStartedPayload,
+  CombatRevivalCancelledPayload,
+  CombatPlayerPermanentlyDownedPayload,
+  CombatCleanupCompletePayload,
+  CombatPlayerHealedPayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';

@@ -100,7 +100,8 @@ describe('EventBus', () => {
 
       eventBus.emit('combat:player_downed', {
         lobbyId: 'lobby-1',
-        playerId: 'player-1'
+        playerId: 'player-1',
+        countdownSeconds: 10
       });
 
       expect(listener).not.toHaveBeenCalled();
