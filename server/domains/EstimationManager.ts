@@ -19,6 +19,8 @@ import {
   VoteNotEligibleError,
   InvalidVoteValueError,
   NotInDiscussionPhaseError,
+  ForceEstimateTieError,
+  InvalidForcedValueError,
 } from "../errors/EstimationErrors";
 
 /**
@@ -628,6 +630,109 @@ export class EstimationManager {
 
     // Re-check consensus (they might now all agree)
     this.checkConsensus(lobbyId, team);
+  }
+
+  /**
+   * Gets vote tally for a team (count of each vote value)
+   */
+  getVoteTally(lobbyId: string, team: TeamType): Map<number | '?', number> {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    const teamState = estimation.teams[team];
+    const tally = new Map<number | '?', number>();
+
+    for (const vote of teamState.votes.values()) {
+      const count = tally.get(vote) || 0;
+      tally.set(vote, count + 1);
+    }
+
+    return tally;
+  }
+
+  /**
+   * Forces an estimate to move discussion along
+   * Uses majority vote value by default
+   * If tie, host must explicitly choose from tied values
+   */
+  forceEstimate(
+    lobbyId: string,
+    team: TeamType,
+    hostId: string,
+    forcedValue?: number
+  ): { consensusValue: number } {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    const teamState = estimation.teams[team];
+
+    // Get vote tally (only numeric votes, ignore abstentions)
+    const tally = new Map<number, number>();
+    for (const vote of teamState.votes.values()) {
+      if (typeof vote === 'number') {
+        const count = tally.get(vote) || 0;
+        tally.set(vote, count + 1);
+      }
+    }
+
+    // Find majority (highest count)
+    let maxCount = 0;
+    const valuesWithMaxCount: number[] = [];
+
+    for (const [value, count] of tally.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        valuesWithMaxCount.length = 0; // Clear array
+        valuesWithMaxCount.push(value);
+      } else if (count === maxCount) {
+        valuesWithMaxCount.push(value);
+      }
+    }
+
+    // Determine consensus value
+    let consensusValue: number;
+
+    if (valuesWithMaxCount.length === 1) {
+      // Clear majority - use it (unless forcedValue provided)
+      consensusValue = forcedValue ?? valuesWithMaxCount[0];
+    } else if (valuesWithMaxCount.length > 1) {
+      // Tie - host must choose
+      if (forcedValue === undefined) {
+        throw new ForceEstimateTieError(lobbyId, valuesWithMaxCount);
+      }
+
+      // Verify forcedValue is one of the tied values
+      if (!valuesWithMaxCount.includes(forcedValue)) {
+        throw new InvalidForcedValueError(forcedValue, valuesWithMaxCount);
+      }
+
+      consensusValue = forcedValue;
+    } else {
+      // No numeric votes - shouldn't happen in practice
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    // Set consensus
+    teamState.hasConsensus = true;
+    teamState.consensusValue = consensusValue;
+
+    // Emit event
+    this.eventBus.emit('estimation:estimate_forced', {
+      lobbyId,
+      team,
+      consensusValue,
+      forcedBy: hostId,
+      wasTied: valuesWithMaxCount.length > 1
+    });
+
+    // Check if both teams now have consensus
+    this.checkFullConsensus(lobbyId);
+
+    return { consensusValue };
   }
 }
 

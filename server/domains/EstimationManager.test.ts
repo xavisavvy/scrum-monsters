@@ -6,6 +6,8 @@ import {
   VoteNotEligibleError,
   InvalidVoteValueError,
   NotInDiscussionPhaseError,
+  ForceEstimateTieError,
+  InvalidForcedValueError,
 } from '../errors/EstimationErrors';
 
 describe('EstimationManager', () => {
@@ -536,6 +538,174 @@ describe('EstimationManager', () => {
       expect(() => {
         estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 4);
       }).toThrow(InvalidVoteValueError);
+    });
+  });
+
+  describe('getVoteTally', () => {
+    beforeEach(() => {
+      estimationManager.startEstimation('lobby1', 'ticket1');
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player2', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player3', 'developers');
+    });
+
+    it('should return correct vote counts', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player3', 'developers', 8);
+
+      const tally = estimationManager.getVoteTally('lobby1', 'developers');
+
+      expect(tally.get(5)).toBe(2);
+      expect(tally.get(8)).toBe(1);
+    });
+
+    it('should include abstentions in tally', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', '?');
+
+      const tally = estimationManager.getVoteTally('lobby1', 'developers');
+
+      expect(tally.get(5)).toBe(1);
+      expect(tally.get('?')).toBe(1);
+    });
+
+    it('should throw EstimationNotActiveError when no estimation exists', () => {
+      expect(() => {
+        estimationManager.getVoteTally('nonexistent', 'developers');
+      }).toThrow(EstimationNotActiveError);
+    });
+  });
+
+  describe('forceEstimate', () => {
+    beforeEach(() => {
+      estimationManager.startEstimation('lobby1', 'ticket1');
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player2', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player3', 'developers');
+    });
+
+    it('should use majority value when clear majority exists', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player3', 'developers', 8);
+
+      const result = estimationManager.forceEstimate('lobby1', 'developers', 'host1');
+
+      expect(result.consensusValue).toBe(5);
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(true);
+      expect(state!.teams.developers.consensusValue).toBe(5);
+    });
+
+    it('should throw ForceEstimateTieError when tie exists and no forcedValue', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      expect(() => {
+        estimationManager.forceEstimate('lobby1', 'developers', 'host1');
+      }).toThrow(ForceEstimateTieError);
+    });
+
+    it('should accept forcedValue when tie exists', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      const result = estimationManager.forceEstimate('lobby1', 'developers', 'host1', 8);
+
+      expect(result.consensusValue).toBe(8);
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.consensusValue).toBe(8);
+    });
+
+    it('should throw InvalidForcedValueError when forcedValue not in tied values', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      expect(() => {
+        estimationManager.forceEstimate('lobby1', 'developers', 'host1', 13);
+      }).toThrow(InvalidForcedValueError);
+    });
+
+    it('should emit estimation:estimate_forced event', () => {
+      const forceListener = vi.fn();
+      eventBus.on('estimation:estimate_forced', forceListener);
+
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+
+      estimationManager.forceEstimate('lobby1', 'developers', 'host1');
+
+      expect(forceListener).toHaveBeenCalledWith({
+        lobbyId: 'lobby1',
+        team: 'developers',
+        consensusValue: 5,
+        forcedBy: 'host1',
+        wasTied: false
+      });
+    });
+
+    it('should emit with wasTied=true when tie resolved', () => {
+      const forceListener = vi.fn();
+      eventBus.on('estimation:estimate_forced', forceListener);
+
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      estimationManager.forceEstimate('lobby1', 'developers', 'host1', 5);
+
+      expect(forceListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          wasTied: true
+        })
+      );
+    });
+
+    it('should ignore abstentions when determining majority', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player3', 'developers', '?');
+
+      const result = estimationManager.forceEstimate('lobby1', 'developers', 'host1');
+
+      expect(result.consensusValue).toBe(5);
+    });
+
+    it('should check full consensus after forcing estimate', (done) => {
+      const fullConsensusListener = vi.fn();
+      eventBus.on('estimation:full_consensus_reached', fullConsensusListener);
+
+      // Setup both teams with votes
+      estimationManager.addEligibleVoter('lobby1', 'qa1', 'qa');
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+      estimationManager.castVote('lobby1', 'qa1', 'qa', 8);
+
+      // QA already has consensus (single voter)
+      const qaState = estimationManager.getEstimation('lobby1');
+      expect(qaState!.teams.qa.hasConsensus).toBe(true);
+
+      // Force dev estimate
+      estimationManager.forceEstimate('lobby1', 'developers', 'host1');
+
+      // Full consensus event should fire after 2.5s delay
+      setTimeout(() => {
+        expect(fullConsensusListener).toHaveBeenCalledWith(
+          expect.objectContaining({
+            lobbyId: 'lobby1',
+            ticketId: 'ticket1'
+          })
+        );
+        done();
+      }, 2600);
+    }, 3000);
+
+    it('should throw EstimationNotActiveError when no estimation exists', () => {
+      expect(() => {
+        estimationManager.forceEstimate('nonexistent', 'developers', 'host1');
+      }).toThrow(EstimationNotActiveError);
     });
   });
 });
