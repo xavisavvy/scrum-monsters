@@ -67,10 +67,14 @@ Plans:
   3. Timer countdown works correctly for voting phases and discussion phases
   4. Players can change votes during discussion phase
   5. EstimationManager subscribes to player_joined events from SessionManager and initializes vote state
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (planning pending)
+- [ ] 03-01-PLAN.md — Create EstimationErrors and EstimationManager foundation
+- [ ] 03-02-PLAN.md — Implement vote casting and consensus detection (TDD)
+- [ ] 03-03-PLAN.md — Implement per-team timer management (TDD)
+- [ ] 03-04-PLAN.md — Implement vote visibility and host controls
+- [ ] 03-05-PLAN.md — Wire EstimationManager to session events and websocket handlers
 
 ### Phase 4: CombatManager
 **Goal**: Extract battle mechanics, health tracking, and revival system into dedicated domain manager
@@ -127,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
 | 2. SessionManager | 5/5 | ✓ Complete | 2026-02-01 |
-| 3. EstimationManager | 0/0 | Ready | - |
+| 3. EstimationManager | 0/5 | Planned | - |
 | 4. CombatManager | 0/0 | Not started | - |
 | 5. Fine-Grained Events | 0/0 | Not started | - |
 | 6. New Flow Implementation | 0/0 | Not started | - |
