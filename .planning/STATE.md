@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 0 of TBD in current phase
-Status: Ready to plan
-Last activity: 2026-02-02 — Phase 3 (EstimationManager) verified complete
+Plan: 1 of TBD in current phase
+Status: In progress
+Last activity: 2026-02-02 — Completed 04-01-PLAN.md
 
-Progress: [█████░░░░░] 50%
+Progress: [█████░░░░░] 52%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13
+- Total plans completed: 14
 - Average duration: 3.8 min
-- Total execution time: 0.82 hours
+- Total execution time: 0.87 hours
 
 **By Phase:**
 
@@ -30,10 +30,11 @@ Progress: [█████░░░░░] 50%
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
+| 04-combatmanager | 1 | 3 min | 3.2 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-02 (5 min), 03-03 (8 min), 03-04 (7 min), 03-05 (5 min)
-- Trend: Phase 03 work averaging 5.4 min
+- Last 5 plans: 03-03 (8 min), 03-04 (7 min), 03-05 (5 min), 04-01 (3 min)
+- Trend: Phase 04 started, foundation work averaging 3.2 min
 
 *Updated after each plan completion*
 
@@ -124,6 +125,14 @@ Recent decisions affecting current work:
 - Team change notifications explicit — Websocket handlers call handleTeamChange after team updates
 - New websocket handlers coexist with legacy — Gradual migration path from gameState to domain managers
 
+**From Plan 04-01:**
+- Combat error hierarchy — CombatError base with 5 specific error types for typed exception handling
+- Fine-grained combat events — 9 new domain events for reactive coordination (battle_initialized, player_entered_battle, boss_enraged, boss_telegraph, revival_started, revival_cancelled, player_permanently_downed, cleanup_complete, player_healed)
+- Player combat state enum — Explicit 3-state enum (fighting/downed/ghost) for clear state machine
+- Healer classes constant — cleric, paladin, bard centralized for revival validation
+- Combat constants from CONTEXT.md — HP/damage/timing tuned per requirements (1000 HP/player, 100 player HP, 25/40/50 damage, 10s down, 2.5s revival, 5s/3s boss attacks)
+- Ticket index scaling — LobbyCombatState includes ticketIndex for dungeon crawl difficulty progression
+
 ### Pending Todos
 
 None yet.
@@ -134,8 +143,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (03 execution complete)
-Stopped at: Phase 3 (EstimationManager) verified complete
+Last session: 2026-02-02 (04-01 execution complete)
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
 
-**Phase 3 Complete:** EstimationManager fully extracted and integrated. 5 plans executed: foundation, voting/consensus (TDD), timer management (TDD), vote visibility/host controls, session/WebSocket integration. 144 tests passing. Ready for Phase 4 (CombatManager).
+**Phase 4 Started:** CombatManager foundation complete. Created CombatErrors hierarchy (6 classes), added 9 combat event types, built CombatManager class shell with state interfaces and constants from CONTEXT.md. 144 tests passing. Ready for Plan 04-02 (combat initialization).
