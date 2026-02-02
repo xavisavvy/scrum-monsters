@@ -6,12 +6,43 @@
  */
 
 import { ScopedEventBus } from '../events';
+import { LobbyEventSequencer, createClientEventEmitter, ClientEventEmitter } from '../events';
 import { SessionManager } from './SessionManager';
 import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
+import { Server } from 'socket.io';
 
 // Create shared event bus instance
 const eventBus = new ScopedEventBus();
+
+// Create sequencer for event ordering
+const lobbyEventSequencer = new LobbyEventSequencer();
+
+// ClientEventEmitter will be initialized when io is available
+let clientEventEmitter: ClientEventEmitter | null = null;
+
+// Function to initialize ClientEventEmitter (called from websocket.ts after io is created)
+export function initializeClientEventEmitter(io: Server): ClientEventEmitter {
+  if (clientEventEmitter) {
+    return clientEventEmitter;
+  }
+
+  clientEventEmitter = createClientEventEmitter({
+    io,
+    eventBus,
+    sequencer: lobbyEventSequencer
+  });
+
+  return clientEventEmitter;
+}
+
+// Getter for clientEventEmitter (throws if not initialized)
+export function getClientEventEmitter(): ClientEventEmitter {
+  if (!clientEventEmitter) {
+    throw new Error('ClientEventEmitter not initialized. Call initializeClientEventEmitter first.');
+  }
+  return clientEventEmitter;
+}
 
 // Create domain manager instances with shared eventBus
 const sessionManager = new SessionManager({ eventBus });
@@ -45,6 +76,9 @@ const combatManager = new CombatManager({
 
 // Export instances
 export { eventBus, sessionManager, estimationManager, combatManager };
+
+// Export sequencer for testing if needed
+export { lobbyEventSequencer };
 
 // Re-export types
 export type { SessionManager, SessionManagerDeps, CreateLobbyOptions } from './SessionManager';
