@@ -1202,6 +1202,12 @@ export class CombatManager {
         combatState.modifierIntervalHandle = undefined;
       }
 
+      // Clear countdown interval
+      if (combatState.countdownIntervalHandle) {
+        clearInterval(combatState.countdownIntervalHandle);
+        combatState.countdownIntervalHandle = undefined;
+      }
+
       // Clear all player down timers
       for (const player of combatState.players.values()) {
         if (player.downTimerHandle) {
