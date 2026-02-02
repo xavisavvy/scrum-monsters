@@ -105,6 +105,9 @@ interface LobbyCombatState {
   battleStartTime?: number;
   modifierIntervalHandle?: NodeJS.Timeout;
   ticketIndex: number;
+  countdownActive: boolean;
+  countdownStartedAt?: number;
+  countdownIntervalHandle?: NodeJS.Timeout;
 }
 
 // =============================================================================
@@ -144,6 +147,11 @@ export class CombatManager {
   // Healer classes that can revive
   private readonly HEALER_CLASSES: AvatarClass[] = ['cleric', 'paladin', 'bard'];
 
+  // Countdown constants
+  private readonly COUNTDOWN_DURATION_SECONDS = 10;
+  private readonly MAX_MULTIPLIER = 3.0;
+  private readonly MIN_MULTIPLIER = 1.5;
+
   // Dependencies
   private readonly eventBus: ScopedEventBus;
   private readonly getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
@@ -158,6 +166,19 @@ export class CombatManager {
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
     this.eventBus.on('session:player_left', this.handlePlayerLeft.bind(this));
     this.eventBus.on('session:lobby_destroyed', this.handleLobbyDestroyed.bind(this));
+  }
+
+  // =============================================================================
+  // Countdown Methods
+  // =============================================================================
+
+  /**
+   * Calculate damage multiplier based on remaining countdown time
+   * Linear interpolation from MAX_MULTIPLIER at 10s to MIN_MULTIPLIER at 0s
+   */
+  private calculateCountdownMultiplier(remainingSeconds: number): number {
+    const t = remainingSeconds / this.COUNTDOWN_DURATION_SECONDS;
+    return this.MIN_MULTIPLIER + (this.MAX_MULTIPLIER - this.MIN_MULTIPLIER) * t;
   }
 
   // =============================================================================
@@ -299,6 +320,7 @@ export class CombatManager {
       players: playerStates,
       battleModifier: 1.0,
       ticketIndex,
+      countdownActive: false,
     };
 
     this.combatStates.set(lobbyId, combatState);
