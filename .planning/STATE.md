@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 5 of 6 (Fine-Grained Events)
-Plan: 2 of 6 in current phase
+Plan: 1 of 6 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 05-02-PLAN.md
+Last activity: 2026-02-02 — Completed 05-01-PLAN.md
 
-Progress: [████████░░] 71%
+Progress: [███████░░░] 68%
 
 ## Performance Metrics
 
@@ -31,11 +31,11 @@ Progress: [████████░░] 71%
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
-| 05-fine-grained-events | 2 | 8 min | 4.0 min |
+| 05-fine-grained-events | 1 | 5.5 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (3 min), 04-05 (4 min), 04-06 (4.5 min), 05-01 (4 min), 05-02 (4 min)
-- Trend: Consistent 4 min per plan for Phase 05, maintaining fast velocity
+- Last 5 plans: 04-04 (3 min), 04-05 (4 min), 04-06 (4.5 min), 05-01 (5.5 min)
+- Trend: Phase 05 starting slightly slower due to new infrastructure, expect faster as patterns emerge
 
 *Updated after each plan completion*
 
@@ -167,10 +167,11 @@ Recent decisions affecting current work:
 - Player cleanup on session:player_left — Removes from combat, cancels revivals, clears timers, removes from threat table
 - Websocket delegation pattern — Handlers delegate to combatManager methods with typed error handling
 
-**From Plan 05-02:**
-- Gap recovery is internal to handleEvent — Caller doesn't need to check return value, recovery triggered automatically when gap detected
-- useGameState.getState() for synchronous state access — Avoids React render cycle complexity in async event handlers
-- State updates only when processed — If handleEvent returns false (gap detected), state update deferred until gap filled
+**From Plan 05-01:**
+- Domain prefix naming convention — Client events follow domain:action format (session:player_joined, estimation:vote_cast)
+- 100-event buffer size — Covers ~30s at 3 events/sec for brief network hiccups
+- Gap detection logic: lastSeq+1 < oldestSeq — Prevents false positives for new connections
+- Lobby existence check via sequences map — Distinguishes "lobby doesn't exist" from "no events buffered yet"
 
 ### Pending Todos
 
@@ -182,8 +183,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 08:30:03Z
-Stopped at: Completed 05-02-PLAN.md
+Last session: 2026-02-02 08:30:53Z
+Stopped at: Completed 05-01-PLAN.md
 Resume file: None
 
-**Phase 5 Plan 02 Complete:** Client-side event synchronization infrastructure created. useEventSync store with sequence tracking, automatic gap detection and recovery, optimistic updates, and reconciliation. Centralized event handlers (setupEventHandlers) for Session, Estimation, and Combat domain events. 24 comprehensive tests covering sequential processing, gap detection, pending queue, duplicates, optimistic updates, and recovery. All infrastructure ready for WebSocket integration (05-03) and server-side event emission (05-04+).
+**Phase 5 Plan 01 Complete:** Event foundation established with ClientEventMap defining 25 typed fine-grained events (Session/Estimation/Combat domains) and LobbyEventSequencer providing per-lobby sequence generation with 100-event circular buffer. Gap detection logic (lastSeq+1 < oldestSeq) enables reliable client sync and missed event recovery. 23 comprehensive tests cover all sequencer functionality. Ready for Phase 5 Plan 02 (client event sync integration).
