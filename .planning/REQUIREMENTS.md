@@ -11,7 +11,7 @@ Requirements for this refactoring milestone. Each maps to roadmap phases.
 
 - [x] **ARCH-01**: Create SessionManager handling lobby lifecycle, players, teams, host transfer
 - [x] **ARCH-02**: Create EstimationManager handling tickets, voting, consensus, discussion
-- [ ] **ARCH-03**: Create CombatManager handling boss, player HP, damage, revival, battle modifiers
+- [x] **ARCH-03**: Create CombatManager handling boss, player HP, damage, revival, battle modifiers
 - [x] **ARCH-04**: Create EventBus for cross-domain coordination using Node.js EventEmitter
 - [x] **ARCH-05**: Split Lobby type into SessionState, EstimationState, CombatState
 - [x] **ARCH-06**: Define domain event types (session.*, estimation.*, combat.*)
@@ -23,9 +23,9 @@ Requirements for this refactoring milestone. Each maps to roadmap phases.
 ### Flow
 
 - [x] **FLOW-01**: Implement estimation phase as distinct from battle phase
-- [ ] **FLOW-02**: Trigger battle entry on first vote submission
-- [ ] **FLOW-03**: Support players in mixed states (estimating vs fighting)
-- [ ] **FLOW-04**: Implement boss death wait state when voting incomplete
+- [x] **FLOW-02**: Trigger battle entry on first vote submission
+- [x] **FLOW-03**: Support players in mixed states (estimating vs fighting)
+- [x] **FLOW-04**: Implement boss death wait state when voting incomplete
 - [ ] **FLOW-05**: Add 10s countdown for bonus damage after all voted
 - [ ] **FLOW-06**: Transition to discussion phase after countdown/battle ends
 - [x] **FLOW-07**: Maintain vote changeability during discussion phase
@@ -75,7 +75,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | ARCH-01 | Phase 2 | Complete |
 | ARCH-02 | Phase 3 | Complete |
-| ARCH-03 | Phase 4 | Pending |
+| ARCH-03 | Phase 4 | Complete |
 | ARCH-04 | Phase 1 | Complete |
 | ARCH-05 | Phase 1 | Complete |
 | ARCH-06 | Phase 1 | Complete |
@@ -84,9 +84,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-09 | Phase 1 | Complete |
 | ARCH-10 | Phase 2, 3 | Complete |
 | FLOW-01 | Phase 3 | Complete |
-| FLOW-02 | Phase 4 | Pending |
-| FLOW-03 | Phase 4 | Pending |
-| FLOW-04 | Phase 4 | Pending |
+| FLOW-02 | Phase 4 | Complete |
+| FLOW-03 | Phase 4 | Complete |
+| FLOW-04 | Phase 4 | Complete |
 | FLOW-05 | Phase 6 | Pending |
 | FLOW-06 | Phase 6 | Pending |
 | FLOW-07 | Phase 3 | Complete |
