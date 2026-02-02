@@ -564,6 +564,17 @@ export class EstimationManager {
   }
 
   /**
+   * Ends the discussion phase and emits result
+   */
+  private endDiscussion(
+    lobbyId: string,
+    reason: 'consensus' | 'host_finalized' | 'timer_expired',
+    finalEstimate: number
+  ): void {
+    // Implementation in Task 7
+  }
+
+  /**
    * Vote visibility information for a player
    */
   private getVoteVisibility(lobbyId: string, team: VotingTeam): VoteVisibility[] {
@@ -739,6 +750,35 @@ export class EstimationManager {
 
     // Re-check consensus (they might now all agree)
     this.checkConsensus(lobbyId, team);
+
+    // Check for full discussion consensus (auto-end if achieved)
+    this.checkDiscussionConsensus(lobbyId);
+  }
+
+  /**
+   * Checks if both teams have reached consensus during discussion phase
+   * Auto-ends discussion if full consensus is achieved
+   */
+  private checkDiscussionConsensus(lobbyId: string): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation || !estimation.discussionPhase?.active) return;
+
+    const devState = estimation.teams.developers;
+    const qaState = estimation.teams.qa;
+
+    // Both teams must have consensus AND same value
+    if (devState.hasConsensus && qaState.hasConsensus) {
+      const devValue = devState.consensusValue;
+      const qaValue = qaState.consensusValue;
+
+      // Check if values match (or one team has no voters)
+      if (devValue === qaValue || devValue === undefined || qaValue === undefined) {
+        const finalEstimate = devValue ?? qaValue;
+        if (finalEstimate !== undefined) {
+          this.endDiscussion(lobbyId, 'consensus', finalEstimate);
+        }
+      }
+    }
   }
 
   /**
