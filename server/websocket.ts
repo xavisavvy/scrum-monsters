@@ -3,6 +3,7 @@ import { Server as HTTPServer } from 'http';
 import type { RequestHandler } from 'express';
 import { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
 import { gameState, setGameStateIO } from './gameState.js';
+import { sessionManager, LobbyNotFoundError, PlayerNotFoundError, PlayerNotHostError, ReconnectionFailedError, SessionError } from './domains/index.js';
 
 type InterServerEvents = {};
 type SocketData = {
@@ -77,7 +78,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   setInterval(() => {
     const connectedSockets = Array.from(io.sockets.sockets.values());
     const hostConnections = connectedSockets.filter(s => {
-      const lobby = gameState.getLobbyByPlayerId(s.data.playerId || '');
+      const lobby = sessionManager.getPlayerLobby(s.data.playerId || '');
       return lobby && lobby.hostId === s.data.playerId;
     });
 
@@ -85,7 +86,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     console.log(`   - Total connections since start: ${totalConnections}`);
     console.log(`   - Currently active: ${activeConnections}`);
     console.log(`   - Host connections: ${hostConnections.length}`);
-    console.log(`   - Active lobbies: ${(gameState as any).lobbies?.size || 0}`);
+    console.log(`   - Active lobbies: ${(sessionManager as any).lobbies?.size || 0}`);
 
     if (disconnectReasons.size > 0) {
       console.log('   - Disconnect reasons:');
@@ -134,85 +135,81 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
-        const lobby = gameState.createLobby(hostName, lobbyName, initialSettings);
+        const lobby = sessionManager.createLobby(hostName, lobbyName, initialSettings);
         // Get the correct host based on environment
         const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
         const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
         const isLocalDevelopment = !isReplitDeployment && !isReplitPreview;
-        
+
         let host: string;
         if (isReplitDeployment) {
           // Published/Production environment on Replit
           host = 'https://scrummonsters.com';
         } else if (isReplitPreview) {
-          // Replit preview/development environment  
+          // Replit preview/development environment
           host = `https://${process.env.REPLIT_DEV_DOMAIN}`;
         } else {
           // Local development
           host = 'http://localhost:5000';
         }
         const inviteLink = `${host}/join/${lobby.id}`;
-        
+
         // Store player-socket mapping
         socket.data.playerId = lobby.hostId;
         socket.data.lobbyId = lobby.id;
-        
+
         // Join socket room
         socket.join(lobby.id);
-        
+
         // Generate reconnect token for the host
-        const reconnectToken = (gameState as any).generateReconnectToken?.(lobby.hostId, lobby.id, hostName) || '';
-        
+        const reconnectToken = sessionManager.generateReconnectToken(lobby.hostId, lobby.id, hostName);
+
         socket.emit('lobby_created', { lobby, inviteLink });
-        if (reconnectToken) {
-          socket.emit('lobby_sync', { 
-            lobby, 
-            yourPlayer: lobby.players[0], 
-            reconnectToken,
-            pendingActions: {},
-            stateChanges: {}
-          });
-        }
+        socket.emit('lobby_sync', {
+          lobby,
+          yourPlayer: lobby.players[0],
+          reconnectToken,
+          pendingActions: {},
+          stateChanges: {}
+        });
         console.log(`Lobby created: ${lobby.id} by ${hostName}`);
       } catch (error) {
         console.error('Error creating lobby:', error);
-        socket.emit('game_error', { message: 'Failed to create lobby' });
+        if (error instanceof SessionError) {
+          socket.emit('game_error', { message: error.message });
+        } else {
+          socket.emit('game_error', { message: 'Failed to create lobby' });
+        }
       }
     });
 
     socket.on('join_lobby', ({ lobbyId, playerName }) => {
       try {
-        const result = gameState.joinLobby(lobbyId, playerName);
-        if (!result) {
-          socket.emit('game_error', { message: 'Lobby not found' });
-          return;
-        }
+        const { lobby, player } = sessionManager.joinLobby(lobbyId, playerName);
 
-        const { lobby, player } = result;
-        
         // Store player-socket mapping
         socket.data.playerId = player.id;
         socket.data.lobbyId = lobby.id;
-        
+
         // Join socket room
         socket.join(lobby.id);
-        
+
         // Generate reconnect token for the joining player
-        const reconnectToken = (gameState as any).generateReconnectToken?.(player.id, lobby.id, player.name) || '';
-        
+        const reconnectToken = sessionManager.generateReconnectToken(player.id, lobby.id, player.name);
+
         // Handle late joiners - emit appropriate events based on current lobby phase
         const currentPhase = lobby.gamePhase;
-        
+
         if (currentPhase === 'lobby' || currentPhase === 'avatar_selection') {
           // Normal flow - player goes through avatar selection first
           socket.emit('lobby_joined', { lobby, player });
         } else {
           // Late joiner - skip directly to current phase
           console.log(`⚡ Late joiner ${playerName} joining active ${currentPhase} phase`);
-          
+
           // Emit lobby_joined first for state setup
           socket.emit('lobby_joined', { lobby, player });
-          
+
           // Then immediately emit the phase-specific event to advance them
           if (currentPhase === 'battle' || currentPhase === 'voting' || currentPhase === 'discussion' || currentPhase === 'reveal') {
             // Emit battle_started to transition client to battle screen
@@ -220,25 +217,30 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
           }
         }
-        
-        if (reconnectToken) {
-          socket.emit('lobby_sync', { 
-            lobby, 
-            yourPlayer: player, 
-            reconnectToken,
-            pendingActions: {},
-            stateChanges: {}
-          });
-        }
-        
+
+        socket.emit('lobby_sync', {
+          lobby,
+          yourPlayer: player,
+          reconnectToken,
+          pendingActions: {},
+          stateChanges: {}
+        });
+
         // Notify other players about the new player joining (for dropping animation)
         socket.to(lobby.id).emit('player_joined', { player, lobby });
-        
+
         socket.to(lobby.id).emit('lobby_updated', { lobby });
-        
+
         console.log(`Player ${playerName} joined lobby ${lobbyId} in phase ${currentPhase}`);
       } catch (error) {
-        socket.emit('game_error', { message: error instanceof Error ? error.message : 'Failed to join lobby' });
+        if (error instanceof LobbyNotFoundError) {
+          socket.emit('game_error', { message: 'Lobby not found' });
+        } else if (error instanceof SessionError) {
+          socket.emit('game_error', { message: error.message });
+        } else {
+          console.error('Unexpected error in join_lobby:', error);
+          socket.emit('game_error', { message: 'Failed to join lobby' });
+        }
       }
     });
 
@@ -257,9 +259,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.assignTeam(playerId, targetPlayerId, team);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.assignTeam(playerId, targetPlayerId, team);
         io.to(lobby.id).emit('lobby_updated', { lobby });
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can assign teams' });
+        } else if (error instanceof SessionError) {
+          socket.emit('game_error', { message: error.message });
+        } else {
+          console.error('Unexpected error in assign_team:', error);
+          socket.emit('game_error', { message: 'Failed to assign team' });
+        }
       }
     });
 
@@ -267,9 +278,16 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.changeOwnTeam(playerId, team);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.changeOwnTeam(playerId, team);
         io.to(lobby.id).emit('lobby_updated', { lobby });
+      } catch (error) {
+        if (error instanceof SessionError) {
+          socket.emit('game_error', { message: error.message });
+        } else {
+          console.error('Unexpected error in change_own_team:', error);
+          socket.emit('game_error', { message: 'Failed to change team' });
+        }
       }
     });
 
@@ -941,31 +959,31 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // Reconnection handler
     socket.on('reconnect_with_token', ({ reconnectToken }) => {
       try {
-        const response = (gameState as any).attemptPlayerReconnect(reconnectToken);
-        
+        const response = sessionManager.attemptPlayerReconnect(reconnectToken);
+
         if (response.result === 'success' && response.lobbySync) {
           const { lobbySync } = response;
           const playerId = lobbySync.yourPlayer.id;
           const lobbyId = lobbySync.lobby.id;
-          
+
           // Update socket data
           socket.data.playerId = playerId;
           socket.data.lobbyId = lobbyId;
-          
+
           // Join socket room
           socket.join(lobbyId);
-          
+
           // Send successful reconnection response
           socket.emit('lobby_sync', lobbySync);
           socket.emit('reconnect_response', response);
-          
+
           // Notify other players about the reconnection
-          socket.to(lobbyId).emit('player_reconnected', { 
-            playerId, 
-            playerName: lobbySync.yourPlayer.name 
+          socket.to(lobbyId).emit('player_reconnected', {
+            playerId,
+            playerName: lobbySync.yourPlayer.name
           });
           socket.to(lobbyId).emit('lobby_updated', { lobby: lobbySync.lobby });
-          
+
           console.log(`✅ Player ${lobbySync.yourPlayer.name} (${playerId}) reconnected successfully`);
         } else {
           // Send failed reconnection response
@@ -974,9 +992,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         }
       } catch (error) {
         console.error('Error handling reconnect:', error);
-        socket.emit('reconnect_response', { 
-          result: 'server_error', 
-          message: 'Server error during reconnection' 
+        socket.emit('reconnect_response', {
+          result: 'server_error',
+          message: 'Server error during reconnection'
         });
       }
     });
@@ -999,7 +1017,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       disconnectReasons.set(reason, (disconnectReasons.get(reason) || 0) + 1);
 
       // Enhanced logging for host disconnects
-      const lobby = lobbyId ? gameState.getLobby(lobbyId) : null;
+      const lobby = lobbyId ? sessionManager.getLobby(lobbyId) : null;
       const isHost = lobby && lobby.hostId === playerId;
 
       console.log(`❌ Player disconnected: ${socket.id}`);
@@ -1009,18 +1027,15 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       console.log(`   - Active connections: ${activeConnections}`);
 
       if (playerId) {
-        // Use new reconnection system instead of immediate removal
-        const disconnectResult = (gameState as any).handlePlayerDisconnect(playerId);
+        // Use SessionManager reconnection system
+        const disconnectResult = sessionManager.handlePlayerDisconnect(playerId);
         if (disconnectResult && lobbyId) {
           const { disconnectedPlayer, reconnectToken, hostTransfer } = disconnectResult;
-
-          // Store reconnect token in the socket for potential reconnection
-          // (Note: This would typically be stored on client-side)
 
           // Notify other players about the disconnection (but keep player in lobby)
           io.to(lobbyId).emit('player_disconnected', { playerId });
 
-          const graceMinutes = Math.floor((disconnectResult.disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
+          const graceMinutes = Math.floor((disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
           console.log(`🔄 Player ${disconnectedPlayer.playerName} (${playerId}) can reconnect for ${graceMinutes} minutes`);
 
           // If host was transferred, notify all players and update lobby
@@ -1033,19 +1048,19 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             });
 
             // Emit lobby update with new host information
-            const lobby = gameState.getLobby(lobbyId);
-            if (lobby) {
-              io.to(lobbyId).emit('lobby_updated', { lobby });
+            const updatedLobby = sessionManager.getLobby(lobbyId);
+            if (updatedLobby) {
+              io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
             }
 
             console.log(`👑 Host transferred from ${hostTransfer.oldHostId} → ${hostTransfer.newHostName} (${hostTransfer.newHostId})`);
           }
         } else {
           // Fallback to old behavior if reconnection setup fails
-          const lobby = gameState.removePlayer(playerId);
-          if (lobby && lobbyId) {
+          const updatedLobby = sessionManager.removePlayer(playerId);
+          if (updatedLobby && lobbyId) {
             io.to(lobbyId).emit('player_disconnected', { playerId });
-            io.to(lobbyId).emit('lobby_updated', { lobby });
+            io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
           }
           console.log(`⚠️ Player ${playerId} removed immediately (reconnection unavailable)`);
         }
