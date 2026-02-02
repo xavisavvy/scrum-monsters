@@ -332,4 +332,102 @@ describe('EstimationManager', () => {
       expect(state!.teams.developers.hasConsensus).toBe(false);
     });
   });
+
+  describe('vote visibility', () => {
+    beforeEach(() => {
+      estimationManager.startEstimation('lobby1', 'ticket1');
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player2', 'developers');
+    });
+
+    it('should hide vote values during voting phase', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+
+      const visibility = estimationManager.getAllVoteVisibility('lobby1');
+
+      expect(visibility.globalPhase).toBe('voting');
+      expect(visibility.developers).toHaveLength(2);
+
+      const player1Vis = visibility.developers.find(v => v.playerId === 'player1');
+      const player2Vis = visibility.developers.find(v => v.playerId === 'player2');
+
+      expect(player1Vis?.hasVoted).toBe(true);
+      expect(player1Vis?.vote).toBeUndefined();
+      expect(player2Vis?.hasVoted).toBe(false);
+      expect(player2Vis?.vote).toBeUndefined();
+    });
+
+    it('should show vote values during revealed phase', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      // Manually set phase to revealed
+      const state = estimationManager.getEstimation('lobby1');
+      state!.teams.developers.phase = 'revealed';
+
+      const visibility = estimationManager.getAllVoteVisibility('lobby1');
+
+      expect(visibility.globalPhase).toBe('revealed');
+
+      const player1Vis = visibility.developers.find(v => v.playerId === 'player1');
+      const player2Vis = visibility.developers.find(v => v.playerId === 'player2');
+
+      expect(player1Vis?.hasVoted).toBe(true);
+      expect(player1Vis?.vote).toBe(5);
+      expect(player2Vis?.hasVoted).toBe(true);
+      expect(player2Vis?.vote).toBe(8);
+    });
+
+    it('should show vote values during discussion phase', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      const visibility = estimationManager.getAllVoteVisibility('lobby1');
+
+      expect(visibility.globalPhase).toBe('discussion');
+
+      const player1Vis = visibility.developers.find(v => v.playerId === 'player1');
+      expect(player1Vis?.hasVoted).toBe(true);
+      expect(player1Vis?.vote).toBe(5);
+    });
+
+    it('should use most advanced team phase for global phase', () => {
+      estimationManager.addEligibleVoter('lobby1', 'qa1', 'qa');
+
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'qa1', 'qa', 8);
+
+      // Dev team in voting, QA team in revealed
+      const state = estimationManager.getEstimation('lobby1');
+      state!.teams.qa.phase = 'revealed';
+
+      const visibility = estimationManager.getAllVoteVisibility('lobby1');
+
+      // Global phase should be 'revealed' (most advanced)
+      expect(visibility.globalPhase).toBe('revealed');
+    });
+
+    it('should emit estimation:discussion_started event', () => {
+      const discussionListener = vi.fn();
+      eventBus.on('estimation:discussion_started', discussionListener);
+
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      expect(discussionListener).toHaveBeenCalledWith({
+        lobbyId: 'lobby1',
+        team: 'developers'
+      });
+    });
+
+    it('should throw EstimationNotActiveError when no estimation exists', () => {
+      expect(() => {
+        estimationManager.getAllVoteVisibility('nonexistent');
+      }).toThrow(EstimationNotActiveError);
+
+      expect(() => {
+        estimationManager.enterDiscussionPhase('nonexistent', 'developers');
+      }).toThrow(EstimationNotActiveError);
+    });
+  });
 });

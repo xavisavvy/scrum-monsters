@@ -493,4 +493,93 @@ export class EstimationManager {
       phase: "voting",
     };
   }
+
+  /**
+   * Vote visibility information for a player
+   */
+  private getVoteVisibility(lobbyId: string, team: TeamType): VoteVisibility[] {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return [];
+    }
+
+    const teamState = estimation.teams[team];
+    const visibility: VoteVisibility[] = [];
+
+    for (const playerId of teamState.eligibleVoters) {
+      const hasVoted = teamState.votes.has(playerId);
+      const vote = teamState.votes.get(playerId);
+
+      visibility.push({
+        playerId,
+        hasVoted,
+        // Only reveal vote value in revealed/discussion phase
+        vote: teamState.phase === 'voting' ? undefined : vote
+      });
+    }
+
+    return visibility;
+  }
+
+  /**
+   * Gets vote visibility for all teams
+   * Returns cross-team transparency when any team is in revealed/discussion phase
+   */
+  getAllVoteVisibility(lobbyId: string): {
+    developers: VoteVisibility[];
+    qa: VoteVisibility[];
+    globalPhase: string;
+  } {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    // Use most advanced phase (if one team revealed, show all)
+    const devPhase = estimation.teams.developers.phase;
+    const qaPhase = estimation.teams.qa.phase;
+
+    // Determine global phase: discussion > revealed > voting
+    let globalPhase: string;
+    if (devPhase === 'discussion' || qaPhase === 'discussion') {
+      globalPhase = 'discussion';
+    } else if (devPhase === 'revealed' || qaPhase === 'revealed') {
+      globalPhase = 'revealed';
+    } else {
+      globalPhase = 'voting';
+    }
+
+    return {
+      developers: this.getVoteVisibility(lobbyId, 'developers'),
+      qa: this.getVoteVisibility(lobbyId, 'qa'),
+      globalPhase
+    };
+  }
+
+  /**
+   * Transitions a team to discussion phase
+   */
+  enterDiscussionPhase(lobbyId: string, team: TeamType): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    const teamState = estimation.teams[team];
+    teamState.phase = 'discussion';
+
+    this.eventBus.emit('estimation:discussion_started', {
+      lobbyId,
+      team
+    });
+  }
+}
+
+/**
+ * Vote visibility information for UI
+ */
+export interface VoteVisibility {
+  playerId: string;
+  hasVoted: boolean;
+  vote?: number | '?';  // Only present in revealed/discussion phase
 }
