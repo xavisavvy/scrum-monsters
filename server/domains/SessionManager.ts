@@ -330,6 +330,161 @@ export class SessionManager {
   }
 
   /**
+   * Promotes a new host using activity-based selection
+   * Selects most recently active connected player (excluding old host)
+   * Returns new host info or null if no eligible players
+   */
+  private promoteNewHost(
+    lobbyId: string,
+    oldHostId: string
+  ): { newHostId: string; newHostName: string } | null {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) return null;
+
+    // Get connected players excluding old host
+    const connectedPlayers = lobby.players.filter(
+      (p) => p.id !== oldHostId && !this.disconnectedPlayers.has(p.id)
+    );
+
+    if (connectedPlayers.length === 0) return null;
+
+    // Sort by most recent activity (descending)
+    const sortedByActivity = connectedPlayers.sort((a, b) => {
+      const aActivity = this.playerActivity.get(a.id) ?? 0;
+      const bActivity = this.playerActivity.get(b.id) ?? 0;
+      return bActivity - aActivity;
+    });
+
+    const newHost = sortedByActivity[0];
+
+    // Update flags
+    const oldHost = lobby.players.find((p) => p.id === oldHostId);
+    if (oldHost) oldHost.isHost = false;
+    newHost.isHost = true;
+    lobby.hostId = newHost.id;
+
+    // Emit event
+    this.eventBus.emit('session:host_changed', {
+      lobbyId,
+      oldHostId,
+      newHostId: newHost.id,
+    });
+
+    return { newHostId: newHost.id, newHostName: newHost.name };
+  }
+
+  /**
+   * Updates a player's team and refreshes team assignments
+   */
+  private updatePlayerTeam(playerId: string, team: TeamType): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) {
+      throw new PlayerNotFoundError(playerId);
+    }
+
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new PlayerNotFoundError(playerId);
+    }
+
+    // Update player team
+    player.team = team;
+
+    // Update team assignments
+    this.updateTeamAssignments(lobby);
+
+    return lobby;
+  }
+
+  /**
+   * Changes a player's own team (self-service)
+   */
+  private changeOwnTeam(playerId: string, team: TeamType): Lobby {
+    return this.updatePlayerTeam(playerId, team);
+  }
+
+  /**
+   * Assigns a target player to a team (requires host privileges)
+   */
+  private assignTeam(
+    assignerId: string,
+    targetPlayerId: string,
+    team: TeamType
+  ): Lobby {
+    const lobby = this.getPlayerLobby(assignerId);
+    if (!lobby) {
+      throw new PlayerNotFoundError(assignerId);
+    }
+
+    const assigner = lobby.players.find((p) => p.id === assignerId);
+    if (!assigner) {
+      throw new PlayerNotFoundError(assignerId);
+    }
+
+    // Check host privileges
+    if (!assigner.isHost) {
+      throw new PlayerNotHostError(assignerId);
+    }
+
+    // Find target player
+    const targetPlayer = lobby.players.find((p) => p.id === targetPlayerId);
+    if (!targetPlayer) {
+      throw new PlayerNotFoundError(targetPlayerId);
+    }
+
+    // Update target player's team
+    targetPlayer.team = team;
+
+    // Update team assignments
+    this.updateTeamAssignments(lobby);
+
+    return lobby;
+  }
+
+  /**
+   * Manually transfers host privileges (host can transfer to any player)
+   */
+  private manualHostTransfer(
+    currentHostId: string,
+    newHostId: string
+  ): Lobby {
+    const lobby = this.getPlayerLobby(currentHostId);
+    if (!lobby) {
+      throw new PlayerNotFoundError(currentHostId);
+    }
+
+    const currentHost = lobby.players.find((p) => p.id === currentHostId);
+    if (!currentHost) {
+      throw new PlayerNotFoundError(currentHostId);
+    }
+
+    // Validate current host is actually host
+    if (!currentHost.isHost) {
+      throw new PlayerNotHostError(currentHostId);
+    }
+
+    // Find new host player
+    const newHost = lobby.players.find((p) => p.id === newHostId);
+    if (!newHost) {
+      throw new PlayerNotFoundError(newHostId);
+    }
+
+    // Update host flags
+    currentHost.isHost = false;
+    newHost.isHost = true;
+    lobby.hostId = newHost.id;
+
+    // Emit event
+    this.eventBus.emit('session:host_changed', {
+      lobbyId: lobby.id,
+      oldHostId: currentHostId,
+      newHostId: newHost.id,
+    });
+
+    return lobby;
+  }
+
+  /**
    * Updates team assignments based on current player team values
    */
   private updateTeamAssignments(lobby: Lobby): void {
@@ -338,5 +493,284 @@ export class SessionManager {
       qa: lobby.players.filter((p) => p.team === 'qa'),
       spectators: lobby.players.filter((p) => p.team === 'spectators'),
     };
+  }
+
+  /**
+   * Generates a signed reconnect token for a player
+   */
+  private generateReconnectToken(
+    playerId: string,
+    lobbyId: string,
+    playerName: string
+  ): string {
+    const now = Date.now();
+    const tokenData = {
+      playerId,
+      lobbyId,
+      playerName,
+      issuedAt: now,
+      expiresAt: now + this.TOKEN_EXPIRY_TIME,
+    };
+
+    // Create signature
+    const tokenPayload = JSON.stringify(tokenData);
+    const signature = createHmac('sha256', this.TOKEN_SECRET)
+      .update(tokenPayload)
+      .digest('hex');
+
+    // Encode token
+    const tokenString = Buffer.from(
+      JSON.stringify({ ...tokenData, signature })
+    ).toString('base64');
+
+    // Store in reconnectTokens Map
+    this.reconnectTokens.set(tokenString, {
+      ...tokenData,
+      signature,
+    });
+
+    return tokenString;
+  }
+
+  /**
+   * Validates a reconnect token and returns the token data if valid
+   */
+  private validateReconnectToken(tokenString: string): ReconnectToken | null {
+    try {
+      // Decode token
+      const decoded = JSON.parse(
+        Buffer.from(tokenString, 'base64').toString()
+      );
+
+      // Check if token exists in Map
+      const storedToken = this.reconnectTokens.get(tokenString);
+      if (!storedToken) {
+        return null;
+      }
+
+      // Check expiry
+      if (decoded.expiresAt < Date.now()) {
+        this.reconnectTokens.delete(tokenString);
+        return null;
+      }
+
+      // Verify signature
+      const { signature, ...tokenData } = decoded;
+      const expectedSignature = createHmac('sha256', this.TOKEN_SECRET)
+        .update(JSON.stringify(tokenData))
+        .digest('hex');
+
+      if (signature !== expectedSignature) {
+        this.reconnectTokens.delete(tokenString);
+        return null;
+      }
+
+      return storedToken;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Handles player disconnection, creating a DisconnectedPlayer record
+   * and generating a reconnect token
+   */
+  private handlePlayerDisconnect(playerId: string): {
+    disconnectedPlayer: DisconnectedPlayer;
+    reconnectToken: string;
+    hostTransfer?: { newHostId: string; newHostName: string };
+  } | null {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) {
+      return null;
+    }
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) {
+      return null;
+    }
+
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player) {
+      return null;
+    }
+
+    // Create DisconnectedPlayer record
+    const now = Date.now();
+    const disconnectedPlayer: DisconnectedPlayer = {
+      playerId,
+      lobbyId,
+      playerName: player.name,
+      disconnectedAt: now,
+      graceExpiresAt: now + this.DISCONNECT_GRACE_PERIOD,
+      lastKnownPosition: lobby.playerPositions[playerId],
+      lastKnownCombatState: lobby.playerCombatStates[playerId],
+    };
+
+    // Store in disconnectedPlayers Map
+    this.disconnectedPlayers.set(playerId, disconnectedPlayer);
+
+    // Generate reconnect token
+    const reconnectToken = this.generateReconnectToken(
+      playerId,
+      lobbyId,
+      player.name
+    );
+
+    // Check if host disconnected
+    let hostTransfer: { newHostId: string; newHostName: string } | undefined;
+    if (lobby.hostId === playerId) {
+      // Find first connected player (not disconnected)
+      const connectedPlayers = lobby.players.filter(
+        (p) => p.id !== playerId && !this.disconnectedPlayers.has(p.id)
+      );
+
+      if (connectedPlayers.length > 0) {
+        const newHost = connectedPlayers[0];
+        const oldHostId = lobby.hostId;
+        lobby.hostId = newHost.id;
+        newHost.isHost = true;
+
+        hostTransfer = {
+          newHostId: newHost.id,
+          newHostName: newHost.name,
+        };
+
+        this.eventBus.emit('session:host_changed', {
+          lobbyId,
+          oldHostId,
+          newHostId: newHost.id,
+        });
+      }
+    }
+
+    // Emit player_disconnected event
+    this.eventBus.emit('session:player_disconnected', {
+      lobbyId,
+      playerId,
+      playerName: player.name,
+    });
+
+    return {
+      disconnectedPlayer,
+      reconnectToken,
+      hostTransfer,
+    };
+  }
+
+  /**
+   * Attempts to reconnect a player using a reconnect token
+   */
+  private attemptPlayerReconnect(
+    tokenString: string
+  ): import('../../shared/gameEvents').ReconnectResponse {
+    // Validate token
+    const token = this.validateReconnectToken(tokenString);
+    if (!token) {
+      return {
+        result: 'invalid_token',
+        message: 'Invalid or expired reconnection token',
+      };
+    }
+
+    // Check lobby still exists
+    const lobby = this.lobbies.get(token.lobbyId);
+    if (!lobby) {
+      return {
+        result: 'lobby_closed',
+        message: 'Lobby no longer exists',
+      };
+    }
+
+    // Check disconnectedPlayer record exists and not expired
+    const disconnectedPlayer = this.disconnectedPlayers.get(token.playerId);
+    if (!disconnectedPlayer) {
+      return {
+        result: 'grace_expired',
+        message: 'Reconnection grace period expired',
+      };
+    }
+
+    if (disconnectedPlayer.graceExpiresAt < Date.now()) {
+      this.disconnectedPlayers.delete(token.playerId);
+      this.reconnectTokens.delete(tokenString);
+      return {
+        result: 'grace_expired',
+        message: 'Reconnection grace period expired',
+      };
+    }
+
+    // Find player in lobby
+    const player = lobby.players.find((p) => p.id === token.playerId);
+    if (!player) {
+      return {
+        result: 'lobby_closed',
+        message: 'Player no longer in lobby',
+      };
+    }
+
+    // Restore lastKnownPosition and lastKnownCombatState
+    if (disconnectedPlayer.lastKnownPosition) {
+      lobby.playerPositions[token.playerId] =
+        disconnectedPlayer.lastKnownPosition;
+    }
+    if (disconnectedPlayer.lastKnownCombatState) {
+      lobby.playerCombatStates[token.playerId] =
+        disconnectedPlayer.lastKnownCombatState;
+    }
+
+    // Generate new reconnect token
+    const newReconnectToken = this.generateReconnectToken(
+      token.playerId,
+      token.lobbyId,
+      token.playerName
+    );
+
+    // Clean up old token and disconnectedPlayer record
+    this.reconnectTokens.delete(tokenString);
+    this.disconnectedPlayers.delete(token.playerId);
+
+    // Update player activity
+    this.recordPlayerActivity(token.playerId);
+
+    // Return success with LobbySync
+    return {
+      result: 'success',
+      lobbySync: {
+        lobby,
+        yourPlayer: player,
+        reconnectToken: newReconnectToken,
+        stateChanges: {
+          phaseChanged: true,
+        },
+      },
+      message: 'Successfully reconnected',
+    };
+  }
+
+  /**
+   * Processes disconnected players, removing those whose grace period has expired
+   */
+  private processDisconnectedPlayers(): void {
+    const now = Date.now();
+
+    // Iterate disconnectedPlayers Map
+    for (const [playerId, disconnectedPlayer] of this.disconnectedPlayers.entries()) {
+      // Check if grace period expired
+      if (disconnectedPlayer.graceExpiresAt < now) {
+        // Remove player from lobby
+        this.removePlayer(playerId);
+
+        // Clean up disconnectedPlayer record
+        this.disconnectedPlayers.delete(playerId);
+
+        // Clean up any reconnect tokens for this player
+        for (const [tokenString, token] of this.reconnectTokens.entries()) {
+          if (token.playerId === playerId) {
+            this.reconnectTokens.delete(tokenString);
+          }
+        }
+      }
+    }
   }
 }
