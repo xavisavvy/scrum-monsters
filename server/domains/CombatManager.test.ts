@@ -5,6 +5,7 @@ import { TeamType, AvatarClass } from '../../shared/gameEvents';
 import {
   CombatNotActiveError,
   PlayerNotInCombatError,
+  NotHealerClassError,
 } from '../errors/CombatErrors';
 
 describe('CombatManager', () => {
@@ -856,6 +857,336 @@ describe('CombatManager', () => {
         expect(playerDamagedListener).toHaveBeenCalled();
         const damagePayload = playerDamagedListener.mock.calls[0][0];
         expect(damagePayload.damage).toBe(25); // LIGHT_DAMAGE
+      });
+    });
+  });
+
+  describe('Player Health & Damage System', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+
+      const players = [
+        { id: 'warrior1', team: 'developers' as TeamType },
+        { id: 'ranger1', team: 'developers' as TeamType },
+        { id: 'cleric1', team: 'qa' as TeamType },
+      ];
+      combatManager.initializeCombat('lobby1', players, 0);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    describe('applyDamageToPlayer', () => {
+      it('should reduce player HP by damage amount', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const playerBefore = state!.players.get('warrior1');
+        expect(playerBefore!.hp).toBe(100);
+
+        combatManager.applyDamageToPlayer('lobby1', 'warrior1', 25);
+
+        const playerAfter = state!.players.get('warrior1');
+        expect(playerAfter!.hp).toBe(75);
+      });
+
+      it('should cap HP at 0', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+        player!.hp = 10;
+
+        combatManager.applyDamageToPlayer('lobby1', 'warrior1', 50);
+
+        expect(player!.hp).toBe(0);
+      });
+
+      it('should emit combat:player_damaged event', () => {
+        const damagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', damagedListener);
+
+        combatManager.applyDamageToPlayer('lobby1', 'warrior1', 25);
+
+        expect(damagedListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          damage: 25,
+          playerHealth: 75,
+        });
+      });
+
+      it('should call downPlayer when HP reaches 0', () => {
+        const downedListener = vi.fn();
+        eventBus.on('combat:player_downed', downedListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+        player!.hp = 25;
+
+        combatManager.applyDamageToPlayer('lobby1', 'warrior1', 25);
+
+        expect(player!.hp).toBe(0);
+        expect(player!.combatState).toBe('downed');
+        expect(downedListener).toHaveBeenCalled();
+      });
+
+      it('should throw CombatNotActiveError for non-existent lobby', () => {
+        expect(() => {
+          combatManager.applyDamageToPlayer('nonexistent', 'player1', 25);
+        }).toThrow(CombatNotActiveError);
+      });
+
+      it('should throw PlayerNotInCombatError for non-existent player', () => {
+        expect(() => {
+          combatManager.applyDamageToPlayer('lobby1', 'nonexistent', 25);
+        }).toThrow(PlayerNotInCombatError);
+      });
+    });
+
+    describe('downPlayer', () => {
+      it('should transition player to downed state', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+
+        combatManager.downPlayer('lobby1', 'warrior1');
+
+        expect(player!.combatState).toBe('downed');
+        expect(player!.isDowned).toBe(true);
+        expect(player!.downedAt).toBeDefined();
+      });
+
+      it('should emit combat:player_downed with 10-second countdown', () => {
+        const downedListener = vi.fn();
+        eventBus.on('combat:player_downed', downedListener);
+
+        combatManager.downPlayer('lobby1', 'warrior1');
+
+        expect(downedListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          countdownSeconds: 10,
+        });
+      });
+
+      it('should start 10-second timer for permanent down', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+
+        combatManager.downPlayer('lobby1', 'warrior1');
+
+        expect(player!.combatState).toBe('downed');
+
+        // Advance timer
+        vi.advanceTimersByTime(10000);
+
+        // Should transition to ghost
+        expect(player!.combatState).toBe('ghost');
+      });
+
+      it('should store timer handle for cleanup', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+
+        combatManager.downPlayer('lobby1', 'warrior1');
+
+        expect(player!.downTimerHandle).toBeDefined();
+      });
+    });
+
+    describe('permanentlyDownPlayer', () => {
+      it('should transition player to ghost state', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+        player!.combatState = 'downed';
+
+        combatManager.permanentlyDownPlayer('lobby1', 'warrior1');
+
+        expect(player!.combatState).toBe('ghost');
+      });
+
+      it('should emit combat:player_permanently_downed event', () => {
+        const permanentDownListener = vi.fn();
+        eventBus.on('combat:player_permanently_downed', permanentDownListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+        player!.combatState = 'downed';
+
+        combatManager.permanentlyDownPlayer('lobby1', 'warrior1');
+
+        expect(permanentDownListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          message: expect.stringContaining('ghost'),
+        });
+      });
+
+      it('should clear down timer handle', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const player = state!.players.get('warrior1');
+
+        // Set up downed state with timer
+        combatManager.downPlayer('lobby1', 'warrior1');
+        expect(player!.downTimerHandle).toBeDefined();
+
+        // Manually trigger permanent down
+        combatManager.permanentlyDownPlayer('lobby1', 'warrior1');
+
+        // Timer handle should be cleared
+        expect(player!.downTimerHandle).toBeUndefined();
+      });
+    });
+
+    describe('playerHealTeammate', () => {
+      it('should heal target by HEAL_AMOUNT (25 HP)', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const target = state!.players.get('warrior1');
+        target!.hp = 50;
+
+        combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+
+        expect(target!.hp).toBe(75);
+      });
+
+      it('should cap healing at maxHp', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const target = state!.players.get('warrior1');
+        target!.hp = 90;
+
+        combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+
+        expect(target!.hp).toBe(100); // Capped at maxHp
+      });
+
+      it('should emit combat:player_healed event', () => {
+        const healedListener = vi.fn();
+        eventBus.on('combat:player_healed', healedListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const target = state!.players.get('warrior1');
+        target!.hp = 50;
+
+        combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+
+        expect(healedListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          healerId: 'cleric1',
+          healAmount: 25,
+          newHealth: 75,
+        });
+      });
+
+      it('should throw NotHealerClassError for non-healer class', () => {
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'warrior1', 'ranger1');
+        }).toThrow(NotHealerClassError);
+      });
+
+      it('should allow cleric to heal', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const target = state!.players.get('warrior1');
+        target!.hp = 50;
+
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+        }).not.toThrow();
+
+        expect(target!.hp).toBe(75);
+      });
+
+      it('should allow paladin to heal', () => {
+        // Add paladin to combat
+        const state = combatManager.getCombatState('lobby1');
+        state!.players.set('paladin1', {
+          playerId: 'paladin1',
+          hp: 100,
+          maxHp: 100,
+          isDowned: false,
+          hasBeenRevived: false,
+          combatState: 'fighting',
+        });
+
+        const target = state!.players.get('warrior1');
+        target!.hp = 50;
+
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'paladin1', 'warrior1');
+        }).not.toThrow();
+
+        expect(target!.hp).toBe(75);
+      });
+
+      it('should throw PlayerNotInCombatError if healer is downed', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const healer = state!.players.get('cleric1');
+        healer!.combatState = 'downed';
+
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+        }).toThrow(PlayerNotInCombatError);
+      });
+
+      it('should throw PlayerNotInCombatError if target is downed', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const target = state!.players.get('warrior1');
+        target!.combatState = 'downed';
+
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+        }).toThrow(PlayerNotInCombatError);
+      });
+
+      it('should throw PlayerNotInCombatError if target is ghost', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const target = state!.players.get('warrior1');
+        target!.combatState = 'ghost';
+
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'cleric1', 'warrior1');
+        }).toThrow(PlayerNotInCombatError);
+      });
+
+      it('should throw CombatNotActiveError for non-existent lobby', () => {
+        expect(() => {
+          combatManager.playerHealTeammate('nonexistent', 'cleric1', 'warrior1');
+        }).toThrow(CombatNotActiveError);
+      });
+
+      it('should throw PlayerNotInCombatError for non-existent healer', () => {
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'nonexistent', 'warrior1');
+        }).toThrow(PlayerNotInCombatError);
+      });
+
+      it('should throw PlayerNotInCombatError for non-existent target', () => {
+        expect(() => {
+          combatManager.playerHealTeammate('lobby1', 'cleric1', 'nonexistent');
+        }).toThrow(PlayerNotInCombatError);
+      });
+    });
+
+    describe('Timer Cleanup', () => {
+      it('should clear down timers on cleanupLobby', () => {
+        const state = combatManager.getCombatState('lobby1');
+
+        // Down multiple players
+        combatManager.downPlayer('lobby1', 'warrior1');
+        combatManager.downPlayer('lobby1', 'ranger1');
+
+        const warrior = state!.players.get('warrior1');
+        const ranger = state!.players.get('ranger1');
+        expect(warrior!.downTimerHandle).toBeDefined();
+        expect(ranger!.downTimerHandle).toBeDefined();
+
+        // Cleanup
+        combatManager.cleanupLobby('lobby1');
+
+        // Advance timers - should not trigger permanent down
+        const permanentDownListener = vi.fn();
+        eventBus.on('combat:player_permanently_downed', permanentDownListener);
+
+        vi.advanceTimersByTime(15000);
+
+        expect(permanentDownListener).not.toHaveBeenCalled();
       });
     });
   });
