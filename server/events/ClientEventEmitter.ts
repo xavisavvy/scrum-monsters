@@ -253,6 +253,26 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('combat:countdown_started', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:countdown_started', {
+        durationSeconds: payload.durationSeconds,
+        startedAt: payload.startedAt,
+      });
+    });
+
+    this.eventBus.on('combat:countdown_tick', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:countdown_tick', {
+        remainingSeconds: payload.remainingSeconds,
+        multiplier: payload.multiplier,
+      });
+    });
+
+    this.eventBus.on('combat:countdown_complete', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:countdown_complete', {
+        finalMultiplier: payload.finalMultiplier,
+      });
+    });
+
     this.eventBus.on('combat:cleanup_complete', (payload) => {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
