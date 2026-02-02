@@ -334,7 +334,7 @@ export class SessionManager {
    * Selects most recently active connected player (excluding old host)
    * Returns new host info or null if no eligible players
    */
-  private promoteNewHost(
+  promoteNewHost(
     lobbyId: string,
     oldHostId: string
   ): { newHostId: string; newHostName: string } | null {
@@ -399,14 +399,14 @@ export class SessionManager {
   /**
    * Changes a player's own team (self-service)
    */
-  private changeOwnTeam(playerId: string, team: TeamType): Lobby {
+  changeOwnTeam(playerId: string, team: TeamType): Lobby {
     return this.updatePlayerTeam(playerId, team);
   }
 
   /**
    * Assigns a target player to a team (requires host privileges)
    */
-  private assignTeam(
+  assignTeam(
     assignerId: string,
     targetPlayerId: string,
     team: TeamType
@@ -444,7 +444,7 @@ export class SessionManager {
   /**
    * Manually transfers host privileges (host can transfer to any player)
    */
-  private manualHostTransfer(
+  manualHostTransfer(
     currentHostId: string,
     newHostId: string
   ): Lobby {
@@ -498,7 +498,7 @@ export class SessionManager {
   /**
    * Generates a signed reconnect token for a player
    */
-  private generateReconnectToken(
+  generateReconnectToken(
     playerId: string,
     lobbyId: string,
     playerName: string
@@ -535,7 +535,7 @@ export class SessionManager {
   /**
    * Validates a reconnect token and returns the token data if valid
    */
-  private validateReconnectToken(tokenString: string): ReconnectToken | null {
+  validateReconnectToken(tokenString: string): ReconnectToken | null {
     try {
       // Decode token
       const decoded = JSON.parse(
@@ -575,10 +575,10 @@ export class SessionManager {
    * Handles player disconnection, creating a DisconnectedPlayer record
    * and generating a reconnect token
    */
-  private handlePlayerDisconnect(playerId: string): {
+  handlePlayerDisconnect(playerId: string): {
     disconnectedPlayer: DisconnectedPlayer;
     reconnectToken: string;
-    hostTransfer?: { newHostId: string; newHostName: string };
+    hostTransfer?: { newHostId: string; newHostName: string; oldHostId: string };
   } | null {
     const lobbyId = this.playerToLobby.get(playerId);
     if (!lobbyId) {
@@ -618,7 +618,7 @@ export class SessionManager {
     );
 
     // Check if host disconnected
-    let hostTransfer: { newHostId: string; newHostName: string } | undefined;
+    let hostTransfer: { oldHostId: string; newHostId: string; newHostName: string } | undefined;
     if (lobby.hostId === playerId) {
       // Find first connected player (not disconnected)
       const connectedPlayers = lobby.players.filter(
@@ -632,6 +632,7 @@ export class SessionManager {
         newHost.isHost = true;
 
         hostTransfer = {
+          oldHostId,
           newHostId: newHost.id,
           newHostName: newHost.name,
         };
@@ -648,7 +649,8 @@ export class SessionManager {
     this.eventBus.emit('session:player_disconnected', {
       lobbyId,
       playerId,
-      playerName: player.name,
+      disconnectedAt: now,
+      graceExpiresAt: now + this.DISCONNECT_GRACE_PERIOD,
     });
 
     return {
@@ -661,7 +663,7 @@ export class SessionManager {
   /**
    * Attempts to reconnect a player using a reconnect token
    */
-  private attemptPlayerReconnect(
+  attemptPlayerReconnect(
     tokenString: string
   ): import('../../shared/gameEvents').ReconnectResponse {
     // Validate token
@@ -751,7 +753,7 @@ export class SessionManager {
   /**
    * Processes disconnected players, removing those whose grace period has expired
    */
-  private processDisconnectedPlayers(): void {
+  processDisconnectedPlayers(): void {
     const now = Date.now();
 
     // Iterate disconnectedPlayers Map

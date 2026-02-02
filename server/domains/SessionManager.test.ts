@@ -493,11 +493,15 @@ describe('SessionManager - Reconnection System', () => {
 
       (sessionManager as any).handlePlayerDisconnect(hostId);
 
-      expect(emitSpy).toHaveBeenCalledWith('session:player_disconnected', {
-        lobbyId: lobby.id,
-        playerId: hostId,
-        playerName: 'Host Player',
-      });
+      expect(emitSpy).toHaveBeenCalledWith(
+        'session:player_disconnected',
+        expect.objectContaining({
+          lobbyId: lobby.id,
+          playerId: hostId,
+          disconnectedAt: expect.any(Number),
+          graceExpiresAt: expect.any(Number),
+        })
+      );
     });
   });
 
