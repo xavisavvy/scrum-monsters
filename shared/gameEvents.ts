@@ -419,6 +419,7 @@ export interface ServerToClientEvents {
   'combat:countdown_started': (data: { durationSeconds: number; startedAt: number; seq: number; timestamp: number }) => void;
   'combat:countdown_tick': (data: { remainingSeconds: number; multiplier: number; seq: number; timestamp: number }) => void;
   'combat:countdown_complete': (data: { finalMultiplier: number; seq: number; timestamp: number }) => void;
+  'combat:team_attack': (data: { damage: number; multiplier: number; newBossHp: number; seq: number; timestamp: number }) => void;
 
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
