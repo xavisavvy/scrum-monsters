@@ -3,6 +3,7 @@ import { PhaseContainer } from './PhaseContainer';
 import { PhaseComponentProps } from './index';
 import { ScoreSubmission } from '@/components/game/ScoreSubmission';
 import { CountdownOverlay } from '@/components/game/CountdownOverlay';
+import { MinionDisplay } from '@/components/game/MinionDisplay';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -39,7 +40,12 @@ export function BattlePhase({
         layout="battle"
         boss={boss}
         onBossAttack={onBossAttack}
-        sidebarContent={<ScoreSubmission />}
+        sidebarContent={
+          <>
+            <ScoreSubmission />
+            <MinionDisplay className="mt-4" />
+          </>
+        }
         enablePlayerController={true}
         onPlayerPositionsUpdate={onPlayerPositionsUpdate}
         showTimer={true}
