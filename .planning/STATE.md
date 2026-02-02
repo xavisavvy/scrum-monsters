@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 6 of 6 (New Flow Implementation)
-Plan: 2 of 5 in current phase
+Plan: 3 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 06-02 Team Attack and Countdown Overlay
+Last activity: 2026-02-02 — Completed 06-03 Spectator Minion Foundation
 
-Progress: [█████████░] 90%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26
-- Average duration: 4.2 min
-- Total execution time: 1.8 hours
+- Total plans completed: 27
+- Average duration: 4.3 min
+- Total execution time: 1.9 hours
 
 **By Phase:**
 
@@ -32,11 +32,11 @@ Progress: [█████████░] 90%
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
 | 05-fine-grained-events | 5 | 25 min | 5.0 min |
-| 06-new-flow-implementation | 2 | 12 min | 6.0 min |
+| 06-new-flow-implementation | 3 | 23 min | 7.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-04 (4 min), 05-05 (extended), 06-01 (4 min), 06-02 (8 min)
-- 06-02 had parallel execution conflicts requiring merge resolution
+- Last 5 plans: 05-05 (extended), 06-01 (4 min), 06-02 (8 min), 06-03 (11 min)
+- 06-02/06-03 had parallel execution by multiple agents
 
 *Updated after each plan completion*
 
@@ -203,6 +203,12 @@ Recent decisions affecting current work:
 - Countdown state cleanup 2s — Shows STRIKE! and team attack result before clearing overlay
 - GSAP pulse animation — Scale 1.5 to 1.0 on each countdown tick for dramatic effect
 
+**From Plan 06-03:**
+- Minion HP scaling — Base HP 50 + 10 per voter for balanced difficulty
+- Minion action distribution — 50% attack, 30% heal boss, 20% debuff
+- Minion attack interval — 4 second loop for all alive minions
+- Recursive setTimeout for AI loop — Clean cleanup on boss defeat or lobby destruction
+
 ### Pending Todos
 
 None yet.
@@ -213,8 +219,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 21:48:00Z
-Stopped at: Completed 06-02-PLAN.md
+Last session: 2026-02-02 21:53:00Z
+Stopped at: Completed 06-03-PLAN.md
 Resume file: None
 
-**Phase 6 Progress:** Team Attack and Countdown Overlay (06-02) complete. Team attack calculates combined player damage with countdown multiplier. CountdownOverlay component shows LIMIT BREAK label, pulsing countdown numbers, and multiplier display. Ready for PLAN-06-03: Minion Combat System.
+**Phase 6 Progress:** Spectator Minion Foundation (06-03) complete. Minion state infrastructure with AI-driven combat behavior. Spectators spawn as minions with HP scaled to voter count. Minions periodically attack players (15 dmg), heal boss (25 HP), or debuff. Events flow through ClientEventEmitter to client store. Ready for PLAN-06-04.
