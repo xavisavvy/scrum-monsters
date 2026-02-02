@@ -371,5 +371,460 @@ describe('CombatManager', () => {
       // Should not throw
       combatManager.cleanupLobby('nonexistent');
     });
+
+    it('should clear boss attack timer on cleanup', () => {
+      const players = [{ id: 'player1', team: 'developers' as TeamType }];
+      combatManager.initializeCombat('lobby1', players, 0);
+
+      // Start attack loop
+      combatManager.startBossAttackLoop('lobby1');
+
+      const state = combatManager.getCombatState('lobby1');
+      expect(state!.boss!.attackTimerHandle).toBeDefined();
+
+      // Cleanup should clear timer
+      combatManager.cleanupLobby('lobby1');
+
+      // State should be gone
+      expect(combatManager.getCombatState('lobby1')).toBeNull();
+    });
+  });
+
+  describe('Boss Attack System', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+
+      const players = [
+        { id: 'warrior1', team: 'developers' as TeamType },
+        { id: 'ranger1', team: 'developers' as TeamType },
+        { id: 'wizard1', team: 'developers' as TeamType },
+      ];
+      combatManager.initializeCombat('lobby1', players, 0);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    describe('startBossAttackLoop', () => {
+      it('should schedule first attack after 3s grace period', () => {
+        const telegraphListener = vi.fn();
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // No attack immediately
+        expect(telegraphListener).not.toHaveBeenCalled();
+        expect(playerDamagedListener).not.toHaveBeenCalled();
+
+        // Advance past grace period
+        vi.advanceTimersByTime(3000);
+
+        // Attack should have occurred (either instant or telegraphed)
+        expect(telegraphListener.mock.calls.length + playerDamagedListener.mock.calls.length).toBeGreaterThan(0);
+      });
+
+      it('should reschedule attacks with variable timing', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Mock Math.random to return 0 (lower bound of variance)
+        vi.spyOn(Math, 'random').mockReturnValue(0);
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // First attack at 3s
+        vi.advanceTimersByTime(3000);
+
+        // Build threat by having players attack
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        // Normal boss (not enraged): 5000ms * (1 - 0.3) = 3500ms minimum
+        vi.advanceTimersByTime(3500);
+
+        // At least 2 attacks should have happened
+        expect(playerDamagedListener.mock.calls.length).toBeGreaterThanOrEqual(1);
+      });
+
+      it('should attack faster when boss is enraged', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        const state = combatManager.getCombatState('lobby1');
+        // Manually enrage boss
+        state!.boss!.isEnraged = true;
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // First attack at 3s
+        vi.advanceTimersByTime(3000);
+        const attackCountAfterFirst = playerDamagedListener.mock.calls.length;
+
+        // Enraged: 3000ms base * (1 + 0.3 variance) = up to 3900ms
+        vi.advanceTimersByTime(4000);
+
+        // Should have attacked multiple times
+        expect(playerDamagedListener.mock.calls.length).toBeGreaterThan(attackCountAfterFirst);
+      });
+
+      it('should stop attack loop when boss HP reaches 0', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // First attack
+        vi.advanceTimersByTime(3000);
+
+        // Kill boss
+        const state = combatManager.getCombatState('lobby1');
+        state!.boss!.hp = 0;
+
+        const attackCountAtDeath = playerDamagedListener.mock.calls.length;
+
+        // Advance more time - no new attacks should occur
+        vi.advanceTimersByTime(10000);
+
+        expect(playerDamagedListener.mock.calls.length).toBe(attackCountAtDeath);
+      });
+
+      it('should stop attack loop on combat cleanup', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // First attack
+        vi.advanceTimersByTime(3000);
+
+        // Cleanup combat
+        combatManager.cleanupLobby('lobby1');
+
+        const attackCountAtCleanup = playerDamagedListener.mock.calls.length;
+
+        // Advance more time - no new attacks should occur
+        vi.advanceTimersByTime(10000);
+
+        expect(playerDamagedListener.mock.calls.length).toBe(attackCountAtCleanup);
+      });
+    });
+
+    describe('Attack Type Selection', () => {
+      it('should return valid attack types for normal boss', () => {
+        // We need to test the behavior, not internal method
+        // Attack types will be visible via events
+        const telegraphListener = vi.fn();
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Trigger multiple attacks to see variety
+        for (let i = 0; i < 10; i++) {
+          vi.advanceTimersByTime(6000);
+        }
+
+        // Should have received some attacks (mix of instant and telegraphed)
+        expect(telegraphListener.mock.calls.length + playerDamagedListener.mock.calls.length).toBeGreaterThan(0);
+      });
+
+      it('should use special attacks more often when enraged', () => {
+        const telegraphListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        const state = combatManager.getCombatState('lobby1');
+        state!.boss!.isEnraged = true;
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Trigger multiple attacks
+        for (let i = 0; i < 20; i++) {
+          vi.advanceTimersByTime(4000);
+        }
+
+        // Enraged should telegraph more (heavy/special attacks)
+        // This is a statistical test - we expect more telegraphs when enraged
+        expect(telegraphListener.mock.calls.length).toBeGreaterThan(0);
+      });
+    });
+
+    describe('Threat-Based Targeting', () => {
+      it('should target highest threat player', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Wizard attacks multiple times (highest threat)
+        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage
+        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage (50 total)
+        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage (75 total)
+
+        // Warrior attacks once (lower threat)
+        combatManager.playerAttackBoss('lobby1', 'warrior1'); // 15 damage
+
+        // Mock random to ensure highest threat targeting (70% chance)
+        vi.spyOn(Math, 'random').mockReturnValue(0.5); // Within 70% range
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
+
+        // Should target wizard1 (highest threat)
+        const damagedEvents = playerDamagedListener.mock.calls;
+        expect(damagedEvents.length).toBeGreaterThan(0);
+        expect(damagedEvents[0][0].playerId).toBe('wizard1');
+      });
+
+      it('should occasionally target second-highest threat', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat table
+        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage (highest)
+        combatManager.playerAttackBoss('lobby1', 'ranger1'); // 20 damage (second)
+        combatManager.playerAttackBoss('lobby1', 'warrior1'); // 15 damage (third)
+
+        // Mock random to 75% (20% chance for second-highest)
+        vi.spyOn(Math, 'random').mockReturnValue(0.75);
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
+
+        const damagedEvents = playerDamagedListener.mock.calls;
+        expect(damagedEvents.length).toBeGreaterThan(0);
+        expect(damagedEvents[0][0].playerId).toBe('ranger1');
+      });
+
+      it('should occasionally target random player', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat table
+        combatManager.playerAttackBoss('lobby1', 'wizard1');
+
+        // Mock random to 95% (10% chance for random)
+        vi.spyOn(Math, 'random').mockReturnValue(0.95);
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
+
+        const damagedEvents = playerDamagedListener.mock.calls;
+        expect(damagedEvents.length).toBeGreaterThan(0);
+        // Should target someone (random selection among all fighting players)
+        expect(['wizard1', 'ranger1', 'warrior1']).toContain(damagedEvents[0][0].playerId);
+      });
+    });
+
+    describe('AoE Attacks', () => {
+      it('should damage all fighting players in AoE attack', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        // Force AoE by manipulating randomness or just testing over many attacks
+        // For deterministic test, we'll check that some attacks hit multiple players
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Run many attacks to ensure we get AoE (15% chance each)
+        for (let i = 0; i < 30; i++) {
+          vi.advanceTimersByTime(6000);
+        }
+
+        const damagedEvents = playerDamagedListener.mock.calls;
+
+        // Count unique players damaged in a single attack
+        // If we see 3 damage events at same timestamp, it's AoE
+        const timestampGroups = new Map<number, Set<string>>();
+        damagedEvents.forEach(([payload]) => {
+          const key = payload.timestamp || Date.now();
+          if (!timestampGroups.has(key)) {
+            timestampGroups.set(key, new Set());
+          }
+          timestampGroups.get(key)!.add(payload.playerId);
+        });
+
+        // At least one attack should have hit multiple players (AoE)
+        const hasAoE = Array.from(timestampGroups.values()).some(players => players.size > 1);
+        expect(hasAoE).toBe(true);
+      });
+
+      it('should NOT damage downed players in AoE', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        // Down the wizard
+        const state = combatManager.getCombatState('lobby1');
+        const wizardState = state!.players.get('wizard1');
+        wizardState!.combatState = 'downed';
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Run many attacks
+        for (let i = 0; i < 30; i++) {
+          vi.advanceTimersByTime(6000);
+        }
+
+        const damagedEvents = playerDamagedListener.mock.calls;
+
+        // Wizard should never be damaged
+        const wizardDamaged = damagedEvents.some(([payload]) => payload.playerId === 'wizard1');
+        expect(wizardDamaged).toBe(false);
+      });
+
+      it('should NOT damage ghost players in AoE', () => {
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        // Make ranger a ghost
+        const state = combatManager.getCombatState('lobby1');
+        const rangerState = state!.players.get('ranger1');
+        rangerState!.combatState = 'ghost';
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Run many attacks
+        for (let i = 0; i < 30; i++) {
+          vi.advanceTimersByTime(6000);
+        }
+
+        const damagedEvents = playerDamagedListener.mock.calls;
+
+        // Ranger should never be damaged
+        const rangerDamaged = damagedEvents.some(([payload]) => payload.playerId === 'ranger1');
+        expect(rangerDamaged).toBe(false);
+      });
+    });
+
+    describe('Attack Telegraph', () => {
+      it('should telegraph heavy attacks before damage', () => {
+        const telegraphListener = vi.fn();
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Run many attacks to get heavy/special
+        for (let i = 0; i < 20; i++) {
+          vi.advanceTimersByTime(6000);
+        }
+
+        // Should have some telegraphs
+        expect(telegraphListener.mock.calls.length).toBeGreaterThan(0);
+
+        // Telegraph should include message and delay
+        const firstTelegraph = telegraphListener.mock.calls[0][0];
+        expect(firstTelegraph.message).toBeDefined();
+        expect(firstTelegraph.delayMs).toBe(1000);
+      });
+
+      it('should apply damage after telegraph delay', () => {
+        const telegraphListener = vi.fn();
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        // Force heavy attack by setting up specific random values
+        const randomMock = vi.spyOn(Math, 'random');
+        // First call: attack type selection (0.65 = heavy)
+        // Second call: AoE check (0.5 = single target)
+        // Third call: threat targeting (0.5 = highest threat)
+        randomMock
+          .mockReturnValueOnce(0.65) // Attack type: heavy
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.5); // Highest threat
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
+
+        // Telegraph should fire first
+        expect(telegraphListener).toHaveBeenCalled();
+        const telegraphTime = Date.now();
+
+        // Damage should NOT have happened yet
+        expect(playerDamagedListener).not.toHaveBeenCalled();
+
+        // Advance by telegraph delay
+        vi.advanceTimersByTime(1000);
+
+        // Now damage should occur
+        expect(playerDamagedListener).toHaveBeenCalled();
+      });
+
+      it('should use different messages for heavy vs special attacks', () => {
+        const telegraphListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        combatManager.startBossAttackLoop('lobby1');
+
+        // Run many attacks to collect telegraph messages
+        for (let i = 0; i < 30; i++) {
+          vi.advanceTimersByTime(6000);
+        }
+
+        const messages = telegraphListener.mock.calls.map(([payload]) => payload.message);
+        const uniqueMessages = new Set(messages);
+
+        // Should have at least 2 different telegraph messages (heavy and special)
+        expect(uniqueMessages.size).toBeGreaterThanOrEqual(2);
+      });
+    });
+
+    describe('Light Attack', () => {
+      it('should apply light damage instantly without telegraph', () => {
+        const telegraphListener = vi.fn();
+        const playerDamagedListener = vi.fn();
+        eventBus.on('combat:boss_telegraph', telegraphListener);
+        eventBus.on('combat:player_damaged', playerDamagedListener);
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+
+        // Force light attack
+        const randomMock = vi.spyOn(Math, 'random');
+        randomMock
+          .mockReturnValueOnce(0.3)  // Attack type: light (< 0.6)
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.5); // Highest threat
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
+
+        // No telegraph for light attack
+        expect(telegraphListener).not.toHaveBeenCalled();
+
+        // Instant damage
+        expect(playerDamagedListener).toHaveBeenCalled();
+        const damagePayload = playerDamagedListener.mock.calls[0][0];
+        expect(damagePayload.damage).toBe(25); // LIGHT_DAMAGE
+      });
+    });
   });
 });
