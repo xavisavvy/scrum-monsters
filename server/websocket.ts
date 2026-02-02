@@ -177,8 +177,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Replit preview/development environment
           host = `https://${process.env.REPLIT_DEV_DOMAIN}`;
         } else {
-          // Local development
-          host = 'http://localhost:5000';
+          // Local development - use configured port
+          const port = process.env.PORT || '5001';
+          host = `http://localhost:${port}`;
         }
         const inviteLink = `${host}/join/${lobby.id}`;
 
@@ -283,10 +284,28 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Track activity for host transfer selection
       sessionManager.recordPlayerActivity(playerId);
 
-      const lobby = gameState.selectAvatar(playerId, avatarClass);
-      if (lobby) {
-        io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
-        // Removed lobby_updated: avatar_selected contains full info
+      // Get lobby from sessionManager (not legacy gameState)
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) return;
+
+      // Find and update player's avatar
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player) return;
+
+      player.avatar = avatarClass;
+      player.avatarClass = avatarClass;
+
+      // Emit legacy event for App.tsx state transition
+      io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
+
+      // Emit fine-grained event for incremental state updates
+      const emitter = getClientEventEmitter();
+      if (emitter) {
+        const seq = (emitter as any).sequencer.nextSeq(lobby.id);
+        const timestamp = Date.now();
+        const payload = { playerId, avatar: avatarClass, seq, timestamp };
+        (emitter as any).sequencer.bufferEvent(lobby.id, seq, 'session:avatar_selected', payload);
+        io.to(lobby.id).emit('session:avatar_selected', payload);
       }
     });
 

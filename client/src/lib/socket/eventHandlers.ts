@@ -121,7 +121,7 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('session:avatar_selected', data, socket);
 
     if (processed) {
-      const { currentLobby, setLobby } = useGameState.getState();
+      const { currentLobby, currentPlayer, setLobby, setPlayer } = useGameState.getState();
       if (currentLobby) {
         const updatedLobby = {
           ...currentLobby,
@@ -130,6 +130,11 @@ export function setupEventHandlers(socket: Socket): void {
           )
         };
         setLobby(updatedLobby);
+
+        // Also update currentPlayer if this is for the current player
+        if (currentPlayer && currentPlayer.id === data.playerId) {
+          setPlayer({ ...currentPlayer, avatar: data.avatar as AvatarClass, avatarClass: data.avatar as AvatarClass });
+        }
       }
     }
   });
