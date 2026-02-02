@@ -557,6 +557,13 @@ export class EstimationManager {
   }
 
   /**
+   * Handles discussion timer expiry - picks majority vote
+   */
+  private handleDiscussionTimeout(lobbyId: string): void {
+    // Implementation in Task 7
+  }
+
+  /**
    * Vote visibility information for a player
    */
   private getVoteVisibility(lobbyId: string, team: VotingTeam): VoteVisibility[] {
@@ -638,6 +645,41 @@ export class EstimationManager {
       lobbyId,
       team
     });
+  }
+
+  /**
+   * Starts the discussion phase timer with configurable duration
+   * Called after battle concludes to begin discussion phase
+   */
+  public startDiscussionPhase(lobbyId: string, durationMs?: number): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    const duration = durationMs ?? this.DEFAULT_DISCUSSION_DURATION_MS;
+    const now = Date.now();
+    const endsAt = now + duration;
+
+    // Initialize discussion state
+    estimation.discussionPhase = {
+      active: true,
+      timerStartedAt: now,
+      timerDurationMs: duration,
+      endsAt,
+    };
+
+    // Emit timer started event
+    this.eventBus.emit('estimation:discussion_timer_started', {
+      lobbyId,
+      durationMs: duration,
+      endsAt,
+    });
+
+    // Start timer
+    estimation.discussionPhase.timerHandle = setTimeout(() => {
+      this.handleDiscussionTimeout(lobbyId);
+    }, duration);
   }
 
   /**
