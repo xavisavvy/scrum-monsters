@@ -248,6 +248,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
+      // Track activity for host transfer selection
+      sessionManager.recordPlayerActivity(playerId);
+
       const lobby = gameState.selectAvatar(playerId, avatarClass);
       if (lobby) {
         io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
@@ -258,6 +261,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('assign_team', ({ playerId: targetPlayerId, team }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
+
+      // Track activity for host transfer selection
+      sessionManager.recordPlayerActivity(playerId);
 
       try {
         const lobby = sessionManager.assignTeam(playerId, targetPlayerId, team);
@@ -277,6 +283,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('change_own_team', ({ team }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
+
+      // Track activity for host transfer selection
+      sessionManager.recordPlayerActivity(playerId);
 
       try {
         const lobby = sessionManager.changeOwnTeam(playerId, team);
@@ -472,6 +481,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('submit_score', ({ score }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
+
+      // Track activity for host transfer selection
+      sessionManager.recordPlayerActivity(playerId);
 
       const lobby = gameState.submitScore(playerId, score);
       if (lobby) {
