@@ -346,6 +346,11 @@ export class EstimationManager {
       clearTimeout(estimation.teams.qa.timerHandle);
     }
 
+    // Clear discussion timer if running
+    if (estimation.discussionPhase?.timerHandle) {
+      clearTimeout(estimation.discussionPhase.timerHandle);
+    }
+
     // Remove from Map
     this.estimations.delete(lobbyId);
   }
