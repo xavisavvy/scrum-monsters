@@ -181,6 +181,53 @@ export class CombatManager {
     return this.MIN_MULTIPLIER + (this.MAX_MULTIPLIER - this.MIN_MULTIPLIER) * t;
   }
 
+  /**
+   * Start the countdown timer when all players have voted
+   */
+  public startCountdown(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || combatState.countdownActive) return;
+
+    combatState.countdownActive = true;
+    combatState.countdownStartedAt = Date.now();
+
+    this.eventBus.emit('combat:countdown_started', {
+      lobbyId,
+      durationSeconds: this.COUNTDOWN_DURATION_SECONDS,
+      startedAt: combatState.countdownStartedAt,
+    });
+
+    // Start tick interval (every 1 second)
+    combatState.countdownIntervalHandle = setInterval(() => {
+      this.tickCountdown(lobbyId);
+    }, 1000);
+  }
+
+  /**
+   * Process countdown tick - emit remaining time and multiplier
+   */
+  private tickCountdown(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.countdownActive) return;
+
+    const elapsed = Math.floor(
+      (Date.now() - combatState.countdownStartedAt!) / 1000
+    );
+    const remaining = this.COUNTDOWN_DURATION_SECONDS - elapsed;
+    const multiplier = this.calculateCountdownMultiplier(remaining);
+
+    if (remaining <= 0) {
+      // Countdown complete
+      this.completeCountdown(lobbyId, multiplier);
+    } else {
+      this.eventBus.emit('combat:countdown_tick', {
+        lobbyId,
+        remainingSeconds: remaining,
+        multiplier,
+      });
+    }
+  }
+
   // =============================================================================
   // Cross-Domain Event Handlers
   // =============================================================================
