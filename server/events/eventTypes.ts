@@ -50,6 +50,14 @@ export interface SessionLobbyDestroyedPayload {
   lobbyId: string;
 }
 
+/** Emitted when a player disconnects (starts grace period) */
+export interface SessionPlayerDisconnectedPayload {
+  lobbyId: string;
+  playerId: string;
+  disconnectedAt: number;
+  graceExpiresAt: number;
+}
+
 // =============================================================================
 // Estimation Domain Events
 // =============================================================================
@@ -173,6 +181,7 @@ export interface DomainEventMap {
   // Session events
   'session:player_joined': SessionPlayerJoinedPayload;
   'session:player_left': SessionPlayerLeftPayload;
+  'session:player_disconnected': SessionPlayerDisconnectedPayload;
   'session:host_changed': SessionHostChangedPayload;
   'session:phase_changed': SessionPhaseChangedPayload;
   'session:lobby_destroyed': SessionLobbyDestroyedPayload;

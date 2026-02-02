@@ -25,6 +25,7 @@ export type {
   // Session events
   SessionPlayerJoinedPayload,
   SessionPlayerLeftPayload,
+  SessionPlayerDisconnectedPayload,
   SessionHostChangedPayload,
   SessionPhaseChangedPayload,
   SessionLobbyDestroyedPayload,
