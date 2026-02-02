@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 2 of TBD in current phase
+Plan: 3 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 04-02-PLAN.md
+Last activity: 2026-02-02 — Completed 04-03-PLAN.md
 
-Progress: [█████░░░░░] 56%
+Progress: [█████░░░░░] 59%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15
-- Average duration: 3.8 min
-- Total execution time: 0.94 hours
+- Total plans completed: 16
+- Average duration: 3.9 min
+- Total execution time: 1.03 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [█████░░░░░] 56%
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
-| 04-combatmanager | 2 | 7 min | 3.5 min |
+| 04-combatmanager | 3 | 12 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-04 (7 min), 03-05 (5 min), 04-01 (3 min), 04-02 (4 min)
-- Trend: Phase 04 progressing, TDD implementation averaging 3.5 min
+- Last 5 plans: 03-05 (5 min), 04-01 (3 min), 04-02 (4 min), 04-03 (5 min)
+- Trend: Phase 04 consistent TDD velocity, averaging 4 min per plan
 
 *Updated after each plan completion*
 
@@ -139,6 +139,14 @@ Recent decisions affecting current work:
 - Cumulative threat model — Threat is total damage dealt, simplest targeting for MVP
 - Boss enrage once at 50% — Single phase transition with boolean flag prevents re-triggering
 
+**From Plan 04-03:**
+- Recursive setTimeout over setInterval — Allows variable timing (±30% variance) and clean cleanup on boss defeat
+- Threat targeting weights (70/20/10) — Boss mostly targets top damage dealer with some unpredictability
+- AoE frequency (15% normal, 25% enraged) — Keeps all players engaged without overwhelming single-target
+- Telegraph delay 1000ms — Gives players time to react to heavy/special attacks
+- Enraged attack speed (3s vs 5s) — Increases pressure without unfair one-shots, per RESEARCH.md
+- Light attacks instant — 60% attacks instant maintains combat pressure vs telegraph downtime
+
 ### Pending Todos
 
 None yet.
@@ -149,8 +157,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (04-02 execution complete)
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-02-02 (04-03 execution complete)
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
 
-**Phase 4 Progress:** Combat initialization and boss damage complete. TDD implementation with 26 tests. Boss HP scales with player count (1000 HP/player) and ticket difficulty. Class-based damage system (12-25 damage). Threat tracking, enrage at 50% HP, defeat detection. 170 tests passing. Ready for Plan 04-03 (boss attack patterns).
+**Phase 4 Progress:** Boss attack AI complete. TDD implementation with 44 tests. Attack loop with 3s grace period, variable timing (±30% variance), threat-based targeting (70/20/10), AoE mechanics (15%/25%), telegraph warnings (1s delay). Normal: 5s base, enraged: 3s base. Attack types: light 60%, heavy 30%, special 10% (shifts to 40/35/25 when enraged). Damage: 25/40/50. Filters downed/ghost from targeting. 188 tests passing. Ready for Plan 04-04 (player HP and down mechanics).
