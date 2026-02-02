@@ -149,7 +149,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       });
     }
 
-    // Emit lobby update for full state sync
+    // Keep lobby_updated: phase transitions need full state for completedTickets and currentTicket updates
     io.to(lobbyId).emit('lobby_updated', { lobby });
     console.log(`Discussion ended in lobby ${lobbyId}: transitioned to ${lobby.gamePhase}`);
   });
@@ -848,7 +848,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           newPhase: 'battle',
         });
 
-        // Emit lobby update for full state sync
+        // Keep lobby_updated: major state reset (new ticket, reset combat/estimation)
         io.to(lobbyId).emit('lobby_updated', { lobby });
         console.log(`Proceed to next level in lobby ${lobbyId}: ticket ${nextTicket.id}`);
       } catch (error) {
