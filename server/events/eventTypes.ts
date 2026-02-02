@@ -1,0 +1,205 @@
+/**
+ * Domain Event Type Definitions
+ *
+ * This file defines the INTERNAL domain events for server-side coordination.
+ * These events are NOT Socket.IO events for client-server communication.
+ *
+ * Domain events enable cross-domain coordination without tight coupling:
+ * - SessionManager emits session:* events when players join/leave/phase changes
+ * - EstimationManager emits estimation:* events during voting
+ * - CombatManager emits combat:* events during battles
+ *
+ * Event naming convention: domain:action (e.g., estimation:vote_cast)
+ */
+
+import { GamePhase, TeamType } from '../../shared/gameEvents';
+
+// =============================================================================
+// Session Domain Events
+// =============================================================================
+
+/** Emitted when a player joins a lobby */
+export interface SessionPlayerJoinedPayload {
+  lobbyId: string;
+  playerId: string;
+  playerName: string;
+}
+
+/** Emitted when a player leaves a lobby (disconnect or explicit leave) */
+export interface SessionPlayerLeftPayload {
+  lobbyId: string;
+  playerId: string;
+}
+
+/** Emitted when host transfers to another player */
+export interface SessionHostChangedPayload {
+  lobbyId: string;
+  oldHostId: string;
+  newHostId: string;
+}
+
+/** Emitted when game phase transitions */
+export interface SessionPhaseChangedPayload {
+  lobbyId: string;
+  oldPhase: GamePhase;
+  newPhase: GamePhase;
+}
+
+/** Emitted when a lobby is destroyed (all players left or host closed) */
+export interface SessionLobbyDestroyedPayload {
+  lobbyId: string;
+}
+
+// =============================================================================
+// Estimation Domain Events
+// =============================================================================
+
+/** Emitted when a player casts their vote */
+export interface EstimationVoteCastPayload {
+  lobbyId: string;
+  playerId: string;
+  vote: number | '?';
+  team: TeamType;
+}
+
+/** Emitted when a player changes their existing vote */
+export interface EstimationVoteChangedPayload {
+  lobbyId: string;
+  playerId: string;
+  oldVote: number | '?';
+  newVote: number | '?';
+}
+
+/** Emitted when all members of one or more teams reach consensus */
+export interface EstimationConsensusReachedPayload {
+  lobbyId: string;
+  consensusValue: number;
+  teams: TeamType[];
+}
+
+/** Emitted when voting begins for a ticket */
+export interface EstimationVotingStartedPayload {
+  lobbyId: string;
+  ticketId: string;
+}
+
+/** Emitted when voting timer expires before all votes are in */
+export interface EstimationVotingTimeoutPayload {
+  lobbyId: string;
+  submittedCount: number;
+  totalCount: number;
+}
+
+// =============================================================================
+// Combat Domain Events
+// =============================================================================
+
+/** Emitted when a player damages the boss */
+export interface CombatBossDamagedPayload {
+  lobbyId: string;
+  playerId: string;
+  damage: number;
+  bossHealth: number;
+}
+
+/** Emitted when the boss heals (e.g., due to disagreement or timeout) */
+export interface CombatBossHealedPayload {
+  lobbyId: string;
+  healAmount: number;
+  bossHealth: number;
+}
+
+/** Emitted when the boss is defeated */
+export interface CombatBossDefeatedPayload {
+  lobbyId: string;
+  bossId: string;
+}
+
+/** Emitted when a player takes damage from boss or other source */
+export interface CombatPlayerDamagedPayload {
+  lobbyId: string;
+  playerId: string;
+  damage: number;
+  playerHealth: number;
+}
+
+/** Emitted when a player's health reaches zero */
+export interface CombatPlayerDownedPayload {
+  lobbyId: string;
+  playerId: string;
+}
+
+/** Emitted when a downed player is revived */
+export interface CombatPlayerRevivedPayload {
+  lobbyId: string;
+  playerId: string;
+  reviverId: string;
+}
+
+/** Emitted when a battle phase begins */
+export interface CombatBattleStartedPayload {
+  lobbyId: string;
+  bossId: string;
+}
+
+/** Emitted when battle modifier changes (increases over time) */
+export interface CombatModifierUpdatedPayload {
+  lobbyId: string;
+  modifier: number;
+}
+
+// =============================================================================
+// System Events
+// =============================================================================
+
+/** Emitted when a phase transition is rejected (invalid state) */
+export interface TransitionRejectedPayload {
+  lobbyId: string;
+  reason: string;
+  attemptedTransition: string;
+}
+
+// =============================================================================
+// Domain Event Map
+// =============================================================================
+
+/**
+ * Maps domain event names to their payload types.
+ *
+ * This interface provides compile-time type checking for the EventBus.
+ * All event names follow the domain:action naming convention.
+ */
+export interface DomainEventMap {
+  // Session events
+  'session:player_joined': SessionPlayerJoinedPayload;
+  'session:player_left': SessionPlayerLeftPayload;
+  'session:host_changed': SessionHostChangedPayload;
+  'session:phase_changed': SessionPhaseChangedPayload;
+  'session:lobby_destroyed': SessionLobbyDestroyedPayload;
+
+  // Estimation events
+  'estimation:vote_cast': EstimationVoteCastPayload;
+  'estimation:vote_changed': EstimationVoteChangedPayload;
+  'estimation:consensus_reached': EstimationConsensusReachedPayload;
+  'estimation:voting_started': EstimationVotingStartedPayload;
+  'estimation:voting_timeout': EstimationVotingTimeoutPayload;
+
+  // Combat events
+  'combat:boss_damaged': CombatBossDamagedPayload;
+  'combat:boss_healed': CombatBossHealedPayload;
+  'combat:boss_defeated': CombatBossDefeatedPayload;
+  'combat:player_damaged': CombatPlayerDamagedPayload;
+  'combat:player_downed': CombatPlayerDownedPayload;
+  'combat:player_revived': CombatPlayerRevivedPayload;
+  'combat:battle_started': CombatBattleStartedPayload;
+  'combat:modifier_updated': CombatModifierUpdatedPayload;
+
+  // System events
+  'transition_rejected': TransitionRejectedPayload;
+}
+
+/**
+ * Union type of all valid domain event names.
+ * Use this for type-safe event name parameters.
+ */
+export type DomainEventName = keyof DomainEventMap;
