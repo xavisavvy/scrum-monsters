@@ -48,10 +48,14 @@ Plans:
   3. Host transfer works when host disconnects
   4. Reconnection token system restores player session after network interruption
   5. All session-related socket handlers delegate to SessionManager instead of GameStateManager
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (planning pending)
+- [ ] 02-01-PLAN.md — Create SessionErrors and SessionManager class shell
+- [ ] 02-02-PLAN.md — Implement lobby lifecycle methods (TDD)
+- [ ] 02-03-PLAN.md — Implement reconnection system (TDD)
+- [ ] 02-04-PLAN.md — Implement host transfer and team management (TDD)
+- [ ] 02-05-PLAN.md — Wire SessionManager to socket handlers
 
 ### Phase 3: EstimationManager
 **Goal**: Extract voting, consensus, and timer logic into dedicated domain manager
@@ -122,7 +126,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
-| 2. SessionManager | 0/0 | Not started | - |
+| 2. SessionManager | 0/5 | Ready | - |
 | 3. EstimationManager | 0/0 | Not started | - |
 | 4. CombatManager | 0/0 | Not started | - |
 | 5. Fine-Grained Events | 0/0 | Not started | - |
