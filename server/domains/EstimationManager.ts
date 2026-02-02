@@ -18,6 +18,7 @@ import {
   EstimationNotActiveError,
   VoteNotEligibleError,
   InvalidVoteValueError,
+  NotInDiscussionPhaseError,
 } from "../errors/EstimationErrors";
 
 /**
@@ -572,6 +573,61 @@ export class EstimationManager {
       lobbyId,
       team
     });
+  }
+
+  /**
+   * Changes a player's vote during the discussion phase
+   * Resets team consensus and re-checks for new consensus
+   */
+  changeVoteDuringDiscussion(
+    lobbyId: string,
+    playerId: string,
+    team: TeamType,
+    newVote: number | '?'
+  ): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    const teamState = estimation.teams[team];
+
+    // Must be in discussion phase
+    if (teamState.phase !== 'discussion') {
+      throw new NotInDiscussionPhaseError(lobbyId, teamState.phase);
+    }
+
+    // Player must be eligible voter
+    if (!teamState.eligibleVoters.has(playerId)) {
+      throw new VoteNotEligibleError(playerId, 'Player not eligible to vote');
+    }
+
+    // Validate vote value
+    if (!this.isValidVote(newVote)) {
+      throw new InvalidVoteValueError(newVote);
+    }
+
+    // Store old vote for event
+    const oldVote = teamState.votes.get(playerId);
+
+    // Update vote
+    teamState.votes.set(playerId, newVote);
+
+    // Reset consensus (they might now disagree)
+    teamState.hasConsensus = false;
+    teamState.consensusValue = undefined;
+
+    // Emit vote changed event
+    this.eventBus.emit('estimation:vote_changed', {
+      lobbyId,
+      playerId,
+      team,
+      oldVote,
+      newVote
+    });
+
+    // Re-check consensus (they might now all agree)
+    this.checkConsensus(lobbyId, team);
   }
 }
 
