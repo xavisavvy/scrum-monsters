@@ -323,6 +323,45 @@ export interface CombatTeamAttackPayload {
 }
 
 // =============================================================================
+// Minion Types and Events
+// =============================================================================
+
+/** Minion combat state */
+export interface MinionState {
+  playerId: string; // Spectator player ID
+  hp: number;
+  maxHp: number;
+  isAlive: boolean;
+  respawnAt?: number;
+}
+
+/** Emitted when minion spawns */
+export interface CombatMinionSpawnedPayload {
+  lobbyId: string;
+  playerId: string;
+  avatar: string;
+  hp: number;
+  maxHp: number;
+}
+
+/** Emitted when minion attacks a player */
+export interface CombatMinionAttackPayload {
+  lobbyId: string;
+  minionPlayerId: string;
+  targetId: string;
+  damage: number;
+  attackType: 'attack' | 'debuff';
+}
+
+/** Emitted when minion heals boss */
+export interface CombatMinionHealBossPayload {
+  lobbyId: string;
+  minionPlayerId: string;
+  healAmount: number;
+  newBossHp: number;
+}
+
+// =============================================================================
 // System Events
 // =============================================================================
 
@@ -390,6 +429,9 @@ export interface DomainEventMap {
   'combat:countdown_tick': CombatCountdownTickPayload;
   'combat:countdown_complete': CombatCountdownCompletePayload;
   'combat:team_attack': CombatTeamAttackPayload;
+  'combat:minion_spawned': CombatMinionSpawnedPayload;
+  'combat:minion_attack': CombatMinionAttackPayload;
+  'combat:minion_heal_boss': CombatMinionHealBossPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
