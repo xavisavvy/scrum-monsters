@@ -1486,8 +1486,34 @@ export class CombatManager {
   /**
    * Get current combat state for a lobby
    */
-  getCombatState(lobbyId: string): LobbyCombatState | null {
-    return this.combatStates.get(lobbyId) ?? null;
+  getCombatState(lobbyId: string): LobbyCombatState | undefined {
+    return this.combatStates.get(lobbyId);
+  }
+
+  /**
+   * Handle when spectator switches to voting team
+   * Kills their minion immediately with no respawn
+   */
+  public handleSpectatorSwitchToVoter(lobbyId: string, playerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) return;
+
+    const minion = combatState.minions.get(playerId);
+    if (minion && minion.isAlive) {
+      // Kill the minion immediately (dramatic team switch)
+      minion.isAlive = false;
+      minion.hp = 0;
+
+      this.eventBus.emit('combat:minion_killed', {
+        lobbyId,
+        playerId,
+        killerId: playerId, // Self-kill on team switch
+        respawnInSeconds: 0, // No respawn
+      });
+
+      // Remove from minions map entirely (no respawn)
+      combatState.minions.delete(playerId);
+    }
   }
 
   /**
