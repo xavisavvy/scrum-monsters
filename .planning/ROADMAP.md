@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Extract state types and event bus
 - [x] **Phase 2: SessionManager** - Extract lobby and player lifecycle
-- [ ] **Phase 3: EstimationManager** - Extract voting and consensus logic
+- [x] **Phase 3: EstimationManager** - Extract voting and consensus logic
 - [ ] **Phase 4: CombatManager** - Extract battle and health mechanics
 - [ ] **Phase 5: Fine-Grained Events** - Replace coarse broadcasts with targeted events
 - [ ] **Phase 6: New Flow Implementation** - Implement estimation-before-battle flow
@@ -70,11 +70,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 03-01-PLAN.md — Create EstimationErrors and EstimationManager foundation
-- [ ] 03-02-PLAN.md — Implement vote casting and consensus detection (TDD)
-- [ ] 03-03-PLAN.md — Implement per-team timer management (TDD)
-- [ ] 03-04-PLAN.md — Implement vote visibility and host controls
-- [ ] 03-05-PLAN.md — Wire EstimationManager to session events and websocket handlers
+- [x] 03-01-PLAN.md — Create EstimationErrors and EstimationManager foundation
+- [x] 03-02-PLAN.md — Implement vote casting and consensus detection (TDD)
+- [x] 03-03-PLAN.md — Implement per-team timer management (TDD)
+- [x] 03-04-PLAN.md — Implement vote visibility and host controls
+- [x] 03-05-PLAN.md — Wire EstimationManager to session events and websocket handlers
 
 ### Phase 4: CombatManager
 **Goal**: Extract battle mechanics, health tracking, and revival system into dedicated domain manager
@@ -131,7 +131,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
 | 2. SessionManager | 5/5 | ✓ Complete | 2026-02-01 |
-| 3. EstimationManager | 0/5 | Planned | - |
+| 3. EstimationManager | 5/5 | ✓ Complete | 2026-02-02 |
 | 4. CombatManager | 0/0 | Not started | - |
 | 5. Fine-Grained Events | 0/0 | Not started | - |
 | 6. New Flow Implementation | 0/0 | Not started | - |
