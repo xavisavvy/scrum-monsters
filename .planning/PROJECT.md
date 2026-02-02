@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time multiplayer scrum poker estimation game with JRPG-style boss battles. Teams (Dev and QA) estimate story points while battling monsters — but estimation is the core, combat is the engaging wrapper. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
+A real-time multiplayer scrum poker estimation game with JRPG-style boss battles. Teams (Dev and QA) estimate story points while battling monsters — voting happens first in a focused estimation phase, then voters enter battle while waiting for others. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
 
 ## Core Value
 
@@ -25,60 +25,67 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Reconnection with grace period and token — existing
 - ✓ Timer settings for voting — existing
 - ✓ Team competition stats — existing
+- ✓ Domain separation (Session, Estimation, Combat managers) — v1.0
+- ✓ EventBus-based cross-domain coordination — v1.0
+- ✓ Fine-grained events replacing full-state broadcasts — v1.0
+- ✓ Estimation-before-battle flow with countdown — v1.0
+- ✓ Players in mixed states (estimating vs fighting) — v1.0
+- ✓ Spectator minion system — v1.0
+- ✓ Boss death wait state — v1.0
 
 ### Active
 
-- [ ] **ARCH-01**: Split GameStateManager into Session, Estimation, and Combat domains
-- [ ] **ARCH-02**: Split Lobby type into focused sub-types (SessionState, EstimationState, CombatState)
-- [ ] **ARCH-03**: Replace lobby_updated with fine-grained domain events
-- [ ] **FLOW-01**: New phase flow: estimation → battle → discussion
-- [ ] **FLOW-02**: First vote triggers battle entry for that player
-- [ ] **FLOW-03**: Players in different states simultaneously (estimating vs fighting)
-- [ ] **FLOW-04**: Boss death before all voted = wait state
-- [ ] **FLOW-05**: All voted = 10s countdown for bonus damage, then discussion
-- [ ] **FLOW-06**: All players die = game over (keep existing)
+(None — define in next milestone)
 
 ### Out of Scope
 
-- XP/leveling system — future feature, not this milestone
-- New boss types or combat mechanics — keep existing combat, just restructure
-- UI redesign — keep existing components, update for new flow
+- XP/leveling system — future feature
+- New boss types or combat mechanics — keep existing combat
+- UI redesign — keep existing components
 - Database schema changes — in-memory state focus
+- Microservices architecture — network latency kills real-time performance
+- Full removal of lobby_updated fallback — intentionally retained for edge cases
 
 ## Context
 
-**Brownfield project** with ~15k lines of TypeScript across client/server/shared. The codebase is functional but has grown organically into a monolithic structure.
+**Current State (v1.0 shipped):**
+- ~43k lines of TypeScript across client/server/shared
+- Domain-separated architecture: SessionManager, EstimationManager, CombatManager
+- EventBus-based coordination with scoped subscriptions
+- Fine-grained events with 80-95% bandwidth reduction
+- 284+ tests including integration suite
 
-**Current pain points:**
-- `GameStateManager` is 2000+ lines handling every concern
-- `Lobby` type is 27 fields mixing session, estimation, and combat
-- Every state change broadcasts entire Lobby object
-- Hard to reason about, add features, or debug
+**Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM
 
-**Codebase map exists** at `.planning/codebase/` — use for reference during implementation.
+**Codebase map:** `.planning/codebase/` (created during v1.0)
 
-**Key files to refactor:**
-- `server/gameState.ts` — the monolith to split
-- `shared/gameEvents.ts` — types and events to redesign
-- `server/socketHandlers.ts` — event handlers to update
-- `client/src/lib/stores/useGameStore.tsx` — client state to align
+**Key files:**
+- `server/domains/SessionManager.ts` — lobby lifecycle, players, teams, reconnection
+- `server/domains/EstimationManager.ts` — voting, consensus, timers, discussion
+- `server/domains/CombatManager.ts` — boss, player HP, damage, revival, minions
+- `server/events/ScopedEventBus.ts` — cross-domain event coordination
+- `server/events/ClientEventEmitter.ts` — EventBus to Socket.IO bridge
 
 ## Constraints
 
 - **Tech stack**: TypeScript, Socket.IO, React, Zustand — no changes
 - **Real-time**: Must maintain low-latency multiplayer sync
 - **Backward compatibility**: None required — clean slate on types acceptable
-- **Testing**: Maintain test coverage, add tests for new domains
+- **Testing**: Maintain test coverage, add tests for new features
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Clean slate on Lobby type | Proper domain separation requires redesigning the core type | — Pending |
-| Fine-grained events | Real-time game best practice — send only what changed | — Pending |
-| Three domains (Session/Estimation/Combat) | Natural boundaries based on concerns | — Pending |
-| Estimation before battle entry | Keep voting focused, combat as waiting entertainment | — Pending |
-| Players in mixed states | Voters fight while non-voters estimate | — Pending |
+| Three domains (Session/Estimation/Combat) | Natural boundaries based on concerns | ✓ Good |
+| EventBus for cross-domain coordination | Decouples domains, enables reactive patterns | ✓ Good |
+| Scoped subscriptions with cleanup contracts | Prevents memory leaks in long-running lobbies | ✓ Good |
+| Fine-grained events over full-state broadcasts | 80-95% bandwidth reduction, better scalability | ✓ Good |
+| Estimation before battle entry | Keep voting focused, combat as waiting entertainment | ✓ Good |
+| Players in mixed states | Voters fight while non-voters estimate | ✓ Good |
+| Spectator minion system | Makes spectator role engaging, adds boss-side combat | ✓ Good |
+| Retain lobby_updated as fallback | Safety net during migration, documented edge cases | ✓ Good |
+| 10s countdown with scaling multiplier | Creates dramatic JRPG moment, rewards fast voting | ✓ Good |
 
 ---
-*Last updated: 2026-02-01 after initialization*
+*Last updated: 2026-02-02 after v1.0 milestone*
