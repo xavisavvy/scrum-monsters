@@ -1529,6 +1529,26 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       console.log(`Player ${playerId} cancelled revival`);
     });
 
+    // Attack minion (player targeting spectator minion)
+    socket.on('attack_minion', (data: { minionPlayerId: string }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
+
+        const damage = combatManager.playerAttackMinion(
+          lobbyId,
+          playerId,
+          data.minionPlayerId
+        );
+
+        // Combat events are emitted by CombatManager, no additional emit needed
+        console.log(`Player ${playerId} attacked minion ${data.minionPlayerId} for ${damage} damage`);
+      } catch (error) {
+        socket.emit('game_error', { message: (error as Error).message });
+      }
+    });
+
     socket.on('disconnect', (reason) => {
       activeConnections--;
       const playerId = socket.data.playerId;
