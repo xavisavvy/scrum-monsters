@@ -84,3 +84,22 @@ export class ConsensusAlreadyReachedError extends EstimationError {
     Object.setPrototypeOf(this, ConsensusAlreadyReachedError.prototype);
   }
 }
+
+/**
+ * Thrown when attempting to change vote outside of discussion phase
+ */
+export class NotInDiscussionPhaseError extends EstimationError {
+  public readonly lobbyId: string;
+  public readonly currentPhase: string;
+
+  constructor(lobbyId: string, currentPhase: string) {
+    super(
+      'NOT_IN_DISCUSSION_PHASE',
+      `Cannot change vote: lobby '${lobbyId}' is in '${currentPhase}' phase, not 'discussion'`
+    );
+    this.lobbyId = lobbyId;
+    this.currentPhase = currentPhase;
+    this.name = 'NotInDiscussionPhaseError';
+    Object.setPrototypeOf(this, NotInDiscussionPhaseError.prototype);
+  }
+}

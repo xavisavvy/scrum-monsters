@@ -5,6 +5,7 @@ import {
   EstimationNotActiveError,
   VoteNotEligibleError,
   InvalidVoteValueError,
+  NotInDiscussionPhaseError,
 } from '../errors/EstimationErrors';
 
 describe('EstimationManager', () => {
@@ -428,6 +429,113 @@ describe('EstimationManager', () => {
       expect(() => {
         estimationManager.enterDiscussionPhase('nonexistent', 'developers');
       }).toThrow(EstimationNotActiveError);
+    });
+  });
+
+  describe('changeVoteDuringDiscussion', () => {
+    beforeEach(() => {
+      estimationManager.startEstimation('lobby1', 'ticket1');
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player2', 'developers');
+    });
+
+    it('should change vote during discussion phase', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 8);
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.votes.get('player1')).toBe(8);
+    });
+
+    it('should emit estimation:vote_changed event with old and new values', () => {
+      const voteChangedListener = vi.fn();
+      eventBus.on('estimation:vote_changed', voteChangedListener);
+
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 8);
+
+      expect(voteChangedListener).toHaveBeenCalledWith({
+        lobbyId: 'lobby1',
+        playerId: 'player1',
+        team: 'developers',
+        oldVote: 5,
+        newVote: 8
+      });
+    });
+
+    it('should reset team consensus when vote changes', () => {
+      // Reach consensus first
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+
+      let state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(true);
+
+      // Enter discussion and change vote
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+      estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 8);
+
+      state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(false);
+      expect(state!.teams.developers.consensusValue).toBeUndefined();
+    });
+
+    it('should re-check consensus after vote change', () => {
+      const consensusListener = vi.fn();
+      eventBus.on('estimation:team_consensus_reached', consensusListener);
+
+      // Two different votes
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      // Change to match - should create consensus
+      estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 8);
+
+      expect(consensusListener).toHaveBeenCalledWith(
+        expect.objectContaining({
+          lobbyId: 'lobby1',
+          team: 'developers',
+          consensusValue: 8
+        })
+      );
+    });
+
+    it('should throw NotInDiscussionPhaseError during voting phase', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+
+      // Still in voting phase
+      expect(() => {
+        estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 8);
+      }).toThrow(NotInDiscussionPhaseError);
+    });
+
+    it('should throw EstimationNotActiveError when no estimation active', () => {
+      expect(() => {
+        estimationManager.changeVoteDuringDiscussion('nonexistent', 'player1', 'developers', 8);
+      }).toThrow(EstimationNotActiveError);
+    });
+
+    it('should throw VoteNotEligibleError when player not eligible', () => {
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      expect(() => {
+        estimationManager.changeVoteDuringDiscussion('lobby1', 'ineligible', 'developers', 8);
+      }).toThrow(VoteNotEligibleError);
+    });
+
+    it('should throw InvalidVoteValueError for invalid vote value', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.enterDiscussionPhase('lobby1', 'developers');
+
+      expect(() => {
+        estimationManager.changeVoteDuringDiscussion('lobby1', 'player1', 'developers', 4);
+      }).toThrow(InvalidVoteValueError);
     });
   });
 });
