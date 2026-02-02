@@ -273,6 +273,44 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('combat:team_attack', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:team_attack', {
+        damage: payload.damage,
+        multiplier: payload.multiplier,
+        newBossHp: payload.newBossHp,
+      });
+    });
+
+    // =============================================================================
+    // Minion Events
+    // =============================================================================
+
+    this.eventBus.on('combat:minion_spawned', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:minion_spawned', {
+        playerId: payload.playerId,
+        avatar: payload.avatar,
+        hp: payload.hp,
+        maxHp: payload.maxHp,
+      });
+    });
+
+    this.eventBus.on('combat:minion_attack', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:minion_attack', {
+        minionPlayerId: payload.minionPlayerId,
+        targetId: payload.targetId,
+        damage: payload.damage,
+        attackType: payload.attackType,
+      });
+    });
+
+    this.eventBus.on('combat:minion_heal_boss', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:minion_heal_boss', {
+        minionPlayerId: payload.minionPlayerId,
+        healAmount: payload.healAmount,
+        newBossHp: payload.newBossHp,
+      });
+    });
+
     this.eventBus.on('combat:cleanup_complete', (payload) => {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
