@@ -560,7 +560,39 @@ export class EstimationManager {
    * Handles discussion timer expiry - picks majority vote
    */
   private handleDiscussionTimeout(lobbyId: string): void {
-    // Implementation in Task 7
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation || !estimation.discussionPhase?.active) return;
+
+    // Clear timer handle
+    estimation.discussionPhase.timerHandle = undefined;
+
+    // Get majority vote (tally all votes)
+    const voteTally = new Map<number, number>();
+
+    for (const vote of estimation.teams.developers.votes.values()) {
+      if (typeof vote === 'number') {
+        voteTally.set(vote, (voteTally.get(vote) || 0) + 1);
+      }
+    }
+    for (const vote of estimation.teams.qa.votes.values()) {
+      if (typeof vote === 'number') {
+        voteTally.set(vote, (voteTally.get(vote) || 0) + 1);
+      }
+    }
+
+    // Find majority
+    let maxCount = 0;
+    let majority: number | undefined;
+    for (const [value, count] of voteTally.entries()) {
+      if (count > maxCount) {
+        maxCount = count;
+        majority = value;
+      }
+    }
+
+    if (majority !== undefined) {
+      this.endDiscussion(lobbyId, 'timer_expired', majority);
+    }
   }
 
   /**
@@ -571,7 +603,26 @@ export class EstimationManager {
     reason: 'consensus' | 'host_finalized' | 'timer_expired',
     finalEstimate: number
   ): void {
-    // Implementation in Task 7
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) return;
+
+    // Clear timer if running
+    if (estimation.discussionPhase?.timerHandle) {
+      clearTimeout(estimation.discussionPhase.timerHandle);
+      estimation.discussionPhase.timerHandle = undefined;
+    }
+
+    // Mark discussion as inactive
+    if (estimation.discussionPhase) {
+      estimation.discussionPhase.active = false;
+    }
+
+    // Emit discussion ended event
+    this.eventBus.emit('estimation:discussion_ended', {
+      lobbyId,
+      reason,
+      finalEstimate,
+    });
   }
 
   /**
