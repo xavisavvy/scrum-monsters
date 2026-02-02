@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 5 - Fine-Grained Events
+**Current focus:** Phase 6 - New Flow Implementation
 
 ## Current Position
 
-Phase: 5 of 6 (Fine-Grained Events)
-Plan: 5 of 5 in current phase
-Status: Complete
-Last activity: 2026-02-02 — Completed Phase 5
+Phase: 6 of 6 (New Flow Implementation)
+Plan: 1 of 5 in current phase
+Status: In progress
+Last activity: 2026-02-02 — Completed 06-01 All-Voted Countdown Timer
 
-Progress: [█████████░] 83%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 24
+- Total plans completed: 25
 - Average duration: 4.0 min
-- Total execution time: 1.6 hours
+- Total execution time: 1.7 hours
 
 **By Phase:**
 
@@ -32,9 +32,10 @@ Progress: [█████████░] 83%
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
 | 05-fine-grained-events | 5 | 25 min | 5.0 min |
+| 06-new-flow-implementation | 1 | 4 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-01 (5.5 min), 05-03 (4 min), 05-04 (4 min), 05-05 (extended)
+- Last 5 plans: 05-03 (4 min), 05-04 (4 min), 05-05 (extended), 06-01 (4 min)
 - 05-05 included human verification checkpoint with 5 bugs fixed
 
 *Updated after each plan completion*
@@ -190,6 +191,12 @@ Recent decisions affecting current work:
 - Avatar selection via sessionManager — select_avatar handler uses domain manager not legacy gameState to find lobbies
 - currentPlayer state sync — Client handlers update both currentLobby.players AND currentPlayer for avatar changes
 
+**From Plan 06-01:**
+- Linear multiplier interpolation — 3.0x at 10s to 1.5x at 0s for dramatic JRPG countdown effect
+- setInterval for countdown ticking — 1 second interval emits remaining time and multiplier
+- full_consensus_reached triggers countdown — CombatManager subscribes to estimation event for automatic coordination
+- Countdown cleanup in cleanupLobby — Prevents memory leaks on lobby destruction
+
 ### Pending Todos
 
 None yet.
@@ -200,15 +207,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 19:40:00Z
-Stopped at: Completed Phase 5
+Last session: 2026-02-02 14:37:00Z
+Stopped at: Completed 06-01-PLAN.md
 Resume file: None
 
-**Phase 5 Complete:** Fine-grained events fully operational. Human verification passed with 5 bugs fixed during testing:
-- CSS variables for dialog visibility
-- Avatar selection via sessionManager instead of legacy gameState
-- currentPlayer state sync on avatar changes
-- Host transfer when joining lobby with disconnected host
-- Invite link port configuration
-
-All event types working (session:player_joined, session:avatar_selected, session:host_changed). Sequence numbers, gap detection, missed event recovery all verified. Ready for Phase 6: New Flow Implementation.
+**Phase 6 Started:** All-Voted Countdown Timer (06-01) complete. Countdown infrastructure operational with 10-second timer, linear 3x-1.5x multiplier, and full event chain from full_consensus_reached through Socket.IO emission. Ready for PLAN-06-02: Team Attack Damage.
