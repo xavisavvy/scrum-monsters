@@ -74,7 +74,8 @@ export interface EstimationVoteCastPayload {
 export interface EstimationVoteChangedPayload {
   lobbyId: string;
   playerId: string;
-  oldVote: number | '?';
+  team: TeamType;
+  oldVote?: number | '?';
   newVote: number | '?';
 }
 
@@ -149,6 +150,21 @@ export interface EstimationTimerExpiredPayload {
   team: TeamType;
   votedCount: number;
   eligibleCount: number;
+}
+
+/** Emitted when discussion phase starts for a team */
+export interface EstimationDiscussionStartedPayload {
+  lobbyId: string;
+  team: TeamType;
+}
+
+/** Emitted when host forces an estimate */
+export interface EstimationEstimateForcedPayload {
+  lobbyId: string;
+  team: TeamType;
+  consensusValue: number;
+  forcedBy: string;
+  wasTied: boolean;
 }
 
 // =============================================================================
@@ -252,6 +268,8 @@ export interface DomainEventMap {
   'estimation:timer_resumed': EstimationTimerResumedPayload;
   'estimation:timer_extended': EstimationTimerExtendedPayload;
   'estimation:timer_expired': EstimationTimerExpiredPayload;
+  'estimation:discussion_started': EstimationDiscussionStartedPayload;
+  'estimation:estimate_forced': EstimationEstimateForcedPayload;
 
   // Combat events
   'combat:boss_damaged': CombatBossDamagedPayload;
