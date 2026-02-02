@@ -31,10 +31,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Internal domain event types are defined (player_voted, consensus_reached, boss_damaged, etc.)
   4. Event listener cleanup contracts are documented to prevent memory leaks
   5. Test suite passes with no regressions from existing functionality
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] TBD (planning pending)
+- [ ] 01-01-PLAN.md — Create domain state types (SessionState, EstimationState, CombatState)
+- [ ] 01-02-PLAN.md — Create domain event types and typed EventBus
+- [ ] 01-03-PLAN.md — Add scoped subscription management and tests
 
 ### Phase 2: SessionManager
 **Goal**: Extract player and lobby lifecycle management from monolith into dedicated domain manager
@@ -119,7 +121,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 0/0 | Not started | - |
+| 1. Foundation | 0/3 | Planned | - |
 | 2. SessionManager | 0/0 | Not started | - |
 | 3. EstimationManager | 0/0 | Not started | - |
 | 4. CombatManager | 0/0 | Not started | - |
