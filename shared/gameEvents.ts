@@ -420,6 +420,9 @@ export interface ServerToClientEvents {
   'combat:countdown_tick': (data: { remainingSeconds: number; multiplier: number; seq: number; timestamp: number }) => void;
   'combat:countdown_complete': (data: { finalMultiplier: number; seq: number; timestamp: number }) => void;
   'combat:team_attack': (data: { damage: number; multiplier: number; newBossHp: number; seq: number; timestamp: number }) => void;
+  'combat:minion_spawned': (data: { playerId: string; avatar: string; hp: number; maxHp: number; seq: number; timestamp: number }) => void;
+  'combat:minion_attack': (data: { minionPlayerId: string; targetId: string; damage: number; attackType: string; seq: number; timestamp: number }) => void;
+  'combat:minion_heal_boss': (data: { minionPlayerId: string; healAmount: number; newBossHp: number; seq: number; timestamp: number }) => void;
 
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
