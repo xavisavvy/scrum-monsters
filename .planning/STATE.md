@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 4 of TBD in current phase
+Plan: 5 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 04-04-PLAN.md
+Last activity: 2026-02-02 — Completed 04-05-PLAN.md
 
-Progress: [██████░░░░] 63%
+Progress: [██████░░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 17
+- Total plans completed: 18
 - Average duration: 3.8 min
-- Total execution time: 1.08 hours
+- Total execution time: 1.15 hours
 
 **By Phase:**
 
@@ -30,10 +30,10 @@ Progress: [██████░░░░] 63%
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
-| 04-combatmanager | 4 | 15 min | 3.8 min |
+| 04-combatmanager | 5 | 19 min | 3.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-01 (3 min), 04-02 (4 min), 04-03 (5 min), 04-04 (3 min)
+- Last 5 plans: 04-02 (4 min), 04-03 (5 min), 04-04 (3 min), 04-05 (4 min)
 - Trend: Phase 04 maintaining fast TDD velocity, 3-5 min per plan
 
 *Updated after each plan completion*
@@ -153,6 +153,12 @@ Recent decisions affecting current work:
 - Healer class validation — NotHealerClassError with proper signature (playerId, className) for non-healers attempting to heal
 - State machine enforcement — Healing only allowed for fighting state (not downed/ghost), prevents edge cases
 
+**From Plan 04-05:**
+- setInterval for revival ticking — Continuous 100ms checks for interruption (reviver downed, target state changed)
+- Session key pattern reviverId:targetId — O(1) lookup and prevents duplicate revivals on same target
+- 50% HP restoration on revival — Balanced between useful and not OP, per CONTEXT.md requirements
+- Clear down timer on revival — Prevents ghost transition after successful revival completion
+
 ### Pending Todos
 
 None yet.
@@ -163,8 +169,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (04-04 execution complete)
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-02-02 (04-05 execution complete)
+Stopped at: Completed 04-05-PLAN.md
 Resume file: None
 
-**Phase 4 Progress:** Player health system complete. TDD implementation with 70 tests. Boss attacks trigger applyDamageToPlayer → HP reduction → down at 0 HP → 10s timer → ghost mode. Healers (cleric/paladin/bard) can heal 25 HP during combat. Only fighting state players can heal/be healed. Timer cleanup in cleanupLobby. 214 tests passing. Ready for Plan 04-05 (revival system with 2.5s channel).
+**Phase 4 Progress:** Revival system complete. Channel-based revival with 2.5s duration. Healers (cleric/paladin/bard) can revive downed teammates at 50% HP. Damage interrupts revival channel. One-revive-per-fight enforced via hasBeenRevived flag. setInterval tick system checks for interruption every 100ms. Down timer cleared on successful revival. Target death (permanent down) cancels active revival attempts. cleanupLobby clears all revival intervals. 236 tests passing (92 in CombatManager). Ready for Plan 04-06 (websocket integration).
