@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: EstimationManager** - Extract voting and consensus logic
 - [x] **Phase 4: CombatManager** - Extract battle and health mechanics
 - [x] **Phase 5: Fine-Grained Events** - Replace coarse broadcasts with targeted events
-- [ ] **Phase 6: New Flow Implementation** - Implement estimation-before-battle flow
+- [x] **Phase 6: New Flow Implementation** - Implement estimation-before-battle flow
 
 ## Phase Details
 
@@ -129,12 +129,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] PLAN-06-01.md — All-voted countdown timer with scaling damage multiplier
-- [ ] PLAN-06-02.md — Team attack and damage bonus with JRPG-style client overlay
-- [ ] PLAN-06-03.md — Spectator minion foundation (state, spawn, AI attack loop)
-- [ ] PLAN-06-03b.md — Spectator minion interaction (player attacks, respawn, UI)
-- [ ] PLAN-06-04.md — Discussion phase flow (timer, consensus, host controls)
-- [ ] PLAN-06-05.md — End-to-end flow integration and team stats tracking
+- [x] PLAN-06-01.md — All-voted countdown timer with scaling damage multiplier
+- [x] PLAN-06-02.md — Team attack and damage bonus with JRPG-style client overlay
+- [x] PLAN-06-03.md — Spectator minion foundation (state, spawn, AI attack loop)
+- [x] PLAN-06-03b.md — Spectator minion interaction (player attacks, respawn, UI)
+- [x] PLAN-06-04.md — Discussion phase flow (timer, consensus, host controls)
+- [x] PLAN-06-05.md — End-to-end flow integration and team stats tracking
 
 ## Progress
 
@@ -148,4 +148,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. EstimationManager | 5/5 | Complete | 2026-02-02 |
 | 4. CombatManager | 6/6 | Complete | 2026-02-02 |
 | 5. Fine-Grained Events | 5/5 | Complete | 2026-02-02 |
-| 6. New Flow Implementation | 0/6 | Planning complete | - |
+| 6. New Flow Implementation | 6/6 | Complete | 2026-02-02 |
