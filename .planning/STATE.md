@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 6 - New Flow Implementation
+**Current focus:** Phase 6 - New Flow Implementation (COMPLETE)
 
 ## Current Position
 
 Phase: 6 of 6 (New Flow Implementation)
-Plan: 04 of 5 in current phase
-Status: In progress
-Last activity: 2026-02-02 — Completed 06-04 Discussion Phase Flow
+Plan: 05 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-02-02 — Completed 06-05 End-to-End Flow Integration
 
-Progress: [█████████░] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28
-- Average duration: 4.4 min
-- Total execution time: 2.0 hours
+- Total plans completed: 29
+- Average duration: 4.5 min
+- Total execution time: 2.1 hours
 
 **By Phase:**
 
@@ -32,11 +32,10 @@ Progress: [█████████░] 95%
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
 | 05-fine-grained-events | 5 | 25 min | 5.0 min |
-| 06-new-flow-implementation | 4.5 | 39 min | 7.8 min |
+| 06-new-flow-implementation | 5 | 47 min | 9.4 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-02 (8 min), 06-03 (11 min), 06-03b (8 min), 06-04 (8 min)
-- 06-02/06-03 had parallel execution by multiple agents
+- Last 5 plans: 06-03 (11 min), 06-03b (8 min), 06-04 (8 min), 06-05 (8 min)
 
 *Updated after each plan completion*
 
@@ -220,6 +219,12 @@ Recent decisions affecting current work:
 - Consensus auto-ends immediately — No delay needed when everyone agrees
 - Four ending mechanisms — consensus, host_finalized, timer_expired in priority order
 
+**From Plan 06-05:**
+- Both teams needed for full consensus — Integration tests confirmed both dev and QA teams must consensus
+- ScopedEventBus for integration tests — CombatManager expects ScopedEventBus interface
+- battle_complete clears all timers — Boss attack, modifier, and minion timers cleared before discussion
+- Phase transition via event bus — discussion_ended handler in websocket.ts transitions to next_level/victory
+
 ### Pending Todos
 
 None yet.
@@ -230,8 +235,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 22:10:00Z
-Stopped at: Completed 06-04-PLAN.md
+Last session: 2026-02-02 22:19:00Z
+Stopped at: Completed 06-05-PLAN.md
 Resume file: None
 
-**Phase 6 Progress:** Discussion Phase Flow (06-04) complete. Discussion phase starts with 2-minute timer. Four ending mechanisms: (1) consensus auto-ends immediately, (2) host can finalize from voted values, (3) timer expiration picks majority, (4) fallback majority selection. Client UI shows countdown timer and host finalize buttons. Ready for PLAN-06-05 (Victory/Next Level transitions).
+**Phase 6 Complete:** All 5 plans executed. Complete game flow: estimation -> battle -> countdown -> team attack -> discussion -> next_level/victory. Integration tests verify flow (9 tests). Domain managers (Session, Estimation, Combat) fully wired via event bus. Fine-grained events emit to clients. Ready for production testing.
