@@ -1,9 +1,23 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import type { RequestHandler } from 'express';
-import { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
+import { ClientToServerEvents, ServerToClientEvents, TeamType } from '../shared/gameEvents.js';
 import { gameState, setGameStateIO } from './gameState.js';
-import { sessionManager, LobbyNotFoundError, PlayerNotFoundError, PlayerNotHostError, ReconnectionFailedError, SessionError } from './domains/index.js';
+import {
+  sessionManager,
+  estimationManager,
+  LobbyNotFoundError,
+  PlayerNotFoundError,
+  PlayerNotHostError,
+  ReconnectionFailedError,
+  SessionError,
+  EstimationNotActiveError,
+  VoteNotEligibleError,
+  InvalidVoteValueError,
+  NotInDiscussionPhaseError,
+  ForceEstimateTieError,
+  InvalidForcedValueError,
+} from './domains/index.js';
 
 type InterServerEvents = {};
 type SocketData = {
@@ -266,7 +280,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       sessionManager.recordPlayerActivity(playerId);
 
       try {
+        // Get old team before change
+        const oldLobby = sessionManager.getPlayerLobby(targetPlayerId);
+        const oldPlayer = oldLobby?.players.find(p => p.id === targetPlayerId);
+        const oldTeam = oldPlayer?.team;
+
         const lobby = sessionManager.assignTeam(playerId, targetPlayerId, team);
+
+        // Notify EstimationManager of team change
+        if (oldTeam && oldTeam !== team) {
+          estimationManager.handleTeamChange(lobby.id, targetPlayerId, oldTeam, team);
+        }
+
         io.to(lobby.id).emit('lobby_updated', { lobby });
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -288,7 +313,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       sessionManager.recordPlayerActivity(playerId);
 
       try {
+        // Get old team before change
+        const oldLobby = sessionManager.getPlayerLobby(playerId);
+        const oldPlayer = oldLobby?.players.find(p => p.id === playerId);
+        const oldTeam = oldPlayer?.team;
+
         const lobby = sessionManager.changeOwnTeam(playerId, team);
+
+        // Notify EstimationManager of team change
+        if (oldTeam && oldTeam !== team) {
+          estimationManager.handleTeamChange(lobby.id, playerId, oldTeam, team);
+        }
+
         io.to(lobby.id).emit('lobby_updated', { lobby });
       } catch (error) {
         if (error instanceof SessionError) {
@@ -1017,6 +1053,313 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (playerId) {
         console.log(`💓 Heartbeat received from ${playerId}`);
+      }
+    });
+
+    // ============================================================================
+    // ESTIMATION DOMAIN HANDLERS (using EstimationManager)
+    // ============================================================================
+
+    // Start estimation for a ticket
+    socket.on('start_estimation' as any, ({ ticketId }: { ticketId: string }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Verify player is host
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
+
+        // Start estimation
+        estimationManager.startEstimation(lobbyId, ticketId);
+
+        // Add all current non-spectator players as eligible voters
+        for (const player of lobby.players) {
+          if (player.team !== 'spectators') {
+            estimationManager.addEligibleVoter(lobbyId, player.id, player.team);
+          }
+        }
+
+        // Broadcast estimation started
+        io.to(lobbyId).emit('estimation_started' as any, { ticketId });
+        console.log(`Estimation started for ticket ${ticketId} in lobby ${lobbyId}`);
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can start estimation' });
+        } else if (error instanceof LobbyNotFoundError) {
+          socket.emit('game_error', { message: 'Lobby not found' });
+        } else {
+          console.error('Start estimation error:', error);
+          socket.emit('game_error', { message: 'Failed to start estimation' });
+        }
+      }
+    });
+
+    // Cast vote during estimation
+    socket.on('cast_vote' as any, ({ vote }: { vote: number | '?' }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Get player's team from session
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+
+        const player = lobby.players.find(p => p.id === playerId);
+        if (!player) throw new PlayerNotFoundError(playerId);
+
+        // Cast vote through EstimationManager
+        estimationManager.castVote(lobbyId, playerId, player.team, vote);
+
+        // Record activity for host transfer
+        sessionManager.recordPlayerActivity(playerId);
+
+        // Broadcast updated vote state
+        const visibility = estimationManager.getAllVoteVisibility(lobbyId);
+        io.to(lobbyId).emit('vote_state_updated' as any, visibility);
+
+        console.log(`Player ${playerId} voted ${vote} on team ${player.team}`);
+      } catch (error) {
+        if (error instanceof EstimationNotActiveError) {
+          socket.emit('game_error', { message: 'No active estimation' });
+        } else if (error instanceof VoteNotEligibleError) {
+          socket.emit('game_error', { message: error.message });
+        } else if (error instanceof InvalidVoteValueError) {
+          socket.emit('game_error', { message: error.message });
+        } else if (error instanceof LobbyNotFoundError) {
+          socket.emit('game_error', { message: 'Lobby not found' });
+        } else {
+          console.error('Vote error:', error);
+          socket.emit('game_error', { message: 'Failed to submit vote' });
+        }
+      }
+    });
+
+    // Change vote during discussion phase
+    socket.on('change_vote' as any, ({ newVote }: { newVote: number | '?' }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Get player's team
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+
+        const player = lobby.players.find(p => p.id === playerId);
+        if (!player) throw new PlayerNotFoundError(playerId);
+
+        // Change vote through EstimationManager
+        estimationManager.changeVoteDuringDiscussion(lobbyId, playerId, player.team, newVote);
+
+        // Record activity
+        sessionManager.recordPlayerActivity(playerId);
+
+        // Broadcast updated vote state
+        const visibility = estimationManager.getAllVoteVisibility(lobbyId);
+        io.to(lobbyId).emit('vote_state_updated' as any, visibility);
+
+        console.log(`Player ${playerId} changed vote to ${newVote} during discussion`);
+      } catch (error) {
+        if (error instanceof NotInDiscussionPhaseError) {
+          socket.emit('game_error', { message: 'Can only change vote during discussion phase' });
+        } else if (error instanceof EstimationNotActiveError) {
+          socket.emit('game_error', { message: 'No active estimation' });
+        } else if (error instanceof VoteNotEligibleError) {
+          socket.emit('game_error', { message: error.message });
+        } else if (error instanceof InvalidVoteValueError) {
+          socket.emit('game_error', { message: error.message });
+        } else {
+          console.error('Change vote error:', error);
+          socket.emit('game_error', { message: 'Failed to change vote' });
+        }
+      }
+    });
+
+    // Pause voting timer (host control)
+    socket.on('pause_voting_timer' as any, ({ team }: { team: TeamType }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Verify player is host
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
+
+        estimationManager.pauseTimer(lobbyId, team, playerId);
+
+        // Broadcast timer state
+        io.to(lobbyId).emit('timer_paused' as any, { team });
+        console.log(`Host paused voting timer for team ${team}`);
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can pause the timer' });
+        } else {
+          console.error('Pause timer error:', error);
+          socket.emit('game_error', { message: 'Failed to pause timer' });
+        }
+      }
+    });
+
+    // Resume voting timer (host control)
+    socket.on('resume_voting_timer' as any, ({ team }: { team: TeamType }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Verify player is host
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
+
+        estimationManager.resumeTimer(lobbyId, team, playerId);
+
+        // Broadcast timer state
+        io.to(lobbyId).emit('timer_resumed' as any, { team });
+        console.log(`Host resumed voting timer for team ${team}`);
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can resume the timer' });
+        } else {
+          console.error('Resume timer error:', error);
+          socket.emit('game_error', { message: 'Failed to resume timer' });
+        }
+      }
+    });
+
+    // Extend voting timer (host control)
+    socket.on('extend_voting_timer' as any, ({ team, additionalSeconds }: { team: TeamType; additionalSeconds: number }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Verify player is host
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
+
+        const additionalMs = additionalSeconds * 1000;
+        estimationManager.extendTimer(lobbyId, team, additionalMs, playerId);
+
+        // Broadcast timer state
+        io.to(lobbyId).emit('timer_extended' as any, { team, additionalSeconds });
+        console.log(`Host extended voting timer for team ${team} by ${additionalSeconds}s`);
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can extend the timer' });
+        } else {
+          console.error('Extend timer error:', error);
+          socket.emit('game_error', { message: 'Failed to extend timer' });
+        }
+      }
+    });
+
+    // Force estimate (host control during ties)
+    socket.on('force_estimate' as any, ({ team, forcedValue }: { team: TeamType; forcedValue?: number }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Verify player is host
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
+
+        const result = estimationManager.forceEstimate(lobbyId, team, playerId, forcedValue);
+
+        // Broadcast forced estimate
+        io.to(lobbyId).emit('estimate_forced' as any, { team, consensusValue: result.consensusValue });
+        console.log(`Host forced estimate for team ${team}: ${result.consensusValue}`);
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can force an estimate' });
+        } else if (error instanceof ForceEstimateTieError) {
+          const err = error as ForceEstimateTieError;
+          socket.emit('game_error', {
+            message: `Vote is tied between [${err.tiedValues.join(', ')}]. Please choose one.`,
+            tiedValues: err.tiedValues
+          });
+        } else if (error instanceof InvalidForcedValueError) {
+          const err = error as InvalidForcedValueError;
+          socket.emit('game_error', {
+            message: `Invalid forced value. Must choose from: [${err.validValues.join(', ')}]`
+          });
+        } else if (error instanceof EstimationNotActiveError) {
+          socket.emit('game_error', { message: 'No active estimation' });
+        } else {
+          console.error('Force estimate error:', error);
+          socket.emit('game_error', { message: 'Failed to force estimate' });
+        }
+      }
+    });
+
+    // Enter discussion phase for a team
+    socket.on('enter_discussion' as any, ({ team }: { team: TeamType }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        // Verify player is host
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) throw new LobbyNotFoundError(lobbyId);
+        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
+
+        estimationManager.enterDiscussionPhase(lobbyId, team);
+
+        // Broadcast phase change
+        const visibility = estimationManager.getAllVoteVisibility(lobbyId);
+        io.to(lobbyId).emit('vote_state_updated' as any, visibility);
+        console.log(`Team ${team} entered discussion phase`);
+      } catch (error) {
+        if (error instanceof PlayerNotHostError) {
+          socket.emit('game_error', { message: 'Only the host can start discussion' });
+        } else if (error instanceof EstimationNotActiveError) {
+          socket.emit('game_error', { message: 'No active estimation' });
+        } else {
+          console.error('Enter discussion error:', error);
+          socket.emit('game_error', { message: 'Failed to enter discussion phase' });
+        }
       }
     });
 
