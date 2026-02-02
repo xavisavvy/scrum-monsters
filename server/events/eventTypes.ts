@@ -293,6 +293,26 @@ export interface CombatPlayerHealedPayload {
   newHealth: number;
 }
 
+/** Emitted when countdown timer starts after all players voted */
+export interface CombatCountdownStartedPayload {
+  lobbyId: string;
+  durationSeconds: number;
+  startedAt: number;
+}
+
+/** Emitted every second during countdown */
+export interface CombatCountdownTickPayload {
+  lobbyId: string;
+  remainingSeconds: number;
+  multiplier: number;
+}
+
+/** Emitted when countdown reaches zero */
+export interface CombatCountdownCompletePayload {
+  lobbyId: string;
+  finalMultiplier: number;
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -357,6 +377,9 @@ export interface DomainEventMap {
   'combat:player_permanently_downed': CombatPlayerPermanentlyDownedPayload;
   'combat:cleanup_complete': CombatCleanupCompletePayload;
   'combat:player_healed': CombatPlayerHealedPayload;
+  'combat:countdown_started': CombatCountdownStartedPayload;
+  'combat:countdown_tick': CombatCountdownTickPayload;
+  'combat:countdown_complete': CombatCountdownCompletePayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
