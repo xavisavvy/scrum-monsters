@@ -24,6 +24,7 @@ import {
   CombatNotActiveError,
   PlayerNotInCombatError,
   RevivalNotAllowedError,
+  NotHealerClassError,
 } from '../errors/CombatErrors';
 
 /**
@@ -474,29 +475,17 @@ export class CombatManager {
       // Apply damage after delay
       setTimeout(() => {
         const damage = this.getAttackDamage(attackType, combatState.boss!.isEnraged);
-        const timestamp = Date.now();
 
         fightingPlayers.forEach(player => {
-          this.eventBus.emit('combat:player_damaged', {
-            lobbyId,
-            playerId: player.playerId,
-            damage,
-            timestamp,
-          });
+          this.applyDamageToPlayer(lobbyId, player.playerId, damage);
         });
       }, 1000);
     } else {
       // Light attack: instant damage
       const damage = this.getAttackDamage(attackType, combatState.boss.isEnraged);
-      const timestamp = Date.now();
 
       fightingPlayers.forEach(player => {
-        this.eventBus.emit('combat:player_damaged', {
-          lobbyId,
-          playerId: player.playerId,
-          damage,
-          timestamp,
-        });
+        this.applyDamageToPlayer(lobbyId, player.playerId, damage);
       });
     }
   }
@@ -526,21 +515,11 @@ export class CombatManager {
 
       // Apply damage after delay
       setTimeout(() => {
-        this.eventBus.emit('combat:player_damaged', {
-          lobbyId,
-          playerId: targetId,
-          damage,
-          timestamp: Date.now(),
-        });
+        this.applyDamageToPlayer(lobbyId, targetId, damage);
       }, 1000);
     } else {
       // Light attack: instant damage
-      this.eventBus.emit('combat:player_damaged', {
-        lobbyId,
-        playerId: targetId,
-        damage,
-        timestamp: Date.now(),
-      });
+      this.applyDamageToPlayer(lobbyId, targetId, damage);
     }
   }
 
@@ -595,11 +574,159 @@ export class CombatManager {
   }
 
   /**
+   * Apply damage to a player and handle down state
+   */
+  applyDamageToPlayer(lobbyId: string, playerId: string, damage: number): void {
+    // Get combat state
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      throw new CombatNotActiveError(lobbyId);
+    }
+
+    // Get player state
+    const playerState = combatState.players.get(playerId);
+    if (!playerState) {
+      throw new PlayerNotInCombatError(playerId);
+    }
+
+    // Reduce HP, capped at 0
+    const oldHp = playerState.hp;
+    playerState.hp = Math.max(0, playerState.hp - damage);
+
+    // Emit player damaged event
+    this.eventBus.emit('combat:player_damaged', {
+      lobbyId,
+      playerId,
+      damage,
+      playerHealth: playerState.hp,
+    });
+
+    // Check if player is downed
+    if (playerState.hp === 0 && oldHp > 0) {
+      this.downPlayer(lobbyId, playerId);
+    }
+  }
+
+  /**
+   * Transition player to downed state with 10-second timer
+   */
+  downPlayer(lobbyId: string, playerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return; // Combat ended
+    }
+
+    const playerState = combatState.players.get(playerId);
+    if (!playerState) {
+      return; // Player not in combat
+    }
+
+    // Transition to downed
+    playerState.combatState = 'downed';
+    playerState.isDowned = true;
+    playerState.downedAt = Date.now();
+
+    // Emit downed event
+    this.eventBus.emit('combat:player_downed', {
+      lobbyId,
+      playerId,
+      countdownSeconds: 10,
+    });
+
+    // Start 10-second timer
+    const timerHandle = setTimeout(() => {
+      this.permanentlyDownPlayer(lobbyId, playerId);
+    }, this.DOWN_TIMER_MS);
+
+    playerState.downTimerHandle = timerHandle;
+  }
+
+  /**
+   * Permanently down a player (transition to ghost)
+   */
+  permanentlyDownPlayer(lobbyId: string, playerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return; // Combat ended
+    }
+
+    const playerState = combatState.players.get(playerId);
+    if (!playerState) {
+      return; // Player not in combat
+    }
+
+    // Clear timer handle
+    if (playerState.downTimerHandle) {
+      clearTimeout(playerState.downTimerHandle);
+      playerState.downTimerHandle = undefined;
+    }
+
+    // Transition to ghost
+    playerState.combatState = 'ghost';
+
+    // Emit permanent down event
+    this.eventBus.emit('combat:player_permanently_downed', {
+      lobbyId,
+      playerId,
+      message: `${playerId} has become a ghost`,
+    });
+
+    // Cancel any revival sessions targeting this player (will be implemented in Plan 04-05)
+  }
+
+  /**
    * Player heals a teammate (healer-only)
-   * TODO: Implement in Plan 04-04
    */
   playerHealTeammate(lobbyId: string, healerId: string, targetId: string): void {
-    // TODO: Implement in Plan 04-04
+    // Get combat state
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      throw new CombatNotActiveError(lobbyId);
+    }
+
+    // Get healer state
+    const healerState = combatState.players.get(healerId);
+    if (!healerState) {
+      throw new PlayerNotInCombatError(healerId);
+    }
+
+    // Check healer is fighting
+    if (healerState.combatState !== 'fighting') {
+      throw new PlayerNotInCombatError(healerId);
+    }
+
+    // Validate healer class
+    if (this.getPlayerClass) {
+      const healerClass = this.getPlayerClass(lobbyId, healerId);
+      if (!healerClass || !this.HEALER_CLASSES.includes(healerClass)) {
+        throw new NotHealerClassError(healerId, healerClass ?? 'unknown');
+      }
+    }
+
+    // Get target state
+    const targetState = combatState.players.get(targetId);
+    if (!targetState) {
+      throw new PlayerNotInCombatError(targetId);
+    }
+
+    // Check target is fighting
+    if (targetState.combatState !== 'fighting') {
+      throw new PlayerNotInCombatError(targetId);
+    }
+
+    // Heal target, capped at maxHp
+    const oldHp = targetState.hp;
+    targetState.hp = Math.min(targetState.maxHp, targetState.hp + this.HEAL_AMOUNT);
+    const actualHealAmount = targetState.hp - oldHp;
+
+    // Emit healed event
+    this.eventBus.emit('combat:player_healed', {
+      lobbyId,
+      playerId: targetId,
+      healerId,
+      healAmount: actualHealAmount,
+      newHealth: targetState.hp,
+    });
   }
 
   /**
@@ -639,7 +766,15 @@ export class CombatManager {
         combatState.boss.attackTimerHandle = undefined;
       }
 
-      // TODO: Clear other timers in Plan 04-04/05 (down timers, revival sessions, modifier interval)
+      // Clear all player down timers
+      for (const player of combatState.players.values()) {
+        if (player.downTimerHandle) {
+          clearTimeout(player.downTimerHandle);
+          player.downTimerHandle = undefined;
+        }
+      }
+
+      // TODO: Clear other timers in Plan 04-05 (revival sessions, modifier interval)
     }
 
     this.combatStates.delete(lobbyId);
