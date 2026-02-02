@@ -195,7 +195,12 @@ export class SessionManager {
       throw new LobbyNotFoundError(lobbyId);
     }
 
-    // Create new player
+    // Check if there's an active host (not disconnected)
+    const currentHost = lobby.players.find(p => p.id === lobby.hostId);
+    const hostIsDisconnected = currentHost && this.disconnectedPlayers.has(currentHost.id);
+    const noActiveHost = !currentHost || hostIsDisconnected;
+
+    // Create new player - make them host if no active host exists
     const playerId = Math.random().toString(36).substring(2, 15);
     const player: Player = {
       id: playerId,
@@ -203,9 +208,17 @@ export class SessionManager {
       avatar: 'warrior',
       avatarClass: 'warrior',
       team: 'developers',
-      isHost: false,
+      isHost: noActiveHost,
       hasSubmittedScore: false,
     };
+
+    // If becoming host, update lobby.hostId and demote old host
+    if (noActiveHost) {
+      if (currentHost) {
+        currentHost.isHost = false;
+      }
+      lobby.hostId = playerId;
+    }
 
     // Add to lobby
     lobby.players.push(player);
