@@ -1734,7 +1734,6 @@ describe('CombatManager', () => {
         eventBus.emit('session:player_left', {
           lobbyId: 'lobby1',
           playerId: 'warrior1',
-          playerName: 'Warrior',
         });
 
         expect(state!.players.has('warrior1')).toBe(false);
@@ -1755,7 +1754,6 @@ describe('CombatManager', () => {
         eventBus.emit('session:player_left', {
           lobbyId: 'lobby1',
           playerId: 'warrior1',
-          playerName: 'Warrior',
         });
 
         // Timer should be cleared
@@ -1773,7 +1771,6 @@ describe('CombatManager', () => {
         eventBus.emit('session:player_left', {
           lobbyId: 'lobby1',
           playerId: 'warrior1',
-          playerName: 'Warrior',
         });
 
         expect(state!.boss!.threatTable.has('warrior1')).toBe(false);
@@ -1793,7 +1790,6 @@ describe('CombatManager', () => {
         eventBus.emit('session:player_left', {
           lobbyId: 'lobby1',
           playerId: 'cleric1',
-          playerName: 'Cleric',
         });
 
         expect(revivalCancelledListener).toHaveBeenCalledWith({
@@ -1818,7 +1814,6 @@ describe('CombatManager', () => {
         eventBus.emit('session:player_left', {
           lobbyId: 'lobby1',
           playerId: 'warrior1',
-          playerName: 'Warrior',
         });
 
         expect(revivalCancelledListener).toHaveBeenCalledWith({
