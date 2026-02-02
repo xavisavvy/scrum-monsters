@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 2 of 6 (SessionManager)
-Plan: 4 of TBD in current phase
-Status: In progress
-Last activity: 2026-02-01 — Completed 02-04-PLAN.md
+Plan: 5 of 5 in current phase
+Status: Phase complete
+Last activity: 2026-02-02 — Completed 02-05-PLAN.md
 
-Progress: [███░░░░░░░] 30%
+Progress: [████░░░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 7
-- Average duration: 3.1 min
-- Total execution time: 0.36 hours
+- Total plans completed: 8
+- Average duration: 3.4 min
+- Total execution time: 0.45 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 8 min | 2.7 min |
-| 02-sessionmanager | 4 | 16 min | 4.0 min |
+| 02-sessionmanager | 5 | 22 min | 4.4 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-01 (2 min), 02-02 (4 min), 02-03 (4 min), 02-04 (6 min)
-- Trend: Phase 02 trending slightly longer (~4 min avg)
+- Last 5 plans: 02-02 (4 min), 02-03 (4 min), 02-04 (6 min), 02-05 (6 min)
+- Trend: Phase 02 complete, consistent 4-6 min integration work
 
 *Updated after each plan completion*
 
@@ -86,6 +86,12 @@ Recent decisions affecting current work:
 - Team management split — Self-service (changeOwnTeam) vs host-only (assignTeam) patterns
 - Disconnected player exclusion — promoteNewHost filters via disconnectedPlayers Map
 
+**From Plan 02-05:**
+- Domain barrel export — Single import point (domains/index.ts) for all domain managers and infrastructure
+- Method visibility — Made SessionManager methods public for websocket integration (blocking issue)
+- Activity tracking points — Avatar selection, team changes, and vote submission capture engagement
+- Typed exception flow — SessionManager throws, websocket catches and converts to game_error emits
+
 ### Pending Todos
 
 None yet.
@@ -96,6 +102,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 21:30 (02-04 execution)
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-02-02 21:39 (02-05 execution)
+Stopped at: Completed 02-05-PLAN.md - Phase 2 (SessionManager) complete
 Resume file: None
+
+**Phase 2 Complete:** SessionManager fully extracted and integrated into websocket handlers. Ready for Phase 3 (Estimation domain).
