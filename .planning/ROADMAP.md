@@ -2,7 +2,7 @@
 
 ## Overview
 
-Refactor a 2000+ line monolithic GameStateManager into separate Session, Estimation, and Combat domains to improve maintainability while preserving real-time multiplayer performance. The journey follows dependency order: establish type definitions and communication infrastructure first, extract domain managers sequentially (Session → Estimation → Combat), optimize with fine-grained events, and finally implement the new estimation-before-battle game flow.
+Refactor a 2000+ line monolithic GameStateManager into separate Session, Estimation, and Combat domains to improve maintainability while preserving real-time multiplayer performance. The journey follows dependency order: establish type definitions and communication infrastructure first, extract domain managers sequentially (Session -> Estimation -> Combat), optimize with fine-grained events, and finally implement the new estimation-before-battle game flow.
 
 ## Phases
 
@@ -107,10 +107,14 @@ Plans:
   3. Bandwidth usage decreases measurably compared to full-state broadcasts
   4. Socket handlers route client events through domain managers instead of directly mutating state
   5. All existing game functionality works identically from user perspective
-**Plans**: TBD
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (planning pending)
+- [ ] 05-01-PLAN.md — Create client event types and LobbyEventSequencer
+- [ ] 05-02-PLAN.md — Create useEventSync store and setupEventHandlers
+- [ ] 05-03-PLAN.md — Create ClientEventEmitter bridge
+- [ ] 05-04-PLAN.md — Wire ClientEventEmitter and add client event types
+- [ ] 05-05-PLAN.md — Migrate client to fine-grained events, remove lobby_updated
 
 ### Phase 6: New Flow Implementation
 **Goal**: Implement estimation-before-battle flow with 10s countdown and simultaneous player states
@@ -121,7 +125,7 @@ Plans:
   2. Countdown expiration transitions to discussion phase automatically
   3. Spectators continue fighting for boss side as expected
   4. Team competition stats track correctly across new flow
-  5. Game flow works end-to-end: estimation → battle (triggered by first vote) → discussion → next ticket
+  5. Game flow works end-to-end: estimation -> battle (triggered by first vote) -> discussion -> next ticket
 **Plans**: TBD
 
 Plans:
@@ -130,13 +134,13 @@ Plans:
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
+Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
-| 2. SessionManager | 5/5 | ✓ Complete | 2026-02-01 |
-| 3. EstimationManager | 5/5 | ✓ Complete | 2026-02-02 |
-| 4. CombatManager | 6/6 | ✓ Complete | 2026-02-02 |
-| 5. Fine-Grained Events | 0/0 | Not started | - |
+| 1. Foundation | 3/3 | Complete | 2026-02-01 |
+| 2. SessionManager | 5/5 | Complete | 2026-02-01 |
+| 3. EstimationManager | 5/5 | Complete | 2026-02-02 |
+| 4. CombatManager | 6/6 | Complete | 2026-02-02 |
+| 5. Fine-Grained Events | 0/5 | Planned | - |
 | 6. New Flow Implementation | 0/0 | Not started | - |
