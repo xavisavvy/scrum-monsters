@@ -162,6 +162,8 @@ export class CombatManager {
   private readonly MINION_ATTACK_DAMAGE = 15;
   private readonly MINION_BOSS_HEAL = 25;
   private readonly MINION_ATTACK_INTERVAL_MS = 4000;
+  private readonly MINION_RESPAWN_MIN_MS = 15000;
+  private readonly MINION_RESPAWN_MAX_MS = 30000;
 
   // Dependencies
   private readonly eventBus: ScopedEventBus;
