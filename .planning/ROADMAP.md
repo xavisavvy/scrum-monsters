@@ -126,10 +126,15 @@ Plans:
   3. Spectators continue fighting for boss side as expected
   4. Team competition stats track correctly across new flow
   5. Game flow works end-to-end: estimation -> battle (triggered by first vote) -> discussion -> next ticket
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] TBD (planning pending)
+- [ ] PLAN-06-01.md — All-voted countdown timer with scaling damage multiplier
+- [ ] PLAN-06-02.md — Team attack and damage bonus with JRPG-style client overlay
+- [ ] PLAN-06-03.md — Spectator minion foundation (state, spawn, AI attack loop)
+- [ ] PLAN-06-03b.md — Spectator minion interaction (player attacks, respawn, UI)
+- [ ] PLAN-06-04.md — Discussion phase flow (timer, consensus, host controls)
+- [ ] PLAN-06-05.md — End-to-end flow integration and team stats tracking
 
 ## Progress
 
@@ -143,4 +148,4 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 3. EstimationManager | 5/5 | Complete | 2026-02-02 |
 | 4. CombatManager | 6/6 | Complete | 2026-02-02 |
 | 5. Fine-Grained Events | 5/5 | Complete | 2026-02-02 |
-| 6. New Flow Implementation | 0/0 | Not started | - |
+| 6. New Flow Implementation | 0/6 | Planning complete | - |
