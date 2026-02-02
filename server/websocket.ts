@@ -7,6 +7,8 @@ import {
   sessionManager,
   estimationManager,
   combatManager,
+  initializeClientEventEmitter,
+  getClientEventEmitter,
   LobbyNotFoundError,
   PlayerNotFoundError,
   PlayerNotHostError,
@@ -87,6 +89,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   // Pass the io instance to GameState for emitting events
   setGameStateIO(io);
+
+  // Initialize ClientEventEmitter for fine-grained event delivery
+  const clientEventEmitter = initializeClientEventEmitter(io);
+  console.log('ClientEventEmitter initialized for fine-grained events');
 
   // Connection monitoring for Replit
   let totalConnections = 0;
@@ -244,6 +250,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           pendingActions: {},
           stateChanges: {}
         });
+
+        // Send full state event for fine-grained event system initialization
+        const emitter = getClientEventEmitter();
+        emitter.sendFullState(lobby.id, lobby, socket.id);
 
         // Notify other players about the new player joining (for dropping animation)
         socket.to(lobby.id).emit('player_joined', { player, lobby });
@@ -1030,6 +1040,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('lobby_sync', lobbySync);
           socket.emit('reconnect_response', response);
 
+          // Reinitialize fine-grained event sequence for reconnected player
+          const emitter = getClientEventEmitter();
+          emitter.sendFullState(lobbyId, lobbySync.lobby, socket.id);
+
           // Notify other players about the reconnection
           socket.to(lobbyId).emit('player_reconnected', {
             playerId,
@@ -1059,6 +1073,32 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (playerId) {
         console.log(`💓 Heartbeat received from ${playerId}`);
       }
+    });
+
+    // Handle missed events request (sequence gap recovery)
+    socket.on('request_missed_events', ({ lastSeq }) => {
+      const lobbyId = socket.data.lobbyId;
+      if (!lobbyId) {
+        console.warn('request_missed_events: No lobbyId in socket data');
+        return;
+      }
+
+      const emitter = getClientEventEmitter();
+      const missedEvents = emitter.getMissedEvents(lobbyId, lastSeq);
+
+      if (missedEvents === null) {
+        // Gap too large, send full state refresh
+        console.log(`Gap too large for ${lobbyId}, sending full state`);
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (lobby) {
+          emitter.sendFullState(lobbyId, lobby, socket.id);
+        }
+      } else if (missedEvents.length > 0) {
+        // Send missed events
+        console.log(`Sending ${missedEvents.length} missed events to ${socket.id}`);
+        socket.emit('system:missed_events', { events: missedEvents });
+      }
+      // If missedEvents is empty array, client is caught up - no action needed
     });
 
     // ============================================================================
