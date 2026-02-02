@@ -13,10 +13,18 @@ import {
 describe('EstimationManager', () => {
   let eventBus: ScopedEventBus;
   let estimationManager: EstimationManager;
+  let getPlayerTeam: (lobbyId: string, playerId: string) => 'developers' | 'qa' | 'spectators' | null;
 
   beforeEach(() => {
     eventBus = new ScopedEventBus();
-    estimationManager = new EstimationManager({ eventBus });
+    // Mock team lookup function
+    getPlayerTeam = vi.fn((lobbyId: string, playerId: string) => {
+      // Default mock: players are developers unless specified otherwise
+      if (playerId.startsWith('qa')) return 'qa';
+      if (playerId.startsWith('spectator')) return 'spectators';
+      return 'developers';
+    });
+    estimationManager = new EstimationManager({ eventBus, getPlayerTeam });
   });
 
   describe('instantiation', () => {
@@ -706,6 +714,178 @@ describe('EstimationManager', () => {
       expect(() => {
         estimationManager.forceEstimate('nonexistent', 'developers', 'host1');
       }).toThrow(EstimationNotActiveError);
+    });
+  });
+
+  describe('session event subscriptions', () => {
+    beforeEach(() => {
+      estimationManager.startEstimation('lobby1', 'ticket1');
+    });
+
+    it('should add late-joining player to eligible voters when estimation active', () => {
+      // Emit session:player_joined event
+      eventBus.emit('session:player_joined', {
+        lobbyId: 'lobby1',
+        playerId: 'latecomer',
+        playerName: 'Late Player'
+      });
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.eligibleVoters.has('latecomer')).toBe(true);
+    });
+
+    it('should not add spectator to eligible voters when joining', () => {
+      // Emit session:player_joined for spectator
+      eventBus.emit('session:player_joined', {
+        lobbyId: 'lobby1',
+        playerId: 'spectator1',
+        playerName: 'Spectator Player'
+      });
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.eligibleVoters.has('spectator1')).toBe(false);
+      expect(state!.teams.qa.eligibleVoters.has('spectator1')).toBe(false);
+    });
+
+    it('should add QA player to correct team when joining', () => {
+      // Emit session:player_joined for QA player
+      eventBus.emit('session:player_joined', {
+        lobbyId: 'lobby1',
+        playerId: 'qa1',
+        playerName: 'QA Player'
+      });
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.qa.eligibleVoters.has('qa1')).toBe(true);
+      expect(state!.teams.developers.eligibleVoters.has('qa1')).toBe(false);
+    });
+
+    it('should remove player from eligible voters when they leave', () => {
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+
+      // Emit session:player_left event
+      eventBus.emit('session:player_left', {
+        lobbyId: 'lobby1',
+        playerId: 'player1'
+      });
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.eligibleVoters.has('player1')).toBe(false);
+      expect(state!.teams.developers.votes.has('player1')).toBe(false);
+    });
+
+    it('should recheck consensus when player leaves', () => {
+      const consensusListener = vi.fn();
+      eventBus.on('estimation:team_consensus_reached', consensusListener);
+
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      estimationManager.addEligibleVoter('lobby1', 'player2', 'developers');
+
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 8);
+
+      // No consensus yet
+      let state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(false);
+
+      // Player2 leaves - now player1 alone has consensus
+      eventBus.emit('session:player_left', {
+        lobbyId: 'lobby1',
+        playerId: 'player2'
+      });
+
+      state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(true);
+      expect(state!.teams.developers.consensusValue).toBe(5);
+    });
+
+    it('should cleanup estimation state when lobby destroyed', () => {
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+      expect(estimationManager.getEstimation('lobby1')).not.toBeNull();
+
+      // Emit session:lobby_destroyed event
+      eventBus.emit('session:lobby_destroyed', {
+        lobbyId: 'lobby1'
+      });
+
+      expect(estimationManager.getEstimation('lobby1')).toBeNull();
+    });
+
+    it('should do nothing when player joins but no active estimation', () => {
+      // Cleanup estimation first
+      estimationManager.cleanupLobby('lobby1');
+
+      // Emit session:player_joined - should not error
+      eventBus.emit('session:player_joined', {
+        lobbyId: 'lobby1',
+        playerId: 'player1',
+        playerName: 'Player One'
+      });
+
+      // State should still be null
+      expect(estimationManager.getEstimation('lobby1')).toBeNull();
+    });
+  });
+
+  describe('handleTeamChange', () => {
+    beforeEach(() => {
+      estimationManager.startEstimation('lobby1', 'ticket1');
+      estimationManager.addEligibleVoter('lobby1', 'player1', 'developers');
+    });
+
+    it('should remove vote when player switches to spectator', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+
+      let state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.votes.has('player1')).toBe(true);
+
+      // Player switches to spectator
+      estimationManager.handleTeamChange('lobby1', 'player1', 'developers', 'spectators');
+
+      state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.eligibleVoters.has('player1')).toBe(false);
+      expect(state!.teams.developers.votes.has('player1')).toBe(false);
+    });
+
+    it('should add to new team when switching between voting teams', () => {
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+
+      // Player switches from developers to QA
+      estimationManager.handleTeamChange('lobby1', 'player1', 'developers', 'qa');
+
+      const state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.eligibleVoters.has('player1')).toBe(false);
+      expect(state!.teams.developers.votes.has('player1')).toBe(false);
+      expect(state!.teams.qa.eligibleVoters.has('player1')).toBe(true);
+    });
+
+    it('should recheck consensus on old team after team change', () => {
+      const consensusListener = vi.fn();
+      eventBus.on('estimation:team_consensus_reached', consensusListener);
+
+      estimationManager.addEligibleVoter('lobby1', 'player2', 'developers');
+
+      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+
+      // Consensus reached
+      let state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(true);
+
+      // Player1 switches teams - should still have consensus with just player2
+      estimationManager.handleTeamChange('lobby1', 'player1', 'developers', 'qa');
+
+      state = estimationManager.getEstimation('lobby1');
+      expect(state!.teams.developers.hasConsensus).toBe(true);
+      expect(state!.teams.developers.consensusValue).toBe(5);
+    });
+
+    it('should do nothing when no active estimation', () => {
+      estimationManager.cleanupLobby('lobby1');
+
+      // Should not throw
+      estimationManager.handleTeamChange('lobby1', 'player1', 'developers', 'qa');
     });
   });
 });

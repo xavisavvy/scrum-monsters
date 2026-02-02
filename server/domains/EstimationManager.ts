@@ -13,6 +13,11 @@
  */
 
 import { ScopedEventBus } from "../events";
+import type {
+  SessionPlayerJoinedPayload,
+  SessionPlayerLeftPayload,
+  SessionLobbyDestroyedPayload,
+} from "../events";
 import { TeamType } from "../../shared/gameEvents";
 import {
   EstimationNotActiveError,
@@ -28,6 +33,7 @@ import {
  */
 export interface EstimationManagerDeps {
   eventBus: ScopedEventBus;
+  getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
 }
 
 /**
@@ -79,9 +85,16 @@ export class EstimationManager {
 
   // Dependencies
   private readonly eventBus: ScopedEventBus;
+  private readonly getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
 
   constructor(deps: EstimationManagerDeps) {
     this.eventBus = deps.eventBus;
+    this.getPlayerTeam = deps.getPlayerTeam;
+
+    // Subscribe to session events for voter management
+    this.eventBus.on('session:player_joined', this.handlePlayerJoined.bind(this));
+    this.eventBus.on('session:player_left', this.handlePlayerLeft.bind(this));
+    this.eventBus.on('session:lobby_destroyed', this.handleLobbyDestroyed.bind(this));
   }
 
   /**
@@ -781,6 +794,82 @@ export class EstimationManager {
     this.checkFullConsensus(lobbyId);
 
     return { consensusValue };
+  }
+
+  /**
+   * Handles player joining a lobby (session event subscription)
+   * If estimation is active, adds player to eligible voters based on their team
+   */
+  private handlePlayerJoined(payload: SessionPlayerJoinedPayload): void {
+    const estimation = this.estimations.get(payload.lobbyId);
+    if (!estimation) {
+      return; // No active estimation, nothing to do
+    }
+
+    // Get player's team via dependency callback
+    if (!this.getPlayerTeam) {
+      return; // No way to determine team
+    }
+
+    const team = this.getPlayerTeam(payload.lobbyId, payload.playerId);
+    if (!team || team === 'spectators') {
+      return; // Spectators cannot vote
+    }
+
+    // Add to eligible voters (late joiners can vote immediately)
+    this.addEligibleVoter(payload.lobbyId, payload.playerId, team);
+  }
+
+  /**
+   * Handles player leaving a lobby (session event subscription)
+   * Removes player from eligible voters and their vote if cast
+   */
+  private handlePlayerLeft(payload: SessionPlayerLeftPayload): void {
+    // removeEligibleVoter handles removal and consensus recheck
+    this.removeEligibleVoter(payload.lobbyId, payload.playerId);
+  }
+
+  /**
+   * Handles lobby destruction (session event subscription)
+   * Cleans up all estimation state and timers
+   */
+  private handleLobbyDestroyed(payload: SessionLobbyDestroyedPayload): void {
+    this.cleanupLobby(payload.lobbyId);
+  }
+
+  /**
+   * Handles player team change (called by SessionManager after team change)
+   * If player switches to spectator, their vote is removed
+   */
+  handleTeamChange(
+    lobbyId: string,
+    playerId: string,
+    oldTeam: TeamType,
+    newTeam: TeamType
+  ): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return; // No active estimation
+    }
+
+    // Remove from old team if they were a voting team
+    if (this.isVotingTeam(oldTeam)) {
+      const oldTeamState = estimation.teams[oldTeam];
+      if (oldTeamState.eligibleVoters.has(playerId)) {
+        oldTeamState.eligibleVoters.delete(playerId);
+        const hadVote = oldTeamState.votes.delete(playerId);
+
+        // Recheck consensus on old team after removal
+        if (hadVote) {
+          this.checkConsensus(lobbyId, oldTeam);
+        }
+      }
+    }
+
+    // Add to new team if they're a voting team
+    if (this.isVotingTeam(newTeam)) {
+      estimation.teams[newTeam].eligibleVoters.add(playerId);
+    }
   }
 }
 
