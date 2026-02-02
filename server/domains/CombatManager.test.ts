@@ -1590,4 +1590,358 @@ describe('CombatManager', () => {
       });
     });
   });
+
+  describe('Cross-Domain Event Subscriptions', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+
+      const players = [
+        { id: 'warrior1', team: 'developers' as TeamType },
+        { id: 'ranger1', team: 'developers' as TeamType },
+        { id: 'cleric1', team: 'qa' as TeamType },
+      ];
+      combatManager.initializeCombat('lobby1', players, 0);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    describe('estimation:vote_cast event', () => {
+      it('should trigger battle entry when player votes', () => {
+        const battleEntryListener = vi.fn();
+        eventBus.on('combat:player_entered_battle', battleEntryListener);
+
+        // Emit vote cast event
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        expect(battleEntryListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          transitionDurationMs: 1500,
+        });
+      });
+
+      it('should start boss attack loop on first vote', () => {
+        const battleStartedListener = vi.fn();
+        eventBus.on('combat:battle_started', battleStartedListener);
+
+        // First vote
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        expect(battleStartedListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          bossId: expect.any(String),
+        });
+
+        const state = combatManager.getCombatState('lobby1');
+        expect(state!.battleStartTime).toBeDefined();
+        expect(state!.boss!.attackTimerHandle).toBeDefined();
+      });
+
+      it('should start modifier loop on first vote', () => {
+        const modifierListener = vi.fn();
+        eventBus.on('combat:modifier_updated', modifierListener);
+
+        // First vote
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        const state = combatManager.getCombatState('lobby1');
+        expect(state!.modifierIntervalHandle).toBeDefined();
+
+        // Advance 10 seconds for first modifier increment
+        vi.advanceTimersByTime(10000);
+
+        expect(modifierListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          modifier: 1.1,
+        });
+      });
+
+      it('should not start loops multiple times', () => {
+        const battleStartedListener = vi.fn();
+        eventBus.on('combat:battle_started', battleStartedListener);
+
+        // First vote
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        // Second vote
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'ranger1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        // Should only emit once
+        expect(battleStartedListener).toHaveBeenCalledTimes(1);
+      });
+
+      it('should ignore votes for non-existent combat', () => {
+        const battleEntryListener = vi.fn();
+        eventBus.on('combat:player_entered_battle', battleEntryListener);
+
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'nonexistent',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        expect(battleEntryListener).not.toHaveBeenCalled();
+      });
+
+      it('should ignore votes from players not in combat', () => {
+        const battleEntryListener = vi.fn();
+        eventBus.on('combat:player_entered_battle', battleEntryListener);
+
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'spectator1',
+          team: 'spectators',
+          vote: 5,
+        });
+
+        expect(battleEntryListener).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('session:player_left event', () => {
+      it('should remove player from combat state', () => {
+        const state = combatManager.getCombatState('lobby1');
+        expect(state!.players.has('warrior1')).toBe(true);
+
+        eventBus.emit('session:player_left', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          playerName: 'Warrior',
+        });
+
+        expect(state!.players.has('warrior1')).toBe(false);
+      });
+
+      it('should clear player down timer on leave', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+
+        // Down the player
+        warrior!.combatState = 'downed';
+        warrior!.hp = 0;
+        combatManager.downPlayer('lobby1', 'warrior1');
+
+        expect(warrior!.downTimerHandle).toBeDefined();
+
+        // Player leaves
+        eventBus.emit('session:player_left', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          playerName: 'Warrior',
+        });
+
+        // Timer should be cleared
+        expect(state!.players.has('warrior1')).toBe(false);
+      });
+
+      it('should remove player from threat table', () => {
+        const state = combatManager.getCombatState('lobby1');
+
+        // Build threat
+        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        expect(state!.boss!.threatTable.has('warrior1')).toBe(true);
+
+        // Player leaves
+        eventBus.emit('session:player_left', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          playerName: 'Warrior',
+        });
+
+        expect(state!.boss!.threatTable.has('warrior1')).toBe(false);
+      });
+
+      it('should cancel revival if reviver leaves', () => {
+        const revivalCancelledListener = vi.fn();
+        eventBus.on('combat:revival_cancelled', revivalCancelledListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Reviver leaves
+        eventBus.emit('session:player_left', {
+          lobbyId: 'lobby1',
+          playerId: 'cleric1',
+          playerName: 'Cleric',
+        });
+
+        expect(revivalCancelledListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          reviverId: 'cleric1',
+          targetId: 'warrior1',
+          reason: 'player_left',
+        });
+      });
+
+      it('should cancel revival if target leaves', () => {
+        const revivalCancelledListener = vi.fn();
+        eventBus.on('combat:revival_cancelled', revivalCancelledListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Target leaves
+        eventBus.emit('session:player_left', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          playerName: 'Warrior',
+        });
+
+        expect(revivalCancelledListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          reviverId: 'cleric1',
+          targetId: 'warrior1',
+          reason: 'player_left',
+        });
+      });
+    });
+
+    describe('session:lobby_destroyed event', () => {
+      it('should call cleanupLobby when lobby destroyed', () => {
+        const cleanupListener = vi.fn();
+        eventBus.on('combat:cleanup_complete', cleanupListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        expect(state).not.toBeNull();
+
+        eventBus.emit('session:lobby_destroyed', {
+          lobbyId: 'lobby1',
+        });
+
+        expect(cleanupListener).toHaveBeenCalledWith({ lobbyId: 'lobby1' });
+        expect(combatManager.getCombatState('lobby1')).toBeNull();
+      });
+
+      it('should clear all timers on lobby destroyed', () => {
+        // Start combat loops
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        const state = combatManager.getCombatState('lobby1');
+        expect(state!.boss!.attackTimerHandle).toBeDefined();
+        expect(state!.modifierIntervalHandle).toBeDefined();
+
+        // Destroy lobby
+        eventBus.emit('session:lobby_destroyed', {
+          lobbyId: 'lobby1',
+        });
+
+        // Verify state is cleaned up
+        expect(combatManager.getCombatState('lobby1')).toBeNull();
+      });
+    });
+
+    describe('Battle Modifier Loop', () => {
+      it('should increment modifier every 10 seconds', () => {
+        const modifierListener = vi.fn();
+        eventBus.on('combat:modifier_updated', modifierListener);
+
+        // Start combat
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        // First increment at 10s
+        vi.advanceTimersByTime(10000);
+        expect(modifierListener).toHaveBeenCalledTimes(1);
+        expect(modifierListener.mock.calls[0][0].lobbyId).toBe('lobby1');
+        expect(modifierListener.mock.calls[0][0].modifier).toBeCloseTo(1.1);
+
+        // Second increment at 20s
+        vi.advanceTimersByTime(10000);
+        expect(modifierListener).toHaveBeenCalledTimes(2);
+        expect(modifierListener.mock.calls[1][0].modifier).toBeCloseTo(1.2);
+
+        // Third increment at 30s
+        vi.advanceTimersByTime(10000);
+        expect(modifierListener).toHaveBeenCalledTimes(3);
+        expect(modifierListener.mock.calls[2][0].modifier).toBeCloseTo(1.3);
+      });
+
+      it('should stop modifier loop when boss defeated', () => {
+        const modifierListener = vi.fn();
+        eventBus.on('combat:modifier_updated', modifierListener);
+
+        // Start combat
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        // Defeat boss
+        const state = combatManager.getCombatState('lobby1');
+        state!.boss!.hp = 0;
+
+        // Try to increment - should not emit
+        modifierListener.mockClear();
+        vi.advanceTimersByTime(10000);
+
+        expect(modifierListener).not.toHaveBeenCalled();
+      });
+
+      it('should clear modifier interval on cleanup', () => {
+        const modifierListener = vi.fn();
+        eventBus.on('combat:modifier_updated', modifierListener);
+
+        // Start combat
+        eventBus.emit('estimation:vote_cast', {
+          lobbyId: 'lobby1',
+          playerId: 'warrior1',
+          team: 'developers',
+          vote: 5,
+        });
+
+        // Cleanup lobby
+        combatManager.cleanupLobby('lobby1');
+
+        // Advance time - should not emit
+        vi.advanceTimersByTime(20000);
+
+        expect(modifierListener).not.toHaveBeenCalled();
+      });
+    });
+  });
 });
