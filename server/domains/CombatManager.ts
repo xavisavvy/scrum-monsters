@@ -601,6 +601,14 @@ export class CombatManager {
       playerHealth: playerState.hp,
     });
 
+    // Check if player was channeling revival - damage interrupts
+    for (const [sessionKey, session] of this.revivalSessions) {
+      if (session.reviverId === playerId) {
+        this.cancelRevivalSession(sessionKey, 'took_damage');
+        break;
+      }
+    }
+
     // Check if player is downed
     if (playerState.hp === 0 && oldHp > 0) {
       this.downPlayer(lobbyId, playerId);
@@ -671,7 +679,12 @@ export class CombatManager {
       message: `${playerId} has become a ghost`,
     });
 
-    // Cancel any revival sessions targeting this player (will be implemented in Plan 04-05)
+    // Cancel any revival sessions targeting this player
+    for (const [sessionKey, session] of this.revivalSessions) {
+      if (session.targetId === playerId) {
+        this.cancelRevivalSession(sessionKey, 'permanent_down');
+      }
+    }
   }
 
   /**
@@ -731,19 +744,204 @@ export class CombatManager {
 
   /**
    * Start revival channel for downed player
-   * TODO: Implement in Plan 04-05
    */
   startRevival(lobbyId: string, reviverId: string, targetId: string): boolean {
-    // TODO: Implement in Plan 04-05
-    return false;
+    // Get combat state
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return false;
+    }
+
+    // Get reviver state
+    const reviverState = combatState.players.get(reviverId);
+    if (!reviverState) {
+      return false;
+    }
+
+    // Check reviver is fighting
+    if (reviverState.combatState !== 'fighting') {
+      return false;
+    }
+
+    // Validate reviver is healer class
+    if (this.getPlayerClass) {
+      const reviverClass = this.getPlayerClass(lobbyId, reviverId);
+      if (!reviverClass || !this.HEALER_CLASSES.includes(reviverClass)) {
+        throw new RevivalNotAllowedError(
+          `Player ${reviverId} with class ${reviverClass ?? 'unknown'} cannot revive (must be healer)`
+        );
+      }
+    }
+
+    // Get target state
+    const targetState = combatState.players.get(targetId);
+    if (!targetState) {
+      return false;
+    }
+
+    // Check target is downed (not fighting or ghost)
+    if (targetState.combatState !== 'downed') {
+      return false;
+    }
+
+    // Check target hasn't been revived yet (one revive per fight)
+    if (targetState.hasBeenRevived) {
+      return false;
+    }
+
+    // Check if target is already being revived
+    const sessionKey = `${reviverId}:${targetId}`;
+    const existingSession = Array.from(this.revivalSessions.values()).find(
+      session => session.targetId === targetId
+    );
+    if (existingSession) {
+      return false; // Target already being revived by someone
+    }
+
+    // Create revival session
+    const session: RevivalSession = {
+      reviverId,
+      targetId,
+      lobbyId,
+      startedAt: Date.now(),
+      channelDurationMs: this.REVIVAL_CHANNEL_DURATION_MS,
+      intervalHandle: setInterval(() => {
+        this.tickRevival(sessionKey);
+      }, 100) as NodeJS.Timeout,
+    };
+
+    this.revivalSessions.set(sessionKey, session);
+
+    // Emit revival started event
+    this.eventBus.emit('combat:revival_started', {
+      lobbyId,
+      reviverId,
+      targetId,
+      durationMs: this.REVIVAL_CHANNEL_DURATION_MS,
+    });
+
+    return true;
   }
 
   /**
-   * Cancel ongoing revival session
-   * TODO: Implement in Plan 04-05
+   * Tick a revival session to check for completion or interruption
+   */
+  private tickRevival(sessionKey: string): void {
+    const session = this.revivalSessions.get(sessionKey);
+    if (!session) {
+      return; // Session already cancelled
+    }
+
+    const combatState = this.combatStates.get(session.lobbyId);
+    if (!combatState) {
+      // Combat ended
+      this.cancelRevivalSession(sessionKey, 'combat_ended');
+      return;
+    }
+
+    // Check if reviver still fighting
+    const reviverState = combatState.players.get(session.reviverId);
+    if (!reviverState || reviverState.combatState !== 'fighting') {
+      // Reviver downed or left
+      this.cancelRevivalSession(sessionKey, 'reviver_downed');
+      return;
+    }
+
+    // Check if target still downed
+    const targetState = combatState.players.get(session.targetId);
+    if (!targetState || targetState.combatState !== 'downed') {
+      // Target died, revived by someone else, or left
+      this.cancelRevivalSession(sessionKey, 'target_state_changed');
+      return;
+    }
+
+    // Check if channel duration reached
+    const elapsed = Date.now() - session.startedAt;
+    if (elapsed >= session.channelDurationMs) {
+      this.completeRevival(sessionKey);
+    }
+  }
+
+  /**
+   * Complete a revival session
+   */
+  private completeRevival(sessionKey: string): void {
+    const session = this.revivalSessions.get(sessionKey);
+    if (!session) {
+      return;
+    }
+
+    const combatState = this.combatStates.get(session.lobbyId);
+    if (!combatState) {
+      return;
+    }
+
+    const targetState = combatState.players.get(session.targetId);
+    if (!targetState) {
+      return;
+    }
+
+    // Clear down timer (prevent ghost transition)
+    if (targetState.downTimerHandle) {
+      clearTimeout(targetState.downTimerHandle);
+      targetState.downTimerHandle = undefined;
+    }
+
+    // Restore target to fighting state at 50% HP
+    targetState.hp = Math.floor(targetState.maxHp * 0.5);
+    targetState.combatState = 'fighting';
+    targetState.isDowned = false;
+    targetState.hasBeenRevived = true;
+
+    // Clear interval
+    clearInterval(session.intervalHandle);
+
+    // Remove session
+    this.revivalSessions.delete(sessionKey);
+
+    // Emit revival completed event
+    this.eventBus.emit('combat:player_revived', {
+      lobbyId: session.lobbyId,
+      playerId: session.targetId,
+      reviverId: session.reviverId,
+    });
+  }
+
+  /**
+   * Cancel a revival session
+   */
+  private cancelRevivalSession(sessionKey: string, reason: string): void {
+    const session = this.revivalSessions.get(sessionKey);
+    if (!session) {
+      return;
+    }
+
+    // Clear interval
+    clearInterval(session.intervalHandle);
+
+    // Remove session
+    this.revivalSessions.delete(sessionKey);
+
+    // Emit cancellation event
+    this.eventBus.emit('combat:revival_cancelled', {
+      lobbyId: session.lobbyId,
+      reviverId: session.reviverId,
+      targetId: session.targetId,
+      reason,
+    });
+  }
+
+  /**
+   * Cancel ongoing revival session (public interface for external cancellation)
    */
   cancelRevival(reviverId: string, reason: string): void {
-    // TODO: Implement in Plan 04-05
+    // Find session where player is reviver
+    for (const [sessionKey, session] of this.revivalSessions) {
+      if (session.reviverId === reviverId) {
+        this.cancelRevivalSession(sessionKey, reason);
+        break;
+      }
+    }
   }
 
   /**
@@ -774,7 +972,15 @@ export class CombatManager {
         }
       }
 
-      // TODO: Clear other timers in Plan 04-05 (revival sessions, modifier interval)
+      // Clear all revival sessions for this lobby
+      for (const [sessionKey, session] of this.revivalSessions) {
+        if (session.lobbyId === lobbyId) {
+          clearInterval(session.intervalHandle);
+          this.revivalSessions.delete(sessionKey);
+        }
+      }
+
+      // TODO: Clear modifier interval in future plan
     }
 
     this.combatStates.delete(lobbyId);

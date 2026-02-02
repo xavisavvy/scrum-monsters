@@ -6,6 +6,7 @@ import {
   CombatNotActiveError,
   PlayerNotInCombatError,
   NotHealerClassError,
+  RevivalNotAllowedError,
 } from '../errors/CombatErrors';
 
 describe('CombatManager', () => {
@@ -1266,7 +1267,7 @@ describe('CombatManager', () => {
 
         expect(() => {
           combatManager.startRevival('lobby1', 'warrior1', 'ranger1');
-        }).toThrow('RevivalNotAllowedError');
+        }).toThrow(RevivalNotAllowedError);
       });
 
       it('should return false if reviver is not fighting', () => {
@@ -1328,8 +1329,8 @@ describe('CombatManager', () => {
 
         expect(revivalCompletedListener).toHaveBeenCalledWith({
           lobbyId: 'lobby1',
+          playerId: 'warrior1',
           reviverId: 'cleric1',
-          targetId: 'warrior1',
         });
       });
 
