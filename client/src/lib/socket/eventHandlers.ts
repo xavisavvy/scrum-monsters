@@ -507,6 +507,47 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
+  socket.on('combat:minion_damaged', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:minion_damaged', data, socket);
+
+    if (processed) {
+      const { minions, addMinion } = useGameState.getState();
+      const minion = minions.get(data.playerId);
+      if (minion) {
+        addMinion({
+          ...minion,
+          hp: data.newHp,
+        });
+      }
+    }
+  });
+
+  socket.on('combat:minion_killed', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:minion_killed', data, socket);
+
+    if (processed) {
+      const { minions, addMinion, removeMinion } = useGameState.getState();
+      const minion = minions.get(data.playerId);
+      if (minion) {
+        addMinion({
+          ...minion,
+          hp: 0,
+          isAlive: false,
+        });
+
+        // If respawn scheduled (respawnInSeconds > 0), minion will re-appear via minion_spawned
+        // If no respawn (team switched), remove from map after animation
+        if (data.respawnInSeconds === 0) {
+          setTimeout(() => {
+            removeMinion(data.playerId);
+          }, 1000);
+        }
+      }
+    }
+  });
+
   // ============================================================================
   // SYSTEM EVENTS
   // ============================================================================
@@ -567,6 +608,8 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:minion_spawned');
   socket.off('combat:minion_attack');
   socket.off('combat:minion_heal_boss');
+  socket.off('combat:minion_damaged');
+  socket.off('combat:minion_killed');
 
   // System events
   socket.off('system:full_state');

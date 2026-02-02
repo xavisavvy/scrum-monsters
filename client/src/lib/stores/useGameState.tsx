@@ -35,6 +35,7 @@ interface GameState {
   removeAttackAnimation: (id: string) => void;
   setCountdown: (countdown: CountdownState | null) => void;
   addMinion: (minion: MinionClientState) => void;
+  removeMinion: (playerId: string) => void;
   clearAll: () => void;
 }
 
@@ -80,6 +81,13 @@ export const useGameState = create<GameState>()(
       const { minions } = get();
       const newMinions = new Map(minions);
       newMinions.set(minion.playerId, minion);
+      set({ minions: newMinions });
+    },
+
+    removeMinion: (playerId) => {
+      const { minions } = get();
+      const newMinions = new Map(minions);
+      newMinions.delete(playerId);
       set({ minions: newMinions });
     },
 
