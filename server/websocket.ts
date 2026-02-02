@@ -1436,6 +1436,36 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
+    // Finalize estimate (host only during discussion)
+    socket.on('finalize_estimate', (data: { estimate: number }) => {
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not in a lobby' });
+          return;
+        }
+
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) {
+          socket.emit('game_error', { message: 'Lobby not found' });
+          return;
+        }
+
+        // Verify caller is host
+        if (lobby.hostId !== playerId) {
+          socket.emit('game_error', { message: 'Only host can finalize estimate' });
+          return;
+        }
+
+        estimationManager.hostFinalizeEstimate(lobbyId, playerId, data.estimate);
+        console.log(`Host finalized estimate with value ${data.estimate} in lobby ${lobbyId}`);
+      } catch (error) {
+        socket.emit('game_error', { message: (error as Error).message });
+      }
+    });
+
     // ============================================================================
     // COMBAT DOMAIN HANDLERS (using CombatManager)
     // ============================================================================
