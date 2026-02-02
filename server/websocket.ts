@@ -417,6 +417,26 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Notify EstimationManager of team change
         if (oldTeam && oldTeam !== team) {
           estimationManager.handleTeamChange(lobby.id, playerId, oldTeam, team);
+
+          // If switching FROM spectator to voter during active battle
+          if (oldTeam === 'spectators' && team !== 'spectators') {
+            const combatState = combatManager.getCombatState(lobby.id);
+            if (combatState && combatState.boss && combatState.boss.hp > 0) {
+              // Kill their minion (no respawn)
+              combatManager.handleSpectatorSwitchToVoter(lobby.id, playerId);
+
+              // Add to estimation eligible voters
+              estimationManager.addEligibleVoter(lobby.id, playerId, team);
+              console.log(`Spectator ${playerId} switched to ${team}, minion killed`);
+            }
+          }
+
+          // If switching TO spectator from voter during active battle
+          if (oldTeam !== 'spectators' && team === 'spectators') {
+            // Remove from estimation (they can't vote as spectator)
+            estimationManager.removeEligibleVoter(lobby.id, playerId);
+            console.log(`Voter ${playerId} switched to spectator, removed from estimation`);
+          }
         }
 
         // Removed lobby_updated: session:team_changed event emitted by sessionManager.changeOwnTeam
