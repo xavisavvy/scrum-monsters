@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: SessionManager** - Extract lobby and player lifecycle
 - [x] **Phase 3: EstimationManager** - Extract voting and consensus logic
 - [x] **Phase 4: CombatManager** - Extract battle and health mechanics
-- [ ] **Phase 5: Fine-Grained Events** - Replace coarse broadcasts with targeted events
+- [x] **Phase 5: Fine-Grained Events** - Replace coarse broadcasts with targeted events
 - [ ] **Phase 6: New Flow Implementation** - Implement estimation-before-battle flow
 
 ## Phase Details
@@ -110,11 +110,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Create client event types and LobbyEventSequencer
-- [ ] 05-02-PLAN.md — Create useEventSync store and setupEventHandlers
-- [ ] 05-03-PLAN.md — Create ClientEventEmitter bridge
-- [ ] 05-04-PLAN.md — Wire ClientEventEmitter and add client event types
-- [ ] 05-05-PLAN.md — Migrate client to fine-grained events, remove lobby_updated
+- [x] 05-01-PLAN.md — Create client event types and LobbyEventSequencer
+- [x] 05-02-PLAN.md — Create useEventSync store and setupEventHandlers
+- [x] 05-03-PLAN.md — Create ClientEventEmitter bridge
+- [x] 05-04-PLAN.md — Wire ClientEventEmitter and add client event types
+- [x] 05-05-PLAN.md — Migrate client to fine-grained events, remove lobby_updated
 
 ### Phase 6: New Flow Implementation
 **Goal**: Implement estimation-before-battle flow with 10s countdown and simultaneous player states
@@ -142,5 +142,5 @@ Phases execute in numeric order: 1 -> 2 -> 3 -> 4 -> 5 -> 6
 | 2. SessionManager | 5/5 | Complete | 2026-02-01 |
 | 3. EstimationManager | 5/5 | Complete | 2026-02-02 |
 | 4. CombatManager | 6/6 | Complete | 2026-02-02 |
-| 5. Fine-Grained Events | 0/5 | Planned | - |
+| 5. Fine-Grained Events | 5/5 | Complete | 2026-02-02 |
 | 6. New Flow Implementation | 0/0 | Not started | - |

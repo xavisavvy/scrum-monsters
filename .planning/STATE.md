@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 5 of 6 (Fine-Grained Events)
-Plan: 4 of 6 in current phase
-Status: In progress
-Last activity: 2026-02-02 — Completed 05-04-PLAN.md
+Plan: 5 of 5 in current phase
+Status: Complete
+Last activity: 2026-02-02 — Completed Phase 5
 
-Progress: [████████░░] 78%
+Progress: [█████████░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22
-- Average duration: 3.9 min
-- Total execution time: 1.42 hours
+- Total plans completed: 24
+- Average duration: 4.0 min
+- Total execution time: 1.6 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [████████░░] 78%
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
-| 05-fine-grained-events | 3 | 13.5 min | 4.5 min |
+| 05-fine-grained-events | 5 | 25 min | 5.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-06 (4.5 min), 05-01 (5.5 min), 05-03 (4 min), 05-04 (4 min)
-- Trend: Phase 05 maintaining consistent 4-5 min pace
+- Last 5 plans: 05-01 (5.5 min), 05-03 (4 min), 05-04 (4 min), 05-05 (extended)
+- 05-05 included human verification checkpoint with 5 bugs fixed
 
 *Updated after each plan completion*
 
@@ -184,6 +184,12 @@ Recent decisions affecting current work:
 - Deferred initialization pattern — ClientEventEmitter initialized after Socket.IO server creation via factory function
 - Gap recovery endpoint — request_missed_events handler checks buffer and sends missed events or full state
 
+**From Plan 05-05:**
+- lobby_updated deprecated with fallback — Handler remains as safety net with console warning, will be fully removed after Phase 6
+- Host transfer on rejoin — When joining a lobby where host is disconnected, new player automatically becomes host
+- Avatar selection via sessionManager — select_avatar handler uses domain manager not legacy gameState to find lobbies
+- currentPlayer state sync — Client handlers update both currentLobby.players AND currentPlayer for avatar changes
+
 ### Pending Todos
 
 None yet.
@@ -194,8 +200,15 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 08:45:51Z
-Stopped at: Completed 05-04-PLAN.md
+Last session: 2026-02-02 19:40:00Z
+Stopped at: Completed Phase 5
 Resume file: None
 
-**Phase 5 Plan 04 Complete:** ClientEventEmitter fully wired into server architecture. Fine-grained event types declared in shared/gameEvents.ts (32 events with seq/timestamp). Initialized after Socket.IO server creation, gap recovery via request_missed_events handler, full state sync on join/reconnect. Event pipeline complete: domain events → eventBus → ClientEventEmitter → Socket.IO clients. Ready for legacy event migration in Plan 05-05.
+**Phase 5 Complete:** Fine-grained events fully operational. Human verification passed with 5 bugs fixed during testing:
+- CSS variables for dialog visibility
+- Avatar selection via sessionManager instead of legacy gameState
+- currentPlayer state sync on avatar changes
+- Host transfer when joining lobby with disconnected host
+- Invite link port configuration
+
+All event types working (session:player_joined, session:avatar_selected, session:host_changed). Sequence numbers, gap detection, missed event recovery all verified. Ready for Phase 6: New Flow Implementation.
