@@ -8,6 +8,13 @@ interface CountdownState {
   multiplier: number;
 }
 
+interface MinionClientState {
+  playerId: string;
+  hp: number;
+  maxHp: number;
+  isAlive: boolean;
+}
+
 interface GameState {
   currentLobby: Lobby | null;
   currentPlayer: Player | null;
@@ -16,7 +23,8 @@ interface GameState {
   inviteLink: string | null;
   error: string | null;
   countdown: CountdownState | null;
-  
+  minions: Map<string, MinionClientState>;
+
   // Actions
   setLobby: (lobby: Lobby) => void;
   setPlayer: (player: Player) => void;
@@ -26,6 +34,7 @@ interface GameState {
   addAttackAnimation: (animation: AttackAnimation) => void;
   removeAttackAnimation: (id: string) => void;
   setCountdown: (countdown: CountdownState | null) => void;
+  addMinion: (minion: MinionClientState) => void;
   clearAll: () => void;
 }
 
@@ -38,6 +47,7 @@ export const useGameState = create<GameState>()(
     inviteLink: null,
     error: null,
     countdown: null,
+    minions: new Map(),
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -66,6 +76,13 @@ export const useGameState = create<GameState>()(
 
     setCountdown: (countdown) => set({ countdown }),
 
+    addMinion: (minion) => {
+      const { minions } = get();
+      const newMinions = new Map(minions);
+      newMinions.set(minion.playerId, minion);
+      set({ minions: newMinions });
+    },
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
@@ -73,7 +90,8 @@ export const useGameState = create<GameState>()(
       attackAnimations: [],
       inviteLink: null,
       error: null,
-      countdown: null
+      countdown: null,
+      minions: new Map()
     })
   }))
 );

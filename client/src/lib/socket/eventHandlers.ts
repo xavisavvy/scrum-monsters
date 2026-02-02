@@ -467,6 +467,47 @@ export function setupEventHandlers(socket: Socket): void {
   });
 
   // ============================================================================
+  // MINION EVENTS
+  // ============================================================================
+
+  socket.on('combat:minion_spawned', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:minion_spawned', data, socket);
+
+    if (processed) {
+      const { addMinion } = useGameState.getState();
+      addMinion({
+        playerId: data.playerId,
+        hp: data.hp,
+        maxHp: data.maxHp,
+        isAlive: true,
+      });
+    }
+  });
+
+  socket.on('combat:minion_attack', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('combat:minion_attack', data, socket);
+    // Visual effects handled by UI components
+  });
+
+  socket.on('combat:minion_heal_boss', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:minion_heal_boss', data, socket);
+
+    if (processed) {
+      const { currentBoss, setBoss } = useGameState.getState();
+      if (currentBoss) {
+        const updatedBoss: Boss = {
+          ...currentBoss,
+          currentHealth: data.newBossHp
+        };
+        setBoss(updatedBoss);
+      }
+    }
+  });
+
+  // ============================================================================
   // SYSTEM EVENTS
   // ============================================================================
 
@@ -521,6 +562,11 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:countdown_tick');
   socket.off('combat:countdown_complete');
   socket.off('combat:team_attack');
+
+  // Minion events
+  socket.off('combat:minion_spawned');
+  socket.off('combat:minion_attack');
+  socket.off('combat:minion_heal_boss');
 
   // System events
   socket.off('system:full_state');
