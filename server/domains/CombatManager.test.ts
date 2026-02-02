@@ -1190,4 +1190,403 @@ describe('CombatManager', () => {
       });
     });
   });
+
+  describe('Revival System', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+
+      const players = [
+        { id: 'warrior1', team: 'developers' as TeamType },
+        { id: 'ranger1', team: 'developers' as TeamType },
+        { id: 'cleric1', team: 'qa' as TeamType },
+        { id: 'paladin1', team: 'qa' as TeamType },
+      ];
+      combatManager.initializeCombat('lobby1', players, 0);
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    describe('startRevival', () => {
+      it('should create revival session for healer reviving downed player', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+        warrior!.isDowned = true;
+
+        const result = combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        expect(result).toBe(true);
+      });
+
+      it('should emit combat:revival_started event', () => {
+        const revivalStartedListener = vi.fn();
+        eventBus.on('combat:revival_started', revivalStartedListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+        warrior!.isDowned = true;
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        expect(revivalStartedListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          reviverId: 'cleric1',
+          targetId: 'warrior1',
+          durationMs: 2500,
+        });
+      });
+
+      it('should allow cleric to start revival', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        expect(() => {
+          combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+        }).not.toThrow();
+      });
+
+      it('should allow paladin to start revival', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        expect(() => {
+          combatManager.startRevival('lobby1', 'paladin1', 'warrior1');
+        }).not.toThrow();
+      });
+
+      it('should throw RevivalNotAllowedError for non-healer class', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const ranger = state!.players.get('ranger1');
+        ranger!.combatState = 'downed';
+
+        expect(() => {
+          combatManager.startRevival('lobby1', 'warrior1', 'ranger1');
+        }).toThrow('RevivalNotAllowedError');
+      });
+
+      it('should return false if reviver is not fighting', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        const cleric = state!.players.get('cleric1');
+        cleric!.combatState = 'downed';
+
+        const result = combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false if target is not downed', () => {
+        const result = combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false if target has already been revived', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+        warrior!.hasBeenRevived = true;
+
+        const result = combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        expect(result).toBe(false);
+      });
+
+      it('should return false if target is ghost (permanent down)', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'ghost';
+
+        const result = combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        expect(result).toBe(false);
+      });
+    });
+
+    describe('Revival Completion', () => {
+      it('should complete revival after 2.5 seconds of channeling', () => {
+        const revivalCompletedListener = vi.fn();
+        eventBus.on('combat:player_revived', revivalCompletedListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.hp = 0;
+        warrior!.combatState = 'downed';
+        warrior!.isDowned = true;
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Advance time to complete revival
+        vi.advanceTimersByTime(2500);
+
+        expect(revivalCompletedListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          reviverId: 'cleric1',
+          targetId: 'warrior1',
+        });
+      });
+
+      it('should set target HP to 50% on revival', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.hp = 0;
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        vi.advanceTimersByTime(2500);
+
+        expect(warrior!.hp).toBe(50); // 50% of 100 maxHp
+      });
+
+      it('should set target combatState to fighting on revival', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        vi.advanceTimersByTime(2500);
+
+        expect(warrior!.combatState).toBe('fighting');
+        expect(warrior!.isDowned).toBe(false);
+      });
+
+      it('should set hasBeenRevived to true after revival', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+        warrior!.hasBeenRevived = false;
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        vi.advanceTimersByTime(2500);
+
+        expect(warrior!.hasBeenRevived).toBe(true);
+      });
+
+      it('should clear down timer when revival completes', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+
+        // Down the player (starts timer)
+        combatManager.downPlayer('lobby1', 'warrior1');
+        expect(warrior!.downTimerHandle).toBeDefined();
+
+        // Start revival
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Complete revival
+        vi.advanceTimersByTime(2500);
+
+        // Down timer should be cleared
+        expect(warrior!.downTimerHandle).toBeUndefined();
+      });
+    });
+
+    describe('Revival Interruption', () => {
+      it('should cancel revival when reviver takes damage', () => {
+        const revivalCancelledListener = vi.fn();
+        eventBus.on('combat:revival_cancelled', revivalCancelledListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        // Start revival
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Cleric takes damage
+        combatManager.applyDamageToPlayer('lobby1', 'cleric1', 25);
+
+        expect(revivalCancelledListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          reviverId: 'cleric1',
+          targetId: 'warrior1',
+          reason: 'took_damage',
+        });
+      });
+
+      it('should not complete revival if cancelled by damage', () => {
+        const revivalCompletedListener = vi.fn();
+        eventBus.on('combat:player_revived', revivalCompletedListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Interrupt with damage at 1 second
+        vi.advanceTimersByTime(1000);
+        combatManager.applyDamageToPlayer('lobby1', 'cleric1', 25);
+
+        // Advance past completion time
+        vi.advanceTimersByTime(2000);
+
+        // Should NOT complete
+        expect(revivalCompletedListener).not.toHaveBeenCalled();
+        expect(warrior!.combatState).toBe('downed');
+      });
+
+      it('should cancel revival if target dies (permanent down)', () => {
+        const revivalCancelledListener = vi.fn();
+        eventBus.on('combat:revival_cancelled', revivalCancelledListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Target becomes ghost
+        combatManager.permanentlyDownPlayer('lobby1', 'warrior1');
+
+        expect(revivalCancelledListener).toHaveBeenCalledWith({
+          lobbyId: 'lobby1',
+          reviverId: 'cleric1',
+          targetId: 'warrior1',
+          reason: 'permanent_down',
+        });
+      });
+
+      it('should cancel revival if reviver gets downed', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Reviver gets downed (HP to 0)
+        const cleric = state!.players.get('cleric1');
+        cleric!.hp = 25;
+        combatManager.applyDamageToPlayer('lobby1', 'cleric1', 25);
+
+        // Tick the revival to check interruption
+        vi.advanceTimersByTime(200);
+
+        // Should not complete after full duration
+        vi.advanceTimersByTime(3000);
+        expect(warrior!.combatState).toBe('downed');
+      });
+    });
+
+    describe('Revival Cleanup', () => {
+      it('should clear all revival sessions on cleanupLobby', () => {
+        const revivalCancelledListener = vi.fn();
+        eventBus.on('combat:revival_cancelled', revivalCancelledListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        const ranger = state!.players.get('ranger1');
+        warrior!.combatState = 'downed';
+        ranger!.combatState = 'downed';
+
+        // Start multiple revivals
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+        combatManager.startRevival('lobby1', 'paladin1', 'ranger1');
+
+        // Cleanup lobby
+        combatManager.cleanupLobby('lobby1');
+
+        // Advance time - should not complete
+        vi.advanceTimersByTime(3000);
+
+        // Players should still be in original state (lobby is deleted)
+        const stateAfter = combatManager.getCombatState('lobby1');
+        expect(stateAfter).toBeNull();
+      });
+
+      it('should clear interval handles on cleanup', () => {
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Cleanup should clear interval
+        combatManager.cleanupLobby('lobby1');
+
+        // No events should fire
+        const revivalCompletedListener = vi.fn();
+        eventBus.on('combat:player_revived', revivalCompletedListener);
+
+        vi.advanceTimersByTime(5000);
+
+        expect(revivalCompletedListener).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('Revival Edge Cases', () => {
+      it('should not allow multiple revivals on same target', () => {
+        // Add a bard for testing
+        const state = combatManager.getCombatState('lobby1');
+        state!.players.set('bard1', {
+          playerId: 'bard1',
+          hp: 100,
+          maxHp: 100,
+          isDowned: false,
+          hasBeenRevived: false,
+          combatState: 'fighting',
+        });
+
+        // Update mock to include bard
+        getPlayerClass = vi.fn((lobbyId: string, playerId: string) => {
+          if (playerId === 'bard1') return 'bard';
+          if (playerId === 'cleric1') return 'cleric';
+          if (playerId === 'paladin1') return 'paladin';
+          if (playerId === 'warrior1') return 'warrior';
+          return 'ranger';
+        });
+
+        combatManager = new CombatManager({ eventBus, getPlayerTeam, getPlayerClass });
+        const players = [
+          { id: 'warrior1', team: 'developers' as TeamType },
+          { id: 'cleric1', team: 'qa' as TeamType },
+          { id: 'bard1', team: 'qa' as TeamType },
+        ];
+        combatManager.initializeCombat('lobby1', players, 0);
+
+        const newState = combatManager.getCombatState('lobby1');
+        const warrior = newState!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        // First revival starts
+        const result1 = combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+        expect(result1).toBe(true);
+
+        // Second revival should fail (already being revived)
+        const result2 = combatManager.startRevival('lobby1', 'bard1', 'warrior1');
+        expect(result2).toBe(false);
+      });
+
+      it('should handle reviver leaving lobby during revival', () => {
+        const revivalCancelledListener = vi.fn();
+        eventBus.on('combat:revival_cancelled', revivalCancelledListener);
+
+        const state = combatManager.getCombatState('lobby1');
+        const warrior = state!.players.get('warrior1');
+        warrior!.combatState = 'downed';
+
+        combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+        // Simulate reviver leaving (remove from combat)
+        state!.players.delete('cleric1');
+
+        // Tick should detect missing reviver
+        vi.advanceTimersByTime(200);
+
+        // Should not complete
+        vi.advanceTimersByTime(3000);
+        expect(warrior!.combatState).toBe('downed');
+      });
+    });
+  });
 });
