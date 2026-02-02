@@ -21,6 +21,8 @@ export type { DomainEventListener } from './EventBus';
 export { ScopedEventBus } from './ScopedEventBus';
 export { LobbyEventSequencer } from './LobbyEventSequencer';
 export type { BufferedEvent } from './LobbyEventSequencer';
+export { ClientEventEmitter, createClientEventEmitter } from './ClientEventEmitter';
+export type { ClientEventEmitterDeps } from './ClientEventEmitter';
 export type { DomainEventMap, DomainEventName } from './eventTypes';
 
 // Re-export individual payload types for consumers who need them
