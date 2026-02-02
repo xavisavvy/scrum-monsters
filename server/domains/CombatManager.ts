@@ -162,19 +162,160 @@ export class CombatManager {
 
   /**
    * Initialize combat state for a lobby
-   * TODO: Implement in Plan 04-02
    */
-  initializeCombat(lobbyId: string, players: Array<{id: string; team: TeamType}>, ticketIndex?: number): void {
-    // TODO: Implement in Plan 04-02
+  initializeCombat(lobbyId: string, players: Array<{id: string; team: TeamType}>, ticketIndex: number = 0): void {
+    // Filter out spectators for HP calculation
+    const activePlayers = players.filter(p => p.team !== 'spectators');
+    const activePlayerCount = activePlayers.length;
+
+    // Calculate boss HP with ticket scaling
+    const difficultyMultiplier = 1 + (ticketIndex * 0.2);
+    const bossMaxHp = Math.floor(this.BASE_HP_PER_PLAYER * activePlayerCount * difficultyMultiplier);
+
+    // Create boss combat state
+    const bossId = `boss-${lobbyId}-${Date.now()}`;
+    const boss: BossCombat = {
+      bossId,
+      bossName: 'Boss',
+      hp: bossMaxHp,
+      maxHp: bossMaxHp,
+      isEnraged: false,
+      lastAttackAt: 0,
+      threatTable: new Map(),
+    };
+
+    // Create player combat states (excluding spectators)
+    const playerStates = new Map<string, PlayerCombat>();
+    for (const player of activePlayers) {
+      playerStates.set(player.id, {
+        playerId: player.id,
+        hp: this.PLAYER_MAX_HP,
+        maxHp: this.PLAYER_MAX_HP,
+        isDowned: false,
+        hasBeenRevived: false,
+        combatState: 'fighting',
+      });
+    }
+
+    // Create lobby combat state
+    const combatState: LobbyCombatState = {
+      lobbyId,
+      boss,
+      players: playerStates,
+      battleModifier: 1.0,
+      ticketIndex,
+    };
+
+    this.combatStates.set(lobbyId, combatState);
+
+    // Emit battle initialized event
+    this.eventBus.emit('combat:battle_initialized', {
+      lobbyId,
+      bossId,
+      bossMaxHp,
+    });
   }
 
   /**
    * Player attacks boss (click-to-attack)
-   * TODO: Implement in Plan 04-02
    */
   playerAttackBoss(lobbyId: string, playerId: string): number {
-    // TODO: Implement in Plan 04-02
-    return 0;
+    // Get combat state
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      throw new CombatNotActiveError(lobbyId);
+    }
+
+    // Check player is in combat and fighting
+    const playerState = combatState.players.get(playerId);
+    if (!playerState || playerState.combatState !== 'fighting') {
+      throw new PlayerNotInCombatError(playerId);
+    }
+
+    // Get player class and calculate damage
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
+    const baseDamage = this.getClassBaseDamage(playerClass);
+    const damage = Math.floor(baseDamage * combatState.battleModifier);
+
+    // Reduce boss HP
+    const boss = combatState.boss;
+    boss.hp = Math.max(0, boss.hp - damage);
+
+    // Update threat table
+    const existingThreat = boss.threatTable.get(playerId);
+    if (existingThreat) {
+      existingThreat.threat += damage;
+    } else {
+      boss.threatTable.set(playerId, {
+        playerId,
+        threat: damage,
+      });
+    }
+
+    // Emit boss damaged event
+    this.eventBus.emit('combat:boss_damaged', {
+      lobbyId,
+      playerId,
+      damage,
+      bossHealth: boss.hp,
+    });
+
+    // Check for enrage (50% HP threshold)
+    if (!boss.isEnraged && boss.hp <= boss.maxHp * 0.5 && boss.hp > 0) {
+      boss.isEnraged = true;
+      this.eventBus.emit('combat:boss_enraged', {
+        lobbyId,
+        message: 'The boss has become enraged!',
+      });
+    }
+
+    // Check for boss defeat
+    if (boss.hp <= 0) {
+      // Clear attack timer if running (placeholder for Plan 04-03)
+      if (boss.attackTimerHandle) {
+        clearTimeout(boss.attackTimerHandle);
+        boss.attackTimerHandle = undefined;
+      }
+
+      this.eventBus.emit('combat:boss_defeated', {
+        lobbyId,
+        bossId: boss.bossId,
+      });
+    }
+
+    return damage;
+  }
+
+  /**
+   * Get base damage for a class
+   */
+  private getClassBaseDamage(avatarClass: AvatarClass | null | undefined): number {
+    switch (avatarClass) {
+      // Tank classes - lower damage
+      case 'warrior':
+      case 'paladin':
+      case 'oathbreaker':
+        return 15;
+
+      // DPS classes - standard damage
+      case 'ranger':
+      case 'rogue':
+      case 'monk':
+        return 20;
+
+      // Glass cannon - high damage
+      case 'sorcerer':
+      case 'wizard':
+        return 25;
+
+      // Healer classes - lowest damage
+      case 'cleric':
+      case 'bard':
+        return 12;
+
+      default:
+        return 20; // Default to standard DPS damage
+    }
   }
 
   /**
