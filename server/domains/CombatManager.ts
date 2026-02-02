@@ -519,6 +519,53 @@ export class CombatManager {
   }
 
   /**
+   * Apply team attack damage when countdown completes
+   * Calculates combined player damage multiplied by countdown multiplier
+   */
+  private applyTeamAttack(lobbyId: string, multiplier: number): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) return;
+
+    // Calculate base team damage (sum of all fighting player base damages)
+    let baseDamage = 0;
+    for (const player of combatState.players.values()) {
+      if (player.combatState === 'fighting') {
+        const playerClass = this.getPlayerClass?.(lobbyId, player.playerId);
+        baseDamage += this.getClassBaseDamage(playerClass);
+      }
+    }
+
+    // Apply multiplier and battle modifier
+    const totalDamage = Math.floor(baseDamage * multiplier * combatState.battleModifier);
+
+    // Apply damage to boss
+    combatState.boss.hp = Math.max(0, combatState.boss.hp - totalDamage);
+
+    // Emit team attack event
+    this.eventBus.emit('combat:team_attack', {
+      lobbyId,
+      damage: totalDamage,
+      multiplier,
+      targetBossId: combatState.boss.bossId,
+      newBossHp: combatState.boss.hp,
+    });
+
+    // Check for boss defeat
+    if (combatState.boss.hp <= 0) {
+      // Clear attack timer
+      if (combatState.boss.attackTimerHandle) {
+        clearTimeout(combatState.boss.attackTimerHandle);
+        combatState.boss.attackTimerHandle = undefined;
+      }
+
+      this.eventBus.emit('combat:boss_defeated', {
+        lobbyId,
+        bossId: combatState.boss.bossId,
+      });
+    }
+  }
+
+  /**
    * Start boss attack loop (recursive setTimeout)
    */
   startBossAttackLoop(lobbyId: string): void {
