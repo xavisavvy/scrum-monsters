@@ -12,13 +12,13 @@
  * - Emit estimation:* events for cross-domain coordination
  */
 
-import { ScopedEventBus } from '../events';
-import { TeamType } from '../../shared/gameEvents';
+import { ScopedEventBus } from "../events";
+import { TeamType } from "../../shared/gameEvents";
 import {
   EstimationNotActiveError,
   VoteNotEligibleError,
   InvalidVoteValueError,
-} from '../errors/EstimationErrors';
+} from "../errors/EstimationErrors";
 
 /**
  * Dependencies required by EstimationManager
@@ -31,14 +31,14 @@ export interface EstimationManagerDeps {
  * Vote state for a single team during an estimation session
  */
 interface TeamVoteState {
-  votes: Map<string, number | '?'>;     // playerId -> vote value
-  eligibleVoters: Set<string>;           // players who can vote
+  votes: Map<string, number | "?">; // playerId -> vote value
+  eligibleVoters: Set<string>; // players who can vote
   hasConsensus: boolean;
   consensusValue?: number;
   timerHandle?: NodeJS.Timeout;
   timerStartedAt?: number;
   timerDurationMs?: number;
-  phase: 'voting' | 'revealed' | 'discussion';
+  phase: "voting" | "revealed" | "discussion";
 }
 
 /**
@@ -56,8 +56,8 @@ interface LobbyEstimationState {
 /**
  * Valid vote values (Fibonacci sequence + abstain)
  */
-const VALID_VOTES = [1, 2, 3, 5, 8, 13, 21, '?'] as const;
-type ValidVote = typeof VALID_VOTES[number];
+const VALID_VOTES = [1, 2, 3, 5, 8, 13, 21, "?"] as const;
+type ValidVote = (typeof VALID_VOTES)[number];
 
 /**
  * EstimationManager manages estimation sessions and vote tracking
@@ -102,7 +102,7 @@ export class EstimationManager {
     }
 
     // Spectators cannot vote
-    if (team === 'spectators') {
+    if (team === "spectators") {
       return;
     }
 
@@ -120,7 +120,7 @@ export class EstimationManager {
     }
 
     // Remove from both teams (player can only be on one, but check both for safety)
-    for (const team of ['developers', 'qa'] as const) {
+    for (const team of ["developers", "qa"] as const) {
       const teamState = estimation.teams[team];
 
       if (teamState.eligibleVoters.has(playerId)) {
@@ -142,7 +142,12 @@ export class EstimationManager {
   /**
    * Records a vote from a player
    */
-  castVote(lobbyId: string, playerId: string, team: TeamType, vote: number | '?'): void {
+  castVote(
+    lobbyId: string,
+    playerId: string,
+    team: TeamType,
+    vote: number | "?",
+  ): void {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       throw new EstimationNotActiveError(lobbyId);
@@ -157,15 +162,19 @@ export class EstimationManager {
 
     // Check if player is eligible to vote
     if (!teamState.eligibleVoters.has(playerId)) {
-      throw new VoteNotEligibleError(playerId, 'Player not eligible to vote');
+      throw new VoteNotEligibleError(playerId, "Player not eligible to vote");
     }
 
+    // Start timer on first vote for this team (if not already started)
+    if (!teamState.timerHandle && !teamState.timerStartedAt) {
+      this.startVotingTimer(lobbyId, team);
+    }
 
     // Store the vote
     teamState.votes.set(playerId, vote);
 
     // Emit vote cast event
-    this.eventBus.emit('estimation:vote_cast', {
+    this.eventBus.emit("estimation:vote_cast", {
       lobbyId,
       playerId,
       team,
@@ -205,8 +214,9 @@ export class EstimationManager {
     }
 
     // Filter out abstentions ('?') - they don't block consensus
-    const numericVotes = Array.from(teamState.votes.values())
-      .filter((v): v is number => typeof v === 'number');
+    const numericVotes = Array.from(teamState.votes.values()).filter(
+      (v): v is number => typeof v === "number",
+    );
 
     // Need at least one numeric vote for consensus
     if (numericVotes.length === 0) {
@@ -215,14 +225,20 @@ export class EstimationManager {
 
     // Check if all numeric votes are the same value (strict consensus)
     const firstVote = numericVotes[0];
-    const allSame = numericVotes.every(v => v === firstVote);
+    const allSame = numericVotes.every((v) => v === firstVote);
 
     if (allSame) {
       teamState.hasConsensus = true;
       teamState.consensusValue = firstVote;
 
+      // Clear timer when consensus reached (no longer needed)
+      if (teamState.timerHandle) {
+        clearTimeout(teamState.timerHandle);
+        teamState.timerHandle = undefined;
+      }
+
       // Emit team consensus event
-      this.eventBus.emit('estimation:team_consensus_reached', {
+      this.eventBus.emit("estimation:team_consensus_reached", {
         lobbyId,
         team,
         consensusValue: firstVote,
@@ -248,7 +264,7 @@ export class EstimationManager {
     if (devConsensus && qaConsensus) {
       // Brief pause (2.5 seconds) before emitting full consensus
       setTimeout(() => {
-        this.eventBus.emit('estimation:full_consensus_reached', {
+        this.eventBus.emit("estimation:full_consensus_reached", {
           lobbyId,
           ticketId: estimation.ticketId,
         });
@@ -294,12 +310,187 @@ export class EstimationManager {
   /**
    * Creates an empty team vote state
    */
+  /**
+   * Starts the voting timer for a team (called on first vote)
+   */
+  private startVotingTimer(lobbyId: string, team: TeamType): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return;
+    }
+
+    const teamState = estimation.teams[team];
+    const now = Date.now();
+
+    // Set timer metadata
+    teamState.timerStartedAt = now;
+    teamState.timerDurationMs = this.DEFAULT_VOTING_DURATION;
+
+    // Start the timer
+    teamState.timerHandle = setTimeout(() => {
+      this.handleVotingTimeout(lobbyId, team);
+    }, this.DEFAULT_VOTING_DURATION);
+
+    // Emit timer started event
+    this.eventBus.emit("estimation:timer_started", {
+      lobbyId,
+      team,
+      durationMs: this.DEFAULT_VOTING_DURATION,
+      startedAt: now,
+    });
+  }
+
+  /**
+   * Handles timer expiry - reveals votes or keeps voting phase
+   */
+  private handleVotingTimeout(lobbyId: string, team: TeamType): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return;
+    }
+
+    const teamState = estimation.teams[team];
+
+    // Clear timer handle
+    teamState.timerHandle = undefined;
+
+    const votedCount = teamState.votes.size;
+    const eligibleCount = teamState.eligibleVoters.size;
+
+    // Emit timer expired event
+    this.eventBus.emit("estimation:timer_expired", {
+      lobbyId,
+      team,
+      votedCount,
+      eligibleCount,
+    });
+
+    // If votes were cast, reveal them
+    if (votedCount > 0) {
+      teamState.phase = "revealed";
+    } else {
+      // No votes, stay in voting phase
+      teamState.phase = "voting";
+    }
+  }
+
+  /**
+   * Pauses the voting timer (host control)
+   */
+  pauseTimer(lobbyId: string, team: TeamType, hostId: string): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return;
+    }
+
+    const teamState = estimation.teams[team];
+
+    // Calculate remaining time
+    if (teamState.timerHandle && teamState.timerStartedAt && teamState.timerDurationMs) {
+      const elapsed = Date.now() - teamState.timerStartedAt;
+      const remaining = Math.max(0, teamState.timerDurationMs - elapsed);
+
+      // Clear the timer
+      clearTimeout(teamState.timerHandle);
+      teamState.timerHandle = undefined;
+
+      // Store remaining time for resume
+      teamState.timerDurationMs = remaining;
+
+      // Emit paused event
+      this.eventBus.emit("estimation:timer_paused", {
+        lobbyId,
+        team,
+        remainingMs: remaining,
+        pausedBy: hostId,
+      });
+    }
+  }
+
+  /**
+   * Resumes the voting timer (host control)
+   */
+  resumeTimer(lobbyId: string, team: TeamType, hostId: string): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return;
+    }
+
+    const teamState = estimation.teams[team];
+
+    // Only resume if timer was paused (no handle, but has duration)
+    if (!teamState.timerHandle && teamState.timerDurationMs) {
+      const remainingMs = teamState.timerDurationMs;
+
+      // Update start time to now
+      teamState.timerStartedAt = Date.now();
+
+      // Restart timer with remaining duration
+      teamState.timerHandle = setTimeout(() => {
+        this.handleVotingTimeout(lobbyId, team);
+      }, remainingMs);
+
+      // Emit resumed event
+      this.eventBus.emit("estimation:timer_resumed", {
+        lobbyId,
+        team,
+        remainingMs,
+        resumedBy: hostId,
+      });
+    }
+  }
+
+  /**
+   * Extends the voting timer (host control)
+   */
+  extendTimer(lobbyId: string, team: TeamType, additionalMs: number, hostId: string): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return;
+    }
+
+    const teamState = estimation.teams[team];
+
+    // Add time to duration
+    if (teamState.timerDurationMs !== undefined) {
+      // If timer is running, calculate remaining time and restart
+      if (teamState.timerHandle && teamState.timerStartedAt) {
+        const elapsed = Date.now() - teamState.timerStartedAt;
+        const remaining = Math.max(0, teamState.timerDurationMs - elapsed);
+
+        // Clear old timer
+        clearTimeout(teamState.timerHandle);
+
+        // Calculate new duration
+        const newDuration = remaining + additionalMs;
+        teamState.timerDurationMs = newDuration;
+        teamState.timerStartedAt = Date.now();
+
+        // Start new timer
+        teamState.timerHandle = setTimeout(() => {
+          this.handleVotingTimeout(lobbyId, team);
+        }, newDuration);
+      } else {
+        // Timer is paused, just add to duration
+        teamState.timerDurationMs += additionalMs;
+      }
+
+      // Emit extended event
+      this.eventBus.emit("estimation:timer_extended", {
+        lobbyId,
+        team,
+        additionalMs,
+        extendedBy: hostId,
+      });
+    }
+  }
+
   private createEmptyTeamState(): TeamVoteState {
     return {
       votes: new Map(),
       eligibleVoters: new Set(),
       hasConsensus: false,
-      phase: 'voting',
+      phase: "voting",
     };
   }
 }
