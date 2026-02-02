@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 3 of 6 (EstimationManager)
-Plan: 4 of TBD in current phase
+Plan: 5 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 03-04-PLAN.md (Vote visibility & host controls)
+Last activity: 2026-02-02 — Completed 03-05-PLAN.md (EstimationManager integration)
 
-Progress: [██████░░░░] 48%
+Progress: [██████░░░░] 52%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 12
-- Average duration: 3.7 min
-- Total execution time: 0.73 hours
+- Total plans completed: 13
+- Average duration: 3.8 min
+- Total execution time: 0.82 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [██████░░░░] 48%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
-| 03-estimationmanager | 4 | 22 min | 5.5 min |
+| 03-estimationmanager | 5 | 27 min | 5.4 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-01 (2 min), 03-02 (5 min), 03-03 (8 min), 03-04 (7 min)
-- Trend: Phase 03 work averaging 5.5 min
+- Last 5 plans: 03-02 (5 min), 03-03 (8 min), 03-04 (7 min), 03-05 (5 min)
+- Trend: Phase 03 work averaging 5.4 min
 
 *Updated after each plan completion*
 
@@ -118,6 +118,12 @@ Recent decisions affecting current work:
 - Host must choose during ties — Explicit decision vs. arbitrary selection when forcing estimate
 - VotingTeam type excludes spectators — Compile-time safety for voting operations
 
+**From Plan 03-05:**
+- Session event subscriptions in constructor — EstimationManager subscribes to session:player_joined/left/lobby_destroyed
+- getPlayerTeam callback pattern — Cross-domain team lookup via dependency injection maintains domain isolation
+- Team change notifications explicit — Websocket handlers call handleTeamChange after team updates
+- New websocket handlers coexist with legacy — Gradual migration path from gameState to domain managers
+
 ### Pending Todos
 
 None yet.
@@ -128,8 +134,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 07:22 (03-04 execution)
-Stopped at: Completed 03-04-PLAN.md - Vote visibility and host controls
+Last session: 2026-02-02 00:24 (03-05 execution)
+Stopped at: Completed 03-05-PLAN.md - EstimationManager integration
 Resume file: None
 
-**Phase 3 Progress:** EstimationManager domain feature-complete. Foundation (03-01) + Voting/consensus (03-02) + Timer management (03-03) + Vote visibility & host controls (03-04) ready for WebSocket integration.
+**Phase 3 Progress:** EstimationManager fully integrated. Foundation (03-01) + Voting/consensus (03-02) + Timer management (03-03) + Vote visibility & host controls (03-04) + Session/WebSocket integration (03-05) complete. Ready for next phase or additional estimation features.
