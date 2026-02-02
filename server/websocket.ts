@@ -6,6 +6,7 @@ import { gameState, setGameStateIO } from './gameState.js';
 import {
   sessionManager,
   estimationManager,
+  combatManager,
   LobbyNotFoundError,
   PlayerNotFoundError,
   PlayerNotHostError,
@@ -17,6 +18,10 @@ import {
   NotInDiscussionPhaseError,
   ForceEstimateTieError,
   InvalidForcedValueError,
+  CombatNotActiveError,
+  PlayerNotInCombatError,
+  RevivalNotAllowedError,
+  NotHealerClassError,
 } from './domains/index.js';
 
 type InterServerEvents = {};
@@ -1361,6 +1366,99 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('game_error', { message: 'Failed to enter discussion phase' });
         }
       }
+    });
+
+    // ============================================================================
+    // COMBAT DOMAIN HANDLERS (using CombatManager)
+    // ============================================================================
+
+    // Start combat (host initiates combat for a ticket)
+    socket.on('start_combat' as any, (data: { lobbyId: string; ticketIndex?: number }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = sessionManager.getLobby(data.lobbyId);
+      if (!lobby) {
+        socket.emit('game_error', { code: 'LOBBY_NOT_FOUND', message: 'Lobby not found' });
+        return;
+      }
+
+      // Verify host
+      if (lobby.hostId !== playerId) {
+        socket.emit('game_error', { code: 'NOT_HOST', message: 'Only host can start combat' });
+        return;
+      }
+
+      // Initialize combat with active players
+      const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
+      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0);
+
+      console.log(`Combat initialized for lobby ${data.lobbyId}`);
+    });
+
+    // Player attacks boss
+    socket.on('attack_boss' as any, (data: { lobbyId: string }) => {
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
+
+        const damage = combatManager.playerAttackBoss(data.lobbyId, playerId);
+        // Damage broadcast via eventBus (Phase 5), no need to emit here
+        console.log(`Player ${playerId} attacked boss for ${damage} damage`);
+      } catch (error) {
+        if (error instanceof CombatNotActiveError || error instanceof PlayerNotInCombatError) {
+          socket.emit('game_error', { code: (error as any).code, message: error.message });
+        } else {
+          throw error;
+        }
+      }
+    });
+
+    // Player heals teammate
+    socket.on('heal_teammate' as any, (data: { lobbyId: string; targetId: string }) => {
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
+
+        combatManager.playerHealTeammate(data.lobbyId, playerId, data.targetId);
+        console.log(`Player ${playerId} healed ${data.targetId}`);
+      } catch (error) {
+        if (error instanceof CombatNotActiveError || error instanceof NotHealerClassError) {
+          socket.emit('game_error', { code: (error as any).code, message: error.message });
+        } else {
+          throw error;
+        }
+      }
+    });
+
+    // Start revival
+    socket.on('start_revival' as any, (data: { lobbyId: string; targetId: string }) => {
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
+
+        const started = combatManager.startRevival(data.lobbyId, playerId, data.targetId);
+        if (!started) {
+          socket.emit('game_error', { code: 'REVIVAL_CONDITIONS_NOT_MET', message: 'Cannot start revival' });
+        } else {
+          console.log(`Player ${playerId} started reviving ${data.targetId}`);
+        }
+      } catch (error) {
+        if (error instanceof RevivalNotAllowedError) {
+          socket.emit('game_error', { code: (error as any).code, message: error.message });
+        } else {
+          throw error;
+        }
+      }
+    });
+
+    // Cancel revival
+    socket.on('cancel_revival' as any, () => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      combatManager.cancelRevival(playerId, 'player_cancelled');
+      console.log(`Player ${playerId} cancelled revival`);
     });
 
     socket.on('disconnect', (reason) => {
