@@ -103,3 +103,39 @@ export class NotInDiscussionPhaseError extends EstimationError {
     Object.setPrototypeOf(this, NotInDiscussionPhaseError.prototype);
   }
 }
+
+/**
+ * Thrown when forcing estimate during a tie without specifying value
+ */
+export class ForceEstimateTieError extends EstimationError {
+  public readonly tiedValues: number[];
+
+  constructor(lobbyId: string, tiedValues: number[]) {
+    super(
+      'FORCE_ESTIMATE_TIE',
+      `Vote is tied between [${tiedValues.join(', ')}]. Host must choose one.`
+    );
+    this.tiedValues = tiedValues;
+    this.name = 'ForceEstimateTieError';
+    Object.setPrototypeOf(this, ForceEstimateTieError.prototype);
+  }
+}
+
+/**
+ * Thrown when forced value is not one of the tied values
+ */
+export class InvalidForcedValueError extends EstimationError {
+  public readonly forcedValue: number;
+  public readonly validValues: number[];
+
+  constructor(forcedValue: number, validValues: number[]) {
+    super(
+      'INVALID_FORCED_VALUE',
+      `Forced value ${forcedValue} is not one of the tied values: [${validValues.join(', ')}]`
+    );
+    this.forcedValue = forcedValue;
+    this.validValues = validValues;
+    this.name = 'InvalidForcedValueError';
+    Object.setPrototypeOf(this, InvalidForcedValueError.prototype);
+  }
+}
