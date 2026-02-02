@@ -167,6 +167,20 @@ export interface EstimationEstimateForcedPayload {
   wasTied: boolean;
 }
 
+/** Emitted when discussion phase timer starts */
+export interface EstimationDiscussionTimerStartedPayload {
+  lobbyId: string;
+  durationMs: number;
+  endsAt: number;
+}
+
+/** Emitted when discussion phase ends */
+export interface EstimationDiscussionEndedPayload {
+  lobbyId: string;
+  reason: 'consensus' | 'host_finalized' | 'timer_expired';
+  finalEstimate: number;
+}
+
 // =============================================================================
 // Combat Domain Events
 // =============================================================================
@@ -423,6 +437,8 @@ export interface DomainEventMap {
   'estimation:timer_expired': EstimationTimerExpiredPayload;
   'estimation:discussion_started': EstimationDiscussionStartedPayload;
   'estimation:estimate_forced': EstimationEstimateForcedPayload;
+  'estimation:discussion_timer_started': EstimationDiscussionTimerStartedPayload;
+  'estimation:discussion_ended': EstimationDiscussionEndedPayload;
 
   // Combat events
   'combat:boss_damaged': CombatBossDamagedPayload;
