@@ -277,6 +277,8 @@ export interface ClientToServerEvents {
   }) => void;
   // Reconnection events
   reconnect_with_token: (data: { reconnectToken: string }) => void;
+  // Missed events recovery
+  request_missed_events: (data: { lastSeq: number }) => void;
 }
 
 export interface TeamScores {
@@ -382,6 +384,42 @@ export interface ServerToClientEvents {
   reconnect_response: (data: ReconnectResponse) => void;
   connection_lost: () => void;
   reconnect_attempt: (data: { attempt: number; maxAttempts: number; nextRetryIn: number }) => void;
+
+  // Fine-grained session events
+  'session:player_joined': (data: { playerId: string; playerName: string; team: TeamType; avatar?: AvatarClass; seq: number; timestamp: number }) => void;
+  'session:player_left': (data: { playerId: string; seq: number; timestamp: number }) => void;
+  'session:host_changed': (data: { oldHostId: string; newHostId: string; newHostName: string; seq: number; timestamp: number }) => void;
+  'session:phase_changed': (data: { oldPhase: GamePhase; newPhase: GamePhase; seq: number; timestamp: number }) => void;
+  'session:team_changed': (data: { playerId: string; oldTeam: TeamType; newTeam: TeamType; seq: number; timestamp: number }) => void;
+  'session:avatar_selected': (data: { playerId: string; avatar: AvatarClass; seq: number; timestamp: number }) => void;
+
+  // Fine-grained estimation events
+  'estimation:vote_cast': (data: { playerId: string; team: TeamType; hasVoted: boolean; seq: number; timestamp: number }) => void;
+  'estimation:votes_revealed': (data: { votes: Record<string, number | '?'>; team: TeamType; seq: number; timestamp: number }) => void;
+  'estimation:consensus_reached': (data: { team: TeamType; consensusValue: number; seq: number; timestamp: number }) => void;
+  'estimation:timer_started': (data: { team: TeamType; endsAt: number; durationMs: number; seq: number; timestamp: number }) => void;
+  'estimation:timer_paused': (data: { team: TeamType; remainingMs: number; seq: number; timestamp: number }) => void;
+  'estimation:timer_resumed': (data: { team: TeamType; endsAt: number; seq: number; timestamp: number }) => void;
+  'estimation:timer_expired': (data: { team: TeamType; votedCount: number; eligibleCount: number; seq: number; timestamp: number }) => void;
+  'estimation:estimate_forced': (data: { team: TeamType; consensusValue: number; seq: number; timestamp: number }) => void;
+
+  // Fine-grained combat events
+  'combat:boss_damaged': (data: { playerId: string; damage: number; newHp: number; seq: number; timestamp: number }) => void;
+  'combat:boss_healed': (data: { healAmount: number; newHp: number; seq: number; timestamp: number }) => void;
+  'combat:boss_enraged': (data: { message: string; seq: number; timestamp: number }) => void;
+  'combat:boss_telegraph': (data: { targetId?: string; attackType?: string; message: string; delayMs: number; seq: number; timestamp: number }) => void;
+  'combat:boss_defeated': (data: { seq: number; timestamp: number }) => void;
+  'combat:player_damaged': (data: { playerId: string; damage: number; newHp: number; source: 'boss' | 'player'; seq: number; timestamp: number }) => void;
+  'combat:player_downed': (data: { playerId: string; countdownSeconds: number; seq: number; timestamp: number }) => void;
+  'combat:player_revived': (data: { playerId: string; reviverId: string; newHp: number; seq: number; timestamp: number }) => void;
+  'combat:revival_started': (data: { reviverId: string; targetId: string; durationMs: number; seq: number; timestamp: number }) => void;
+  'combat:revival_cancelled': (data: { reviverId: string; targetId: string; reason: string; seq: number; timestamp: number }) => void;
+  'combat:player_entered_battle': (data: { playerId: string; seq: number; timestamp: number }) => void;
+  'combat:modifier_updated': (data: { modifier: number; seq: number; timestamp: number }) => void;
+
+  // System events
+  'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
+  'system:missed_events': (data: { events: Array<{ event: string; data: any }> }) => void;
 }
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
