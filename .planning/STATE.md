@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 5 of 6 (Fine-Grained Events)
-Plan: 1 of 6 in current phase
+Plan: 3 of 6 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 05-01-PLAN.md
+Last activity: 2026-02-02 — Completed 05-03-PLAN.md
 
-Progress: [███████░░░] 68%
+Progress: [████████░░] 75%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20
+- Total plans completed: 21
 - Average duration: 3.9 min
-- Total execution time: 1.29 hours
+- Total execution time: 1.36 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [███████░░░] 68%
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
-| 05-fine-grained-events | 1 | 5.5 min | 5.5 min |
+| 05-fine-grained-events | 2 | 9.5 min | 4.75 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-04 (3 min), 04-05 (4 min), 04-06 (4.5 min), 05-01 (5.5 min)
-- Trend: Phase 05 starting slightly slower due to new infrastructure, expect faster as patterns emerge
+- Last 5 plans: 04-05 (4 min), 04-06 (4.5 min), 05-01 (5.5 min), 05-03 (4 min)
+- Trend: Phase 05 patterns emerging, return to faster execution pace
 
 *Updated after each plan completion*
 
@@ -173,6 +173,12 @@ Recent decisions affecting current work:
 - Gap detection logic: lastSeq+1 < oldestSeq — Prevents false positives for new connections
 - Lobby existence check via sequences map — Distinguishes "lobby doesn't exist" from "no events buffered yet"
 
+**From Plan 05-03:**
+- Vote masking pattern — estimation:vote_cast emits hasVoted=true only, NOT vote value until discussion phase
+- Cleanup events as internal-only — session:lobby_destroyed and combat:cleanup_complete trigger sequencer cleanup but no client emission
+- Full state recovery method — sendFullState() emits system:full_state with current sequence for late joiners and buffer exhaustion
+- Event bridge pattern — emitToLobby() adds seq + timestamp to all events before Socket.IO emission
+
 ### Pending Todos
 
 None yet.
@@ -183,8 +189,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 08:30:53Z
-Stopped at: Completed 05-01-PLAN.md
+Last session: 2026-02-02 08:38:15Z
+Stopped at: Completed 05-03-PLAN.md
 Resume file: None
 
-**Phase 5 Plan 01 Complete:** Event foundation established with ClientEventMap defining 25 typed fine-grained events (Session/Estimation/Combat domains) and LobbyEventSequencer providing per-lobby sequence generation with 100-event circular buffer. Gap detection logic (lastSeq+1 < oldestSeq) enables reliable client sync and missed event recovery. 23 comprehensive tests cover all sequencer functionality. Ready for Phase 5 Plan 02 (client event sync integration).
+**Phase 5 Plan 03 Complete:** ClientEventEmitter bridge established connecting internal domain events to Socket.IO emissions with sequencing. All domain events (session, estimation, combat) bridged with vote masking (hasVoted only) and cleanup automation. 20 comprehensive tests verify bridging, vote privacy, sequence independence, buffering, and cleanup. Factory function createClientEventEmitter() ready for websocket.ts integration in Plan 05-04.
