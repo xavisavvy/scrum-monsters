@@ -768,6 +768,52 @@ export class CombatManager {
   }
 
   /**
+   * Player attacks a minion
+   * Returns damage dealt (0 if minion dead or not found)
+   */
+  public playerAttackMinion(lobbyId: string, playerId: string, minionPlayerId: string): number {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      throw new CombatNotActiveError(lobbyId);
+    }
+
+    // Check player is fighting
+    const playerState = combatState.players.get(playerId);
+    if (!playerState || playerState.combatState !== 'fighting') {
+      throw new PlayerNotInCombatError(playerId);
+    }
+
+    // Check minion exists and is alive
+    const minion = combatState.minions.get(minionPlayerId);
+    if (!minion || !minion.isAlive) {
+      return 0;
+    }
+
+    // Calculate damage (use player's base damage)
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
+    const baseDamage = this.getClassBaseDamage(playerClass);
+    const damage = Math.floor(baseDamage * combatState.battleModifier);
+
+    // Apply damage
+    minion.hp = Math.max(0, minion.hp - damage);
+
+    this.eventBus.emit('combat:minion_damaged', {
+      lobbyId,
+      playerId: minionPlayerId,
+      damage,
+      newHp: minion.hp,
+      attackerId: playerId,
+    });
+
+    // Check if minion killed
+    if (minion.hp <= 0) {
+      this.killMinion(lobbyId, minionPlayerId, playerId);
+    }
+
+    return damage;
+  }
+
+  /**
    * Perform a boss attack and schedule the next one
    */
   private performBossAttack(lobbyId: string): void {
