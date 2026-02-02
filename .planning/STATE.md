@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 3 of 6 (EstimationManager)
-Plan: 2 of TBD in current phase
+Plan: 3 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 03-02-PLAN.md (Vote casting and consensus detection)
+Last activity: 2026-02-02 — Completed 03-03-PLAN.md (Timer management)
 
-Progress: [█████░░░░░] 37%
+Progress: [██████░░░░] 40%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 10
-- Average duration: 3.2 min
-- Total execution time: 0.53 hours
+- Total plans completed: 11
+- Average duration: 3.3 min
+- Total execution time: 0.60 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [█████░░░░░] 37%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
-| 03-estimationmanager | 2 | 7 min | 3.5 min |
+| 03-estimationmanager | 3 | 15 min | 5.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-04 (6 min), 02-05 (6 min), 03-01 (2 min), 03-02 (5 min)
-- Trend: Phase 03 TDD work averaging 3.5 min
+- Last 5 plans: 02-05 (6 min), 03-01 (2 min), 03-02 (5 min), 03-03 (8 min)
+- Trend: Phase 03 TDD work averaging 5.0 min
 
 *Updated after each plan completion*
 
@@ -106,6 +106,12 @@ Recent decisions affecting current work:
 - Vote removal triggers recheck — Removing eligible voter removes vote and recalculates consensus
 - Full consensus celebration delay — 2.5s pause before emitting full_consensus_reached event
 
+**From Plan 03-03:**
+- Timer starts on first vote — Not on ticket load, keeps timer meaningful
+- Per-team independent timers — Dev and QA pace themselves independently
+- Clear timer on consensus — No longer needed when agreement reached
+- Remaining time calculation — Date.now() - timerStartedAt vs timerDurationMs enables accurate pause/resume
+
 ### Pending Todos
 
 None yet.
@@ -116,8 +122,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 00:02 (03-02 execution)
-Stopped at: Completed 03-02-PLAN.md - Vote casting and consensus detection
+Last session: 2026-02-02 07:05 (03-03 execution)
+Stopped at: Completed 03-03-PLAN.md - Timer management
 Resume file: None
 
-**Phase 3 Progress:** EstimationManager core voting logic complete. Foundation (03-01) + Vote casting/consensus (03-02) ready for timer management (03-03).
+**Phase 3 Progress:** EstimationManager timer system complete. Foundation (03-01) + Voting/consensus (03-02) + Timer management (03-03) ready for WebSocket integration.
