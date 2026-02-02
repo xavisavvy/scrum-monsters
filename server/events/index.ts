@@ -16,9 +16,10 @@
  *   eventBus.cleanupScope(lobbyId);
  */
 
-export { EventBus, DomainEventListener } from './EventBus';
+export { EventBus } from './EventBus';
+export type { DomainEventListener } from './EventBus';
 export { ScopedEventBus } from './ScopedEventBus';
-export { DomainEventMap, DomainEventName } from './eventTypes';
+export type { DomainEventMap, DomainEventName } from './eventTypes';
 
 // Re-export individual payload types for consumers who need them
 export type {
