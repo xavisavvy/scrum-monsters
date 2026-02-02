@@ -154,7 +154,101 @@ export class CombatManager {
     this.getPlayerTeam = deps.getPlayerTeam;
     this.getPlayerClass = deps.getPlayerClass;
 
-    // Event subscriptions will be added in Plan 04-06
+    // Subscribe to cross-domain events
+    this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
+    this.eventBus.on('session:player_left', this.handlePlayerLeft.bind(this));
+    this.eventBus.on('session:lobby_destroyed', this.handleLobbyDestroyed.bind(this));
+  }
+
+  // =============================================================================
+  // Cross-Domain Event Handlers
+  // =============================================================================
+
+  /**
+   * Handle vote cast event - triggers battle entry
+   */
+  private handleVoteCast(payload: EstimationVoteCastPayload): void {
+    const { lobbyId, playerId } = payload;
+
+    // Get combat state for lobby
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      return; // Combat not initialized yet
+    }
+
+    // Check if player is in combat state
+    const playerState = combatState.players.get(playerId);
+    if (!playerState) {
+      return; // Player not in combat
+    }
+
+    // Emit player entered battle event
+    this.eventBus.emit('combat:player_entered_battle', {
+      lobbyId,
+      playerId,
+      transitionDurationMs: this.BATTLE_ENTRY_TRANSITION_MS,
+    });
+
+    // If this is the first player entry, start combat loops
+    if (!combatState.battleStartTime) {
+      combatState.battleStartTime = Date.now();
+
+      // Start boss attack loop
+      this.startBossAttackLoop(lobbyId);
+
+      // Start modifier loop
+      this.startModifierLoop(lobbyId);
+
+      // Emit battle started event
+      this.eventBus.emit('combat:battle_started', {
+        lobbyId,
+        bossId: combatState.boss.bossId,
+      });
+    }
+  }
+
+  /**
+   * Handle player left event - cleanup player from combat
+   */
+  private handlePlayerLeft(payload: SessionPlayerLeftPayload): void {
+    const { lobbyId, playerId } = payload;
+
+    // Get combat state
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return; // No combat for this lobby
+    }
+
+    // Cancel any revival sessions involving this player
+    for (const [sessionKey, session] of this.revivalSessions) {
+      if (session.reviverId === playerId || session.targetId === playerId) {
+        this.cancelRevivalSession(sessionKey, 'player_left');
+      }
+    }
+
+    // Remove player from combat state
+    const playerState = combatState.players.get(playerId);
+    if (playerState) {
+      // Clear down timer if active
+      if (playerState.downTimerHandle) {
+        clearTimeout(playerState.downTimerHandle);
+        playerState.downTimerHandle = undefined;
+      }
+
+      // Remove from threat table
+      combatState.boss?.threatTable.delete(playerId);
+
+      // Remove from players map
+      combatState.players.delete(playerId);
+    }
+  }
+
+  /**
+   * Handle lobby destroyed event - cleanup all combat state
+   */
+  private handleLobbyDestroyed(payload: SessionLobbyDestroyedPayload): void {
+    const { lobbyId } = payload;
+    this.cleanupLobby(lobbyId);
   }
 
   // =============================================================================
@@ -334,6 +428,39 @@ export class CombatManager {
     }, this.BOSS_INITIAL_ATTACK_DELAY_MS);
 
     combatState.boss.attackTimerHandle = attackHandle;
+  }
+
+  /**
+   * Start battle modifier loop - increments every 10 seconds
+   */
+  startModifierLoop(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return; // Combat not active
+    }
+
+    // Increment modifier and emit event
+    const incrementModifier = () => {
+      const state = this.combatStates.get(lobbyId);
+      if (!state || !state.boss || state.boss.hp <= 0) {
+        return; // Combat ended or boss defeated
+      }
+
+      // Increment modifier
+      state.battleModifier += this.MODIFIER_INCREMENT;
+
+      // Emit modifier updated event
+      this.eventBus.emit('combat:modifier_updated', {
+        lobbyId,
+        modifier: state.battleModifier,
+      });
+
+      // Schedule next increment
+      state.modifierIntervalHandle = setTimeout(incrementModifier, this.MODIFIER_INTERVAL_MS) as NodeJS.Timeout;
+    };
+
+    // Start first increment after interval
+    combatState.modifierIntervalHandle = setTimeout(incrementModifier, this.MODIFIER_INTERVAL_MS) as NodeJS.Timeout;
   }
 
   /**
@@ -964,6 +1091,12 @@ export class CombatManager {
         combatState.boss.attackTimerHandle = undefined;
       }
 
+      // Clear modifier interval
+      if (combatState.modifierIntervalHandle) {
+        clearTimeout(combatState.modifierIntervalHandle);
+        combatState.modifierIntervalHandle = undefined;
+      }
+
       // Clear all player down timers
       for (const player of combatState.players.values()) {
         if (player.downTimerHandle) {
@@ -979,10 +1112,11 @@ export class CombatManager {
           this.revivalSessions.delete(sessionKey);
         }
       }
-
-      // TODO: Clear modifier interval in future plan
     }
 
     this.combatStates.delete(lobbyId);
+
+    // Emit cleanup complete event
+    this.eventBus.emit('combat:cleanup_complete', { lobbyId });
   }
 }
