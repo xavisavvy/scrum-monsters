@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 
 ## Current Position
 
-Phase: 4 of 6 (CombatManager)
-Plan: 6 of 6 in current phase
-Status: ✓ Complete
-Last activity: 2026-02-02 — Phase 4 (CombatManager) verified complete
+Phase: 5 of 6 (Fine-Grained Events)
+Plan: 2 of 6 in current phase
+Status: In progress
+Last activity: 2026-02-02 — Completed 05-02-PLAN.md
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 71%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19
+- Total plans completed: 20
 - Average duration: 3.9 min
-- Total execution time: 1.23 hours
+- Total execution time: 1.29 hours
 
 **By Phase:**
 
@@ -31,10 +31,11 @@ Progress: [███████░░░] 67%
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
+| 05-fine-grained-events | 2 | 8 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-03 (5 min), 04-04 (3 min), 04-05 (4 min), 04-06 (4.5 min)
-- Trend: Phase 04 maintaining fast velocity with integration tasks, 3-5 min per plan
+- Last 5 plans: 04-04 (3 min), 04-05 (4 min), 04-06 (4.5 min), 05-01 (4 min), 05-02 (4 min)
+- Trend: Consistent 4 min per plan for Phase 05, maintaining fast velocity
 
 *Updated after each plan completion*
 
@@ -166,6 +167,11 @@ Recent decisions affecting current work:
 - Player cleanup on session:player_left — Removes from combat, cancels revivals, clears timers, removes from threat table
 - Websocket delegation pattern — Handlers delegate to combatManager methods with typed error handling
 
+**From Plan 05-02:**
+- Gap recovery is internal to handleEvent — Caller doesn't need to check return value, recovery triggered automatically when gap detected
+- useGameState.getState() for synchronous state access — Avoids React render cycle complexity in async event handlers
+- State updates only when processed — If handleEvent returns false (gap detected), state update deferred until gap filled
+
 ### Pending Todos
 
 None yet.
@@ -176,8 +182,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (Phase 4 complete)
-Stopped at: Phase 4 (CombatManager) verified complete
+Last session: 2026-02-02 08:30:03Z
+Stopped at: Completed 05-02-PLAN.md
 Resume file: None
 
-**Phase 4 Complete:** CombatManager fully extracted and integrated. 6 plans executed: foundation (errors, events, class shell), combat initialization with boss HP scaling (TDD), boss attack AI with threat targeting (TDD), player health/down/healing system (TDD), channel-based revival with interruption (TDD), websocket/event integration. 108 CombatManager tests, 252 total passing. Cross-domain subscriptions wire voting to battle entry automatically. Ready for Phase 5 (Fine-Grained Events).
+**Phase 5 Plan 02 Complete:** Client-side event synchronization infrastructure created. useEventSync store with sequence tracking, automatic gap detection and recovery, optimistic updates, and reconciliation. Centralized event handlers (setupEventHandlers) for Session, Estimation, and Combat domain events. 24 comprehensive tests covering sequential processing, gap detection, pending queue, duplicates, optimistic updates, and recovery. All infrastructure ready for WebSocket integration (05-03) and server-side event emission (05-04+).
