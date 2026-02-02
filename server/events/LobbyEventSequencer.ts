@@ -73,20 +73,23 @@ export class LobbyEventSequencer {
    * @returns Array of missed events, or null if gap too large
    */
   getMissedEvents(lobbyId: string, lastSeq: number): BufferedEvent[] | null {
-    const buffer = this.buffers.get(lobbyId);
-
-    if (!buffer) {
+    // Check if lobby exists by checking sequences map
+    if (!this.sequences.has(lobbyId)) {
       return null; // Lobby not found
     }
 
-    if (buffer.length === 0) {
+    const buffer = this.buffers.get(lobbyId);
+
+    if (!buffer || buffer.length === 0) {
       return []; // No events buffered yet
     }
 
     const oldestSeq = buffer[0].seq;
 
-    // Gap too large - buffer doesn't contain events back to lastSeq
-    if (lastSeq < oldestSeq) {
+    // Gap too large - there are missing events between lastSeq and oldest buffered event
+    // Example: lastSeq=10, oldestSeq=15 means events 11-14 are missing (gap)
+    // But: lastSeq=10, oldestSeq=11 is fine (no gap, just normal progression)
+    if (lastSeq + 1 < oldestSeq) {
       return null;
     }
 
