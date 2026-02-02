@@ -266,6 +266,32 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
+  socket.on('estimation:discussion_timer_started', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('estimation:discussion_timer_started', data, socket);
+
+    if (processed) {
+      const { setDiscussionTimer } = useGameState.getState();
+      setDiscussionTimer({
+        active: true,
+        endsAt: data.endsAt,
+        durationMs: data.durationMs,
+      });
+    }
+  });
+
+  socket.on('estimation:discussion_ended', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('estimation:discussion_ended', data, socket);
+
+    if (processed) {
+      const { setDiscussionTimer } = useGameState.getState();
+      setDiscussionTimer(null);
+      // Phase transition will be handled by session:phase_changed event
+      // or lobby_updated - no additional action needed here
+    }
+  });
+
   // ============================================================================
   // COMBAT DOMAIN EVENTS
   // ============================================================================
@@ -590,6 +616,8 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('estimation:timer_paused');
   socket.off('estimation:timer_resumed');
   socket.off('estimation:timer_expired');
+  socket.off('estimation:discussion_timer_started');
+  socket.off('estimation:discussion_ended');
 
   // Combat events
   socket.off('combat:boss_damaged');

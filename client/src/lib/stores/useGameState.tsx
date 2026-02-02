@@ -15,6 +15,12 @@ interface MinionClientState {
   isAlive: boolean;
 }
 
+interface DiscussionTimerState {
+  active: boolean;
+  endsAt: number;
+  durationMs: number;
+}
+
 interface GameState {
   currentLobby: Lobby | null;
   currentPlayer: Player | null;
@@ -24,6 +30,7 @@ interface GameState {
   error: string | null;
   countdown: CountdownState | null;
   minions: Map<string, MinionClientState>;
+  discussionTimer: DiscussionTimerState | null;
 
   // Actions
   setLobby: (lobby: Lobby) => void;
@@ -36,6 +43,7 @@ interface GameState {
   setCountdown: (countdown: CountdownState | null) => void;
   addMinion: (minion: MinionClientState) => void;
   removeMinion: (playerId: string) => void;
+  setDiscussionTimer: (timer: DiscussionTimerState | null) => void;
   clearAll: () => void;
 }
 
@@ -49,6 +57,7 @@ export const useGameState = create<GameState>()(
     error: null,
     countdown: null,
     minions: new Map(),
+    discussionTimer: null,
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -91,6 +100,8 @@ export const useGameState = create<GameState>()(
       set({ minions: newMinions });
     },
 
+    setDiscussionTimer: (timer) => set({ discussionTimer: timer }),
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
@@ -99,7 +110,8 @@ export const useGameState = create<GameState>()(
       inviteLink: null,
       error: null,
       countdown: null,
-      minions: new Map()
+      minions: new Map(),
+      discussionTimer: null
     })
   }))
 );
