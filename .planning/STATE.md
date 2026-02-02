@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 6 of 6 (New Flow Implementation)
-Plan: 3 of 5 in current phase
+Plan: 03b of 5 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 06-03 Spectator Minion Foundation
+Last activity: 2026-02-02 — Completed 06-03b Minion Player Interaction and UI
 
-Progress: [█████████░] 92%
+Progress: [█████████░] 93%
 
 ## Performance Metrics
 
@@ -32,10 +32,10 @@ Progress: [█████████░] 92%
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
 | 05-fine-grained-events | 5 | 25 min | 5.0 min |
-| 06-new-flow-implementation | 3 | 23 min | 7.7 min |
+| 06-new-flow-implementation | 3.5 | 31 min | 7.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 05-05 (extended), 06-01 (4 min), 06-02 (8 min), 06-03 (11 min)
+- Last 5 plans: 06-01 (4 min), 06-02 (8 min), 06-03 (11 min), 06-03b (8 min)
 - 06-02/06-03 had parallel execution by multiple agents
 
 *Updated after each plan completion*
@@ -209,6 +209,11 @@ Recent decisions affecting current work:
 - Minion attack interval — 4 second loop for all alive minions
 - Recursive setTimeout for AI loop — Clean cleanup on boss defeat or lobby destruction
 
+**From Plan 06-03b:**
+- Minion respawn random delay — 15-30 seconds for variety
+- Team switch kills minion immediately — No respawn on team switch (respawnInSeconds=0)
+- getCombatState returns undefined — Consistency with Map.get() behavior
+
 ### Pending Todos
 
 None yet.
@@ -219,8 +224,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 21:53:00Z
-Stopped at: Completed 06-03-PLAN.md
+Last session: 2026-02-02 22:05:00Z
+Stopped at: Completed 06-03b-PLAN.md
 Resume file: None
 
-**Phase 6 Progress:** Spectator Minion Foundation (06-03) complete. Minion state infrastructure with AI-driven combat behavior. Spectators spawn as minions with HP scaled to voter count. Minions periodically attack players (15 dmg), heal boss (25 HP), or debuff. Events flow through ClientEventEmitter to client store. Ready for PLAN-06-04.
+**Phase 6 Progress:** Minion Player Interaction (06-03b) complete. Players can click-to-attack minions via MinionDisplay UI component. Killed minions respawn after 15-30 seconds. Spectators switching to voter team have their minion killed immediately without respawn. Full event flow from client emit through CombatManager to ClientEventEmitter and back to client store. Ready for PLAN-06-04.
