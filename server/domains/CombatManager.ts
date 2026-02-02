@@ -253,7 +253,10 @@ export class CombatManager {
       finalMultiplier,
     });
 
-    // Team attack will be applied in PLAN-06-02
+    // Apply team attack damage after brief delay for animation
+    setTimeout(() => {
+      this.applyTeamAttack(lobbyId, finalMultiplier);
+    }, 500);
   }
 
   /**
