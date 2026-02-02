@@ -313,6 +313,15 @@ export interface CombatCountdownCompletePayload {
   finalMultiplier: number;
 }
 
+/** Emitted when coordinated team attack lands */
+export interface CombatTeamAttackPayload {
+  lobbyId: string;
+  damage: number;
+  multiplier: number;
+  targetBossId: string;
+  newBossHp: number;
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -380,6 +389,7 @@ export interface DomainEventMap {
   'combat:countdown_started': CombatCountdownStartedPayload;
   'combat:countdown_tick': CombatCountdownTickPayload;
   'combat:countdown_complete': CombatCountdownCompletePayload;
+  'combat:team_attack': CombatTeamAttackPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;

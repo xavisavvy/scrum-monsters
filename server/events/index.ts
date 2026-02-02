@@ -38,6 +38,7 @@ export type {
   EstimationVoteCastPayload,
   EstimationVoteChangedPayload,
   EstimationConsensusReachedPayload,
+  EstimationFullConsensusReachedPayload,
   EstimationVotingStartedPayload,
   EstimationVotingTimeoutPayload,
   // Combat events
@@ -58,6 +59,7 @@ export type {
   CombatPlayerPermanentlyDownedPayload,
   CombatCleanupCompletePayload,
   CombatPlayerHealedPayload,
+  CombatTeamAttackPayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';
