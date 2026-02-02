@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 3 of 6 (EstimationManager)
-Plan: 3 of TBD in current phase
+Plan: 4 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 03-03-PLAN.md (Timer management)
+Last activity: 2026-02-02 — Completed 03-04-PLAN.md (Vote visibility & host controls)
 
-Progress: [██████░░░░] 40%
+Progress: [██████░░░░] 48%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 11
-- Average duration: 3.3 min
-- Total execution time: 0.60 hours
+- Total plans completed: 12
+- Average duration: 3.7 min
+- Total execution time: 0.73 hours
 
 **By Phase:**
 
@@ -29,11 +29,11 @@ Progress: [██████░░░░] 40%
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
-| 03-estimationmanager | 3 | 15 min | 5.0 min |
+| 03-estimationmanager | 4 | 22 min | 5.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 02-05 (6 min), 03-01 (2 min), 03-02 (5 min), 03-03 (8 min)
-- Trend: Phase 03 TDD work averaging 5.0 min
+- Last 5 plans: 03-01 (2 min), 03-02 (5 min), 03-03 (8 min), 03-04 (7 min)
+- Trend: Phase 03 work averaging 5.5 min
 
 *Updated after each plan completion*
 
@@ -112,6 +112,12 @@ Recent decisions affecting current work:
 - Clear timer on consensus — No longer needed when agreement reached
 - Remaining time calculation — Date.now() - timerStartedAt vs timerDurationMs enables accurate pause/resume
 
+**From Plan 03-04:**
+- Vote values hidden during voting — Prevents anchoring bias per classic planning poker principles
+- Global phase from most advanced team — Enables cross-team discussion transparency once any team reveals
+- Host must choose during ties — Explicit decision vs. arbitrary selection when forcing estimate
+- VotingTeam type excludes spectators — Compile-time safety for voting operations
+
 ### Pending Todos
 
 None yet.
@@ -122,8 +128,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 07:05 (03-03 execution)
-Stopped at: Completed 03-03-PLAN.md - Timer management
+Last session: 2026-02-02 07:22 (03-04 execution)
+Stopped at: Completed 03-04-PLAN.md - Vote visibility and host controls
 Resume file: None
 
-**Phase 3 Progress:** EstimationManager timer system complete. Foundation (03-01) + Voting/consensus (03-02) + Timer management (03-03) ready for WebSocket integration.
+**Phase 3 Progress:** EstimationManager domain feature-complete. Foundation (03-01) + Voting/consensus (03-02) + Timer management (03-03) + Vote visibility & host controls (03-04) ready for WebSocket integration.
