@@ -2,6 +2,7 @@ import React from 'react';
 import { PhaseContainer } from './PhaseContainer';
 import { PhaseComponentProps } from './index';
 import { ScoreSubmission } from '@/components/game/ScoreSubmission';
+import { CountdownOverlay } from '@/components/game/CountdownOverlay';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -33,20 +34,23 @@ export function BattlePhase({
   }
 
   return (
-    <PhaseContainer
-      layout="battle"
-      boss={boss}
-      onBossAttack={onBossAttack}
-      sidebarContent={<ScoreSubmission />}
-      enablePlayerController={true}
-      onPlayerPositionsUpdate={onPlayerPositionsUpdate}
-      showTimer={true}
-      showBossMusic={true}
-      showTeamComponents={true}
-      showSidebar={true}
-      sidebarCollapsed={sidebarCollapsed}
-      onToggleSidebar={onToggleSidebar}
-      className={isTransitioning ? 'transitioning' : ''}
-    />
+    <>
+      <PhaseContainer
+        layout="battle"
+        boss={boss}
+        onBossAttack={onBossAttack}
+        sidebarContent={<ScoreSubmission />}
+        enablePlayerController={true}
+        onPlayerPositionsUpdate={onPlayerPositionsUpdate}
+        showTimer={true}
+        showBossMusic={true}
+        showTeamComponents={true}
+        showSidebar={true}
+        sidebarCollapsed={sidebarCollapsed}
+        onToggleSidebar={onToggleSidebar}
+        className={isTransitioning ? 'transitioning' : ''}
+      />
+      <CountdownOverlay />
+    </>
   );
 }

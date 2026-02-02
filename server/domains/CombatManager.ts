@@ -409,12 +409,37 @@ export class CombatManager {
       });
     }
 
+    // Initialize minions for spectators
+    const spectators = players.filter(p => p.team === 'spectators');
+    const voterCount = activePlayers.length;
+    const minionMaxHp = this.MINION_BASE_HP + (voterCount * this.MINION_HP_SCALE_PER_VOTER);
+
+    const minionStates = new Map<string, MinionState>();
+    for (const spectator of spectators) {
+      const minionState: MinionState = {
+        playerId: spectator.id,
+        hp: minionMaxHp,
+        maxHp: minionMaxHp,
+        isAlive: true,
+      };
+      minionStates.set(spectator.id, minionState);
+
+      // Emit spawn event for each minion
+      this.eventBus.emit('combat:minion_spawned', {
+        lobbyId,
+        playerId: spectator.id,
+        avatar: 'warrior', // Would get from session in full implementation
+        hp: minionMaxHp,
+        maxHp: minionMaxHp,
+      });
+    }
+
     // Create lobby combat state
     const combatState: LobbyCombatState = {
       lobbyId,
       boss,
       players: playerStates,
-      minions: new Map(),
+      minions: minionStates,
       battleModifier: 1.0,
       ticketIndex,
       countdownActive: false,
@@ -428,6 +453,11 @@ export class CombatManager {
       bossId,
       bossMaxHp,
     });
+
+    // Start minion attack loop if there are spectators
+    if (spectators.length > 0) {
+      this.startMinionAttackLoop(lobbyId);
+    }
   }
 
   /**
@@ -627,6 +657,47 @@ export class CombatManager {
 
     // Start first increment after interval
     combatState.modifierIntervalHandle = setTimeout(incrementModifier, this.MODIFIER_INTERVAL_MS) as NodeJS.Timeout;
+  }
+
+  /**
+   * Start minion attack loop - minions perform actions every 4 seconds
+   */
+  private startMinionAttackLoop(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) return;
+
+    const performMinionActions = () => {
+      const state = this.combatStates.get(lobbyId);
+      if (!state || !state.boss || state.boss.hp <= 0) return;
+
+      // Get alive minions
+      const aliveMinions = Array.from(state.minions.values()).filter(m => m.isAlive);
+      if (aliveMinions.length === 0) {
+        // No minions alive, reschedule check
+        state.minionAttackIntervalHandle = setTimeout(
+          performMinionActions,
+          this.MINION_ATTACK_INTERVAL_MS
+        );
+        return;
+      }
+
+      // Each alive minion performs an action
+      for (const minion of aliveMinions) {
+        this.performMinionAction(lobbyId, minion.playerId);
+      }
+
+      // Schedule next round
+      state.minionAttackIntervalHandle = setTimeout(
+        performMinionActions,
+        this.MINION_ATTACK_INTERVAL_MS
+      );
+    };
+
+    // Start after initial delay
+    combatState.minionAttackIntervalHandle = setTimeout(
+      performMinionActions,
+      this.MINION_ATTACK_INTERVAL_MS
+    );
   }
 
   /**
