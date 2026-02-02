@@ -46,7 +46,7 @@ describe('CombatManager', () => {
 
     it('should return null for non-existent combat state', () => {
       const result = combatManager.getCombatState('nonexistent');
-      expect(result).toBeNull();
+      expect(result).toBeUndefined();
     });
   });
 
@@ -61,7 +61,7 @@ describe('CombatManager', () => {
       combatManager.initializeCombat('lobby1', players, 0);
       const state = combatManager.getCombatState('lobby1');
 
-      expect(state).not.toBeNull();
+      expect(state).not.toBeUndefined();
       expect(state!.lobbyId).toBe('lobby1');
       expect(state!.boss).toBeDefined();
       expect(state!.boss!.maxHp).toBe(3000); // 3 players * 1000 BASE_HP_PER_PLAYER
@@ -363,10 +363,10 @@ describe('CombatManager', () => {
     it('should remove combat state for a lobby', () => {
       const players = [{ id: 'player1', team: 'developers' as TeamType }];
       combatManager.initializeCombat('lobby1', players, 0);
-      expect(combatManager.getCombatState('lobby1')).not.toBeNull();
+      expect(combatManager.getCombatState('lobby1')).not.toBeUndefined();
 
       combatManager.cleanupLobby('lobby1');
-      expect(combatManager.getCombatState('lobby1')).toBeNull();
+      expect(combatManager.getCombatState('lobby1')).toBeUndefined();
     });
 
     it('should handle cleanup of non-existent lobby gracefully', () => {
@@ -388,7 +388,7 @@ describe('CombatManager', () => {
       combatManager.cleanupLobby('lobby1');
 
       // State should be gone
-      expect(combatManager.getCombatState('lobby1')).toBeNull();
+      expect(combatManager.getCombatState('lobby1')).toBeUndefined();
     });
   });
 
@@ -1502,7 +1502,7 @@ describe('CombatManager', () => {
 
         // Players should still be in original state (lobby is deleted)
         const stateAfter = combatManager.getCombatState('lobby1');
-        expect(stateAfter).toBeNull();
+        expect(stateAfter).toBeUndefined();
       });
 
       it('should clear interval handles on cleanup', () => {
@@ -1831,14 +1831,14 @@ describe('CombatManager', () => {
         eventBus.on('combat:cleanup_complete', cleanupListener);
 
         const state = combatManager.getCombatState('lobby1');
-        expect(state).not.toBeNull();
+        expect(state).not.toBeUndefined();
 
         eventBus.emit('session:lobby_destroyed', {
           lobbyId: 'lobby1',
         });
 
         expect(cleanupListener).toHaveBeenCalledWith({ lobbyId: 'lobby1' });
-        expect(combatManager.getCombatState('lobby1')).toBeNull();
+        expect(combatManager.getCombatState('lobby1')).toBeUndefined();
       });
 
       it('should clear all timers on lobby destroyed', () => {
@@ -1860,7 +1860,7 @@ describe('CombatManager', () => {
         });
 
         // Verify state is cleaned up
-        expect(combatManager.getCombatState('lobby1')).toBeNull();
+        expect(combatManager.getCombatState('lobby1')).toBeUndefined();
       });
     });
 
