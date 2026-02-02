@@ -163,6 +163,20 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('estimation:discussion_timer_started', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'estimation:discussion_timer_started', {
+        durationMs: payload.durationMs,
+        endsAt: payload.endsAt,
+      });
+    });
+
+    this.eventBus.on('estimation:discussion_ended', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'estimation:discussion_ended', {
+        reason: payload.reason,
+        finalEstimate: payload.finalEstimate,
+      });
+    });
+
     // =============================================================================
     // Combat Events
     // =============================================================================
