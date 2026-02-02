@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 3 of TBD in current phase
+Plan: 4 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 04-03-PLAN.md
+Last activity: 2026-02-02 — Completed 04-04-PLAN.md
 
-Progress: [█████░░░░░] 59%
+Progress: [██████░░░░] 63%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 16
-- Average duration: 3.9 min
-- Total execution time: 1.03 hours
+- Total plans completed: 17
+- Average duration: 3.8 min
+- Total execution time: 1.08 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [█████░░░░░] 59%
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
-| 04-combatmanager | 3 | 12 min | 4.0 min |
+| 04-combatmanager | 4 | 15 min | 3.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-05 (5 min), 04-01 (3 min), 04-02 (4 min), 04-03 (5 min)
-- Trend: Phase 04 consistent TDD velocity, averaging 4 min per plan
+- Last 5 plans: 04-01 (3 min), 04-02 (4 min), 04-03 (5 min), 04-04 (3 min)
+- Trend: Phase 04 maintaining fast TDD velocity, 3-5 min per plan
 
 *Updated after each plan completion*
 
@@ -147,6 +147,12 @@ Recent decisions affecting current work:
 - Enraged attack speed (3s vs 5s) — Increases pressure without unfair one-shots, per RESEARCH.md
 - Light attacks instant — 60% attacks instant maintains combat pressure vs telegraph downtime
 
+**From Plan 04-04:**
+- Centralized damage application — Boss attacks call applyDamageToPlayer() which handles HP reduction, capping, events, and down transition
+- Timer handle storage pattern — Store timer in player.downTimerHandle, clear in both permanentlyDownPlayer and cleanupLobby
+- Healer class validation — NotHealerClassError with proper signature (playerId, className) for non-healers attempting to heal
+- State machine enforcement — Healing only allowed for fighting state (not downed/ghost), prevents edge cases
+
 ### Pending Todos
 
 None yet.
@@ -157,8 +163,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (04-03 execution complete)
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-02-02 (04-04 execution complete)
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
 
-**Phase 4 Progress:** Boss attack AI complete. TDD implementation with 44 tests. Attack loop with 3s grace period, variable timing (±30% variance), threat-based targeting (70/20/10), AoE mechanics (15%/25%), telegraph warnings (1s delay). Normal: 5s base, enraged: 3s base. Attack types: light 60%, heavy 30%, special 10% (shifts to 40/35/25 when enraged). Damage: 25/40/50. Filters downed/ghost from targeting. 188 tests passing. Ready for Plan 04-04 (player HP and down mechanics).
+**Phase 4 Progress:** Player health system complete. TDD implementation with 70 tests. Boss attacks trigger applyDamageToPlayer → HP reduction → down at 0 HP → 10s timer → ghost mode. Healers (cleric/paladin/bard) can heal 25 HP during combat. Only fighting state players can heal/be healed. Timer cleanup in cleanupLobby. 214 tests passing. Ready for Plan 04-05 (revival system with 2.5s channel).
