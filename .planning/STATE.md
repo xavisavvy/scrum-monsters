@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 5 of 6 (Fine-Grained Events)
-Plan: 3 of 6 in current phase
+Plan: 4 of 6 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 05-03-PLAN.md
+Last activity: 2026-02-02 — Completed 05-04-PLAN.md
 
-Progress: [████████░░] 75%
+Progress: [████████░░] 78%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 21
+- Total plans completed: 22
 - Average duration: 3.9 min
-- Total execution time: 1.36 hours
+- Total execution time: 1.42 hours
 
 **By Phase:**
 
@@ -31,11 +31,11 @@ Progress: [████████░░] 75%
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
-| 05-fine-grained-events | 2 | 9.5 min | 4.75 min |
+| 05-fine-grained-events | 3 | 13.5 min | 4.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-05 (4 min), 04-06 (4.5 min), 05-01 (5.5 min), 05-03 (4 min)
-- Trend: Phase 05 patterns emerging, return to faster execution pace
+- Last 5 plans: 04-06 (4.5 min), 05-01 (5.5 min), 05-03 (4 min), 05-04 (4 min)
+- Trend: Phase 05 maintaining consistent 4-5 min pace
 
 *Updated after each plan completion*
 
@@ -179,6 +179,11 @@ Recent decisions affecting current work:
 - Full state recovery method — sendFullState() emits system:full_state with current sequence for late joiners and buffer exhaustion
 - Event bridge pattern — emitToLobby() adds seq + timestamp to all events before Socket.IO emission
 
+**From Plan 05-04:**
+- Full state sync pattern — Late joiners and reconnecting clients receive system:full_state with current sequence for synchronization
+- Deferred initialization pattern — ClientEventEmitter initialized after Socket.IO server creation via factory function
+- Gap recovery endpoint — request_missed_events handler checks buffer and sends missed events or full state
+
 ### Pending Todos
 
 None yet.
@@ -189,8 +194,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 08:38:15Z
-Stopped at: Completed 05-03-PLAN.md
+Last session: 2026-02-02 08:45:51Z
+Stopped at: Completed 05-04-PLAN.md
 Resume file: None
 
-**Phase 5 Plan 03 Complete:** ClientEventEmitter bridge established connecting internal domain events to Socket.IO emissions with sequencing. All domain events (session, estimation, combat) bridged with vote masking (hasVoted only) and cleanup automation. 20 comprehensive tests verify bridging, vote privacy, sequence independence, buffering, and cleanup. Factory function createClientEventEmitter() ready for websocket.ts integration in Plan 05-04.
+**Phase 5 Plan 04 Complete:** ClientEventEmitter fully wired into server architecture. Fine-grained event types declared in shared/gameEvents.ts (32 events with seq/timestamp). Initialized after Socket.IO server creation, gap recovery via request_missed_events handler, full state sync on join/reconnect. Event pipeline complete: domain events → eventBus → ClientEventEmitter → Socket.IO clients. Ready for legacy event migration in Plan 05-05.
