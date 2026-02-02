@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 1 of TBD in current phase
+Plan: 2 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 04-01-PLAN.md
+Last activity: 2026-02-02 — Completed 04-02-PLAN.md
 
-Progress: [█████░░░░░] 52%
+Progress: [█████░░░░░] 56%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14
+- Total plans completed: 15
 - Average duration: 3.8 min
-- Total execution time: 0.87 hours
+- Total execution time: 0.94 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [█████░░░░░] 52%
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
-| 04-combatmanager | 1 | 3 min | 3.2 min |
+| 04-combatmanager | 2 | 7 min | 3.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 03-03 (8 min), 03-04 (7 min), 03-05 (5 min), 04-01 (3 min)
-- Trend: Phase 04 started, foundation work averaging 3.2 min
+- Last 5 plans: 03-04 (7 min), 03-05 (5 min), 04-01 (3 min), 04-02 (4 min)
+- Trend: Phase 04 progressing, TDD implementation averaging 3.5 min
 
 *Updated after each plan completion*
 
@@ -133,6 +133,12 @@ Recent decisions affecting current work:
 - Combat constants from CONTEXT.md — HP/damage/timing tuned per requirements (1000 HP/player, 100 player HP, 25/40/50 damage, 10s down, 2.5s revival, 5s/3s boss attacks)
 - Ticket index scaling — LobbyCombatState includes ticketIndex for dungeon crawl difficulty progression
 
+**From Plan 04-02:**
+- Class damage values — Tank (15), DPS (20), glass cannon (25), healer (12) for balanced TTK and class fantasy
+- Spectator filtering — Excluded from boss HP calculation and combat states (non-combatants)
+- Cumulative threat model — Threat is total damage dealt, simplest targeting for MVP
+- Boss enrage once at 50% — Single phase transition with boolean flag prevents re-triggering
+
 ### Pending Todos
 
 None yet.
@@ -143,8 +149,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (04-01 execution complete)
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-02-02 (04-02 execution complete)
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
 
-**Phase 4 Started:** CombatManager foundation complete. Created CombatErrors hierarchy (6 classes), added 9 combat event types, built CombatManager class shell with state interfaces and constants from CONTEXT.md. 144 tests passing. Ready for Plan 04-02 (combat initialization).
+**Phase 4 Progress:** Combat initialization and boss damage complete. TDD implementation with 26 tests. Boss HP scales with player count (1000 HP/player) and ticket difficulty. Class-based damage system (12-25 damage). Threat tracking, enrage at 50% HP, defeat detection. 170 tests passing. Ready for Plan 04-03 (boss attack patterns).
