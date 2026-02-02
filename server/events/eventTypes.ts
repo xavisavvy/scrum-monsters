@@ -197,7 +197,8 @@ export interface CombatPlayerDamagedPayload {
   lobbyId: string;
   playerId: string;
   damage: number;
-  playerHealth: number;
+  playerHealth?: number; // Optional - will be calculated by handler in Plan 04-04
+  timestamp?: number; // For grouping AoE attacks
 }
 
 /** Emitted when a player's health reaches zero */
@@ -249,8 +250,8 @@ export interface CombatBossEnragedPayload {
 /** Emitted when boss telegraphs a big attack */
 export interface CombatBossTelegraphPayload {
   lobbyId: string;
-  targetId: string;
-  attackType: 'light' | 'heavy' | 'special';
+  targetId?: string; // Optional - not specified for AoE attacks
+  attackType?: 'light' | 'heavy' | 'special'; // Optional - inferred from message
   message: string;
   delayMs: number;
 }

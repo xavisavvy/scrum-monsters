@@ -539,7 +539,9 @@ describe('CombatManager', () => {
 
       it('should use special attacks more often when enraged', () => {
         const telegraphListener = vi.fn();
+        const playerDamagedListener = vi.fn();
         eventBus.on('combat:boss_telegraph', telegraphListener);
+        eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
         combatManager.playerAttackBoss('lobby1', 'warrior1');
@@ -547,15 +549,17 @@ describe('CombatManager', () => {
         const state = combatManager.getCombatState('lobby1');
         state!.boss!.isEnraged = true;
 
+        // Force a heavy attack (enraged: 35% chance normally)
+        const randomMock = vi.spyOn(Math, 'random');
+        randomMock
+          .mockReturnValueOnce(0.5)  // Attack type: heavy (0.4-0.75 range)
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.5); // Highest threat
+
         combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
 
-        // Trigger multiple attacks
-        for (let i = 0; i < 20; i++) {
-          vi.advanceTimersByTime(4000);
-        }
-
-        // Enraged should telegraph more (heavy/special attacks)
-        // This is a statistical test - we expect more telegraphs when enraged
+        // Should have telegraphed
         expect(telegraphListener.mock.calls.length).toBeGreaterThan(0);
       });
     });
@@ -595,7 +599,11 @@ describe('CombatManager', () => {
         combatManager.playerAttackBoss('lobby1', 'warrior1'); // 15 damage (third)
 
         // Mock random to 75% (20% chance for second-highest)
-        vi.spyOn(Math, 'random').mockReturnValue(0.75);
+        const randomMock = vi.spyOn(Math, 'random');
+        randomMock
+          .mockReturnValueOnce(0.3)  // Attack type: light
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.75); // Second-highest threat (0.7-0.9 range)
 
         combatManager.startBossAttackLoop('lobby1');
         vi.advanceTimersByTime(3000);
@@ -613,7 +621,12 @@ describe('CombatManager', () => {
         combatManager.playerAttackBoss('lobby1', 'wizard1');
 
         // Mock random to 95% (10% chance for random)
-        vi.spyOn(Math, 'random').mockReturnValue(0.95);
+        const randomMock = vi.spyOn(Math, 'random');
+        randomMock
+          .mockReturnValueOnce(0.3)  // Attack type: light
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.95) // Random player (> 0.9)
+          .mockReturnValue(0.5);     // Random selection within players
 
         combatManager.startBossAttackLoop('lobby1');
         vi.advanceTimersByTime(3000);
@@ -633,31 +646,24 @@ describe('CombatManager', () => {
         // Build threat
         combatManager.playerAttackBoss('lobby1', 'warrior1');
 
-        // Force AoE by manipulating randomness or just testing over many attacks
-        // For deterministic test, we'll check that some attacks hit multiple players
-        combatManager.startBossAttackLoop('lobby1');
+        // Force AoE attack explicitly
+        const randomMock = vi.spyOn(Math, 'random');
+        randomMock
+          .mockReturnValueOnce(0.3)  // Attack type: light (instant damage)
+          .mockReturnValueOnce(0.1); // AoE (< 0.15 for normal boss)
 
-        // Run many attacks to ensure we get AoE (15% chance each)
-        for (let i = 0; i < 30; i++) {
-          vi.advanceTimersByTime(6000);
-        }
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
 
         const damagedEvents = playerDamagedListener.mock.calls;
 
-        // Count unique players damaged in a single attack
-        // If we see 3 damage events at same timestamp, it's AoE
-        const timestampGroups = new Map<number, Set<string>>();
-        damagedEvents.forEach(([payload]) => {
-          const key = payload.timestamp || Date.now();
-          if (!timestampGroups.has(key)) {
-            timestampGroups.set(key, new Set());
-          }
-          timestampGroups.get(key)!.add(payload.playerId);
-        });
+        // Should have hit all 3 fighting players
+        expect(damagedEvents.length).toBe(3);
 
-        // At least one attack should have hit multiple players (AoE)
-        const hasAoE = Array.from(timestampGroups.values()).some(players => players.size > 1);
-        expect(hasAoE).toBe(true);
+        const damagedPlayerIds = damagedEvents.map(([payload]) => payload.playerId);
+        expect(damagedPlayerIds).toContain('warrior1');
+        expect(damagedPlayerIds).toContain('ranger1');
+        expect(damagedPlayerIds).toContain('wizard1');
       });
 
       it('should NOT damage downed players in AoE', () => {
@@ -723,14 +729,17 @@ describe('CombatManager', () => {
         // Build threat
         combatManager.playerAttackBoss('lobby1', 'warrior1');
 
+        // Force a heavy attack
+        const randomMock = vi.spyOn(Math, 'random');
+        randomMock
+          .mockReturnValueOnce(0.7)  // Attack type: heavy (0.6-0.9 range for normal)
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.5); // Highest threat
+
         combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
 
-        // Run many attacks to get heavy/special
-        for (let i = 0; i < 20; i++) {
-          vi.advanceTimersByTime(6000);
-        }
-
-        // Should have some telegraphs
+        // Should have telegraphed
         expect(telegraphListener.mock.calls.length).toBeGreaterThan(0);
 
         // Telegraph should include message and delay
@@ -782,18 +791,41 @@ describe('CombatManager', () => {
         // Build threat
         combatManager.playerAttackBoss('lobby1', 'warrior1');
 
-        combatManager.startBossAttackLoop('lobby1');
+        const state = combatManager.getCombatState('lobby1');
 
-        // Run many attacks to collect telegraph messages
-        for (let i = 0; i < 30; i++) {
-          vi.advanceTimersByTime(6000);
+        // Force two different attacks explicitly
+        const randomMock = vi.spyOn(Math, 'random');
+
+        // First attack: heavy
+        randomMock
+          .mockReturnValueOnce(0.7)  // Attack type: heavy
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.5); // Highest threat
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
+
+        // Kill the timer and start a new one for second attack
+        if (state!.boss!.attackTimerHandle) {
+          clearTimeout(state!.boss!.attackTimerHandle);
         }
+
+        // Second attack: special
+        randomMock
+          .mockReturnValueOnce(0.95) // Attack type: special
+          .mockReturnValueOnce(0.5)  // Not AoE
+          .mockReturnValueOnce(0.5); // Highest threat
+
+        combatManager.startBossAttackLoop('lobby1');
+        vi.advanceTimersByTime(3000);
 
         const messages = telegraphListener.mock.calls.map(([payload]) => payload.message);
         const uniqueMessages = new Set(messages);
 
-        // Should have at least 2 different telegraph messages (heavy and special)
-        expect(uniqueMessages.size).toBeGreaterThanOrEqual(2);
+        // Should have 2 different telegraph messages (heavy and special)
+        expect(uniqueMessages.size).toBe(2);
+        expect(messages.some(m => m.includes('heavy'))).toBe(true);
+        expect(messages.some(m => m.includes('devastating'))).toBe(true);
       });
     });
 
