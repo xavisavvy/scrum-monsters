@@ -311,6 +311,23 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('combat:minion_damaged', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:minion_damaged', {
+        playerId: payload.playerId,
+        damage: payload.damage,
+        newHp: payload.newHp,
+        attackerId: payload.attackerId,
+      });
+    });
+
+    this.eventBus.on('combat:minion_killed', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:minion_killed', {
+        playerId: payload.playerId,
+        killerId: payload.killerId,
+        respawnInSeconds: payload.respawnInSeconds,
+      });
+    });
+
     this.eventBus.on('combat:cleanup_complete', (payload) => {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
