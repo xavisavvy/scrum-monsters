@@ -228,6 +228,29 @@ export class CombatManager {
     }
   }
 
+  /**
+   * Complete the countdown - clear interval and emit complete event
+   */
+  private completeCountdown(lobbyId: string, finalMultiplier: number): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) return;
+
+    // Clear interval
+    if (combatState.countdownIntervalHandle) {
+      clearInterval(combatState.countdownIntervalHandle);
+      combatState.countdownIntervalHandle = undefined;
+    }
+
+    combatState.countdownActive = false;
+
+    this.eventBus.emit('combat:countdown_complete', {
+      lobbyId,
+      finalMultiplier,
+    });
+
+    // Team attack will be applied in PLAN-06-02
+  }
+
   // =============================================================================
   // Cross-Domain Event Handlers
   // =============================================================================
