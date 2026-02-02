@@ -893,6 +893,32 @@ export class EstimationManager {
   }
 
   /**
+   * Host finalizes discussion with a specific estimate value
+   * Only allows values that were actually voted on
+   */
+  public hostFinalizeEstimate(lobbyId: string, hostId: string, estimate: number): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation || !estimation.discussionPhase?.active) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    // Validate estimate is from actual votes (collect all voted values)
+    const allVotes = new Set<number>();
+    for (const vote of estimation.teams.developers.votes.values()) {
+      if (typeof vote === 'number') allVotes.add(vote);
+    }
+    for (const vote of estimation.teams.qa.votes.values()) {
+      if (typeof vote === 'number') allVotes.add(vote);
+    }
+
+    if (!allVotes.has(estimate)) {
+      throw new Error(`Invalid estimate: ${estimate}. Must be one of: ${Array.from(allVotes).join(', ')}`);
+    }
+
+    this.endDiscussion(lobbyId, 'host_finalized', estimate);
+  }
+
+  /**
    * Handles player joining a lobby (session event subscription)
    * If estimation is active, adds player to eligible voters based on their team
    */
