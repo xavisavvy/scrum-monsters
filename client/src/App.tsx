@@ -24,6 +24,8 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { useAuth } from '@/lib/stores/useAuth';
 import { useBacktickKey } from '@/hooks/useBacktickKey';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
+import { setupEventHandlers, teardownEventHandlers } from '@/lib/socket/eventHandlers';
+import { useEventSync } from '@/lib/stores/useEventSync';
 import { CheatMenu } from '@/components/ui/CheatMenu';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ReconnectionStatus } from '@/components/ui/ReconnectionStatus';
@@ -280,6 +282,9 @@ function App() {
   useEffect(() => {
     if (!socket) return;
 
+    // Setup fine-grained event handlers
+    setupEventHandlers(socket);
+
     socket.on('lobby_created', ({ lobby, inviteLink }) => {
       setLobby(lobby);
       setInviteLink(inviteLink);
@@ -358,8 +363,12 @@ function App() {
     });
 
     socket.on('lobby_updated', ({ lobby }) => {
+      // DEPRECATED: This event should no longer be emitted
+      // Fine-grained events should update state incrementally
+      console.warn('Received deprecated lobby_updated event - this should not happen');
+      // Still apply update as fallback for safety
       setLobby(lobby);
-      
+
       // Update currentPlayer with fresh data if they're still in the lobby
       if (currentPlayer) {
         const updatedPlayer = lobby.players.find(p => p.id === currentPlayer.id);
@@ -367,27 +376,27 @@ function App() {
           setPlayer(updatedPlayer);
         }
       }
-      
+
       // Handle Return Home functionality: transition from any battle-related phase back to lobby
       // If game phase is 'lobby' but we're still showing battle screen, return to lobby
       if (lobby.gamePhase === 'lobby' && appState === 'battle') {
         console.log(`🏠 Return Home: transitioning from battle to lobby (was in ${lastGamePhase})`);
         setAppState('lobby');
       }
-      
+
       // Force BattleScreen remount on ANY significant state change to prevent DOM reconciliation errors
       const shouldRemount = (
         (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') || // Entering battle
-        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' && 
+        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' &&
          JSON.stringify(currentLobby?.currentTicket) !== JSON.stringify(lobby.currentTicket)) // Ticket changed in battle
       );
-      
+
       if (shouldRemount) {
         console.log(`🔄 COMPREHENSIVE REMOUNT: ${lastGamePhase} → ${lobby.gamePhase}, ticket change detected`);
-        
+
         // Step 1: Unmount immediately
         setIsBattleUnmounting(true);
-        
+
         // Step 2: Remount after a brief delay with new key
         setTimeout(() => {
           setBattleRemountKey(prev => {
@@ -398,15 +407,15 @@ function App() {
           setIsBattleUnmounting(false);
         }, 100); // Increased delay for more reliable cleanup
       }
-      
+
       // Log all phase changes for debugging
       if (lastGamePhase !== lobby.gamePhase) {
         console.log(`📋 Phase transition: ${lastGamePhase} → ${lobby.gamePhase}`);
       }
-      
+
       // Track phase changes
       setLastGamePhase(lobby.gamePhase);
-      
+
       // Note: Removed auto-transition to battle - only transition on explicit battle_started event
     });
 
@@ -504,6 +513,8 @@ function App() {
     });
 
     return () => {
+      teardownEventHandlers(socket);
+      useEventSync.getState().reset();
       socket.off('lobby_created');
       socket.off('lobby_joined');
       socket.off('lobby_sync');
