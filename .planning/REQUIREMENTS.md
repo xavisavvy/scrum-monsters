@@ -73,33 +73,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | TBD | Pending |
-| ARCH-02 | TBD | Pending |
-| ARCH-03 | TBD | Pending |
-| ARCH-04 | TBD | Pending |
-| ARCH-05 | TBD | Pending |
-| ARCH-06 | TBD | Pending |
-| ARCH-07 | TBD | Pending |
-| ARCH-08 | TBD | Pending |
-| ARCH-09 | TBD | Pending |
-| ARCH-10 | TBD | Pending |
-| FLOW-01 | TBD | Pending |
-| FLOW-02 | TBD | Pending |
-| FLOW-03 | TBD | Pending |
-| FLOW-04 | TBD | Pending |
-| FLOW-05 | TBD | Pending |
-| FLOW-06 | TBD | Pending |
-| FLOW-07 | TBD | Pending |
-| INTG-01 | TBD | Pending |
-| INTG-02 | TBD | Pending |
-| INTG-03 | TBD | Pending |
-| INTG-04 | TBD | Pending |
+| ARCH-01 | Phase 2 | Pending |
+| ARCH-02 | Phase 3 | Pending |
+| ARCH-03 | Phase 4 | Pending |
+| ARCH-04 | Phase 1 | Pending |
+| ARCH-05 | Phase 1 | Pending |
+| ARCH-06 | Phase 1 | Pending |
+| ARCH-07 | Phase 5 | Pending |
+| ARCH-08 | Phase 5 | Pending |
+| ARCH-09 | Phase 1 | Pending |
+| ARCH-10 | Phase 2, 3 | Pending |
+| FLOW-01 | Phase 3 | Pending |
+| FLOW-02 | Phase 4 | Pending |
+| FLOW-03 | Phase 4 | Pending |
+| FLOW-04 | Phase 4 | Pending |
+| FLOW-05 | Phase 6 | Pending |
+| FLOW-06 | Phase 6 | Pending |
+| FLOW-07 | Phase 3 | Pending |
+| INTG-01 | Phase 5 | Pending |
+| INTG-02 | Phase 2 | Pending |
+| INTG-03 | Phase 6 | Pending |
+| INTG-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21 (pending roadmap creation)
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-01*
-*Last updated: 2026-02-01 after initial definition*
+*Last updated: 2026-02-01 after roadmap creation*
