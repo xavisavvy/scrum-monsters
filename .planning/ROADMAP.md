@@ -13,7 +13,7 @@ Refactor a 2000+ line monolithic GameStateManager into separate Session, Estimat
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Foundation** - Extract state types and event bus
-- [ ] **Phase 2: SessionManager** - Extract lobby and player lifecycle
+- [x] **Phase 2: SessionManager** - Extract lobby and player lifecycle
 - [ ] **Phase 3: EstimationManager** - Extract voting and consensus logic
 - [ ] **Phase 4: CombatManager** - Extract battle and health mechanics
 - [ ] **Phase 5: Fine-Grained Events** - Replace coarse broadcasts with targeted events
@@ -51,11 +51,11 @@ Plans:
 **Plans**: 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Create SessionErrors and SessionManager class shell
-- [ ] 02-02-PLAN.md — Implement lobby lifecycle methods (TDD)
-- [ ] 02-03-PLAN.md — Implement reconnection system (TDD)
-- [ ] 02-04-PLAN.md — Implement host transfer and team management (TDD)
-- [ ] 02-05-PLAN.md — Wire SessionManager to socket handlers
+- [x] 02-01-PLAN.md — Create SessionErrors and SessionManager class shell
+- [x] 02-02-PLAN.md — Implement lobby lifecycle methods (TDD)
+- [x] 02-03-PLAN.md — Implement reconnection system (TDD)
+- [x] 02-04-PLAN.md — Implement host transfer and team management (TDD)
+- [x] 02-05-PLAN.md — Wire SessionManager to socket handlers
 
 ### Phase 3: EstimationManager
 **Goal**: Extract voting, consensus, and timer logic into dedicated domain manager
@@ -126,8 +126,8 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
-| 2. SessionManager | 0/5 | Ready | - |
-| 3. EstimationManager | 0/0 | Not started | - |
+| 2. SessionManager | 5/5 | ✓ Complete | 2026-02-01 |
+| 3. EstimationManager | 0/0 | Ready | - |
 | 4. CombatManager | 0/0 | Not started | - |
 | 5. Fine-Grained Events | 0/0 | Not started | - |
 | 6. New Flow Implementation | 0/0 | Not started | - |

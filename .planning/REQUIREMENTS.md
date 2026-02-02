@@ -9,15 +9,15 @@ Requirements for this refactoring milestone. Each maps to roadmap phases.
 
 ### Architecture
 
-- [ ] **ARCH-01**: Create SessionManager handling lobby lifecycle, players, teams, host transfer
+- [x] **ARCH-01**: Create SessionManager handling lobby lifecycle, players, teams, host transfer
 - [ ] **ARCH-02**: Create EstimationManager handling tickets, voting, consensus, discussion
 - [ ] **ARCH-03**: Create CombatManager handling boss, player HP, damage, revival, battle modifiers
-- [ ] **ARCH-04**: Create EventBus for cross-domain coordination using Node.js EventEmitter
-- [ ] **ARCH-05**: Split Lobby type into SessionState, EstimationState, CombatState
-- [ ] **ARCH-06**: Define domain event types (session.*, estimation.*, combat.*)
+- [x] **ARCH-04**: Create EventBus for cross-domain coordination using Node.js EventEmitter
+- [x] **ARCH-05**: Split Lobby type into SessionState, EstimationState, CombatState
+- [x] **ARCH-06**: Define domain event types (session.*, estimation.*, combat.*)
 - [ ] **ARCH-07**: Replace lobby_updated with fine-grained domain events
 - [ ] **ARCH-08**: Update client stores to subscribe to domain-specific events
-- [ ] **ARCH-09**: Establish event listener cleanup contracts to prevent memory leaks
+- [x] **ARCH-09**: Establish event listener cleanup contracts to prevent memory leaks
 - [ ] **ARCH-10**: Migrate timer ownership to respective domain managers
 
 ### Flow
@@ -33,7 +33,7 @@ Requirements for this refactoring milestone. Each maps to roadmap phases.
 ### Integration
 
 - [ ] **INTG-01**: Update socketHandlers.ts to route events through domain managers
-- [ ] **INTG-02**: Preserve reconnection functionality across domain split
+- [x] **INTG-02**: Preserve reconnection functionality across domain split
 - [ ] **INTG-03**: Maintain spectator boss-side combat behavior
 - [ ] **INTG-04**: Keep existing team competition stats working
 
@@ -73,16 +73,16 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ARCH-01 | Phase 2 | Pending |
+| ARCH-01 | Phase 2 | Complete |
 | ARCH-02 | Phase 3 | Pending |
 | ARCH-03 | Phase 4 | Pending |
-| ARCH-04 | Phase 1 | Pending |
-| ARCH-05 | Phase 1 | Pending |
-| ARCH-06 | Phase 1 | Pending |
+| ARCH-04 | Phase 1 | Complete |
+| ARCH-05 | Phase 1 | Complete |
+| ARCH-06 | Phase 1 | Complete |
 | ARCH-07 | Phase 5 | Pending |
 | ARCH-08 | Phase 5 | Pending |
-| ARCH-09 | Phase 1 | Pending |
-| ARCH-10 | Phase 2, 3 | Pending |
+| ARCH-09 | Phase 1 | Complete |
+| ARCH-10 | Phase 2, 3 | Partial |
 | FLOW-01 | Phase 3 | Pending |
 | FLOW-02 | Phase 4 | Pending |
 | FLOW-03 | Phase 4 | Pending |
@@ -91,7 +91,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FLOW-06 | Phase 6 | Pending |
 | FLOW-07 | Phase 3 | Pending |
 | INTG-01 | Phase 5 | Pending |
-| INTG-02 | Phase 2 | Pending |
+| INTG-02 | Phase 2 | Complete |
 | INTG-03 | Phase 6 | Pending |
 | INTG-04 | Phase 6 | Pending |
 
