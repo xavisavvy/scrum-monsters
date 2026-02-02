@@ -5,33 +5,33 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 1 - Foundation
+**Current focus:** Phase 1 - Foundation (COMPLETE)
 
 ## Current Position
 
 Phase: 1 of 6 (Foundation)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-01 — Completed 01-02-PLAN.md (Domain Event Types and EventBus)
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-01 — Completed 01-03-PLAN.md (ScopedEventBus with memory leak prevention)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2
+- Total plans completed: 3
 - Average duration: 3 min
-- Total execution time: 0.1 hours
+- Total execution time: 0.13 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01-foundation | 2 | 6 min | 3 min |
+| 01-foundation | 3 | 8 min | 2.7 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (2 min), 01-02 (4 min)
-- Trend: N/A (only 2 data points)
+- Last 5 plans: 01-01 (2 min), 01-02 (4 min), 01-03 (2 min)
+- Trend: Consistent ~3 min/plan
 
 *Updated after each plan completion*
 
@@ -57,6 +57,11 @@ Recent decisions affecting current work:
 - Fire-and-forget async — Async listeners not awaited by emit(), each handles own timing and errors
 - Typed EventBus pattern — Extend Node.js EventEmitter with TypeScript generics for compile-time safety
 
+**From Plan 01-03:**
+- Scoped subscription pattern — Use subscribeScoped(lobbyId, event, listener) for lobby-specific listeners
+- Cleanup contract — Always call cleanupScope(lobbyId) when lobby destroyed to prevent memory leaks
+- Scope tracking via Map — O(1) lookup for scope listener management
+
 ### Pending Todos
 
 None yet.
@@ -67,6 +72,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 20:18 (01-02 execution)
-Stopped at: Completed 01-02-PLAN.md, ready for 01-03-PLAN.md
+Last session: 2026-02-01 20:21 (01-03 execution)
+Stopped at: Completed 01-03-PLAN.md, Phase 01 complete
 Resume file: None
