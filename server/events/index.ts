@@ -60,6 +60,7 @@ export type {
   CombatCleanupCompletePayload,
   CombatPlayerHealedPayload,
   CombatTeamAttackPayload,
+  CombatBattleCompletePayload,
   // Minion types and events
   MinionState,
   CombatMinionSpawnedPayload,
