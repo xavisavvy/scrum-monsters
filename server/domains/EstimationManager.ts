@@ -31,6 +31,11 @@ export interface EstimationManagerDeps {
 }
 
 /**
+ * Vote-capable teams (excludes spectators)
+ */
+type VotingTeam = Exclude<TeamType, 'spectators'>;
+
+/**
  * Vote state for a single team during an estimation session
  */
 interface TeamVoteState {
@@ -161,6 +166,10 @@ export class EstimationManager {
       throw new InvalidVoteValueError(vote);
     }
 
+    if (!this.isVotingTeam(team)) {
+      throw new VoteNotEligibleError(playerId, 'Spectators cannot vote');
+    }
+
     const teamState = estimation.teams[team];
 
     // Check if player is eligible to vote
@@ -195,6 +204,10 @@ export class EstimationManager {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       return;
+    }
+
+    if (!this.isVotingTeam(team)) {
+      return; // Spectators don't have consensus
     }
 
     const teamState = estimation.teams[team];
@@ -316,7 +329,7 @@ export class EstimationManager {
   /**
    * Starts the voting timer for a team (called on first vote)
    */
-  private startVotingTimer(lobbyId: string, team: TeamType): void {
+  private startVotingTimer(lobbyId: string, team: VotingTeam): void {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       return;
@@ -346,7 +359,7 @@ export class EstimationManager {
   /**
    * Handles timer expiry - reveals votes or keeps voting phase
    */
-  private handleVotingTimeout(lobbyId: string, team: TeamType): void {
+  private handleVotingTimeout(lobbyId: string, team: VotingTeam): void {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       return;
@@ -386,6 +399,10 @@ export class EstimationManager {
       return;
     }
 
+    if (!this.isVotingTeam(team)) {
+      return; // Spectators don't have timers
+    }
+
     const teamState = estimation.teams[team];
 
     // Calculate remaining time
@@ -419,6 +436,10 @@ export class EstimationManager {
       return;
     }
 
+    if (!this.isVotingTeam(team)) {
+      return; // Spectators don't have timers
+    }
+
     const teamState = estimation.teams[team];
 
     // Only resume if timer was paused (no handle, but has duration)
@@ -450,6 +471,10 @@ export class EstimationManager {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       return;
+    }
+
+    if (!this.isVotingTeam(team)) {
+      return; // Spectators don't have timers
     }
 
     const teamState = estimation.teams[team];
@@ -498,9 +523,16 @@ export class EstimationManager {
   }
 
   /**
+   * Type guard to check if team is a voting team
+   */
+  private isVotingTeam(team: TeamType): team is VotingTeam {
+    return team === 'developers' || team === 'qa';
+  }
+
+  /**
    * Vote visibility information for a player
    */
-  private getVoteVisibility(lobbyId: string, team: TeamType): VoteVisibility[] {
+  private getVoteVisibility(lobbyId: string, team: VotingTeam): VoteVisibility[] {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       return [];
@@ -568,6 +600,10 @@ export class EstimationManager {
       throw new EstimationNotActiveError(lobbyId);
     }
 
+    if (!this.isVotingTeam(team)) {
+      throw new VoteNotEligibleError('spectators', 'Spectators cannot enter discussion phase');
+    }
+
     const teamState = estimation.teams[team];
     teamState.phase = 'discussion';
 
@@ -590,6 +626,10 @@ export class EstimationManager {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       throw new EstimationNotActiveError(lobbyId);
+    }
+
+    if (!this.isVotingTeam(team)) {
+      throw new VoteNotEligibleError(playerId, 'Spectators cannot vote');
     }
 
     const teamState = estimation.teams[team];
@@ -641,6 +681,10 @@ export class EstimationManager {
       throw new EstimationNotActiveError(lobbyId);
     }
 
+    if (!this.isVotingTeam(team)) {
+      return new Map(); // Spectators have no votes
+    }
+
     const teamState = estimation.teams[team];
     const tally = new Map<number | '?', number>();
 
@@ -666,6 +710,10 @@ export class EstimationManager {
     const estimation = this.estimations.get(lobbyId);
     if (!estimation) {
       throw new EstimationNotActiveError(lobbyId);
+    }
+
+    if (!this.isVotingTeam(team)) {
+      throw new VoteNotEligibleError('spectators', 'Cannot force estimate for spectators');
     }
 
     const teamState = estimation.teams[team];
