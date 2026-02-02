@@ -279,6 +279,8 @@ export interface ClientToServerEvents {
   reconnect_with_token: (data: { reconnectToken: string }) => void;
   // Missed events recovery
   request_missed_events: (data: { lastSeq: number }) => void;
+  // Minion interaction
+  attack_minion: (data: { minionPlayerId: string }) => void;
 }
 
 export interface TeamScores {
@@ -423,6 +425,8 @@ export interface ServerToClientEvents {
   'combat:minion_spawned': (data: { playerId: string; avatar: string; hp: number; maxHp: number; seq: number; timestamp: number }) => void;
   'combat:minion_attack': (data: { minionPlayerId: string; targetId: string; damage: number; attackType: string; seq: number; timestamp: number }) => void;
   'combat:minion_heal_boss': (data: { minionPlayerId: string; healAmount: number; newBossHp: number; seq: number; timestamp: number }) => void;
+  'combat:minion_damaged': (data: { playerId: string; damage: number; newHp: number; attackerId: string; seq: number; timestamp: number }) => void;
+  'combat:minion_killed': (data: { playerId: string; killerId: string; respawnInSeconds: number; seq: number; timestamp: number }) => void;
 
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
