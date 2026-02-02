@@ -17,6 +17,7 @@ import type {
   SessionPlayerJoinedPayload,
   SessionPlayerLeftPayload,
   SessionLobbyDestroyedPayload,
+  CombatBattleCompletePayload,
 } from "../events";
 import { TeamType } from "../../shared/gameEvents";
 import {
@@ -108,6 +109,9 @@ export class EstimationManager {
     this.eventBus.on('session:player_joined', this.handlePlayerJoined.bind(this));
     this.eventBus.on('session:player_left', this.handlePlayerLeft.bind(this));
     this.eventBus.on('session:lobby_destroyed', this.handleLobbyDestroyed.bind(this));
+
+    // Subscribe to combat events for phase transitions
+    this.eventBus.on('combat:battle_complete', this.handleBattleComplete.bind(this));
   }
 
   /**
@@ -1048,6 +1052,14 @@ export class EstimationManager {
     if (this.isVotingTeam(newTeam)) {
       estimation.teams[newTeam].eligibleVoters.add(playerId);
     }
+  }
+
+  /**
+   * Handles battle completion event from CombatManager
+   * Starts the discussion phase after team attack lands
+   */
+  private handleBattleComplete(payload: CombatBattleCompletePayload): void {
+    this.startDiscussionPhase(payload.lobbyId);
   }
 }
 

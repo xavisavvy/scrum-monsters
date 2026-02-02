@@ -609,6 +609,34 @@ export class CombatManager {
         bossId: combatState.boss.bossId,
       });
     }
+
+    // Battle complete - emit event to transition to discussion phase
+    this.handleBattleComplete(lobbyId);
+  }
+
+  /**
+   * Handle battle completion - clear timers and emit event for discussion phase
+   */
+  private handleBattleComplete(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) return;
+
+    // Clear all combat timers
+    if (combatState.boss?.attackTimerHandle) {
+      clearTimeout(combatState.boss.attackTimerHandle);
+      combatState.boss.attackTimerHandle = undefined;
+    }
+    if (combatState.modifierIntervalHandle) {
+      clearTimeout(combatState.modifierIntervalHandle);
+      combatState.modifierIntervalHandle = undefined;
+    }
+    if (combatState.minionAttackIntervalHandle) {
+      clearTimeout(combatState.minionAttackIntervalHandle);
+      combatState.minionAttackIntervalHandle = undefined;
+    }
+
+    // Emit event for EstimationManager to start discussion
+    this.eventBus.emit('combat:battle_complete', { lobbyId });
   }
 
   /**

@@ -392,6 +392,11 @@ export interface CombatMinionKilledPayload {
   respawnInSeconds: number;
 }
 
+/** Emitted when battle phase completes (team attack landed or boss defeated) */
+export interface CombatBattleCompletePayload {
+  lobbyId: string;
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -467,6 +472,7 @@ export interface DomainEventMap {
   'combat:minion_heal_boss': CombatMinionHealBossPayload;
   'combat:minion_damaged': CombatMinionDamagedPayload;
   'combat:minion_killed': CombatMinionKilledPayload;
+  'combat:battle_complete': CombatBattleCompletePayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
