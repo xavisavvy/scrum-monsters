@@ -1405,6 +1405,12 @@ export class CombatManager {
         combatState.countdownIntervalHandle = undefined;
       }
 
+      // Clear minion attack interval
+      if (combatState.minionAttackIntervalHandle) {
+        clearTimeout(combatState.minionAttackIntervalHandle);
+        combatState.minionAttackIntervalHandle = undefined;
+      }
+
       // Clear all player down timers
       for (const player of combatState.players.values()) {
         if (player.downTimerHandle) {
