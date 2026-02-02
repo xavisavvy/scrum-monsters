@@ -361,6 +361,23 @@ export interface CombatMinionHealBossPayload {
   newBossHp: number;
 }
 
+/** Emitted when minion takes damage */
+export interface CombatMinionDamagedPayload {
+  lobbyId: string;
+  playerId: string;
+  damage: number;
+  newHp: number;
+  attackerId: string;
+}
+
+/** Emitted when minion is killed */
+export interface CombatMinionKilledPayload {
+  lobbyId: string;
+  playerId: string;
+  killerId: string;
+  respawnInSeconds: number;
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -432,6 +449,8 @@ export interface DomainEventMap {
   'combat:minion_spawned': CombatMinionSpawnedPayload;
   'combat:minion_attack': CombatMinionAttackPayload;
   'combat:minion_heal_boss': CombatMinionHealBossPayload;
+  'combat:minion_damaged': CombatMinionDamagedPayload;
+  'combat:minion_killed': CombatMinionKilledPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
