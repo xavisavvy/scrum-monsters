@@ -10,7 +10,7 @@ Requirements for this refactoring milestone. Each maps to roadmap phases.
 ### Architecture
 
 - [x] **ARCH-01**: Create SessionManager handling lobby lifecycle, players, teams, host transfer
-- [ ] **ARCH-02**: Create EstimationManager handling tickets, voting, consensus, discussion
+- [x] **ARCH-02**: Create EstimationManager handling tickets, voting, consensus, discussion
 - [ ] **ARCH-03**: Create CombatManager handling boss, player HP, damage, revival, battle modifiers
 - [x] **ARCH-04**: Create EventBus for cross-domain coordination using Node.js EventEmitter
 - [x] **ARCH-05**: Split Lobby type into SessionState, EstimationState, CombatState
@@ -18,17 +18,17 @@ Requirements for this refactoring milestone. Each maps to roadmap phases.
 - [ ] **ARCH-07**: Replace lobby_updated with fine-grained domain events
 - [ ] **ARCH-08**: Update client stores to subscribe to domain-specific events
 - [x] **ARCH-09**: Establish event listener cleanup contracts to prevent memory leaks
-- [ ] **ARCH-10**: Migrate timer ownership to respective domain managers
+- [x] **ARCH-10**: Migrate timer ownership to respective domain managers
 
 ### Flow
 
-- [ ] **FLOW-01**: Implement estimation phase as distinct from battle phase
+- [x] **FLOW-01**: Implement estimation phase as distinct from battle phase
 - [ ] **FLOW-02**: Trigger battle entry on first vote submission
 - [ ] **FLOW-03**: Support players in mixed states (estimating vs fighting)
 - [ ] **FLOW-04**: Implement boss death wait state when voting incomplete
 - [ ] **FLOW-05**: Add 10s countdown for bonus damage after all voted
 - [ ] **FLOW-06**: Transition to discussion phase after countdown/battle ends
-- [ ] **FLOW-07**: Maintain vote changeability during discussion phase
+- [x] **FLOW-07**: Maintain vote changeability during discussion phase
 
 ### Integration
 
@@ -74,7 +74,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | ARCH-01 | Phase 2 | Complete |
-| ARCH-02 | Phase 3 | Pending |
+| ARCH-02 | Phase 3 | Complete |
 | ARCH-03 | Phase 4 | Pending |
 | ARCH-04 | Phase 1 | Complete |
 | ARCH-05 | Phase 1 | Complete |
@@ -82,14 +82,14 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ARCH-07 | Phase 5 | Pending |
 | ARCH-08 | Phase 5 | Pending |
 | ARCH-09 | Phase 1 | Complete |
-| ARCH-10 | Phase 2, 3 | Partial |
-| FLOW-01 | Phase 3 | Pending |
+| ARCH-10 | Phase 2, 3 | Complete |
+| FLOW-01 | Phase 3 | Complete |
 | FLOW-02 | Phase 4 | Pending |
 | FLOW-03 | Phase 4 | Pending |
 | FLOW-04 | Phase 4 | Pending |
 | FLOW-05 | Phase 6 | Pending |
 | FLOW-06 | Phase 6 | Pending |
-| FLOW-07 | Phase 3 | Pending |
+| FLOW-07 | Phase 3 | Complete |
 | INTG-01 | Phase 5 | Pending |
 | INTG-02 | Phase 2 | Complete |
 | INTG-03 | Phase 6 | Pending |
