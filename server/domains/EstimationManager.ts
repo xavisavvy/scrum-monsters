@@ -56,6 +56,17 @@ interface TeamVoteState {
 }
 
 /**
+ * Discussion phase state tracking
+ */
+interface DiscussionPhaseState {
+  active: boolean;
+  timerHandle?: NodeJS.Timeout;
+  timerStartedAt?: number;
+  timerDurationMs: number;
+  endsAt?: number;
+}
+
+/**
  * Estimation state for a lobby (contains both team states)
  */
 interface LobbyEstimationState {
@@ -65,6 +76,7 @@ interface LobbyEstimationState {
     developers: TeamVoteState;
     qa: TeamVoteState;
   };
+  discussionPhase: DiscussionPhaseState | null;
 }
 
 /**
@@ -82,6 +94,7 @@ export class EstimationManager {
 
   // Constants
   private readonly DEFAULT_VOTING_DURATION = 60 * 1000; // 60 seconds
+  private readonly DEFAULT_DISCUSSION_DURATION_MS = 2 * 60 * 1000; // 2 minutes
 
   // Dependencies
   private readonly eventBus: ScopedEventBus;
@@ -108,6 +121,7 @@ export class EstimationManager {
         developers: this.createEmptyTeamState(),
         qa: this.createEmptyTeamState(),
       },
+      discussionPhase: null,
     };
 
     this.estimations.set(lobbyId, estimation);
