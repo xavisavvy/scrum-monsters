@@ -87,10 +87,15 @@ Plans:
   4. Boss death triggers wait state if not all players have voted yet
   5. CombatManager subscribes to player_voted events and triggers battle entry for that player
   6. Players can be in different states simultaneously (some estimating, some fighting)
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] TBD (planning pending)
+- [ ] 04-01-PLAN.md — Create CombatErrors and CombatManager foundation
+- [ ] 04-02-PLAN.md — Combat initialization and boss mechanics (TDD)
+- [ ] 04-03-PLAN.md — Boss attack AI system (TDD)
+- [ ] 04-04-PLAN.md — Player health and down system (TDD)
+- [ ] 04-05-PLAN.md — Channel-based revival system (TDD)
+- [ ] 04-06-PLAN.md — Wire CombatManager to events and websocket handlers
 
 ### Phase 5: Fine-Grained Events
 **Goal**: Replace lobby_updated full-state broadcasts with targeted domain-specific events
@@ -132,6 +137,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
 | 2. SessionManager | 5/5 | ✓ Complete | 2026-02-01 |
 | 3. EstimationManager | 5/5 | ✓ Complete | 2026-02-02 |
-| 4. CombatManager | 0/0 | Not started | - |
+| 4. CombatManager | 0/6 | Planned | - |
 | 5. Fine-Grained Events | 0/0 | Not started | - |
 | 6. New Flow Implementation | 0/0 | Not started | - |
