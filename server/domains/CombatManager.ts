@@ -18,6 +18,7 @@ import type {
   SessionPlayerLeftPayload,
   SessionLobbyDestroyedPayload,
   EstimationVoteCastPayload,
+  EstimationFullConsensusReachedPayload,
 } from '../events';
 import { TeamType, AvatarClass } from '../../shared/gameEvents';
 import {
@@ -166,6 +167,10 @@ export class CombatManager {
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
     this.eventBus.on('session:player_left', this.handlePlayerLeft.bind(this));
     this.eventBus.on('session:lobby_destroyed', this.handleLobbyDestroyed.bind(this));
+    this.eventBus.on(
+      'estimation:full_consensus_reached',
+      this.handleFullConsensus.bind(this)
+    );
   }
 
   // =============================================================================
@@ -249,6 +254,14 @@ export class CombatManager {
     });
 
     // Team attack will be applied in PLAN-06-02
+  }
+
+  /**
+   * Handle full consensus event - triggers countdown
+   */
+  private handleFullConsensus(payload: EstimationFullConsensusReachedPayload): void {
+    const { lobbyId } = payload;
+    this.startCountdown(lobbyId);
   }
 
   // =============================================================================
