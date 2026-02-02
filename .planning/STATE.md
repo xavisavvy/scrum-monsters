@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 6 of 6 (New Flow Implementation)
-Plan: 03b of 5 in current phase
+Plan: 04 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 06-03b Minion Player Interaction and UI
+Last activity: 2026-02-02 — Completed 06-04 Discussion Phase Flow
 
-Progress: [█████████░] 93%
+Progress: [█████████░] 95%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27
-- Average duration: 4.3 min
-- Total execution time: 1.9 hours
+- Total plans completed: 28
+- Average duration: 4.4 min
+- Total execution time: 2.0 hours
 
 **By Phase:**
 
@@ -32,10 +32,10 @@ Progress: [█████████░] 93%
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
 | 04-combatmanager | 6 | 23 min | 3.8 min |
 | 05-fine-grained-events | 5 | 25 min | 5.0 min |
-| 06-new-flow-implementation | 3.5 | 31 min | 7.8 min |
+| 06-new-flow-implementation | 4.5 | 39 min | 7.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 06-01 (4 min), 06-02 (8 min), 06-03 (11 min), 06-03b (8 min)
+- Last 5 plans: 06-02 (8 min), 06-03 (11 min), 06-03b (8 min), 06-04 (8 min)
 - 06-02/06-03 had parallel execution by multiple agents
 
 *Updated after each plan completion*
@@ -214,6 +214,12 @@ Recent decisions affecting current work:
 - Team switch kills minion immediately — No respawn on team switch (respawnInSeconds=0)
 - getCombatState returns undefined — Consistency with Map.get() behavior
 
+**From Plan 06-04:**
+- Discussion duration default 2 minutes — Sufficient time for meaningful discussion
+- Finalize validation — Host can only pick from actually voted values
+- Consensus auto-ends immediately — No delay needed when everyone agrees
+- Four ending mechanisms — consensus, host_finalized, timer_expired in priority order
+
 ### Pending Todos
 
 None yet.
@@ -224,8 +230,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 22:05:00Z
-Stopped at: Completed 06-03b-PLAN.md
+Last session: 2026-02-02 22:10:00Z
+Stopped at: Completed 06-04-PLAN.md
 Resume file: None
 
-**Phase 6 Progress:** Minion Player Interaction (06-03b) complete. Players can click-to-attack minions via MinionDisplay UI component. Killed minions respawn after 15-30 seconds. Spectators switching to voter team have their minion killed immediately without respawn. Full event flow from client emit through CombatManager to ClientEventEmitter and back to client store. Ready for PLAN-06-04.
+**Phase 6 Progress:** Discussion Phase Flow (06-04) complete. Discussion phase starts with 2-minute timer. Four ending mechanisms: (1) consensus auto-ends immediately, (2) host can finalize from voted values, (3) timer expiration picks majority, (4) fallback majority selection. Client UI shows countdown timer and host finalize buttons. Ready for PLAN-06-05 (Victory/Next Level transitions).
