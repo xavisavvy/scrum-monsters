@@ -10,6 +10,7 @@ import {
   sessionManager,
   estimationManager,
   combatManager,
+  eventBus,
   initializeClientEventEmitter,
   getClientEventEmitter,
   LobbyNotFoundError,
@@ -96,6 +97,62 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // Initialize ClientEventEmitter for fine-grained event delivery
   const clientEventEmitter = initializeClientEventEmitter(io);
   console.log('ClientEventEmitter initialized for fine-grained events');
+
+  // ==========================================================================
+  // EVENT BUS SUBSCRIPTIONS - Phase transition handlers
+  // ==========================================================================
+
+  // Handle discussion_ended to transition to next_level or victory
+  eventBus.on('estimation:discussion_ended', (payload) => {
+    const { lobbyId, finalEstimate } = payload;
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return;
+
+    // Apply estimate to current ticket
+    if (lobby.currentTicket) {
+      lobby.currentTicket.storyPoints = finalEstimate;
+
+      // Add to completed tickets
+      if (!lobby.completedTickets) lobby.completedTickets = [];
+      lobby.completedTickets.push({
+        id: lobby.currentTicket.id,
+        title: lobby.currentTicket.title,
+        description: lobby.currentTicket.description,
+        storyPoints: finalEstimate,
+        completedAt: new Date().toISOString(),
+        teamBreakdown: {
+          developers: { participated: true, consensusScore: finalEstimate },
+          qa: { participated: true, consensusScore: finalEstimate },
+        },
+      });
+    }
+
+    // Determine next phase
+    const currentIndex = lobby.tickets?.findIndex(t => t.id === lobby.currentTicket?.id) ?? -1;
+    const remainingTickets = lobby.tickets?.slice(currentIndex + 1) ?? [];
+
+    if (remainingTickets.length > 0) {
+      // More tickets - go to next_level phase
+      lobby.gamePhase = 'next_level';
+      eventBus.emit('session:phase_changed', {
+        lobbyId,
+        oldPhase: 'discussion',
+        newPhase: 'next_level',
+      });
+    } else {
+      // No more tickets - victory
+      lobby.gamePhase = 'victory';
+      eventBus.emit('session:phase_changed', {
+        lobbyId,
+        oldPhase: 'discussion',
+        newPhase: 'victory',
+      });
+    }
+
+    // Emit lobby update for full state sync
+    io.to(lobbyId).emit('lobby_updated', { lobby });
+    console.log(`Discussion ended in lobby ${lobbyId}: transitioned to ${lobby.gamePhase}`);
+  });
 
   // Connection monitoring for Replit
   let totalConnections = 0;
@@ -714,13 +771,68 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     socket.on('proceed_next_level', () => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
 
-      const lobby = gameState.proceedNextLevel(playerId);
-      if (lobby) {
-        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby || lobby.hostId !== playerId) {
+          socket.emit('game_error', { message: 'Only host can proceed to next level' });
+          return;
+        }
+
+        if (lobby.gamePhase !== 'next_level') {
+          socket.emit('game_error', { message: 'Can only proceed from next_level phase' });
+          return;
+        }
+
+        // Get next ticket
+        const currentIndex = lobby.tickets?.findIndex(t => t.id === lobby.currentTicket?.id) ?? -1;
+        const nextTicket = lobby.tickets?.[currentIndex + 1];
+        if (!nextTicket) {
+          socket.emit('game_error', { message: 'No more tickets' });
+          return;
+        }
+
+        // Reset game state for next round
+        lobby.currentTicket = nextTicket;
+        lobby.gamePhase = 'battle';
+
+        // Reset estimation state
+        estimationManager.cleanupLobby(lobbyId);
+        estimationManager.startEstimation(lobbyId, nextTicket.id);
+
+        // Initialize players as eligible voters
+        for (const player of lobby.players) {
+          if (player.team !== 'spectators') {
+            estimationManager.addEligibleVoter(lobbyId, player.id, player.team);
+          }
+        }
+
+        // Reset combat state
+        combatManager.cleanupLobby(lobbyId);
+        const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
+        const ticketIndex = (lobby.completedTickets?.length ?? 0);
+        combatManager.initializeCombat(lobbyId, players, ticketIndex);
+
+        // Reset player scores
+        for (const player of lobby.players) {
+          player.hasSubmittedScore = false;
+          player.currentScore = undefined;
+        }
+
+        eventBus.emit('session:phase_changed', {
+          lobbyId,
+          oldPhase: 'next_level',
+          newPhase: 'battle',
+        });
+
+        // Emit lobby update for full state sync
+        io.to(lobbyId).emit('lobby_updated', { lobby });
+        console.log(`Proceed to next level in lobby ${lobbyId}: ticket ${nextTicket.id}`);
+      } catch (error) {
+        socket.emit('game_error', { message: (error as Error).message });
       }
     });
 
