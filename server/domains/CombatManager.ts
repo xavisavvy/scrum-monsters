@@ -814,6 +814,68 @@ export class CombatManager {
   }
 
   /**
+   * Kill a minion and schedule respawn
+   */
+  private killMinion(lobbyId: string, minionPlayerId: string, killerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) return;
+
+    const minion = combatState.minions.get(minionPlayerId);
+    if (!minion) return;
+
+    const respawnDelay = this.MINION_RESPAWN_MIN_MS +
+      Math.random() * (this.MINION_RESPAWN_MAX_MS - this.MINION_RESPAWN_MIN_MS);
+
+    minion.isAlive = false;
+    minion.hp = 0;
+    minion.respawnAt = Date.now() + respawnDelay;
+
+    this.eventBus.emit('combat:minion_killed', {
+      lobbyId,
+      playerId: minionPlayerId,
+      killerId,
+      respawnInSeconds: Math.floor(respawnDelay / 1000),
+    });
+
+    // Schedule respawn
+    setTimeout(() => {
+      this.respawnMinion(lobbyId, minionPlayerId);
+    }, respawnDelay);
+  }
+
+  /**
+   * Respawn a killed minion if still a spectator
+   */
+  private respawnMinion(lobbyId: string, minionPlayerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss || combatState.boss.hp <= 0) return;
+
+    const minion = combatState.minions.get(minionPlayerId);
+    if (!minion) return;
+
+    // Check if player is still a spectator (they may have switched teams)
+    const team = this.getPlayerTeam?.(lobbyId, minionPlayerId);
+    if (team !== 'spectators') {
+      // Player switched teams, don't respawn
+      combatState.minions.delete(minionPlayerId);
+      return;
+    }
+
+    // Respawn with full HP
+    minion.hp = minion.maxHp;
+    minion.isAlive = true;
+    minion.respawnAt = undefined;
+
+    this.eventBus.emit('combat:minion_spawned', {
+      lobbyId,
+      playerId: minionPlayerId,
+      avatar: 'warrior', // Would get from session in full implementation
+      hp: minion.hp,
+      maxHp: minion.maxHp,
+    });
+  }
+
+  /**
    * Perform a boss attack and schedule the next one
    */
   private performBossAttack(lobbyId: string): void {
