@@ -319,6 +319,282 @@ export class CombatManager {
   }
 
   /**
+   * Start boss attack loop (recursive setTimeout)
+   */
+  startBossAttackLoop(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      return; // Combat not active
+    }
+
+    // Schedule first attack after grace period
+    const attackHandle = setTimeout(() => {
+      this.performBossAttack(lobbyId);
+    }, this.BOSS_INITIAL_ATTACK_DELAY_MS);
+
+    combatState.boss.attackTimerHandle = attackHandle;
+  }
+
+  /**
+   * Perform a boss attack and schedule the next one
+   */
+  private performBossAttack(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      return; // Combat ended
+    }
+
+    const boss = combatState.boss;
+
+    // Stop if boss is defeated
+    if (boss.hp <= 0) {
+      return;
+    }
+
+    // Select attack type
+    const attackType = this.selectAttackType(boss.isEnraged);
+
+    // Check if AoE
+    const isAoE = this.isAoEAttack(boss.isEnraged);
+
+    if (isAoE) {
+      this.performAoEAttack(lobbyId, attackType);
+    } else {
+      // Select single target via threat
+      const targetId = this.selectThreatTarget(boss.threatTable, combatState.players);
+      if (targetId) {
+        this.attackSingleTarget(lobbyId, targetId, attackType);
+      }
+    }
+
+    // Update last attack time
+    boss.lastAttackAt = Date.now();
+
+    // Schedule next attack
+    this.scheduleNextAttack(lobbyId);
+  }
+
+  /**
+   * Select attack type based on enrage state
+   */
+  private selectAttackType(isEnraged: boolean): 'light' | 'heavy' | 'special' {
+    const roll = Math.random();
+
+    if (isEnraged) {
+      // Enraged: light 40%, heavy 35%, special 25%
+      if (roll < 0.4) return 'light';
+      if (roll < 0.75) return 'heavy';
+      return 'special';
+    } else {
+      // Normal: light 60%, heavy 30%, special 10%
+      if (roll < 0.6) return 'light';
+      if (roll < 0.9) return 'heavy';
+      return 'special';
+    }
+  }
+
+  /**
+   * Check if attack should be AoE
+   */
+  private isAoEAttack(isEnraged: boolean): boolean {
+    const roll = Math.random();
+    return isEnraged ? roll < 0.25 : roll < 0.15;
+  }
+
+  /**
+   * Select target based on threat table
+   */
+  private selectThreatTarget(threatTable: Map<string, ThreatEntry>, players: Map<string, PlayerCombat>): string | null {
+    // Filter to alive fighting players
+    const alivePlayers = Array.from(players.values()).filter(p => p.combatState === 'fighting');
+
+    if (alivePlayers.length === 0) {
+      return null;
+    }
+
+    // Get threat entries for alive players
+    const aliveThreats = Array.from(threatTable.values())
+      .filter(entry => {
+        const player = players.get(entry.playerId);
+        return player && player.combatState === 'fighting';
+      })
+      .sort((a, b) => b.threat - a.threat); // Sort by threat descending
+
+    // If no threat history, pick random
+    if (aliveThreats.length === 0) {
+      const randomIndex = Math.floor(Math.random() * alivePlayers.length);
+      return alivePlayers[randomIndex].playerId;
+    }
+
+    const roll = Math.random();
+
+    if (roll < 0.7) {
+      // 70% chance: highest threat
+      return aliveThreats[0].playerId;
+    } else if (roll < 0.9 && aliveThreats.length > 1) {
+      // 20% chance: second highest
+      return aliveThreats[1].playerId;
+    } else {
+      // 10% chance: random alive player
+      const randomIndex = Math.floor(Math.random() * alivePlayers.length);
+      return alivePlayers[randomIndex].playerId;
+    }
+  }
+
+  /**
+   * Perform AoE attack hitting all fighting players
+   */
+  private performAoEAttack(lobbyId: string, attackType: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      return;
+    }
+
+    // Get all fighting players
+    const fightingPlayers = Array.from(combatState.players.values()).filter(
+      p => p.combatState === 'fighting'
+    );
+
+    if (fightingPlayers.length === 0) {
+      return;
+    }
+
+    // For heavy/special, telegraph first
+    if (attackType === 'heavy' || attackType === 'special') {
+      const message = attackType === 'heavy'
+        ? 'Boss winds up a heavy blow...'
+        : 'Boss is charging a devastating attack...';
+
+      this.eventBus.emit('combat:boss_telegraph', {
+        lobbyId,
+        message,
+        delayMs: 1000,
+      });
+
+      // Apply damage after delay
+      setTimeout(() => {
+        const damage = this.getAttackDamage(attackType, combatState.boss!.isEnraged);
+        const timestamp = Date.now();
+
+        fightingPlayers.forEach(player => {
+          this.eventBus.emit('combat:player_damaged', {
+            lobbyId,
+            playerId: player.playerId,
+            damage,
+            timestamp,
+          });
+        });
+      }, 1000);
+    } else {
+      // Light attack: instant damage
+      const damage = this.getAttackDamage(attackType, combatState.boss.isEnraged);
+      const timestamp = Date.now();
+
+      fightingPlayers.forEach(player => {
+        this.eventBus.emit('combat:player_damaged', {
+          lobbyId,
+          playerId: player.playerId,
+          damage,
+          timestamp,
+        });
+      });
+    }
+  }
+
+  /**
+   * Attack a single target
+   */
+  private attackSingleTarget(lobbyId: string, targetId: string, attackType: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      return;
+    }
+
+    const damage = this.getAttackDamage(attackType, combatState.boss.isEnraged);
+
+    // For heavy/special, telegraph first
+    if (attackType === 'heavy' || attackType === 'special') {
+      const message = attackType === 'heavy'
+        ? 'Boss winds up a heavy blow...'
+        : 'Boss is charging a devastating attack...';
+
+      this.eventBus.emit('combat:boss_telegraph', {
+        lobbyId,
+        message,
+        delayMs: 1000,
+      });
+
+      // Apply damage after delay
+      setTimeout(() => {
+        this.eventBus.emit('combat:player_damaged', {
+          lobbyId,
+          playerId: targetId,
+          damage,
+          timestamp: Date.now(),
+        });
+      }, 1000);
+    } else {
+      // Light attack: instant damage
+      this.eventBus.emit('combat:player_damaged', {
+        lobbyId,
+        playerId: targetId,
+        damage,
+        timestamp: Date.now(),
+      });
+    }
+  }
+
+  /**
+   * Get damage amount for attack type
+   */
+  private getAttackDamage(attackType: string, isEnraged: boolean): number {
+    // Enrage does not increase damage, only frequency
+    switch (attackType) {
+      case 'light':
+        return this.LIGHT_DAMAGE;
+      case 'heavy':
+        return this.HEAVY_DAMAGE;
+      case 'special':
+        return this.SPECIAL_DAMAGE;
+      default:
+        return this.LIGHT_DAMAGE;
+    }
+  }
+
+  /**
+   * Schedule next boss attack with variable timing
+   */
+  private scheduleNextAttack(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) {
+      return;
+    }
+
+    const boss = combatState.boss;
+
+    // Check if boss is defeated
+    if (boss.hp <= 0) {
+      return;
+    }
+
+    // Calculate variable interval
+    const baseInterval = boss.isEnraged
+      ? this.BOSS_ATTACK_ENRAGED_INTERVAL_MS
+      : this.BOSS_ATTACK_BASE_INTERVAL_MS;
+
+    // Apply variance: ±30%
+    const variance = (Math.random() * 2 - 1) * this.BOSS_ATTACK_VARIANCE; // Range: -0.3 to +0.3
+    const interval = Math.floor(baseInterval * (1 + variance));
+
+    // Schedule next attack
+    const attackHandle = setTimeout(() => {
+      this.performBossAttack(lobbyId);
+    }, interval);
+
+    boss.attackTimerHandle = attackHandle;
+  }
+
+  /**
    * Player heals a teammate (healer-only)
    * TODO: Implement in Plan 04-04
    */
@@ -354,7 +630,18 @@ export class CombatManager {
    * Clean up combat state when lobby is destroyed
    */
   cleanupLobby(lobbyId: string): void {
-    // TODO: Implement timer cleanup in Plan 04-04/05
+    const combatState = this.combatStates.get(lobbyId);
+
+    if (combatState) {
+      // Clear boss attack timer
+      if (combatState.boss?.attackTimerHandle) {
+        clearTimeout(combatState.boss.attackTimerHandle);
+        combatState.boss.attackTimerHandle = undefined;
+      }
+
+      // TODO: Clear other timers in Plan 04-04/05 (down timers, revival sessions, modifier interval)
+    }
+
     this.combatStates.delete(lobbyId);
   }
 }
