@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Foundation** - Extract state types and event bus
 - [x] **Phase 2: SessionManager** - Extract lobby and player lifecycle
 - [x] **Phase 3: EstimationManager** - Extract voting and consensus logic
-- [ ] **Phase 4: CombatManager** - Extract battle and health mechanics
+- [x] **Phase 4: CombatManager** - Extract battle and health mechanics
 - [ ] **Phase 5: Fine-Grained Events** - Replace coarse broadcasts with targeted events
 - [ ] **Phase 6: New Flow Implementation** - Implement estimation-before-battle flow
 
@@ -90,12 +90,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Create CombatErrors and CombatManager foundation
-- [ ] 04-02-PLAN.md — Combat initialization and boss mechanics (TDD)
-- [ ] 04-03-PLAN.md — Boss attack AI system (TDD)
-- [ ] 04-04-PLAN.md — Player health and down system (TDD)
-- [ ] 04-05-PLAN.md — Channel-based revival system (TDD)
-- [ ] 04-06-PLAN.md — Wire CombatManager to events and websocket handlers
+- [x] 04-01-PLAN.md — Create CombatErrors and CombatManager foundation
+- [x] 04-02-PLAN.md — Combat initialization and boss mechanics (TDD)
+- [x] 04-03-PLAN.md — Boss attack AI system (TDD)
+- [x] 04-04-PLAN.md — Player health and down system (TDD)
+- [x] 04-05-PLAN.md — Channel-based revival system (TDD)
+- [x] 04-06-PLAN.md — Wire CombatManager to events and websocket handlers
 
 ### Phase 5: Fine-Grained Events
 **Goal**: Replace lobby_updated full-state broadcasts with targeted domain-specific events
@@ -137,6 +137,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6
 | 1. Foundation | 3/3 | ✓ Complete | 2026-02-01 |
 | 2. SessionManager | 5/5 | ✓ Complete | 2026-02-01 |
 | 3. EstimationManager | 5/5 | ✓ Complete | 2026-02-02 |
-| 4. CombatManager | 0/6 | Planned | - |
+| 4. CombatManager | 6/6 | ✓ Complete | 2026-02-02 |
 | 5. Fine-Grained Events | 0/0 | Not started | - |
 | 6. New Flow Implementation | 0/0 | Not started | - |

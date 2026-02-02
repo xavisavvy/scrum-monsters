@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-01)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 4 - CombatManager
+**Current focus:** Phase 5 - Fine-Grained Events
 
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 6 of TBD in current phase
-Status: In progress
-Last activity: 2026-02-02 — Completed 04-06-PLAN.md
+Plan: 6 of 6 in current phase
+Status: ✓ Complete
+Last activity: 2026-02-02 — Phase 4 (CombatManager) verified complete
 
-Progress: [██████░░░░] 68%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -176,8 +176,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (04-06 execution complete)
-Stopped at: Completed 04-06-PLAN.md
+Last session: 2026-02-02 (Phase 4 complete)
+Stopped at: Phase 4 (CombatManager) verified complete
 Resume file: None
 
-**Phase 4 Progress:** CombatManager integration complete. Wired to domains barrel with cross-domain event subscriptions. Players automatically enter battle when they vote via estimation:vote_cast. First vote starts boss attack loop and modifier loop (increments every 10s). Session events (player_left, lobby_destroyed) trigger proper combat cleanup. Websocket handlers added for attack, heal, revival, and combat initialization. All handlers delegate to combatManager with typed error handling. 252 tests passing (108 in CombatManager). Phase 4 complete - ready for Phase 5 (Fine-Grained Events) to wire EventBus emissions to Socket.IO broadcasts.
+**Phase 4 Complete:** CombatManager fully extracted and integrated. 6 plans executed: foundation (errors, events, class shell), combat initialization with boss HP scaling (TDD), boss attack AI with threat targeting (TDD), player health/down/healing system (TDD), channel-based revival with interruption (TDD), websocket/event integration. 108 CombatManager tests, 252 total passing. Cross-domain subscriptions wire voting to battle entry automatically. Ready for Phase 5 (Fine-Grained Events).
