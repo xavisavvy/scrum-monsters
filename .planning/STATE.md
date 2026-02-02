@@ -10,18 +10,18 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 4 of 6 (CombatManager)
-Plan: 5 of TBD in current phase
+Plan: 6 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-02 — Completed 04-05-PLAN.md
+Last activity: 2026-02-02 — Completed 04-06-PLAN.md
 
-Progress: [██████░░░░] 67%
+Progress: [██████░░░░] 68%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18
-- Average duration: 3.8 min
-- Total execution time: 1.15 hours
+- Total plans completed: 19
+- Average duration: 3.9 min
+- Total execution time: 1.23 hours
 
 **By Phase:**
 
@@ -30,11 +30,11 @@ Progress: [██████░░░░] 67%
 | 01-foundation | 3 | 8 min | 2.7 min |
 | 02-sessionmanager | 5 | 22 min | 4.4 min |
 | 03-estimationmanager | 5 | 27 min | 5.4 min |
-| 04-combatmanager | 5 | 19 min | 3.8 min |
+| 04-combatmanager | 6 | 23 min | 3.8 min |
 
 **Recent Trend:**
-- Last 5 plans: 04-02 (4 min), 04-03 (5 min), 04-04 (3 min), 04-05 (4 min)
-- Trend: Phase 04 maintaining fast TDD velocity, 3-5 min per plan
+- Last 5 plans: 04-03 (5 min), 04-04 (3 min), 04-05 (4 min), 04-06 (4.5 min)
+- Trend: Phase 04 maintaining fast velocity with integration tasks, 3-5 min per plan
 
 *Updated after each plan completion*
 
@@ -159,6 +159,13 @@ Recent decisions affecting current work:
 - 50% HP restoration on revival — Balanced between useful and not OP, per CONTEXT.md requirements
 - Clear down timer on revival — Prevents ghost transition after successful revival completion
 
+**From Plan 04-06:**
+- Cross-domain subscriptions in constructor — CombatManager subscribes to estimation:vote_cast and session events for automatic coordination
+- First vote starts combat loops — Boss attack loop and modifier loop begin when first player enters battle via vote
+- Recursive setTimeout for modifier loop — Enables boss defeat detection to stop loop cleanly
+- Player cleanup on session:player_left — Removes from combat, cancels revivals, clears timers, removes from threat table
+- Websocket delegation pattern — Handlers delegate to combatManager methods with typed error handling
+
 ### Pending Todos
 
 None yet.
@@ -169,8 +176,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-02 (04-05 execution complete)
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-02-02 (04-06 execution complete)
+Stopped at: Completed 04-06-PLAN.md
 Resume file: None
 
-**Phase 4 Progress:** Revival system complete. Channel-based revival with 2.5s duration. Healers (cleric/paladin/bard) can revive downed teammates at 50% HP. Damage interrupts revival channel. One-revive-per-fight enforced via hasBeenRevived flag. setInterval tick system checks for interruption every 100ms. Down timer cleared on successful revival. Target death (permanent down) cancels active revival attempts. cleanupLobby clears all revival intervals. 236 tests passing (92 in CombatManager). Ready for Plan 04-06 (websocket integration).
+**Phase 4 Progress:** CombatManager integration complete. Wired to domains barrel with cross-domain event subscriptions. Players automatically enter battle when they vote via estimation:vote_cast. First vote starts boss attack loop and modifier loop (increments every 10s). Session events (player_left, lobby_destroyed) trigger proper combat cleanup. Websocket handlers added for attack, heal, revival, and combat initialization. All handlers delegate to combatManager with typed error handling. 252 tests passing (108 in CombatManager). Phase 4 complete - ready for Phase 5 (Fine-Grained Events) to wire EventBus emissions to Socket.IO broadcasts.
