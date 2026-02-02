@@ -10,29 +10,29 @@ See: .planning/PROJECT.md (updated 2026-02-01)
 ## Current Position
 
 Phase: 2 of 6 (SessionManager)
-Plan: 3 of TBD in current phase
+Plan: 4 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-01 — Completed 02-03-PLAN.md
+Last activity: 2026-02-01 — Completed 02-04-PLAN.md
 
-Progress: [██░░░░░░░░] 26%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6
-- Average duration: 2.8 min
-- Total execution time: 0.27 hours
+- Total plans completed: 7
+- Average duration: 3.1 min
+- Total execution time: 0.36 hours
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-foundation | 3 | 8 min | 2.7 min |
-| 02-sessionmanager | 3 | 10 min | 3.3 min |
+| 02-sessionmanager | 4 | 16 min | 4.0 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-03 (2 min), 02-01 (2 min), 02-02 (4 min), 02-03 (4 min)
-- Trend: Consistent fast execution ~3 min/plan
+- Last 5 plans: 02-01 (2 min), 02-02 (4 min), 02-03 (4 min), 02-04 (6 min)
+- Trend: Phase 02 trending slightly longer (~4 min avg)
 
 *Updated after each plan completion*
 
@@ -80,6 +80,12 @@ Recent decisions affecting current work:
 - HMAC-SHA256 signing — Standard secure token signing prevents tampering
 - Grace period pattern — Temporary disconnections tracked with expiry, auto-cleanup on timeout
 
+**From Plan 02-04:**
+- Activity-based host selection — Most recently active connected player becomes host
+- promoteNewHost not integrated into removePlayer — Kept separate for explicit call from handlers (integration later)
+- Team management split — Self-service (changeOwnTeam) vs host-only (assignTeam) patterns
+- Disconnected player exclusion — promoteNewHost filters via disconnectedPlayers Map
+
 ### Pending Todos
 
 None yet.
@@ -90,6 +96,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-02-01 21:28 (02-03 execution)
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-02-01 21:30 (02-04 execution)
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
