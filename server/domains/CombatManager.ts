@@ -701,6 +701,71 @@ export class CombatManager {
   }
 
   /**
+   * Perform a single minion action (attack player, heal boss, or debuff)
+   * Action weights: 50% attack, 30% heal boss, 20% debuff
+   */
+  private performMinionAction(lobbyId: string, minionPlayerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) return;
+
+    const minion = combatState.minions.get(minionPlayerId);
+    if (!minion || !minion.isAlive) return;
+
+    // Action weights: 50% attack, 30% heal boss, 20% debuff
+    const roll = Math.random();
+
+    if (roll < 0.5) {
+      // Attack random fighting player
+      const fightingPlayers = Array.from(combatState.players.values())
+        .filter(p => p.combatState === 'fighting');
+      if (fightingPlayers.length > 0) {
+        const target = fightingPlayers[
+          Math.floor(Math.random() * fightingPlayers.length)
+        ];
+        this.applyDamageToPlayer(lobbyId, target.playerId, this.MINION_ATTACK_DAMAGE);
+        this.eventBus.emit('combat:minion_attack', {
+          lobbyId,
+          minionPlayerId,
+          targetId: target.playerId,
+          damage: this.MINION_ATTACK_DAMAGE,
+          attackType: 'attack',
+        });
+      }
+    } else if (roll < 0.8) {
+      // Heal boss
+      const healAmount = Math.min(
+        this.MINION_BOSS_HEAL,
+        combatState.boss.maxHp - combatState.boss.hp
+      );
+      if (healAmount > 0) {
+        combatState.boss.hp += healAmount;
+        this.eventBus.emit('combat:minion_heal_boss', {
+          lobbyId,
+          minionPlayerId,
+          healAmount,
+          newBossHp: combatState.boss.hp,
+        });
+      }
+    } else {
+      // Debuff - emit event for visual effect, no mechanical damage
+      const fightingPlayers = Array.from(combatState.players.values())
+        .filter(p => p.combatState === 'fighting');
+      if (fightingPlayers.length > 0) {
+        const target = fightingPlayers[
+          Math.floor(Math.random() * fightingPlayers.length)
+        ];
+        this.eventBus.emit('combat:minion_attack', {
+          lobbyId,
+          minionPlayerId,
+          targetId: target.playerId,
+          damage: 0,
+          attackType: 'debuff',
+        });
+      }
+    }
+  }
+
+  /**
    * Perform a boss attack and schedule the next one
    */
   private performBossAttack(lobbyId: string): void {
