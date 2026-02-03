@@ -1,0 +1,17 @@
+/* Visual regression test CSS - hides dynamic/volatile elements */
+
+/* Hide elements that change unpredictably */
+[data-testid="timestamp"],
+[data-testid="lobby-code"],
+.loading-spinner,
+.live-counter {
+  visibility: hidden !important;
+}
+
+/* Disable all animations as fallback */
+*, *::before, *::after {
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
