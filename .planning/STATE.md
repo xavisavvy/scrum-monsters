@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 
 ## Current Position
 
-Phase: 13 of 14 (Load Testing)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-02-03 - Completed 13-03-PLAN.md
+Phase: 14 of 14 (Rollback Automation)
+Plan: 1 of 2 in current phase
+Status: In progress
+Last activity: 2026-02-03 - Completed 14-01-PLAN.md
 
-Progress: [█████████████░      ] 65%
+Progress: [█████████████░      ] 70%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [█████████████░      ] 65%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 19 (v1.2 milestone)
-- Average duration: 2.7 minutes
-- Total execution time: 0.89 hours
+- Total plans completed: 20 (v1.2 milestone)
+- Average duration: 2.6 minutes
+- Total execution time: 0.92 hours
 
 *Updated after each plan completion*
 
@@ -118,6 +118,12 @@ Recent decisions affecting current work:
 - [13-03]: Artifacts retained for 30 days for trend analysis
 - [13-03]: Idle connection test runs on schedule + manual trigger
 - [13-03]: k6 installed from GitHub releases (not npm package)
+- [14-01]: Unified rollback workflow for all environments (single workflow with env parameter)
+- [14-01]: 15-minute cooldown and 3 rollbacks/hour rate limits
+- [14-01]: Production environment name is 'production' for GitHub protection
+- [14-01]: Auto-sync re-enabled only for dev after rollback
+- [14-01]: N-1 rollback only (no deep history navigation)
+- [14-01]: Health endpoint verification optional with graceful skip
 
 ### Pending Todos
 
@@ -126,7 +132,7 @@ None.
 ### Blockers/Concerns
 
 - [09-01]: Production baseline needed if db:push was used (manual __drizzle_migrations setup)
-- [Research]: ArgoCD auto-sync config needs verification for rollback work
+- [14-01]: ARGOCD_AUTH_TOKEN secret and GitHub environment protection rules must be configured before rollback workflow can be used
 - [10-01]: Pre-existing TypeScript errors in codebase (BattleScreen, Lobby, socketHandlers, websocket)
 - [10-01]: Resolved - 3D canvas masking strategy established (mask by default per research)
 - [08-01]: Husky deprecation warning in pre-commit output (v10 breaking change)
@@ -134,7 +140,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 13-03-PLAN.md (Phase 13 complete)
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
 
-**Next step:** Phase 13 verified. Ready for Phase 14 (Rollback Automation)
+**Next step:** Continue with Phase 14 Plan 02 (Auto-rollback triggers)
