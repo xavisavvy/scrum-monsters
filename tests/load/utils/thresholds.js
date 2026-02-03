@@ -68,3 +68,32 @@ export function getWebSocketThresholds(environment = 'ci') {
 
   return configs[environment] || configs.ci;
 }
+
+/**
+ * Get WebSocket game flow threshold configuration for the specified environment
+ *
+ * Stricter thresholds for game flow tests with session duration requirements
+ *
+ * @param {string} environment - Target environment ('ci', 'staging', or 'prod')
+ * @returns {Object} k6 threshold configuration
+ */
+export function getWsThresholds(environment = 'ci') {
+  const base = {
+    checks: ['rate>0.90'],              // > 90% checks pass (game flow may have timing variance)
+    ws_session_duration: ['min>25000'], // Sessions last at least 25s of 30s test
+  };
+
+  const envSpecific = {
+    ci: {
+      ws_connecting: ['p(95)<200'],    // Connection time p95 < 200ms (more lenient in CI)
+    },
+    staging: {
+      ws_connecting: ['p(95)<150'],    // Connection time p95 < 150ms
+    },
+    prod: {
+      ws_connecting: ['p(95)<100'],    // Connection time p95 < 100ms (strictest in prod)
+    },
+  };
+
+  return { ...base, ...(envSpecific[environment] || envSpecific.ci) };
+}
