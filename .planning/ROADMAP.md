@@ -37,11 +37,11 @@ v1.2 matures the CI/CD infrastructure with engineering best practices: PR qualit
   3. PRs cannot merge if any CI check fails
   4. CI fails when test coverage drops below configured threshold
   5. PR comments show coverage diff highlighting new/changed lines
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 07-01: TBD
-- [ ] 07-02: TBD
+- [ ] 07-01-PLAN.md — PR templates, CODEOWNERS, and Vitest coverage thresholds
+- [ ] 07-02-PLAN.md — CI coverage reporting and branch protection configuration
 
 ### Phase 8: Security Hardening
 **Goal**: Security issues caught before code reaches main branch
@@ -147,7 +147,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. CI Foundations | 0/2 | Not started | - |
+| 7. CI Foundations | 0/2 | Planned | - |
 | 8. Security Hardening | 0/2 | Not started | - |
 | 9. Database Migrations | 0/2 | Not started | - |
 | 10. Visual Regression | 0/1 | Not started | - |
