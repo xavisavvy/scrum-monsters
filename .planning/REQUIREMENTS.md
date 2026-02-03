@@ -35,9 +35,9 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### API Contracts
 
-- [ ] **API-01**: OpenAPI spec documents all REST endpoints
-- [ ] **API-02**: CI validates API responses match OpenAPI spec
-- [ ] **API-03**: TypeScript types are generated from OpenAPI spec
+- [x] **API-01**: OpenAPI spec documents all REST endpoints
+- [x] **API-02**: CI validates API responses match OpenAPI spec
+- [x] **API-03**: TypeScript types are generated from OpenAPI spec
 
 ### Performance
 
@@ -99,9 +99,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DB-01 | Phase 9 | Complete |
 | DB-02 | Phase 9 | Complete |
 | DB-03 | Phase 9 | Complete |
-| API-01 | Phase 12 | Pending |
-| API-02 | Phase 12 | Pending |
-| API-03 | Phase 12 | Pending |
+| API-01 | Phase 12 | Complete |
+| API-02 | Phase 12 | Complete |
+| API-03 | Phase 12 | Complete |
 | PERF-01 | Phase 13 | Pending |
 | PERF-02 | Phase 13 | Pending |
 | PERF-03 | Phase 13 | Pending |
