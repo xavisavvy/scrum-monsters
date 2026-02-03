@@ -15,10 +15,10 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### Security Scanning
 
-- [ ] **SEC-01**: CodeQL SAST blocks PRs on high/critical severity findings
-- [ ] **SEC-02**: Pre-commit hook detects secrets/API keys before commit
-- [ ] **SEC-03**: CI validates all dependencies use approved licenses
-- [ ] **SEC-04**: npm audit job blocks PRs on high/critical vulnerabilities
+- [x] **SEC-01**: CodeQL SAST blocks PRs on high/critical severity findings
+- [x] **SEC-02**: Pre-commit hook detects secrets/API keys before commit
+- [x] **SEC-03**: CI validates all dependencies use approved licenses
+- [x] **SEC-04**: npm audit job blocks PRs on high/critical vulnerabilities
 
 ### Test Quality
 
@@ -88,10 +88,10 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PR-01 | Phase 7 | Complete |
 | PR-02 | Phase 7 | Complete |
 | PR-03 | Phase 7 | Complete |
-| SEC-01 | Phase 8 | Pending |
-| SEC-02 | Phase 8 | Pending |
-| SEC-03 | Phase 8 | Pending |
-| SEC-04 | Phase 8 | Pending |
+| SEC-01 | Phase 8 | Complete |
+| SEC-02 | Phase 8 | Complete |
+| SEC-03 | Phase 8 | Complete |
+| SEC-04 | Phase 8 | Complete |
 | TEST-01 | Phase 7 | Complete |
 | TEST-02 | Phase 7 | Complete |
 | TEST-03 | Phase 10 | Pending |

@@ -17,7 +17,7 @@ v1.2 matures the CI/CD infrastructure with engineering best practices: PR qualit
 - Decimal phases (7.1, 7.2): Urgent insertions (marked with INSERTED)
 
 - [x] **Phase 7: CI Foundations** - PR workflow and test coverage enforcement
-- [ ] **Phase 8: Security Hardening** - Security scanning gates in CI
+- [x] **Phase 8: Security Hardening** - Security scanning gates in CI
 - [ ] **Phase 9: Database Migrations** - Versioned migrations with deployment hooks
 - [ ] **Phase 10: Visual Regression** - Screenshot-based UI change detection
 - [ ] **Phase 11: Accessibility Testing** - axe-core integration with E2E tests
@@ -55,8 +55,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 08-01-PLAN.md — CodeQL merge blocking via rulesets and gitleaks secret detection
-- [ ] 08-02-PLAN.md — Dependency vulnerability scanning (audit-ci) and license compliance (license-checker)
+- [x] 08-01-PLAN.md — CodeQL merge blocking via rulesets and gitleaks secret detection
+- [x] 08-02-PLAN.md — Dependency vulnerability scanning (audit-ci) and license compliance (license-checker)
 
 ### Phase 9: Database Migrations
 **Goal**: Schema changes deploy safely through versioned migrations
@@ -148,7 +148,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 7. CI Foundations | 2/2 | Complete | 2026-02-02 |
-| 8. Security Hardening | 0/2 | Not started | - |
+| 8. Security Hardening | 2/2 | Complete | 2026-02-02 |
 | 9. Database Migrations | 0/2 | Not started | - |
 | 10. Visual Regression | 0/1 | Not started | - |
 | 11. Accessibility Testing | 0/1 | Not started | - |
