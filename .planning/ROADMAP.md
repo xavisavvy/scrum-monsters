@@ -125,12 +125,13 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. k6 load tests establish baseline metrics for HTTP endpoints
   2. k6 load tests establish baseline metrics for WebSocket connections
-  3. CI runs smoke load tests on PRs to catch performance regressions
-**Plans**: TBD
+  3. Nightly load tests run on schedule to track performance trends
+**Plans**: 3 plans
 
 Plans:
-- [ ] 13-01: TBD
-- [ ] 13-02: TBD
+- [ ] 13-01-PLAN.md — HTTP load test infrastructure (smoke + average load tests)
+- [ ] 13-02-PLAN.md — WebSocket load tests (game flow + idle connection stability)
+- [ ] 13-03-PLAN.md — Nightly CI workflow with artifact storage and markdown reports
 
 ### Phase 14: Rollback Automation
 **Goal**: Failed deployments can be recovered quickly and safely
@@ -159,7 +160,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | 10. Visual Regression | 3/3 | Complete | 2026-02-03 |
 | 11. Accessibility Testing | 3/3 | Complete | 2026-02-03 |
 | 12. API Contract Testing | 3/3 | Complete | 2026-02-03 |
-| 13. Load Testing | 0/2 | Not started | - |
+| 13. Load Testing | 0/3 | Not started | - |
 | 14. Rollback Automation | 0/2 | Not started | - |
 
 ---
