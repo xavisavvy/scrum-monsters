@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 9 of 14 (Database Migrations)
-Plan: 2 of 3 in current phase (COMPLETE)
-Status: In progress
-Last activity: 2026-02-03 - Completed 09-02-PLAN.md (CI migration validation)
+Plan: 3 of 3 in current phase (COMPLETE)
+Status: Phase complete
+Last activity: 2026-02-03 - Completed 09-03-PLAN.md (ArgoCD migration hook)
 
-Progress: [█████░              ] 30%
+Progress: [█████░              ] 32%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [█████░              ] 30%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 6 (v1.2 milestone)
-- Average duration: 3.2 minutes
-- Total execution time: 0.33 hours
+- Total plans completed: 7 (v1.2 milestone)
+- Average duration: 3.0 minutes
+- Total execution time: 0.35 hours
 
 *Updated after each plan completion*
 
@@ -69,6 +69,10 @@ Recent decisions affecting current work:
 - [09-02]: Health checks ensure database ready before migration steps
 - [09-02]: Two-step validation: apply migrations, then check drift
 - [09-02]: ci-success gates on validate-migrations for PR blocking
+- [09-03]: ArgoCD PreSync hook for migrations before app deployment
+- [09-03]: Sync-wave 5 for migration ordering (after secrets, before app)
+- [09-03]: Job with backoffLimit: 2 for automatic retry on transient failures
+- [09-03]: BeforeHookCreation delete policy enables sync retries
 
 ### Pending Todos
 
@@ -84,17 +88,20 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 09-02-PLAN.md
+Stopped at: Completed 09-03-PLAN.md (Phase 09 complete)
 Resume file: None
 
-**Next step:** `/gsd:execute-plan 09-03` for migration rollback mechanism
+**Next step:** `/gsd:plan 10-01` to begin Phase 10 - Performance Monitoring
 
-Previous plan summary (09-02):
-- validate-migrations job added with PostgreSQL 16 Alpine service container
-- Two-step validation: apply migrations (SQL errors), check drift (missing migrations)
-- ci-success job now gates on validate-migrations result
-- PRs with schema drift blocked from merging
+Previous plan summary (09-03):
+- ArgoCD PreSync Job runs migrations before app deployment
+- BeforeHookCreation delete policy enables retries
+- Sync-wave 5 orders execution (after secrets, before app)
+- backoffLimit: 2 allows 3 total attempts before failing
+- ttlSecondsAfterFinished: 3600 auto-cleans completed jobs
 
-Current ci.yml structure:
-- Jobs: lint-and-typecheck, test, build, security-audit, license-check, validate-migrations, ci-success, update-coverage-badge
-- ci-success needs: [lint-and-typecheck, test, build, security-audit, license-check, validate-migrations]
+Migration Job configuration:
+- Command: npm run db:migrate
+- Secrets: scrumquest-secrets (DATABASE_URL)
+- Resources: 128Mi/100m requests, 256Mi/500m limits
+- Security: runAsNonRoot, user 1001, drop ALL capabilities
