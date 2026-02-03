@@ -1,0 +1,179 @@
+name: Auto-Rollback Monitor
+
+on:
+  workflow_run:
+    workflows: ["Deploy"]
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: write  # For workflow dispatch
+
+env:
+  ARGOCD_SERVER: argocd.local
+
+jobs:
+  health-check:
+    name: Post-Deploy Health Check
+    runs-on: ubuntu-latest
+    # Only run if deploy succeeded
+    if: github.event.workflow_run.conclusion == 'success'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine environment
+        id: get-env
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runEvent = '${{ github.event.workflow_run.event }}';
+
+            // Push to main = dev deployment
+            if (runEvent === 'push') {
+              return 'dev';
+            }
+
+            // For workflow_dispatch, query the workflow run inputs
+            try {
+              const run = await github.rest.actions.getWorkflowRun({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                run_id: ${{ github.event.workflow_run.id }}
+              });
+
+              // Check if inputs exist and have environment
+              if (run.data.inputs && run.data.inputs.environment) {
+                return run.data.inputs.environment;
+              }
+            } catch (error) {
+              core.warning(`Failed to get workflow run inputs: ${error.message}`);
+            }
+
+            // Default to dev if we can't determine
+            return 'dev';
+          result-encoding: string
+
+      - name: Wait for stabilization
+        run: |
+          echo "Waiting 2 minutes for deployment to stabilize..."
+          sleep 120
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/v2.13.3/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+
+      - name: Check ArgoCD health and sync status
+        id: argocd-check
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          APP_INFO=$(argocd app get scrumquest-${{ steps.get-env.outputs.result }} \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --grpc-web \
+            -o json)
+
+          HEALTH_STATUS=$(echo "$APP_INFO" | jq -r '.status.health.status')
+          SYNC_STATUS=$(echo "$APP_INFO" | jq -r '.status.sync.status')
+
+          echo "health=$HEALTH_STATUS" >> "$GITHUB_OUTPUT"
+          echo "sync=$SYNC_STATUS" >> "$GITHUB_OUTPUT"
+
+          echo "ArgoCD Health: $HEALTH_STATUS"
+          echo "ArgoCD Sync: $SYNC_STATUS"
+
+      - name: Check health endpoint
+        id: health-endpoint
+        continue-on-error: true
+        run: |
+          ENV=${{ steps.get-env.outputs.result }}
+          HEALTH_URL_VAR="${ENV^^}_HEALTH_URL"
+
+          # Get health URL from repository variables
+          # For now, construct expected URL based on environment
+          case "$ENV" in
+            dev)
+              HEALTH_URL="https://scrumquest-dev.local/api/health"
+              ;;
+            staging)
+              HEALTH_URL="https://staging.scrumquest.local/api/health"
+              ;;
+            prod)
+              HEALTH_URL="https://scrumquest.com/api/health"
+              ;;
+            *)
+              echo "Unknown environment: $ENV"
+              echo "status=000" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+
+          echo "Checking health endpoint: $HEALTH_URL"
+
+          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+
+          echo "status=$HTTP_CODE" >> "$GITHUB_OUTPUT"
+          echo "HTTP Status: $HTTP_CODE"
+
+      - name: Evaluate health and trigger rollback if needed
+        uses: actions/github-script@v7
+        env:
+          ENV: ${{ steps.get-env.outputs.result }}
+          HEALTH: ${{ steps.argocd-check.outputs.health }}
+          SYNC: ${{ steps.argocd-check.outputs.sync }}
+          HTTP_STATUS: ${{ steps.health-endpoint.outputs.status }}
+          DEPLOY_RUN_URL: ${{ github.event.workflow_run.html_url }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const env = process.env.ENV;
+            const health = process.env.HEALTH;
+            const sync = process.env.SYNC;
+            const httpStatus = process.env.HTTP_STATUS;
+            const deployRunUrl = process.env.DEPLOY_RUN_URL;
+
+            const isUnhealthy = health !== 'Healthy';
+            const isOutOfSync = sync === 'OutOfSync';
+            const httpFailed = httpStatus !== '200' && httpStatus !== '000'; // 000 = couldn't reach
+
+            if (!isUnhealthy && !isOutOfSync && !httpFailed) {
+              core.notice(`✅ Deployment to ${env} is healthy`);
+              return;
+            }
+
+            // Production: Only log warning, do NOT auto-rollback
+            if (env === 'prod' || env === 'production') {
+              core.warning(`⚠️ Production deployment unhealthy but auto-rollback is DISABLED for production`);
+              core.warning(`Health: ${health}, Sync: ${sync}, HTTP: ${httpStatus}`);
+              core.warning(`Manual intervention required. Deploy run: ${deployRunUrl}`);
+              return;
+            }
+
+            // Dev/Staging: Trigger auto-rollback
+            core.warning(`🔄 Triggering auto-rollback for ${env}`);
+            core.warning(`Health: ${health}, Sync: ${sync}, HTTP: ${httpStatus}`);
+
+            const reason = `[AUTO] Health=${health}, Sync=${sync}, HTTP=${httpStatus} - triggered by deploy run ${deployRunUrl}`;
+
+            try {
+              await github.rest.actions.createWorkflowDispatch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                workflow_id: 'rollback.yml',
+                ref: 'main',
+                inputs: {
+                  environment: env,
+                  component: '',
+                  dry_run: 'false',
+                  reason: reason
+                }
+              });
+
+              core.notice(`✅ Auto-rollback triggered for ${env}`);
+            } catch (error) {
+              core.error(`❌ Failed to trigger rollback: ${error.message}`);
+              throw error;
+            }
