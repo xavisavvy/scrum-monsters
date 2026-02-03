@@ -111,11 +111,12 @@ Plans:
   1. OpenAPI spec documents all REST endpoints with request/response schemas
   2. CI validates actual API responses match OpenAPI spec
   3. TypeScript types for API are generated from OpenAPI spec
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 12-01: TBD
-- [ ] 12-02: TBD
+- [ ] 12-01-PLAN.md — OpenAPI spec + Spectral linting + TypeScript type generation
+- [ ] 12-02-PLAN.md — AsyncAPI spec for WebSocket events + Zod validation schemas
+- [ ] 12-03-PLAN.md — CI workflow with Schemathesis contract testing
 
 ### Phase 13: Load Testing
 **Goal**: Performance baselines established and tracked
@@ -157,7 +158,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | 9. Database Migrations | 3/3 | Complete | 2026-02-03 |
 | 10. Visual Regression | 3/3 | Complete | 2026-02-03 |
 | 11. Accessibility Testing | 3/3 | Complete | 2026-02-03 |
-| 12. API Contract Testing | 0/2 | Not started | - |
+| 12. API Contract Testing | 0/3 | Not started | - |
 | 13. Load Testing | 0/2 | Not started | - |
 | 14. Rollback Automation | 0/2 | Not started | - |
 
