@@ -1,0 +1,9 @@
+{
+  "high": true,
+  "critical": true,
+  "moderate": false,
+  "low": false,
+  "report-type": "full",
+  "advisories": [],
+  "allowlist": []
+}
