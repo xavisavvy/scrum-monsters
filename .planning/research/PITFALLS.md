@@ -1,362 +1,570 @@
-# Pitfalls Research: Refactoring Monolithic Real-Time Game Servers
+# Pitfalls Research: Adding SDLC Best Practices to Existing TypeScript Project
 
-**Domain:** Real-time multiplayer game server refactoring (Socket.IO, Node.js)
-**Researched:** 2026-02-01
-**Confidence:** HIGH
+**Domain:** SDLC tooling integration for existing real-time multiplayer app (ScrumQuest)
+**Researched:** 2026-02-02
+**Confidence:** HIGH (verified with multiple authoritative sources)
+
+---
 
 ## Critical Pitfalls
 
-### Pitfall 1: Event Listener Memory Leaks During Domain Separation
-
-**What goes wrong:**
-Socket.IO event listeners attached during the monolithic phase remain in memory indefinitely after refactoring to separate domains. Each player connection accumulates orphaned listeners across multiple domain handlers, causing memory to grow unbounded. In production, this manifests as gradual server slowdown over hours/days until eventual crash.
-
-**Why it happens:**
-When extracting domains (voting, combat, timers) from the monolith, developers forget that Socket.IO maintains references to all registered handlers. The original GameStateManager had listeners registered in a single location with clear ownership. After refactoring, multiple domain modules register listeners independently without coordinated cleanup on disconnect.
-
-**How to avoid:**
-- Implement centralized event listener registry that tracks which domain owns which listeners
-- Use `socket.removeAllListeners(eventName)` in domain cleanup hooks
-- Create domain-specific disconnect handlers that clean up their own listeners
-- Add memory monitoring to detect listener accumulation in development
-
-**Warning signs:**
-- MaxListenersExceededWarning in production logs
-- Memory usage growing proportionally to connection count × uptime
-- Server performance degrading over hours despite stable player count
-- Socket objects not being garbage collected after disconnect
-
-**Phase to address:**
-Phase 1 (Architecture & Boundaries) - Establish listener cleanup contracts before extracting domains
-
-**Recovery cost:**
-HIGH - Requires auditing all event handlers across domains, adding cleanup logic, and verifying no leaked references. Potential data corruption if domains lose track of player state during cleanup.
+Mistakes that cause significant rework, failed deployments, or broken CI/CD pipelines.
 
 ---
 
-### Pitfall 2: Race Conditions in Sequential Phase Transitions
+### Pitfall 1: Drizzle Migration History Mismatch After db:push
 
 **What goes wrong:**
-The monolith handles phase transitions (battle → reveal → discussion → scoring) atomically within a single state manager. After refactoring to separate domain services, race conditions emerge where multiple domains try to transition phases simultaneously. Example: Timer expiry triggers reveal while host manually advances phase, causing players to see inconsistent game states.
+Team has been using `drizzle-kit push` for local development and production schema updates. When switching to `drizzle-kit generate` + `drizzle-kit migrate`, the migration system doesn't know about the existing schema. Running `migrate` creates SQL to build tables that already exist, failing with "table already exists" errors. Worse: if you delete migration history to "start fresh," Drizzle loses ability to track schema versions, causing production data loss on future migrations.
 
 **Why it happens:**
-The monolith's single-threaded execution model provided implicit serialization. Timer callbacks, socket events, and consensus checks all ran on the same event loop with predictable ordering. When domains become separate modules or services, these operations race without coordination. The current codebase has 12+ timer instances and 140+ socket event handlers that could conflict during refactor.
-
-**How to avoid:**
-- Implement phase transition state machine with exclusive locks
-- Single "PhaseOrchestrator" domain owns phase transitions, other domains request changes
-- Add transaction-style phase updates with rollback on conflict
-- Queue phase transition requests instead of executing immediately
+`db:push` directly applies schema changes without creating migration files or tracking history. The current ScrumQuest codebase uses `npm run db:push` (line 18 in package.json) with 6 tables (users, oauth_accounts, user_profiles, user_stats, estimation_history, sessions). When transitioning to migrations, there's no `drizzle` folder with journal/snapshot files tracking what has been applied.
 
 **Warning signs:**
-- Players seeing different phases in the same lobby
-- "Phase transition rejected" errors in logs
-- Duplicate score submissions or double timer expirations
-- Consensus countdown starting twice simultaneously
+- "relation already exists" errors when running first migration
+- Missing `drizzle/` folder with journal.json and snapshots
+- Different schema state between environments (dev has column X, prod doesn't)
+- Manual SQL fixes applied to production that aren't reflected in schema.ts
 
-**Phase to address:**
-Phase 2 (Core Domains) - Design phase orchestration before splitting voting/timer/consensus domains
+**Prevention strategy:**
+1. **Introspect first:** Run `drizzle-kit introspect` on production database to generate initial schema.ts and migrations folder with "init" migration
+2. **Use --no-init flag:** When running `drizzle-kit migrate` on database with existing tables, use `--no-init` to skip initial table creation
+3. **Verify environments match:** Before switching, ensure dev/staging/prod schemas are identical (diff the introspected schemas)
+4. **Never delete migration history in production:** Only safe to delete when DB hasn't been deployed to production yet
 
-**Recovery cost:**
-HIGH - Requires introducing distributed locking or event sourcing. May need to roll back to monolith temporarily while fixing, causing deployment downtime.
+**Phase to address:** Early (before any schema changes) - Database migration infrastructure
+
+**Recovery cost:** HIGH - May require manual SQL scripts to reconcile schema drift, potential data loss if migrations applied incorrectly
+
+**Sources:**
+- [Drizzle ORM - Migrations](https://orm.drizzle.team/docs/migrations)
+- [Drizzle ORM - push vs migrate](https://orm.drizzle.team/docs/drizzle-kit-push)
+- [Discussion: Migrate after push in local dev database](https://github.com/drizzle-team/drizzle-orm/discussions/1604)
 
 ---
 
-### Pitfall 3: Lost Reconnection Context After Domain Split
+### Pitfall 2: Branch Protection Bypass Creates False Security
 
 **What goes wrong:**
-The monolith stores disconnected player state (position, health, voting progress) in-memory within GameStateManager. After refactoring, each domain owns its own state (CombatDomain has health, VotingDomain has votes). When a player reconnects, domains don't coordinate to restore full context - player rejoins with 100% health but their vote is missing, or vice versa.
+Team enables branch protection on main branch, but admins/maintainers can still push directly (default behavior). The git status shows "branch protection bypassed" because the committer has admin privileges. Team believes they have PR workflow protection, but critical changes go directly to main without review. Worse: GitHub Actions bots or release automation can bypass protections unexpectedly.
 
 **Why it happens:**
-The monolith's reconnection token system (lines 171-231 in gameState.ts) snapshots complete player state in one place. Refactored domains each implement their own state persistence without a unified "player context" abstraction. The 10-minute grace period becomes domain-specific rather than player-specific.
-
-**How to avoid:**
-- Design unified PlayerContext that aggregates state from all domains
-- Implement domain state hydration protocol on reconnect
-- Create ReconnectionCoordinator that queries all domains for player state
-- Use event sourcing pattern to replay missed domain events on reconnect
+The current ScrumQuest repo shows "branch protection bypassed" in git push output, indicating admins can still direct push. GitHub's default is to NOT apply restrictions to repository admins. Additionally, custom roles with "bypass branch protections" permission exist, and GitHub Apps with proper permissions can bypass rules.
 
 **Warning signs:**
-- Reconnected players starting battles with partial state
-- "Player found but combat state missing" errors
-- Votes not restoring after network drop
-- Position desync between reconnected client and server
+- Git output shows "branch protection bypassed" on push
+- Main branch has commits without associated PRs
+- Release bot pushes directly to main during `npm run release`
+- CI checks pass but weren't actually required (soft enforcement)
 
-**Phase to address:**
-Phase 1 (Architecture & Boundaries) - Define PlayerContext aggregation contract before domain extraction
+**Prevention strategy:**
+1. **Enable "Do not allow bypassing":** In branch protection rules, check "Do not allow bypassing the above settings" to include admins
+2. **Use Rulesets instead:** GitHub Rulesets (newer feature) provide more granular control with explicit bypass actors list
+3. **Audit bypass permissions:** Check Settings > Collaborators > Custom roles for "bypass branch protections"
+4. **Configure release automation:** Use GitHub Apps with scoped tokens that can bypass only specific rules, not all protections
 
-**Recovery cost:**
-MEDIUM - Requires adding cross-domain state queries and aggregation logic. Can be patched incrementally per domain, but poor UX until complete.
+**Phase to address:** Early - PR workflow and branch protection setup
+
+**Recovery cost:** LOW - Configuration change, no code changes needed
+
+**Sources:**
+- [GitHub Docs - About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [Managing GitHub Branch Protections](https://medium.com/@lauravuo/managing-github-branch-protections-4fa37f36ee4f)
+- [Bypass branch protections with a new permission](https://github.blog/changelog/2022-08-18-bypass-branch-protections-with-a-new-permission/)
 
 ---
 
-### Pitfall 4: Timer Interval Drift Across Domain Boundaries
+### Pitfall 3: Security Scanning Noise Overwhelms Real Issues
 
 **What goes wrong:**
-The monolith manages timers centrally (revival watchdog, disconnect watchdog, consensus countdown, battle modifier) with coordinated intervals. After refactoring, each domain starts its own timers without synchronization. Revival checks run every 100ms, consensus ticks every 100ms, modifier updates every 10s - these drift out of phase, causing uneven CPU usage and missed coordination windows.
+Team adds CodeQL and Snyk to CI, immediately gets 50+ findings. Most are false positives, low-severity issues, or findings in test code. Developers start ignoring security alerts ("they're always wrong"). A real vulnerability gets buried in noise and reaches production.
 
 **Why it happens:**
-JavaScript's `setInterval` is not precise and accumulates drift over time. When multiple domains each call `setInterval`, their phases randomize. The monolith's single watchdog loop (line 38-45) provided implicit synchronization. Distributed timers have no shared clock reference.
-
-**How to avoid:**
-- Create TimerCoordinator service with shared tick loop
-- All domain timers register callbacks on common intervals (100ms, 1s, 10s tiers)
-- Use `Date.now()` for elapsed time checks instead of counting ticks
-- Implement timer health monitoring to detect drift > 50ms
+Security scanners default to maximum sensitivity. CodeQL scans entire repository including test fixtures with intentional vulnerabilities. Snyk reports every CVE in dependencies even if not exploitable. The current ScrumQuest CI has `npm audit --audit-level=high` (line 140 in ci.yml) with `continue-on-error: true` - security issues are already being ignored.
 
 **Warning signs:**
-- Consensus countdown occasionally skipping seconds
-- Revival completing in 2.7s or 3.4s instead of exactly 3s
-- Battle modifier updating inconsistently (8s then 12s then 9s intervals)
-- CPU spikes at irregular intervals instead of steady usage
+- `continue-on-error: true` on security jobs (current state)
+- Security alerts consistently dismissed without review
+- Developers complaining about "noisy" security tools
+- Same false positives reappearing after being dismissed
 
-**Phase to address:**
-Phase 2 (Core Domains) - Establish shared timing infrastructure before extracting time-dependent domains
+**Prevention strategy:**
+1. **Scope scanning:** Configure CodeQL to only scan `src/` and `server/` folders, exclude `test/` and `*.test.ts`
+2. **Tune severity thresholds:** Start with critical/high only, add medium after baseline is clean
+3. **Use Snyk's "Consistent Ignores":** When dismissing false positives, use Snyk's feature to suppress consistently (released June 2025)
+4. **Separate security-audit from blocking CI:** Run security scans but don't block PRs initially; create issues for triage
+5. **Establish triage process:** Weekly security review of new findings, documented ignore reasons
 
-**Recovery cost:**
-LOW - Can be fixed by migrating domains to shared ticker incrementally. No data loss risk, just timing inaccuracy.
+**Phase to address:** Mid-phase - Security scanning implementation
+
+**Recovery cost:** MEDIUM - Requires tuning configuration, establishing triage process, and clearing backlog
+
+**Sources:**
+- [2025 AI Code Security Benchmark: Snyk vs Semgrep vs CodeQL](https://sanj.dev/post/ai-code-security-tools-comparison)
+- [Snyk Code: Issue management with Consistent Ignores](https://learn.snyk.io/lesson/snyk-consistent-ignores/)
+- [JavaScript and TypeScript queries for CodeQL analysis](https://docs.github.com/en/code-security/code-scanning/managing-your-code-scanning-configuration/javascript-typescript-built-in-queries)
 
 ---
 
-### Pitfall 5: Circular Dependencies Between Consensus and Voting Domains
+### Pitfall 4: Coverage Thresholds Create False Confidence
 
 **What goes wrong:**
-VotingDomain needs to know when consensus is reached to trigger scoring. ConsensusDomain needs voting results to calculate agreement. After naive domain separation, these become circular dependencies - VotingDomain imports ConsensusDomain which imports VotingDomain, causing module loading failures or infinite initialization loops.
+Team sets 80% line coverage threshold. Developers write tests that hit lines but don't assert correctness. Tests pass, coverage is green, but bugs ship to production. Worse: developers game the metric by writing easy tests on simple code while complex logic remains untested.
 
 **Why it happens:**
-The monolith's `checkDiscussionConsensus()` method (lines 1443-1541) directly accesses voting state and directly updates consensus state in one function. This bidirectional coupling is hidden when everything is in one class. Domain extraction makes the circular dependency explicit and breaks module initialization.
-
-**How to avoid:**
-- Use mediator pattern - neither domain imports the other, both publish events
-- Implement domain events: VotingDomain emits "vote_submitted", ConsensusDomain subscribes
-- Create boundary interfaces: ConsensusDomain depends on IVotingState abstraction, not concrete VotingDomain
-- Use dependency injection with lazy initialization to break cycles
+Coverage measures execution, not verification. The current ScrumQuest CI runs `npm run test:coverage` (line 79 in ci.yml) but doesn't enforce thresholds - `continue-on-error: true` means low coverage doesn't fail builds. When thresholds are added, the incentive becomes "hit the number" not "catch bugs."
 
 **Warning signs:**
-- TypeScript "circular dependency" errors during build
-- Runtime "Cannot access before initialization" errors
-- Domains throwing null reference errors on each other's methods
-- Unpredictable domain initialization order
+- High coverage but bugs in production
+- Tests with no assertions or only snapshot assertions
+- Coverage concentrated in simple utility functions
+- Complex business logic (like `gameState.ts` with 2000+ lines) excluded from coverage
 
-**Phase to address:**
-Phase 1 (Architecture & Boundaries) - Design event-based communication before extracting interdependent domains
+**Prevention strategy:**
+1. **Start without thresholds:** Use coverage as information, not enforcement, initially
+2. **Measure test effectiveness, not coverage:** Use mutation testing (Stryker) to verify tests actually catch bugs
+3. **Focus on critical paths:** Require coverage for server/gameState.ts, server/socketHandlers.ts - not UI components
+4. **Gradual thresholds:** Start at 50%, increase 5% per quarter as tests improve
+5. **Code review for test quality:** Review tests for meaningful assertions, not just existence
 
-**Recovery cost:**
-MEDIUM - Requires refactoring domain interfaces and introducing event mediator. Not data-destructive but requires architectural rework.
+**Phase to address:** Mid-phase - Coverage threshold implementation
+
+**Recovery cost:** LOW - Configuration change, but fixing test quality takes time
+
+**Sources:**
+- [Code Coverage Complications](https://anthonysciamanna.com/2020/01/26/code-coverage-complications.html)
+- [Making your code base better will make your code coverage worse](https://stackoverflow.blog/2025/12/22/making-your-code-base-better-will-make-your-code-coverage-worse)
+- [Code Quality in 2026: Best Practice, Metrics and Techniques](https://www.getpanto.ai/blog/code-quality)
 
 ---
 
-### Pitfall 6: Premature Redis Adapter Introduction
+### Pitfall 5: Visual Regression Tests Flaky from Environment Differences
 
 **What goes wrong:**
-Teams read that Socket.IO scaling requires Redis and add the adapter during early refactoring. This introduces a critical external dependency before understanding actual scaling needs. Redis becomes a single point of failure. When Redis goes down, all lobbies disconnect even though the app server is healthy. Development velocity drops 40% because local setup now requires Docker.
+Visual regression tests pass locally but fail in CI. Screenshots differ by a few pixels due to font rendering, anti-aliasing, or animation timing. Tests become so flaky they're disabled or ignored. Real visual bugs ship because "visual tests are always broken anyway."
 
 **Why it happens:**
-Well-meaning advice to "design for scale from the start." The current codebase has Redis caching (lines 48-64) but it's optional - the app falls back gracefully. Teams often make Redis *required* during refactoring, thinking it simplifies state management across domains. In reality, it just moves in-memory complexity to network complexity.
-
-**How to avoid:**
-- Keep Redis optional until proven scaling bottleneck
-- Implement domain state as serializable objects that *could* use Redis later
-- Measure: add metrics for lobby count, concurrent users, memory usage
-- Add Redis only when single-server memory limit is reached (not preemptively)
+ScrumQuest uses React Three Fiber for 3D graphics and Framer Motion for animations (lines 58-74 in package.json). 3D rendering varies by GPU/driver. Animations captured mid-transition produce different snapshots. CSS transitions complete at different times on different machines.
 
 **Warning signs:**
-- Local development requiring Docker/Redis
-- Integration tests failing due to Redis connection timeouts
-- Production incidents where Redis outage takes down healthy app servers
-- Redis memory usage growing faster than player count
+- Visual tests passing locally, failing in CI
+- Screenshots differing by 1-3 pixels
+- Flaky tests that pass on retry
+- Baseline screenshots captured during active development
+- Tests disabled with comments like "// TODO: fix flaky test"
 
-**Phase to address:**
-Phase 4 (Performance & Scale) - Only after domains are stable and metrics show scaling need
+**Prevention strategy:**
+1. **Consistent environment:** Run visual tests in Docker with fixed fonts, resolution, and GPU emulation
+2. **Disable animations for tests:** Add CSS `* { transition: none !important; animation: none !important; }` in test mode
+3. **Wait for stability:** Add explicit waits for animations to complete before capturing screenshots
+4. **Tolerance thresholds:** Allow small pixel differences (0.1-0.5%) to account for anti-aliasing
+5. **Skip 3D content initially:** Focus visual regression on 2D UI components; test 3D separately with snapshot testing
 
-**Recovery cost:**
-LOW - Can be removed by reverting to in-memory state. Main cost is development time wasted on premature optimization.
+**Phase to address:** Late phase - Visual regression testing
+
+**Recovery cost:** MEDIUM - Requires CI environment changes and test refactoring
+
+**Sources:**
+- [The UI Visual Regression Testing Best Practices Playbook](https://medium.com/@ss-tech/the-ui-visual-regression-testing-best-practices-playbook-dc27db61ebe0)
+- [Best Regression Testing Tools in 2026](https://bugbug.io/blog/software-testing/best-regression-testing-tools/)
+- [Visual Regression Testing - All You Need to Know](https://www.virtuosoqa.com/post/visual-regression-testing-101)
 
 ---
 
-## Technical Debt Patterns
+### Pitfall 6: ArgoCD Rollback Breaks GitOps State
 
-Shortcuts that seem reasonable but create long-term problems.
+**What goes wrong:**
+Production deployment fails, operator uses `argocd app rollback` to revert. Application recovers, but cluster state now differs from Git. Next sync from Git redeploys the broken version. Team disables auto-sync to prevent this, breaking GitOps model. Rollbacks become manual kubectl operations.
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Copy-paste domain extraction (duplicate code in each domain) | Fast initial extraction, each domain is independent | Bugs multiply across domains, features require N updates instead of 1 | Never - always refactor shared logic into utilities first |
-| Skipping TypeScript type updates after domain split | Compilation succeeds with `any` types | Domain contracts undefined, runtime type errors, no IDE autocomplete | Only for MVP/prototype phase, must be fixed before production |
-| Hardcoding domain boundaries in websocket routing | Simple if/else chains to route events | Every new domain requires modifying central router, high coupling | Only for 2-3 domains, use plugin system for 4+ |
-| Using process.exit() for domain errors instead of graceful degradation | Quick way to force restart on corruption | Kills all lobbies for one domain failure, poor UX | Never in production - implement circuit breakers |
-| Storing player references across domains instead of passing IDs | Faster method calls (direct object access) | Memory leaks, stale references, can't serialize for Redis | Never - always use IDs as foreign keys between domains |
-| Synchronous domain communication (direct method calls) | Low latency, simple debugging | Tight coupling, can't distribute domains, blocks event loop | Acceptable for read-only queries within same process |
+**Why it happens:**
+ScrumQuest uses ArgoCD (k8s/argocd-apps/ directory) with auto-sync likely enabled. The `argocd app rollback` command points the application to a previous Git commit hash, but only works if auto-sync is disabled. With auto-sync enabled, the rollback is immediately overwritten.
 
-## Integration Gotchas
+**Warning signs:**
+- Rollback appears successful but application redeploys broken version
+- Auto-sync disabled "temporarily" for months
+- Manual `kubectl apply` commands in production
+- Git history doesn't match cluster state
 
-Common mistakes when connecting to external services.
+**Prevention strategy:**
+1. **Roll forward, not back:** Fix the issue in Git and let ArgoCD deploy the fix naturally
+2. **If must rollback:** Disable auto-sync first, perform rollback, then revert commits in Git, re-enable sync
+3. **Use Argo Rollouts for progressive delivery:** Canary/blue-green deployments catch failures before full rollout
+4. **Tag stable releases:** Use Git tags for releases, revert by promoting previous tag to main
+5. **Document rollback procedure:** Standard runbook that maintains GitOps state
 
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Redis adapter for Socket.IO | Making it required dependency in all environments | Keep optional with in-memory fallback, only require in production |
-| Jira API for ticket import | Calling Jira API on every vote submission to "sync status" | Cache tickets in-memory, sync on user-triggered refresh only |
-| OAuth providers (optional auth) | Blocking lobby creation while OAuth validates token | Authenticate asynchronously, allow anonymous play, sync after join |
-| PostgreSQL (optional DB) | Querying database in critical path (every phase transition) | Write-behind caching: update DB async after state changes, never block game loop |
-| Health check endpoints | Returning 200 OK if app process is running | Check domain health, timer responsiveness, memory usage - fail if degraded |
+**Phase to address:** Late phase - ArgoCD rollback procedures
 
-## Performance Traps
+**Recovery cost:** LOW - Process/documentation change, but can cause production incidents if mishandled
 
-Patterns that work at small scale but fail as usage grows.
+**Sources:**
+- [Top 30 Argo CD Anti-Patterns to Avoid When Adopting Gitops](https://codefresh.io/blog/argo-cd-anti-patterns-for-gitops/)
+- [Automated Deployment Rollbacks with GitOps](https://medium.com/@bavicnative/automating-deployment-rollbacks-with-gitops-3887a81e1b2a)
+- [Zero-Downtime Rollbacks in Kubernetes with ArgoCD](https://dev.to/srinivasamcjf/zero-downtime-rollbacks-in-kubernetes-with-argocd-a-practical-gitops-lifesaver-1hbi)
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Broadcasting lobby_updated to all players on every vote | Smooth UX with 4 players | Debounce broadcasts to 100ms intervals, batch state changes | 10+ players per lobby |
-| Storing all completed tickets in lobby object forever | Fast history access | Archive tickets after 100 completions, paginate history | 500+ tickets completed |
-| O(N²) player position distance calculations every tick | Works fine in testing | Use spatial grid or proximity lists for lookups | 15+ players in lobby |
-| Serializing entire lobby state to Redis on every change | Simple cache invalidation | Delta updates - only sync changed fields | 50+ lobbies active |
-| Single global event emitter for all domains | Simple pub/sub | Domain-scoped emitters with explicit subscriptions | 5+ domains |
-| JSON.stringify for socket events without size checks | Easy serialization | Implement max payload size, paginate large arrays | Lobby state > 1MB |
+---
 
-## Security Mistakes
+## Moderate Pitfalls
 
-Domain-specific security issues beyond general web security.
+Mistakes that cause delays, tech debt, or degraded developer experience.
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Allowing spectators to emit player_damage events | Spectators can cheat - instantly kill all players by spamming damage events | Validate event origin team in domain handlers, ignore invalid team actions |
-| Accepting arbitrary lobbyId in reconnect token | Attacker can craft token to join any lobby | Cryptographically sign tokens with HMAC (already implemented lines 182-183) |
-| No rate limiting on vote_update events | Single player can spam votes to DoS server with broadcast load | Per-player rate limits (max 10 vote changes/second) |
-| Host privileges not revoked on disconnect | Disconnected host retains control if they reconnect quickly | Immediately transfer host on disconnect (implemented line 332), but verify in ALL host actions |
-| Trusting client-side timer expiry events | Client can fake "timer expired" to force reveal early | Server is source of truth - ignore client timer events, only trust server timers |
+---
 
-## UX Pitfalls
+### Pitfall 7: API Contract Testing Over-Promises
 
-Common user experience mistakes in this domain.
+**What goes wrong:**
+Team implements Pact for contract testing, celebrates green contracts, then production breaks on Black Friday. The contracts tested happy paths with clean data. Production failed on edge cases, timeout handling, and deployment order issues that contract tests don't cover.
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| No feedback during domain refactor rollout | Players see "something broke" without context | Feature flags per domain, graceful degradation messages |
-| Losing lobby state during deployment | All active games end abruptly on server restart | Persist lobby snapshots to Redis, restore on startup |
-| Silent failure when domain is unhealthy | Players stuck in battle phase indefinitely | Timeout detection - auto-return to lobby if domain unresponsive > 30s |
-| Reconnection losing all UI state | Player returns to lobby phase instead of battle continuation | Include UI phase in reconnection sync, restore client view state |
-| No indication which players are disconnected | Team waits for disconnected player to vote | Visual indicator showing disconnected players, countdown shows "waiting for X/Y connected" |
-| Phase transitions without animation/sound | Jarring instant changes between battle/reveal/discussion | Add 500ms transition animations, keep both UIs mounted briefly |
+**Why it happens:**
+Contract testing verifies the contract, not the actual API call in production. If production config points to v2 endpoint but contracts test v1, you're testing the wrong thing. Contracts don't test resilience, error handling, or network issues.
+
+**Warning signs:**
+- All contracts green but production API failures
+- Contracts only test successful responses
+- No edge case contracts (empty arrays, null fields, malformed data)
+- Deployment order dependencies despite "decoupled" services
+
+**Prevention strategy:**
+1. **Contract tests complement, not replace E2E:** Run E2E tests with real services before production
+2. **Test failure scenarios:** Include contracts for 400, 500 responses, timeouts
+3. **Test with realistic data:** Use production-like data samples, not just `{ "id": 1, "name": "test" }`
+4. **Version contracts explicitly:** Include API version in contract, fail if endpoint version changes
+5. **Consider OpenAPI-based contracts:** Use PactFlow's bi-directional testing with OpenAPI spec if you have one
+
+**Phase to address:** Mid-phase - API contract testing
+
+**Recovery cost:** MEDIUM - Requires expanding contract coverage and adding E2E tests
+
+**Sources:**
+- [Contract Testing With Pact: Looked Good, Broke Anyway](https://medium.com/@codexlab/contract-testing-with-pact-looked-good-broke-anyway-3774270bdd15)
+- [Stop Breaking My API: A Practical Guide to Contract Testing with Pact](https://medium.com/@mohsenny/stop-breaking-my-api-a-practical-guide-to-contract-testing-with-pact-33858d113386)
+- [Pact vs OpenAPI: Choosing the right foundation](https://www.speakeasy.com/blog/pact-vs-openapi)
+
+---
+
+### Pitfall 8: Accessibility Debt Ignored Until Blocking
+
+**What goes wrong:**
+Team adds axe-playwright accessibility testing, finds 50+ violations. Rather than fixing, they set `skipFailures: true` so tests don't block CI. Accessibility debt grows. When client requires WCAG compliance, team faces weeks of remediation.
+
+**Why it happens:**
+ScrumQuest E2E tests exist (line 133 in package.json: `@playwright/test`) but don't include accessibility checks. Adding axe-core to existing tests reveals years of inaccessible code. The UI uses custom components (React Three Fiber 3D, Framer Motion animations) that aren't inherently accessible.
+
+**Warning signs:**
+- A11y tests pass with `skipFailures: true`
+- Violations printed to console but not tracked
+- No WCAG compliance level specified
+- 3D game elements have no keyboard navigation
+
+**Prevention strategy:**
+1. **Create accessibility debt tracker:** GitHub Issues for each violation, prioritized by severity
+2. **Fix incrementally:** Target WCAG 2.1 AA for critical paths first (login, lobby join, voting)
+3. **Exclude 3D game view initially:** Focus a11y on forms, dialogs, navigation - not 3D canvas
+4. **Test in multiple browsers:** axe-core supports all major browsers; test in at least Chrome + Firefox
+5. **Gradual enforcement:** Start with 0 critical violations, add serious/moderate over time
+
+**Phase to address:** Mid-to-late phase - Accessibility testing
+
+**Recovery cost:** HIGH - Accessibility fixes often require component rewrites
+
+**Sources:**
+- [Accessibility testing | Playwright](https://playwright.dev/docs/accessibility-testing)
+- [How We Automate Accessibility Testing with Playwright and Axe](https://dev.to/subito/how-we-automate-accessibility-testing-with-playwright-and-axe-3ok5)
+- [Add Accessibility Checks to Playwright Tests with Axe](https://www.checklyhq.com/blog/integrating-accessibility-checks-in-playwright-tes/)
+
+---
+
+### Pitfall 9: Load Testing Discovers Issues Too Late
+
+**What goes wrong:**
+Team implements k6 load tests, runs them before major release, discovers server can only handle 50 concurrent WebSocket connections (not the expected 200). No time to fix. Release goes ahead with known scaling issues.
+
+**Why it happens:**
+ScrumQuest uses Socket.IO for real-time game state (114 dependencies including socket.io). WebSocket connections are expensive. The current in-memory fallback storage means all game state lives in Node.js heap. Load testing late in development means architectural changes are too costly to make.
+
+**Warning signs:**
+- Load tests only run before releases, not continuously
+- No baseline performance metrics to compare against
+- Load test environment differs from production (no Redis, different node count)
+- Server crashes or becomes unresponsive under moderate load
+
+**Prevention strategy:**
+1. **Baseline early:** Run load tests now to establish current capacity
+2. **Continuous load testing:** Run scaled-down load tests in CI (10 concurrent users) to catch regressions
+3. **Match production environment:** Load test against staging with production-like infra
+4. **Set SLOs:** Define acceptable latency (p99 < 200ms) and error rate (< 0.1%) before testing
+5. **Test WebSocket specifically:** k6 supports WebSocket; test Socket.IO event handling, not just HTTP
+
+**Phase to address:** Early-to-mid phase - Load testing infrastructure
+
+**Recovery cost:** HIGH if architectural changes needed; LOW if just tuning
+
+**Sources:**
+- [Load Testing Your API: k6 vs Artillery vs Locust](https://medium.com/@sohail_saifi/load-testing-your-api-k6-vs-artillery-vs-locust-66a8d7f575bd)
+- [Grafana k6 documentation](https://k6.io/)
+- [Top 10 Load Testing Tools for 2026](https://pflb.us/blog/best-load-testing-tools/)
+
+---
+
+### Pitfall 10: Changelog Automation Requires Commit Discipline
+
+**What goes wrong:**
+Team enables standard-version (already in package.json line 164), but changelog is useless: "fix: stuff", "feat: update", "chore: changes". Semantic versioning breaks because developers don't understand conventional commits. Patch release contains breaking change.
+
+**Why it happens:**
+ScrumQuest has commitlint configured (lines 130-131 in package.json) but conventional commit adoption requires team discipline. Without clear examples and PR enforcement, commits vary wildly. The `npm run release` script assumes commits follow convention.
+
+**Warning signs:**
+- CHANGELOG.md has entries like "fix: fix", "feat: feature"
+- Version bumps don't match actual changes (patch with breaking changes)
+- Developers using `git commit --no-verify` to skip commitlint
+- No breaking change prefixes (BREAKING CHANGE:) despite API changes
+
+**Prevention strategy:**
+1. **Enforce in CI, not just locally:** Add commitlint check to PR workflow, not just husky pre-commit
+2. **Document commit conventions:** Add CONTRIBUTING.md with examples for fix, feat, BREAKING CHANGE
+3. **Use commit templates:** Configure git commit template with conventional commit format
+4. **Review commit messages in PRs:** Make commit quality part of code review
+5. **Consider release-please:** Google's tool creates Release PRs, giving review opportunity before version bump
+
+**Phase to address:** Early - PR workflow setup
+
+**Recovery cost:** LOW - Process/documentation change, but historical commits can't be retroactively fixed
+
+**Sources:**
+- [Conventional Commits](https://www.conventionalcommits.org/en/about/)
+- [standard-version on GitHub](https://github.com/conventional-changelog/standard-version)
+- [Embracing Automation in Versioning: Release-Please](https://medium.com/@koladilip/embracing-automation-in-versioning-the-power-of-release-please-github-action-4241bd8f3b54)
+
+---
+
+## Minor Pitfalls
+
+Mistakes that cause annoyance but are easily recoverable.
+
+---
+
+### Pitfall 11: CI Pipeline Becomes Slow After Adding All Tests
+
+**What goes wrong:**
+CI time grows from 5 minutes to 25 minutes as security scanning, coverage, visual tests, a11y tests, and load tests are added. Developers wait too long for feedback. They batch PRs instead of iterating, reducing code quality.
+
+**Why it happens:**
+The current ScrumQuest CI (ci.yml) already has 5 jobs running sequentially for some. Adding more tests without parallelization compounds the problem. Each test type has setup overhead (npm ci runs multiple times).
+
+**Warning signs:**
+- CI time > 15 minutes for typical PRs
+- Developers complaining about "waiting for CI"
+- Jobs running sequentially that could parallelize
+- npm ci running in every job instead of caching
+
+**Prevention strategy:**
+1. **Parallelize jobs:** Security scan, tests, and lint can all run in parallel (current ci.yml already does this partially)
+2. **Fail fast:** Put fastest checks first; lint/typecheck before tests
+3. **Cache dependencies:** Use actions/cache for node_modules
+4. **Tiered testing:** Run unit tests on every PR, visual/load tests only on main or nightly
+5. **Path-based triggers:** Only run E2E tests if client code changed
+
+**Phase to address:** Throughout - CI optimization
+
+**Recovery cost:** LOW - Workflow configuration changes
+
+**Sources:**
+- [Five tips for faster GitHub Actions](https://namespace.so/blog/5-tips-for-faster-github-actions)
+- [A Developer's Guide to Speeding Up GitHub Actions](https://www.warpbuild.com/blog/github-actions-speeding-up)
+- [The 45-Minute GitHub Actions Build That Nearly Broke My Team](https://markaicode.com/github-actions-cicd-optimization-slow-to-fast/)
+
+---
+
+### Pitfall 12: Tool Versions Drift Between Local and CI
+
+**What goes wrong:**
+Developer's local Node.js is 22, CI uses 20, production uses 18. Tests pass locally, fail in CI due to API differences. Security scanner reports vulnerabilities for different dependency versions.
+
+**Why it happens:**
+ScrumQuest specifies Node 20 in CI (line 29 in ci.yml) but no .nvmrc or engines field in package.json. Developers install whatever version they have.
+
+**Warning signs:**
+- "Works on my machine" followed by CI failure
+- Different npm versions producing different lockfiles
+- Type errors appearing only in CI
+
+**Prevention strategy:**
+1. **Add .nvmrc:** Specify exact Node version, use `nvm use` in development
+2. **Add engines field:** In package.json, specify `"engines": { "node": ">=20", "npm": ">=10" }`
+3. **Pin tool versions in CI:** Use exact versions, not `latest`
+4. **Use Corepack for npm/yarn:** Ensures consistent package manager version
+
+**Phase to address:** Early - Development environment setup
+
+**Recovery cost:** LOW - Configuration files only
+
+---
+
+## Integration-Specific Pitfalls
+
+Mistakes specific to integrating tools with the existing ScrumQuest stack.
+
+---
+
+### Pitfall 13: CodeQL Fails on React Three Fiber Code
+
+**What goes wrong:**
+CodeQL JavaScript/TypeScript analysis fails or times out when analyzing React Three Fiber components with heavy WebGL code. The 3D shaders and canvas manipulation trigger false positives or cause the analysis to hang.
+
+**Why it happens:**
+ScrumQuest uses react-three/fiber, drei, and postprocessing (lines 58-60, 96 in package.json) which include complex WebGL bindings. CodeQL's JavaScript analysis isn't optimized for WebGL context.
+
+**Prevention strategy:**
+1. **Exclude 3D component directories:** Configure CodeQL to skip `client/src/components/game/3d/` or similar
+2. **Set analysis timeouts:** Configure CodeQL timeout to prevent hanging
+3. **Separate analysis jobs:** Run CodeQL on server code only; use different tools for client if needed
+
+**Phase to address:** Mid-phase - Security scanning setup
+
+---
+
+### Pitfall 14: Drizzle Migrations Don't Handle In-Memory Fallback
+
+**What goes wrong:**
+ScrumQuest supports both PostgreSQL and in-memory storage (storage.ts fallback). Migrations assume PostgreSQL. Running `drizzle-kit migrate` without DATABASE_URL fails or does nothing. Tests with in-memory storage don't reflect migration changes.
+
+**Why it happens:**
+The storage.ts has in-memory fallback for development. Drizzle migrations only target the SQL database. Schema changes applied via migration aren't reflected in in-memory store structure.
+
+**Prevention strategy:**
+1. **Sync in-memory types with schema.ts:** In-memory store should use types derived from Drizzle schema
+2. **Skip migrations in memory mode:** Guard migration code with DATABASE_URL check
+3. **Test migrations separately:** Integration tests against PostgreSQL, unit tests against in-memory
+
+**Phase to address:** Early - Database migration setup
+
+---
+
+### Pitfall 15: Visual Tests Capture Lobby State Incorrectly
+
+**What goes wrong:**
+Visual regression tests capture game UI, but game state is dynamic (player positions, animations, randomized boss sprites). Every test run produces different screenshots. Tests either fail constantly or have such high tolerance they catch nothing.
+
+**Warning signs:**
+- Player positions differ in every screenshot
+- Boss health bars at different values
+- Particle effects causing pixel differences
+- Consensus countdown captured mid-animation
+
+**Prevention strategy:**
+1. **Seed random state:** Use fixed RNG seed for test runs
+2. **Mock time-based elements:** Freeze timers, disable animations
+3. **Capture specific states:** Wait for "lobby_updated" event indicating stable state
+4. **Test static UI separately:** Visual test dialogs, buttons, forms - not game canvas
+
+**Phase to address:** Late phase - Visual regression testing
+
+---
+
+## Phase-Specific Warning Matrix
+
+| Phase/Topic | Likely Pitfall | Detection | Mitigation |
+|-------------|----------------|-----------|------------|
+| DB Migrations | History mismatch with db:push | "table already exists" errors | Introspect first, use --no-init |
+| Branch Protection | Bypass by admins | "branch protection bypassed" in git | Enable "Do not allow bypassing" |
+| Security Scanning | Alert fatigue | `continue-on-error: true`, ignored alerts | Scope scanning, tune thresholds |
+| Coverage Thresholds | Gaming metrics | High coverage, production bugs | Focus on critical paths, use mutation testing |
+| Visual Regression | Environment flakiness | Tests fail only in CI | Docker environment, disable animations |
+| ArgoCD Rollback | GitOps state drift | Auto-sync overwrites rollback | Roll forward, tag stable releases |
+| API Contracts | False confidence | Contracts pass, production fails | Include failure scenarios, complement with E2E |
+| Accessibility | Ignored debt | `skipFailures: true` | Track violations as issues |
+| Load Testing | Late discovery | Pre-release only | Continuous baseline testing |
+| Changelog | Poor commit messages | CHANGELOG has "fix: stuff" | CI enforcement, documentation |
+| CI Speed | Pipeline bloat | CI > 15 minutes | Parallelize, tier tests |
+
+---
+
+## Recovery Strategies
+
+When pitfalls occur despite prevention.
+
+| Pitfall | Recovery Cost | Recovery Steps |
+|---------|---------------|----------------|
+| Migration history mismatch | HIGH | 1. Backup production DB 2. Introspect current state 3. Manually reconcile migration journal 4. Test on staging first |
+| Branch protection bypass | LOW | 1. Enable rule in GitHub settings 2. Audit recent direct pushes 3. Revert if needed via PR |
+| Security alert fatigue | MEDIUM | 1. Triage all existing alerts 2. Configure ignore rules 3. Establish weekly review process |
+| Coverage gaming | MEDIUM | 1. Add mutation testing 2. Review test quality in PRs 3. Focus on critical paths |
+| Flaky visual tests | MEDIUM | 1. Standardize CI environment 2. Add animation disabling 3. Increase tolerance slightly |
+| ArgoCD rollback failure | LOW | 1. Revert commits in Git 2. Re-enable auto-sync 3. Document correct procedure |
+| Contract test gaps | MEDIUM | 1. Audit production failures 2. Add edge case contracts 3. Supplement with E2E |
+| Accessibility debt | HIGH | 1. Triage by severity 2. Create sprint backlog 3. Fix incrementally |
+| Performance issues | HIGH | 1. Profile bottlenecks 2. Architectural review 3. Incremental improvements |
+| CI slowness | LOW | 1. Profile job times 2. Parallelize 3. Add caching |
+
+---
 
 ## "Looks Done But Isn't" Checklist
 
 Things that appear complete but are missing critical pieces.
 
-- [ ] **Domain Extraction:** Often missing cleanup/teardown hooks - verify each domain has `shutdown()` method that clears all timers/listeners
-- [ ] **Event Handlers:** Often missing error boundaries - verify every `socket.on()` has try/catch and emits error event on failure
-- [ ] **Reconnection:** Often missing partial reconnect handling - verify domains can restore state even if some domains fail hydration
-- [ ] **Phase Transitions:** Often missing rollback logic - verify failed phase changes revert to previous stable phase
-- [ ] **Timer Management:** Often missing cleanup on lobby deletion - verify `timerIntervals` map entries are deleted when lobby removed
-- [ ] **Consensus Logic:** Often missing team composition edge cases - verify works with: 0 devs, 0 QA, 0 both, 1 of each
-- [ ] **Combat System:** Often missing revival session cleanup - verify `revivalSessions` map doesn't grow unbounded
-- [ ] **Memory Leaks:** Often missing WeakMap usage - verify large objects (boss sprites, completed tickets) use weak references
-- [ ] **Domain Events:** Often missing event documentation - verify each domain has exported TypeScript types for its events
-- [ ] **Testing:** Often missing integration tests - verify happy path works end-to-end with all domains, not just unit tests
-
-## Recovery Strategies
-
-When pitfalls occur despite prevention, how to recover.
-
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Event Listener Memory Leak | MEDIUM | 1. Add `/admin/debug/listeners` endpoint showing count per socket 2. Add cleanup audit to each domain 3. Deploy fix 4. Monitor memory for 48h |
-| Race Condition in Phase Transitions | HIGH | 1. Add mutex lock to phase setter 2. Queue conflicting transitions 3. Add transaction log for debugging 4. May require rollback to monolith if corruption occurred |
-| Lost Reconnection Context | MEDIUM | 1. Add PlayerContext aggregator 2. Deploy new reconnection flow 3. Manually fix corrupted player states in DB 4. Monitor reconnect success rate |
-| Timer Interval Drift | LOW | 1. Add TimerCoordinator service 2. Migrate domains to register callbacks instead of setInterval 3. No data recovery needed |
-| Circular Domain Dependencies | LOW | 1. Introduce event mediator 2. Refactor domain A to use events 3. Refactor domain B to use events 4. No data recovery needed |
-| Premature Redis Dependency | LOW | 1. Add in-memory fallback adapter 2. Make Redis optional in config 3. Document Redis setup for prod only |
-
-## Pitfall-to-Phase Mapping
-
-How roadmap phases should address these pitfalls.
-
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| Event Listener Memory Leaks | Phase 1 (Architecture) | Load test with 100 connections × 30min, memory should stabilize |
-| Race Conditions in Phase Transitions | Phase 2 (Core Domains) | Concurrent phase transition test - 10 domains requesting changes simultaneously |
-| Lost Reconnection Context | Phase 1 (Architecture) | Reconnection test after extracting first domain - all state restored |
-| Timer Interval Drift | Phase 2 (Core Domains) | Run timers for 1 hour, measure drift < 100ms from expected |
-| Circular Domain Dependencies | Phase 1 (Architecture) | TypeScript compilation should succeed without warnings |
-| Premature Redis Dependency | Phase 4 (Performance) | App starts and runs all tests without Docker/Redis |
-
-## Domain-Specific Anti-Patterns for This Codebase
-
-Based on analysis of gameState.ts (2000+ lines).
-
-### Anti-Pattern 1: God Class Disguised as Domains
-**What it looks like:** Create CombatDomain, VotingDomain, TimerDomain classes but they all take GameStateManager as constructor argument and call `this.gameState.getLobby()` for everything.
-
-**Why it fails:** Domains are still tightly coupled to monolith. Can't test domains in isolation. Can't scale domains independently. Extraction provides no benefit.
-
-**Correct approach:** Domains own their state. Pass domain-specific DTOs (CombatState, VotingState) not entire lobby. Use events for cross-domain communication.
-
----
-
-### Anti-Pattern 2: Extracting Methods Before Understanding Boundaries
-**What it looks like:** Move `updatePlayerTeam()` to TeamDomain, `updatePlayerAvatar()` to AvatarDomain, `updatePlayerPosition()` to MovementDomain. Now 15 domains each managing one aspect of Player object.
-
-**Why it fails:** Player becomes distributed entity with no clear owner. Setting a player's position requires cross-domain coordination. Too fine-grained.
-
-**Correct approach:** Start with coarse domains (Lobby, Battle, Voting). Only split domains when one reaches 500+ lines or serves multiple use cases.
-
----
-
-### Anti-Pattern 3: Thinking Domains = Phases
-**What it looks like:** Create LobbyPhaseDomain, AvatarSelectionPhaseDomain, BattlePhaseDomain, RevealPhaseDomain, DiscussionPhaseDomain mirroring GamePhase enum.
-
-**Why it fails:** Phases are views of the game state, not bounded contexts. Combat persists across battle→reveal→discussion phases. Timers span multiple phases.
-
-**Correct approach:** Domains based on capabilities (Voting, Combat, Teams, Lifecycle) that operate across phases. PhaseOrchestrator coordinates domains.
-
----
-
-### Anti-Pattern 4: Event Storm (Publishing Everything)
-**What it looks like:** Every domain method emits events: `team_changed`, `avatar_changed`, `position_changed`, `health_changed`, `vote_changed`. 50+ event types.
-
-**Why it fails:** Event listeners proliferate. Debugging becomes "why did this happen?" treasure hunt through event chain. Event ordering becomes critical and fragile.
-
-**Correct approach:** Events for domain boundaries only. Internal domain changes use direct method calls. Emit: `player_joined`, `phase_transitioned`, `battle_ended` not `player_hp_decreased`.
+- [ ] **Branch Protection:** Verify admins CANNOT bypass (test with admin account)
+- [ ] **Security Scanning:** Verify findings are reviewed, not just generated
+- [ ] **Coverage Thresholds:** Verify tests have meaningful assertions (spot check 10 tests)
+- [ ] **Migrations:** Verify migration works on fresh DB AND existing DB with data
+- [ ] **Visual Tests:** Verify tests fail when UI actually breaks (break something on purpose)
+- [ ] **A11y Tests:** Verify violations are tracked, not just logged
+- [ ] **Load Tests:** Verify test environment matches production capacity
+- [ ] **Contract Tests:** Verify contracts match production API calls
+- [ ] **Changelog:** Verify CHANGELOG entries are human-readable and accurate
+- [ ] **Rollback:** Verify rollback procedure maintains GitOps state (test in staging)
 
 ---
 
 ## Sources
 
-### Game Server Refactoring
-- [Building a Real-Time Multiplayer Game Server with Socket.io and Redis](https://dev.to/dowerdev/building-a-real-time-multiplayer-game-server-with-socketio-and-redis-architecture-and-583m)
-- [Mastering Multiplayer Game Architecture: Choosing the Right Approach](https://www.getgud.io/blog/mastering-multiplayer-game-architecture-choosing-the-right-approach/)
-- [Modular Monolith: A Sane Architecture for Indie Game Devs](https://www.wayline.io/blog/modular-monolith-indie-game-dev)
+### Database Migrations
+- [Drizzle ORM - Migrations](https://orm.drizzle.team/docs/migrations)
+- [Drizzle ORM - push vs migrate](https://orm.drizzle.team/docs/drizzle-kit-push)
+- [3 Biggest Mistakes with Drizzle ORM](https://medium.com/@lior_amsalem/3-biggest-mistakes-with-drizzle-orm-1327e2531aff)
 
-### Monolith Refactoring Pitfalls
-- [Why Breaking Up Your Monolith Can Kill Your Project](https://medium.com/andamp/why-breaking-up-your-monolith-can-kill-your-project-mistakes-you-cant-afford-to-make-9e673d20b570)
-- [Monoliths vs microservices in gaming architecture](https://ascendion.com/insights/monoliths-vs-microservices-in-gaming-architecture-striking-the-right-balance/)
-- [How to Refactor a Monolithic Codebase Over Time](https://www.cloudbees.com/blog/how-to-refactor-a-monolithic-codebase-over-time)
+### Branch Protection
+- [GitHub Docs - About protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches)
+- [10 Rules of GitHub Branch Protection](https://www.hadosec.com/blog/github-branch-protection/)
 
-### Socket.IO Scaling Issues
-- [Scaling Socket.IO: Real-world challenges and proven strategies](https://ably.com/topic/scaling-socketio)
-- [10 Socket.IO Best Practices](https://climbtheladder.com/10-socket-io-best-practices/)
-- [Socket.io — The Good, the Bad, and the Ugly](https://dzone.com/articles/socketio-the-good-the-bad-and-the-ugly)
+### Security Scanning
+- [2025 AI Code Security Benchmark](https://sanj.dev/post/ai-code-security-tools-comparison)
+- [Snyk Code: Consistent Ignores](https://learn.snyk.io/lesson/snyk-consistent-ignores/)
+- [CodeQL JavaScript/TypeScript queries](https://docs.github.com/en/code-security/code-scanning/managing-your-code-scanning-configuration/javascript-typescript-built-in-queries)
 
-### Event Listener Memory Leaks
-- [How to Avoid Memory Leaks in JavaScript Event Listeners](https://dev.to/alex_aslam/how-to-avoid-memory-leaks-in-javascript-event-listeners-4hna)
-- [Understanding the MaxListenersExceededWarning Event in Node.js](https://www.dhiwise.com/post/best-practices-for-handling-maxlistenersexceededwarning)
-- [4 Types of Memory Leaks in JavaScript](https://auth0.com/blog/four-types-of-leaks-in-your-javascript-code-and-how-to-get-rid-of-them/)
+### Test Coverage
+- [Making your code base better will make your code coverage worse](https://stackoverflow.blog/2025/12/22/making-your-code-base-better-will-make-your-code-coverage-worse)
+- [Code Quality in 2026](https://www.getpanto.ai/blog/code-quality)
 
-### Domain Separation & Coupling
-- [Component Pattern - Game Programming Patterns](https://gameprogrammingpatterns.com/component.html)
-- [Separation of concerns in game architecture](https://www.gamedev.net/forums/topic/643292-separation-of-concerns-in-game-architecture/)
-- [Separation of Concerns: The Cornerstone of Modern Software Development](https://nordicapis.com/separation-of-concerns-soc-the-cornerstone-of-modern-software-development/)
+### Visual Regression
+- [Visual Regression Testing Best Practices](https://medium.com/@ss-tech/the-ui-visual-regression-testing-best-practices-playbook-dc27db61ebe0)
+- [Best Regression Testing Tools 2026](https://bugbug.io/blog/software-testing/best-regression-testing-tools/)
 
-### Strangler Pattern Migration
-- [The Strangler Pattern: Kill Legacy Like a Boss](https://medium.com/@josesousa8/the-strangler-pattern-kill-legacy-like-a-boss-db3db41564ed)
-- [Strangler Fig Pattern - Azure Architecture Center](https://learn.microsoft.com/en-us/azure/architecture/patterns/strangler-fig)
-- [Strangler Pattern in Microservices System Design](https://thelinuxcode.com/strangler-pattern-in-microservices-system-design-a-practical-migration-playbook/)
+### ArgoCD
+- [Top 30 Argo CD Anti-Patterns](https://codefresh.io/blog/argo-cd-anti-patterns-for-gitops/)
+- [Troubleshooting Argo CD Sync Failures](https://www.mindfulchase.com/explore/troubleshooting-tips/troubleshooting-argo-cd-sync-failures-optimizing-deployments-and-resolving-resource-conflicts.html)
 
-### Game State Management Anti-Patterns
-- [State Pattern - Game Programming Patterns](https://gameprogrammingpatterns.com/state.html)
-- [Video game project management anti-patterns](https://dl.acm.org/doi/10.1145/3524494.3527623)
-- [Game State Management - Nuclex Games Blog](http://blog.nuclex-games.com/tutorials/cxx/game-state-management/)
+### API Contract Testing
+- [Contract Testing With Pact: Looked Good, Broke Anyway](https://medium.com/@codexlab/contract-testing-with-pact-looked-good-broke-anyway-3774270bdd15)
+- [Pact vs OpenAPI](https://www.speakeasy.com/blog/pact-vs-openapi)
+
+### Accessibility
+- [Playwright Accessibility Testing](https://playwright.dev/docs/accessibility-testing)
+- [Accessibility audits with Playwright, Axe, and GitHub Actions](https://dev.to/jacobandrewsky/accessibility-audits-with-playwright-axe-and-github-actions-2504)
+
+### Load Testing
+- [Load Testing Your API: k6 vs Artillery vs Locust](https://medium.com/@sohail_saifi/load-testing-your-api-k6-vs-artillery-vs-locust-66a8d7f575bd)
+- [Grafana k6](https://k6.io/)
+
+### Changelog Automation
+- [Conventional Commits](https://www.conventionalcommits.org/en/about/)
+- [standard-version](https://github.com/conventional-changelog/standard-version)
+
+### CI Performance
+- [Five tips for faster GitHub Actions](https://namespace.so/blog/5-tips-for-faster-github-actions)
+- [GitHub Actions CI optimization](https://markaicode.com/github-actions-cicd-optimization-slow-to-fast/)
 
 ---
 
-*Pitfalls research for: Real-time multiplayer game server refactoring*
-*Researched: 2026-02-01*
-*Based on ScrumQuest codebase analysis (server/gameState.ts: 2004 lines, 15 timers, 140+ socket events)*
+*Pitfalls research for: Adding SDLC best practices to existing TypeScript project*
+*Researched: 2026-02-02*
+*Based on ScrumQuest codebase analysis (existing CI/CD, Drizzle ORM, ArgoCD deployment)*
