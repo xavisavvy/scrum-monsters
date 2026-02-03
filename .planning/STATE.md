@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 11 - Accessibility Testing (COMPLETE)
+**Current focus:** Phase 12 - API Contract Testing (IN PROGRESS)
 
 ## Current Position
 
-Phase: 11 of 14 (Accessibility Testing)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-02-03 - Completed 11-03-PLAN.md
+Phase: 12 of 14 (API Contract Testing)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-03 - Completed 12-01-PLAN.md
 
-Progress: [████████░           ] 43%
+Progress: [█████████░          ] 47%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [████████░           ] 43%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 13 (v1.2 milestone)
-- Average duration: 2.8 minutes
-- Total execution time: 0.64 hours
+- Total plans completed: 14 (v1.2 milestone)
+- Average duration: 2.9 minutes
+- Total execution time: 0.68 hours
 
 *Updated after each plan completion*
 
@@ -94,6 +94,10 @@ Recent decisions affecting current work:
 - [11-03]: Playwright container ensures deterministic CI execution (same as visual regression)
 - [11-03]: PR comment automation provides actionable guidance on accessibility failures
 - [11-03]: Unique artifact names prevent workflow collisions (accessibility-report, a11y-test-results)
+- [12-01]: OpenAPI 3.1 chosen for modern JSON Schema support
+- [12-01]: Spectral extends spectral:oas with stricter operationId and description rules
+- [12-01]: Generated types marked linguist-generated in .gitattributes
+- [12-01]: OAuth callback and /metrics routes excluded (non-JSON responses)
 
 ### Pending Todos
 
@@ -110,7 +114,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 11-03-PLAN.md
+Stopped at: Completed 12-01-PLAN.md
 Resume file: None
 
-**Next step:** Phase 11 complete. Ready for Phase 12 (API Contract Testing)
+**Next step:** Continue with 12-02-PLAN.md (Contract Testing Implementation)
