@@ -141,11 +141,11 @@ Plans:
   1. GitHub workflow can trigger ArgoCD rollback to previous version
   2. Production rollbacks require manual approval via environment protection
   3. Rollback actions are recorded in GitHub Actions history for audit
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 14-01: TBD
-- [ ] 14-02: TBD
+- [ ] 14-01-PLAN.md — Unified rollback workflow with environment protection and rate limiting
+- [ ] 14-02-PLAN.md — Auto-rollback monitor and audit trail with commit notifications
 
 ## Progress
 
