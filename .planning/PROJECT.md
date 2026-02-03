@@ -53,13 +53,19 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(None — planning next milestone)
+- [ ] XP system with voting and combat triggers
+- [ ] Account-level progression with global unlocks
+- [ ] Class mastery system with class-specific rewards
+- [ ] Unique boss attack patterns per boss type
+- [ ] Boss difficulty scaling based on team level
+- [ ] Class-specific combat abilities
+- [ ] Team combo attacks for coordinated play
+- [ ] Combat items and consumables
 
 ### Out of Scope
 
-- XP/leveling system — future feature
-- New boss types or combat mechanics — keep existing combat
-- UI redesign — keep existing components
+- UI redesign — deferred to v1.4
+- Mobile responsiveness — deferred to v1.4
 - Database schema changes — in-memory state focus
 - Microservices architecture — network latency kills real-time performance
 - Full removal of lobby_updated fallback — intentionally retained for edge cases
@@ -85,14 +91,14 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - **v1.1 CI/CD Infrastructure** (2026-02-01): ESLint, Playwright E2E, Kubernetes/Kustomize, ArgoCD GitOps, observability
 - **v1.2 SDLC Best Practices** (2026-02-03): PR gates, security scanning, migrations, contracts, load testing, rollback
 
-## Next Milestone
+## Current Milestone: v1.3 Feature Work
 
-Planning required. Potential directions:
-- **v1.3 Feature Work**: XP/leveling system, new boss types, combat mechanics
-- **v1.3 UI Polish**: UI redesign, mobile responsiveness, accessibility improvements
-- **v2.0 Production Hardening**: Horizontal scaling, multi-region, disaster recovery
+**Goal:** Make the game more engaging with progression systems, varied boss battles, and deeper combat mechanics.
 
-Run `/gsd:new-milestone` to define scope and create roadmap.
+**Target features:**
+- XP/leveling system (account-wide + class mastery hybrid)
+- Boss attack pattern variety and difficulty scaling
+- Class abilities, team combos, and combat items
 
 **Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM, Pino, Prometheus
 
@@ -138,4 +144,4 @@ Run `/gsd:new-milestone` to define scope and create roadmap.
 | JSONL audit trail for rollbacks | Simple append-only format, git history provides immutability | ✓ Good |
 
 ---
-*Last updated: 2026-02-03 after v1.2 milestone completion*
+*Last updated: 2026-02-03 after v1.3 milestone start*
