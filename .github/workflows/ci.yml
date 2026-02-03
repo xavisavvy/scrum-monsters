@@ -228,7 +228,7 @@ jobs:
     name: CI Success
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    needs: [lint-and-typecheck, test, build, security-audit, license-check]
+    needs: [lint-and-typecheck, test, build, security-audit, license-check, validate-migrations]
     if: always()
 
     steps:
@@ -238,7 +238,8 @@ jobs:
              [[ "${{ needs.test.result }}" != "success" ]] || \
              [[ "${{ needs.build.result }}" != "success" ]] || \
              [[ "${{ needs.security-audit.result }}" != "success" ]] || \
-             [[ "${{ needs.license-check.result }}" != "success" ]]; then
+             [[ "${{ needs.license-check.result }}" != "success" ]] || \
+             [[ "${{ needs.validate-migrations.result }}" != "success" ]]; then
             echo "One or more jobs failed"
             exit 1
           fi
