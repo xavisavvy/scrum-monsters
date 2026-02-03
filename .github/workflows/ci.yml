@@ -51,9 +51,8 @@ jobs:
       - name: Type check
         run: npm run check
 
-      # TODO: Add ESLint when configured
-      # - name: Lint
-      #   run: npm run lint
+      - name: Lint
+        run: npm run lint
 
   test:
     name: Test

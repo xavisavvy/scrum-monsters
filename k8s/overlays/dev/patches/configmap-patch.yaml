@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scrumquest-config
+data:
+  NODE_ENV: "development"
+  LOG_LEVEL: "debug"
+  ALLOWED_ORIGINS: "http://localhost:5000,http://scrumquest-dev.local"

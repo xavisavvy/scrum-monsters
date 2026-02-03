@@ -1,5 +1,42 @@
 # Project Milestones: ScrumQuest
 
+## v1.1 CI/CD Infrastructure (Shipped: 2026-02-02)
+
+**Delivered:** Comprehensive CI/CD infrastructure including ESLint, E2E testing, Kubernetes deployment, observability, and GitOps.
+
+**Phases completed:** 8
+
+**Key accomplishments:**
+
+- Configured ESLint with TypeScript, React, and React Hooks rules
+- Added Playwright E2E testing with lobby and battle flow tests
+- Restructured Kubernetes manifests into Kustomize base/overlays (dev/staging/prod)
+- Implemented Sealed Secrets for encrypted secrets management
+- Added cert-manager for automatic TLS certificates (Let's Encrypt)
+- Created Pino structured logging with child loggers and field redaction
+- Built Prometheus metrics endpoint with custom game metrics
+- Configured Grafana + Loki monitoring stack
+- Set up ArgoCD GitOps with auto-sync (dev) and manual sync (prod)
+
+**Files created:**
+
+- `eslint.config.mjs` - ESLint flat config
+- `playwright.config.ts` - E2E test configuration
+- `e2e/*.spec.ts` - Playwright test files
+- `server/logger.ts` - Pino structured logging
+- `server/metrics.ts` - Prometheus metrics
+- `k8s/base/*` - Base Kubernetes manifests
+- `k8s/overlays/*` - Environment-specific overlays
+- `k8s/infrastructure/*` - Infrastructure components
+- `k8s/argocd-apps/*` - ArgoCD Application CRDs
+- `.github/workflows/e2e.yml` - E2E test workflow
+- `.github/workflows/deploy.yml` - Deployment workflow
+- `scripts/seal-secrets.sh` - Secrets helper script
+
+**Git range:** `5cf8a62` → (current)
+
+---
+
 ## v1.0 Domain Separation (Shipped: 2026-02-02)
 
 **Delivered:** Refactored monolithic GameStateManager into three domain managers with EventBus coordination, fine-grained events, and new estimation-before-battle game flow.

@@ -12,11 +12,22 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 Phase: N/A (milestone complete)
 Plan: N/A
 Status: Ready to plan next milestone
-Last activity: 2026-02-02 — v1.0 milestone complete
+Last activity: 2026-02-02 — v1.1 milestone complete
 
-Progress: v1.0 SHIPPED
+Progress: v1.1 SHIPPED
 
 ## Milestone Summary
+
+**v1.1 CI/CD Infrastructure** shipped 2026-02-02:
+- 8 phases completed
+- ESLint with TypeScript/React rules
+- Playwright E2E testing
+- Kustomize overlays (dev/staging/prod)
+- Sealed Secrets for encrypted secrets
+- cert-manager for TLS certificates
+- Pino structured logging
+- Prometheus metrics + Grafana + Loki monitoring
+- ArgoCD GitOps deployment
 
 **v1.0 Domain Separation** shipped 2026-02-02:
 - 6 phases, 30 plans completed
@@ -30,7 +41,7 @@ Progress: v1.0 SHIPPED
 
 ### Decisions
 
-Key decisions from v1.0 logged in PROJECT.md.
+Key decisions from v1.0 and v1.1 logged in PROJECT.md.
 
 ### Pending Todos
 
@@ -43,7 +54,7 @@ None active.
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: v1.0 milestone completion
+Stopped at: v1.1 milestone completion
 Resume file: None
 
-**Next step:** `/gsd:new-milestone` to define v1.1 or v2.0 goals
+**Next step:** `/gsd:new-milestone` to define v1.2 or v2.0 goals

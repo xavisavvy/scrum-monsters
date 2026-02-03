@@ -35,7 +35,15 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(None — define in next milestone)
+- ✓ ESLint configuration with TypeScript/React rules — v1.1
+- ✓ E2E testing with Playwright — v1.1
+- ✓ Kustomize overlays (dev/staging/prod) — v1.1
+- ✓ Sealed Secrets for encrypted secrets in Git — v1.1
+- ✓ cert-manager for automatic TLS certificates — v1.1
+- ✓ Pino structured JSON logging — v1.1
+- ✓ Prometheus metrics endpoint — v1.1
+- ✓ Grafana + Loki monitoring stack — v1.1
+- ✓ ArgoCD GitOps deployment — v1.1
 
 ### Out of Scope
 
@@ -48,14 +56,17 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ## Context
 
-**Current State (v1.0 shipped):**
+**Current State (v1.1 shipped):**
 - ~43k lines of TypeScript across client/server/shared
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager
 - EventBus-based coordination with scoped subscriptions
 - Fine-grained events with 80-95% bandwidth reduction
 - 284+ tests including integration suite
+- Full CI/CD infrastructure with ESLint, Playwright E2E, Kubernetes overlays
+- GitOps deployment with ArgoCD
+- Observability stack: Prometheus metrics, Grafana dashboards, Loki logs
 
-**Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM
+**Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM, Pino, Prometheus
 
 **Codebase map:** `.planning/codebase/` (created during v1.0)
 
@@ -86,6 +97,11 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Spectator minion system | Makes spectator role engaging, adds boss-side combat | ✓ Good |
 | Retain lobby_updated as fallback | Safety net during migration, documented edge cases | ✓ Good |
 | 10s countdown with scaling multiplier | Creates dramatic JRPG moment, rewards fast voting | ✓ Good |
+| Kustomize overlays over Helm | Simpler, native kubectl support, good for single app | ✓ Good |
+| Sealed Secrets over Vault | Lower complexity for self-hosted, encryption at rest | ✓ Good |
+| ArgoCD over Flux | Better UI, easier debugging, wider adoption | ✓ Good |
+| Pino over Winston | Better performance, native JSON, smaller bundle | ✓ Good |
+| Prometheus + Loki over ELK | Lower resource usage, Grafana unification | ✓ Good |
 
 ---
-*Last updated: 2026-02-02 after v1.0 milestone*
+*Last updated: 2026-02-02 after v1.1 milestone*

@@ -1,0 +1,78 @@
+# ArgoCD Application for ScrumQuest Development Environment
+#
+# Features:
+#   - Auto-sync on push to main branch
+#   - Self-healing (auto-corrects drift)
+#   - Pruning (removes orphaned resources)
+#
+# Deploy:
+#   kubectl apply -f k8s/argocd-apps/scrumquest-dev.yaml
+#
+# Monitor:
+#   argocd app get scrumquest-dev
+#   argocd app sync scrumquest-dev
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: scrumquest-dev
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/environment: dev
+  # Finalize protection - prevents accidental deletion
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    # Repository URL - update to your actual repo
+    repoURL: https://github.com/your-org/scrumquest.git
+    targetRevision: main
+    path: k8s/overlays/dev
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: scrumquest-dev
+
+  syncPolicy:
+    # Auto-sync enabled for dev
+    automated:
+      prune: true
+      selfHeal: true
+      # Allow empty - don't block if no changes
+      allowEmpty: false
+
+    syncOptions:
+      # Create namespace if it doesn't exist
+      - CreateNamespace=true
+      # Validate manifests before applying
+      - Validate=true
+      # Apply out of sync only
+      - ApplyOutOfSyncOnly=true
+      # Server-side apply for better conflict resolution
+      - ServerSideApply=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health check configuration
+  ignoreDifferences:
+    # Ignore replica count changes (handled by HPA)
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  # Notifications (optional - requires notification controller)
+  # notifications:
+  #   triggers:
+  #     - on-sync-succeeded
+  #     - on-sync-failed
+  #   services:
+  #     - slack
