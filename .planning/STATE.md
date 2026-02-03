@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 9 of 14 (Database Migrations)
-Plan: 1 of 3 in current phase (COMPLETE)
+Plan: 2 of 3 in current phase (COMPLETE)
 Status: In progress
-Last activity: 2026-02-03 - Completed 09-01-PLAN.md (migration workflow setup)
+Last activity: 2026-02-03 - Completed 09-02-PLAN.md (CI migration validation)
 
-Progress: [████░               ] 28%
+Progress: [█████░              ] 30%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [████░               ] 28%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 5 (v1.2 milestone)
-- Average duration: 3.6 minutes
-- Total execution time: 0.31 hours
+- Total plans completed: 6 (v1.2 milestone)
+- Average duration: 3.2 minutes
+- Total execution time: 0.33 hours
 
 *Updated after each plan completion*
 
@@ -65,6 +65,10 @@ Recent decisions affecting current work:
 - [09-01]: Remove DATABASE_URL requirement from drizzle.config.ts (generate doesn't need DB)
 - [09-01]: Migration naming with drizzle-kit index prefix (0000_, 0001_, etc.)
 - [09-01]: migrations/meta/ must be committed for team consistency
+- [09-02]: PostgreSQL 16 Alpine for CI (matches production version)
+- [09-02]: Health checks ensure database ready before migration steps
+- [09-02]: Two-step validation: apply migrations, then check drift
+- [09-02]: ci-success gates on validate-migrations for PR blocking
 
 ### Pending Todos
 
@@ -80,7 +84,17 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 09-01-PLAN.md
+Stopped at: Completed 09-02-PLAN.md
 Resume file: None
 
-**Next step:** `/gsd:execute-plan 09-02` for CI migration validation
+**Next step:** `/gsd:execute-plan 09-03` for migration rollback mechanism
+
+Previous plan summary (09-02):
+- validate-migrations job added with PostgreSQL 16 Alpine service container
+- Two-step validation: apply migrations (SQL errors), check drift (missing migrations)
+- ci-success job now gates on validate-migrations result
+- PRs with schema drift blocked from merging
+
+Current ci.yml structure:
+- Jobs: lint-and-typecheck, test, build, security-audit, license-check, validate-migrations, ci-success, update-coverage-badge
+- ci-success needs: [lint-and-typecheck, test, build, security-audit, license-check, validate-migrations]
