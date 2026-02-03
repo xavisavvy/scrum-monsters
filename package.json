@@ -11,6 +11,7 @@
     "test:e2e:ui": "playwright test --ui",
     "test:visual": "playwright test e2e/visual/",
     "test:visual:update": "playwright test e2e/visual/ --update-snapshots",
+    "test:a11y": "playwright test e2e/a11y/",
     "dev": "tsx server/index.ts",
     "build": "vite build && esbuild server/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
