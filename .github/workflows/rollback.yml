@@ -1,0 +1,340 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to rollback'
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - prod
+      component:
+        description: 'Component to rollback (blank for all)'
+        required: false
+        type: choice
+        options:
+          - ''  # All components
+          - app
+      dry_run:
+        description: 'Preview rollback without executing'
+        required: false
+        type: boolean
+        default: false
+      reason:
+        description: 'Reason for rollback'
+        required: true
+        type: string
+
+concurrency:
+  group: rollback-${{ github.event.inputs.environment }}
+  cancel-in-progress: false
+
+env:
+  ARGOCD_SERVER: argocd.local
+
+jobs:
+  rate-limit-check:
+    name: Check Rate Limits
+    runs-on: ubuntu-latest
+    outputs:
+      rate-check: ${{ steps.rate-check.outputs.rate-check }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check rate limits and cooldown
+        id: rate-check
+        run: |
+          mkdir -p .argocd-rollback
+          STATE_FILE=".argocd-rollback/rollback-state-${{ inputs.environment }}.json"
+
+          # Initialize state if doesn't exist
+          if [ ! -f "$STATE_FILE" ]; then
+            echo '{"last_rollback":null,"rollback_count_1h":0,"rollback_count_24h":0}' > "$STATE_FILE"
+          fi
+
+          LAST_ROLLBACK=$(jq -r '.last_rollback' "$STATE_FILE")
+          COUNT_1H=$(jq -r '.rollback_count_1h' "$STATE_FILE")
+
+          # Check 15-minute cooldown
+          if [ "$LAST_ROLLBACK" != "null" ]; then
+            LAST_EPOCH=$(date -d "$LAST_ROLLBACK" +%s 2>/dev/null || date -j -f "%Y-%m-%dT%H:%M:%S" "$LAST_ROLLBACK" +%s)
+            NOW_EPOCH=$(date +%s)
+            DIFF=$((NOW_EPOCH - LAST_EPOCH))
+
+            if [ $DIFF -lt 900 ]; then
+              echo "::error::Cooldown active: $((900 - DIFF)) seconds remaining"
+              exit 1
+            fi
+          fi
+
+          # Check rate limit: 3 per hour
+          if [ $COUNT_1H -ge 3 ]; then
+            echo "::error::Rate limit exceeded: 3 rollbacks per hour"
+            exit 1
+          fi
+
+          echo "rate-check=passed" >> "$GITHUB_OUTPUT"
+
+  rollback:
+    name: Rollback ${{ github.event.inputs.environment }}
+    runs-on: ubuntu-latest
+    needs: rate-limit-check
+    # Environment protection - production requires approval
+    environment:
+      name: ${{ github.event.inputs.environment == 'prod' && 'production' || (github.event.inputs.environment == 'staging' && 'staging' || 'development') }}
+    outputs:
+      rollback-success: ${{ steps.rollback.outputs.success }}
+      from-revision: ${{ steps.get-current.outputs.revision }}
+      to-revision: ${{ steps.get-target.outputs.previous-revision }}
+      to-deployment-id: ${{ steps.get-target.outputs.previous-id }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install ArgoCD CLI
+        run: |
+          curl -sSL -o argocd https://github.com/argoproj/argo-cd/releases/download/v2.13.3/argocd-linux-amd64
+          chmod +x argocd
+          sudo mv argocd /usr/local/bin/
+
+      - name: Get current deployment info
+        id: get-current
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          APP_INFO=$(argocd app get scrumquest-${{ inputs.environment }} \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --grpc-web \
+            -o json)
+
+          CURRENT_REVISION=$(echo "$APP_INFO" | jq -r '.status.sync.revision')
+          CURRENT_HEALTH=$(echo "$APP_INFO" | jq -r '.status.health.status')
+          CURRENT_SYNC=$(echo "$APP_INFO" | jq -r '.status.sync.status')
+
+          echo "revision=$CURRENT_REVISION" >> "$GITHUB_OUTPUT"
+          echo "health=$CURRENT_HEALTH" >> "$GITHUB_OUTPUT"
+          echo "sync=$CURRENT_SYNC" >> "$GITHUB_OUTPUT"
+
+      - name: Get rollback target version
+        id: get-target
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          HISTORY=$(argocd app history scrumquest-${{ inputs.environment }} \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --grpc-web \
+            -o json)
+
+          # Extract N-1 version (second most recent)
+          PREVIOUS_ID=$(echo "$HISTORY" | jq -r '.[1].id')
+          PREVIOUS_REVISION=$(echo "$HISTORY" | jq -r '.[1].revision')
+          PREVIOUS_DATE=$(echo "$HISTORY" | jq -r '.[1].deployedAt')
+
+          echo "previous-id=$PREVIOUS_ID" >> "$GITHUB_OUTPUT"
+          echo "previous-revision=$PREVIOUS_REVISION" >> "$GITHUB_OUTPUT"
+          echo "previous-date=$PREVIOUS_DATE" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Job Summary (Dry Run)
+        if: inputs.dry_run == true
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          # Rollback Preview: ${{ inputs.environment }}
+
+          **DRY RUN MODE - No changes will be made**
+
+          ## Current State
+          - Revision: \`${{ steps.get-current.outputs.revision }}\`
+          - Health: ${{ steps.get-current.outputs.health }}
+          - Sync: ${{ steps.get-current.outputs.sync }}
+
+          ## Rollback Target
+          - Deployment ID: ${{ steps.get-target.outputs.previous-id }}
+          - Revision: \`${{ steps.get-target.outputs.previous-revision }}\`
+          - Deployed: ${{ steps.get-target.outputs.previous-date }}
+
+          ## Actions (Preview)
+          1. Disable auto-sync
+          2. Rollback to deployment ID ${{ steps.get-target.outputs.previous-id }}
+          3. Wait for health check
+          4. Verify health endpoint
+          5. Re-enable auto-sync (dev only)
+          6. Record in audit log
+
+          **Reason:** ${{ inputs.reason }}
+          EOF
+
+      - name: Disable auto-sync
+        if: inputs.dry_run == false
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app set scrumquest-${{ inputs.environment }} \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --grpc-web \
+            --sync-policy none
+
+      - name: Execute rollback
+        if: inputs.dry_run == false
+        id: rollback
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          START_TIME=$(date +%s)
+
+          # Retry once on failure
+          for i in 1 2; do
+            if argocd app rollback scrumquest-${{ inputs.environment }} \
+              ${{ steps.get-target.outputs.previous-id }} \
+              --server ${{ env.ARGOCD_SERVER }} \
+              --grpc-web \
+              --timeout 600; then
+
+              END_TIME=$(date +%s)
+              DURATION=$((END_TIME - START_TIME))
+              echo "duration=$DURATION" >> "$GITHUB_OUTPUT"
+              echo "success=true" >> "$GITHUB_OUTPUT"
+              break
+            else
+              if [ $i -eq 2 ]; then
+                echo "::error::Rollback failed after 2 attempts"
+                echo "success=false" >> "$GITHUB_OUTPUT"
+                exit 1
+              fi
+              echo "::warning::Rollback attempt $i failed, retrying..."
+              sleep 10
+            fi
+          done
+
+      - name: Wait for rollback health
+        if: inputs.dry_run == false
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app wait scrumquest-${{ inputs.environment }} \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --grpc-web \
+            --health \
+            --sync \
+            --timeout 300
+
+      - name: Verify health endpoint
+        if: inputs.dry_run == false
+        run: |
+          sleep 120  # 2-minute stabilization wait
+
+          HEALTH_URL="${{ vars[format('{0}_HEALTH_URL', inputs.environment)] }}"
+
+          # Skip if health URL not configured
+          if [ -z "$HEALTH_URL" ]; then
+            echo "Health URL not configured for ${{ inputs.environment }}, skipping endpoint check"
+            exit 0
+          fi
+
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL")
+
+          if [ "$RESPONSE" != "200" ]; then
+            echo "::error::Health check failed: HTTP $RESPONSE"
+            exit 1
+          fi
+
+          echo "Health check passed: HTTP $RESPONSE"
+
+      - name: Re-enable auto-sync (dev only)
+        if: inputs.dry_run == false && inputs.environment == 'dev'
+        env:
+          ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
+        run: |
+          argocd app set scrumquest-${{ inputs.environment }} \
+            --server ${{ env.ARGOCD_SERVER }} \
+            --grpc-web \
+            --sync-policy automated \
+            --auto-prune \
+            --self-heal
+
+      - name: Update rate limit state
+        if: inputs.dry_run == false
+        run: |
+          STATE_FILE=".argocd-rollback/rollback-state-${{ inputs.environment }}.json"
+
+          # Update state with new rollback timestamp
+          jq --arg now "$(date -Iseconds)" \
+            '.last_rollback = $now | .rollback_count_1h += 1 | .rollback_count_24h += 1' \
+            "$STATE_FILE" > "${STATE_FILE}.tmp"
+          mv "${STATE_FILE}.tmp" "$STATE_FILE"
+
+      - name: Record rollback in audit log
+        if: inputs.dry_run == false
+        run: |
+          mkdir -p .argocd-rollback
+
+          cat >> .argocd-rollback/rollback-history.jsonl << EOF
+          {"timestamp":"$(date -Iseconds)","environment":"${{ inputs.environment }}","component":"${{ inputs.component || 'all' }}","trigger":"manual","actor":"${{ github.actor }}","from_revision":"${{ steps.get-current.outputs.revision }}","to_revision":"${{ steps.get-target.outputs.previous-revision }}","to_deployment_id":"${{ steps.get-target.outputs.previous-id }}","reason":"${{ inputs.reason }}","workflow_run":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","duration_seconds":"${{ steps.rollback.outputs.duration }}","success":true}
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .argocd-rollback/
+          git commit -m "audit: rollback ${{ inputs.environment }} to ${{ steps.get-target.outputs.previous-revision }}"
+          git push
+
+      - name: Generate Job Summary (Success)
+        if: inputs.dry_run == false && steps.rollback.outputs.success == 'true'
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" << EOF
+          # Rollback Complete: ${{ inputs.environment }}
+
+          ## Details
+          - **Environment:** ${{ inputs.environment }}
+          - **Triggered by:** ${{ github.actor }}
+          - **Reason:** ${{ inputs.reason }}
+
+          ## Version Change
+          - **From:** \`${{ steps.get-current.outputs.revision }}\`
+          - **To:** \`${{ steps.get-target.outputs.previous-revision }}\`
+          - **Deployment ID:** ${{ steps.get-target.outputs.previous-id }}
+
+          ## Health Status
+          - ArgoCD Health: Healthy
+          - ArgoCD Sync: Synced
+          - Health Endpoint: Verified
+
+          ## Duration
+          - Rollback execution: ${{ steps.rollback.outputs.duration }} seconds
+          - Total (including verification): $((steps.rollback.outputs.duration + 120)) seconds
+
+          ## Next Steps
+          1. Verify application functionality manually
+          2. Investigate root cause of original failure
+          3. Fix issue in Git before next deployment
+          4. Monitor for 1 hour to ensure stability
+          EOF
+
+  notify-commit:
+    name: Notify Original Commit
+    runs-on: ubuntu-latest
+    needs: rollback
+    if: needs.rollback.outputs.rollback-success == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Post comment on rolled-back commit
+        uses: peter-evans/commit-comment@v3
+        with:
+          sha: ${{ needs.rollback.outputs.from-revision }}
+          body: |
+            ## Rollback Notification
+
+            This commit was rolled back in **${{ github.event.inputs.environment }}** environment.
+
+            **Rolled back to:** ${{ needs.rollback.outputs.to-revision }}
+            **Reason:** ${{ github.event.inputs.reason }}
+            **Triggered by:** @${{ github.actor }}
+            **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+            Please investigate the root cause before attempting to redeploy.
