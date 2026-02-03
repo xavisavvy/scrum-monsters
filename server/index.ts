@@ -123,14 +123,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client
-  const port = 5000;
+  // Serve the app (both API and client)
+  const port = parseInt(process.env.PORT || '5001', 10);
   server.listen({
     port,
-    host: "0.0.0.0",
-    // Remove reusePort in production to avoid load balancer issues
-    reusePort: process.env.NODE_ENV === "development",
+    host: process.env.HOST || "127.0.0.1",
   }, () => {
     log(`serving on port ${port}`);
   });

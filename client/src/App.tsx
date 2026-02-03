@@ -278,12 +278,19 @@ function App() {
     }
   }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
 
+  // Setup fine-grained event handlers (separate effect to avoid teardown on appState changes)
+  useEffect(() => {
+    if (!socket) return;
+    setupEventHandlers(socket);
+    return () => {
+      teardownEventHandlers(socket);
+      useEventSync.getState().reset();
+    };
+  }, [socket]);
+
   // Setup WebSocket event listeners
   useEffect(() => {
     if (!socket) return;
-
-    // Setup fine-grained event handlers
-    setupEventHandlers(socket);
 
     socket.on('lobby_created', ({ lobby, inviteLink }) => {
       setLobby(lobby);
@@ -513,8 +520,6 @@ function App() {
     });
 
     return () => {
-      teardownEventHandlers(socket);
-      useEventSync.getState().reset();
       socket.off('lobby_created');
       socket.off('lobby_joined');
       socket.off('lobby_sync');
