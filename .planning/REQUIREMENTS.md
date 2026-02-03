@@ -24,8 +24,8 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 - [x] **TEST-01**: CI fails if test coverage drops below 70% threshold
 - [x] **TEST-02**: PR comments show coverage diff with lines changed
-- [ ] **TEST-03**: Playwright captures and compares UI screenshots for visual regression
-- [ ] **TEST-04**: E2E tests validate accessibility using axe-core (no critical violations)
+- [x] **TEST-03**: Playwright captures and compares UI screenshots for visual regression
+- [x] **TEST-04**: E2E tests validate accessibility using axe-core (no critical violations)
 
 ### Database
 
@@ -94,8 +94,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEC-04 | Phase 8 | Complete |
 | TEST-01 | Phase 7 | Complete |
 | TEST-02 | Phase 7 | Complete |
-| TEST-03 | Phase 10 | Pending |
-| TEST-04 | Phase 11 | Pending |
+| TEST-03 | Phase 10 | Complete |
+| TEST-04 | Phase 11 | Complete |
 | DB-01 | Phase 9 | Complete |
 | DB-02 | Phase 9 | Complete |
 | DB-03 | Phase 9 | Complete |
