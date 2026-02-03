@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 13 of 14 (Load Testing)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-03 - Completed 13-02-PLAN.md
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-03 - Completed 13-03-PLAN.md
 
-Progress: [████████████░       ] 62%
+Progress: [█████████████░      ] 65%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [████████████░       ] 62%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 18 (v1.2 milestone)
-- Average duration: 2.8 minutes
-- Total execution time: 0.86 hours
+- Total plans completed: 19 (v1.2 milestone)
+- Average duration: 2.7 minutes
+- Total execution time: 0.89 hours
 
 *Updated after each plan completion*
 
@@ -113,6 +113,11 @@ Recent decisions affecting current work:
 - [13-02]: WebSocket p95 < 100ms in prod (stricter than HTTP for real-time)
 - [13-02]: 25-second heartbeat interval for idle connection test
 - [13-02]: 5-minute idle test runs nightly only (never blocks PRs)
+- [13-03]: Load tests run nightly only (never block PRs)
+- [13-03]: All k6 runs use continue-on-error: true (informational only)
+- [13-03]: Artifacts retained for 30 days for trend analysis
+- [13-03]: Idle connection test runs on schedule + manual trigger
+- [13-03]: k6 installed from GitHub releases (not npm package)
 
 ### Pending Todos
 
@@ -129,7 +134,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 13-02-PLAN.md
+Stopped at: Completed 13-03-PLAN.md (Phase 13 complete)
 Resume file: None
 
-**Next step:** Continue Phase 13 with Plan 03 (CI integration for load tests)
+**Next step:** Start Phase 14 - Rollback Automation
