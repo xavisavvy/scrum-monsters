@@ -1,0 +1,16 @@
+extends:
+  - spectral:oas
+
+rules:
+  # Require operationId on all operations
+  operation-operationId: error
+
+  # Require descriptions
+  operation-description: warn
+  info-description: error
+
+  # Validate examples against schemas
+  oas3-valid-schema-example: error
+
+  # Require tags on operations
+  operation-tags: warn
