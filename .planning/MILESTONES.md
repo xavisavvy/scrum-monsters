@@ -1,5 +1,31 @@
 # Project Milestones: ScrumQuest
 
+## v1.2 SDLC Best Practices (Shipped: 2026-02-03)
+
+**Delivered:** Engineering best practices for PR workflow, security scanning, test quality gates, database migrations, API contracts, load testing, and deployment safety.
+
+**Phases completed:** 7-14 (21 plans total)
+
+**Key accomplishments:**
+- PR quality gates with required reviews, templates, and CI status checks
+- Defense-in-depth security: CodeQL SAST, gitleaks secrets, audit-ci vulnerabilities, license compliance
+- Database migration safety with versioned Drizzle migrations, CI validation, and ArgoCD PreSync hooks
+- Comprehensive testing: visual regression, accessibility (axe-core), API contracts (Schemathesis), load testing (k6)
+- Deployment resilience: ArgoCD rollback workflow with environment protection and JSONL audit trail
+- Observability: nightly performance baselines, PR coverage reporting, contract test visibility
+
+**Stats:**
+- 120 files created/modified
+- +27,295 lines of TypeScript/YAML
+- 8 phases, 21 plans
+- 2 days from start to ship
+
+**Git range:** `feat(07-01)` -> `docs(14)`
+
+**What's next:** v1.3 or feature work (XP/leveling, new boss types, UI redesign)
+
+---
+
 ## v1.1 CI/CD Infrastructure (Shipped: 2026-02-02)
 
 **Delivered:** Comprehensive CI/CD infrastructure including ESLint, E2E testing, Kubernetes deployment, observability, and GitOps.
