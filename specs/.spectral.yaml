@@ -1,16 +1,34 @@
+# Spectral linting rules for API specifications
+# Supports both OpenAPI 3.x and AsyncAPI 3.x
+
 extends:
   - spectral:oas
+  - spectral:asyncapi
 
 rules:
+  # ===========================================
+  # OpenAPI Rules (applied to openapi.yaml)
+  # ===========================================
+
   # Require operationId on all operations
   operation-operationId: error
 
-  # Require descriptions
+  # Require descriptions for better documentation
   operation-description: warn
   info-description: error
 
   # Validate examples against schemas
   oas3-valid-schema-example: error
 
-  # Require tags on operations
+  # Require tags on operations for organization
   operation-tags: warn
+
+  # ===========================================
+  # AsyncAPI Rules (applied to asyncapi.yaml)
+  # ===========================================
+
+  # Require info description for API documentation
+  asyncapi-info-description: error
+
+  # Recommend tags for event organization
+  asyncapi-tags: warn
