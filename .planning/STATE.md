@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-02)
 ## Current Position
 
 Phase: 12 of 14 (API Contract Testing)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: In progress
-Last activity: 2026-02-03 - Completed 12-01-PLAN.md
+Last activity: 2026-02-03 - Completed 12-02-PLAN.md
 
-Progress: [█████████░          ] 47%
+Progress: [█████████░          ] 50%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [█████████░          ] 47%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 14 (v1.2 milestone)
-- Average duration: 2.9 minutes
-- Total execution time: 0.68 hours
+- Total plans completed: 15 (v1.2 milestone)
+- Average duration: 3.1 minutes
+- Total execution time: 0.77 hours
 
 *Updated after each plan completion*
 
@@ -98,6 +98,9 @@ Recent decisions affecting current work:
 - [12-01]: Spectral extends spectral:oas with stricter operationId and description rules
 - [12-01]: Generated types marked linguist-generated in .gitattributes
 - [12-01]: OAuth callback and /metrics routes excluded (non-JSON responses)
+- [12-02]: AsyncAPI 3.0 format for WebSocket API documentation
+- [12-02]: Zod schemas separate from types for incremental adoption
+- [12-02]: ClientEventSchemas registry for dynamic middleware validation
 
 ### Pending Todos
 
@@ -114,7 +117,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 12-01-PLAN.md
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
 
-**Next step:** Continue with 12-02-PLAN.md (Contract Testing Implementation)
+**Next step:** Continue with 12-03-PLAN.md (Contract Testing CI Integration)
