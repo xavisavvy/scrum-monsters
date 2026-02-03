@@ -32,9 +32,6 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Players in mixed states (estimating vs fighting) — v1.0
 - ✓ Spectator minion system — v1.0
 - ✓ Boss death wait state — v1.0
-
-### Active
-
 - ✓ ESLint configuration with TypeScript/React rules — v1.1
 - ✓ E2E testing with Playwright — v1.1
 - ✓ Kustomize overlays (dev/staging/prod) — v1.1
@@ -44,6 +41,19 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Prometheus metrics endpoint — v1.1
 - ✓ Grafana + Loki monitoring stack — v1.1
 - ✓ ArgoCD GitOps deployment — v1.1
+
+### Active
+
+- [ ] PR workflow with required reviews and templates — v1.2
+- [ ] Security scanning (CodeQL/Snyk SAST) in CI — v1.2
+- [ ] Test coverage thresholds (80%+ enforced) — v1.2
+- [ ] Visual regression testing with Playwright — v1.2
+- [ ] Drizzle versioned migrations — v1.2
+- [ ] API contract testing with OpenAPI — v1.2
+- [ ] Load testing with k6 — v1.2
+- [ ] Accessibility testing with axe-core — v1.2
+- [ ] Automated changelog publishing — v1.2
+- [ ] ArgoCD rollback automation — v1.2
 
 ### Out of Scope
 
@@ -65,6 +75,22 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Full CI/CD infrastructure with ESLint, Playwright E2E, Kubernetes overlays
 - GitOps deployment with ArgoCD
 - Observability stack: Prometheus metrics, Grafana dashboards, Loki logs
+
+## Current Milestone: v1.2 SDLC Best Practices
+
+**Goal:** Implement engineering best practices for PR workflow, security scanning, test quality gates, and deployment safety.
+
+**Target features:**
+- PR workflow with required reviews and templates
+- Security scanning (CodeQL/Snyk) in CI pipeline
+- Test coverage thresholds (80%+ enforced)
+- Visual regression testing with Playwright
+- Drizzle versioned database migrations
+- API contract testing with OpenAPI validation
+- Load testing with k6 performance baselines
+- Accessibility testing with axe-core in E2E
+- Automated changelog publishing on releases
+- ArgoCD rollback automation on failures
 
 **Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM, Pino, Prometheus
 
@@ -104,4 +130,4 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Prometheus + Loki over ELK | Lower resource usage, Grafana unification | ✓ Good |
 
 ---
-*Last updated: 2026-02-02 after v1.1 milestone*
+*Last updated: 2026-02-02 after v1.2 milestone start*
