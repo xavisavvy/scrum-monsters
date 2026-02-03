@@ -41,9 +41,9 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### Performance
 
-- [ ] **PERF-01**: k6 load tests establish baseline for HTTP endpoints
-- [ ] **PERF-02**: k6 load tests establish baseline for WebSocket connections
-- [ ] **PERF-03**: CI runs smoke load tests on PRs (quick performance check)
+- [x] **PERF-01**: k6 load tests establish baseline for HTTP endpoints
+- [x] **PERF-02**: k6 load tests establish baseline for WebSocket connections
+- [x] **PERF-03**: Nightly load tests run on schedule to track performance trends
 
 ### Deployment
 
@@ -102,9 +102,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | API-01 | Phase 12 | Complete |
 | API-02 | Phase 12 | Complete |
 | API-03 | Phase 12 | Complete |
-| PERF-01 | Phase 13 | Pending |
-| PERF-02 | Phase 13 | Pending |
-| PERF-03 | Phase 13 | Pending |
+| PERF-01 | Phase 13 | Complete |
+| PERF-02 | Phase 13 | Complete |
+| PERF-03 | Phase 13 | Complete |
 | DEPLOY-01 | Phase 14 | Pending |
 | DEPLOY-02 | Phase 14 | Pending |
 | DEPLOY-03 | Phase 14 | Pending |
@@ -116,4 +116,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after roadmap creation*
+*Last updated: 2026-02-03 after Phase 13 completion*
