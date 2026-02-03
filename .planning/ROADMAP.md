@@ -96,10 +96,12 @@ Plans:
   1. E2E tests run axe-core accessibility scans on critical paths
   2. CI fails on critical accessibility violations (WCAG 2.1 A/AA)
   3. Non-critical violations are reported but do not block merge
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 11-01: TBD
+- [ ] 11-01-PLAN.md — A11y test infrastructure (fixture, helpers, npm script)
+- [ ] 11-02-PLAN.md — Accessibility test specs for lobby and battle flows
+- [ ] 11-03-PLAN.md — CI workflow with PR comments and artifact upload
 
 ### Phase 12: API Contract Testing
 **Goal**: API changes validated against documented spec
@@ -154,7 +156,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | 8. Security Hardening | 2/2 | Complete | 2026-02-02 |
 | 9. Database Migrations | 3/3 | Complete | 2026-02-03 |
 | 10. Visual Regression | 3/3 | Complete | 2026-02-03 |
-| 11. Accessibility Testing | 0/1 | Not started | - |
+| 11. Accessibility Testing | 0/3 | Not started | - |
 | 12. API Contract Testing | 0/2 | Not started | - |
 | 13. Load Testing | 0/2 | Not started | - |
 | 14. Rollback Automation | 0/2 | Not started | - |
