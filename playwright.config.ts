@@ -34,6 +34,9 @@ export default defineConfig({
     reducedMotion: "reduce",
   },
 
+  // Use platform-agnostic snapshot paths (CI Docker ensures consistent rendering)
+  snapshotPathTemplate: "{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}",
+
   // Configure projects for major browsers
   projects: [
     {
