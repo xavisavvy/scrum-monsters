@@ -29,9 +29,9 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### Database
 
-- [ ] **DB-01**: Schema changes use Drizzle versioned migrations instead of db:push
-- [ ] **DB-02**: CI validates migrations are generated for schema changes
-- [ ] **DB-03**: ArgoCD runs migrations via PreSync hook before deployment
+- [x] **DB-01**: Schema changes use Drizzle versioned migrations instead of db:push
+- [x] **DB-02**: CI validates migrations are generated for schema changes
+- [x] **DB-03**: ArgoCD runs migrations via PreSync hook before deployment
 
 ### API Contracts
 
@@ -96,9 +96,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TEST-02 | Phase 7 | Complete |
 | TEST-03 | Phase 10 | Pending |
 | TEST-04 | Phase 11 | Pending |
-| DB-01 | Phase 9 | Pending |
-| DB-02 | Phase 9 | Pending |
-| DB-03 | Phase 9 | Pending |
+| DB-01 | Phase 9 | Complete |
+| DB-02 | Phase 9 | Complete |
+| DB-03 | Phase 9 | Complete |
 | API-01 | Phase 12 | Pending |
 | API-02 | Phase 12 | Pending |
 | API-03 | Phase 12 | Pending |
