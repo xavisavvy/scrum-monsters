@@ -19,7 +19,7 @@ v1.2 matures the CI/CD infrastructure with engineering best practices: PR qualit
 - [x] **Phase 7: CI Foundations** - PR workflow and test coverage enforcement
 - [x] **Phase 8: Security Hardening** - Security scanning gates in CI
 - [x] **Phase 9: Database Migrations** - Versioned migrations with deployment hooks
-- [ ] **Phase 10: Visual Regression** - Screenshot-based UI change detection
+- [x] **Phase 10: Visual Regression** - Screenshot-based UI change detection
 - [ ] **Phase 11: Accessibility Testing** - axe-core integration with E2E tests
 - [ ] **Phase 12: API Contract Testing** - OpenAPI spec validation
 - [ ] **Phase 13: Load Testing** - k6 performance baselines
@@ -84,9 +84,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 10-01-PLAN.md — Visual test infrastructure (Playwright config, helpers, CSS)
-- [ ] 10-02-PLAN.md — Visual regression test specs for game flow
-- [ ] 10-03-PLAN.md — CI workflow and PR labeling for visual changes
+- [x] 10-01-PLAN.md — Visual test infrastructure (Playwright config, helpers, CSS)
+- [x] 10-02-PLAN.md — Visual regression test specs for game flow
+- [x] 10-03-PLAN.md — CI workflow and PR labeling for visual changes
 
 ### Phase 11: Accessibility Testing
 **Goal**: Accessibility violations caught in CI before merge
@@ -153,7 +153,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | 7. CI Foundations | 2/2 | Complete | 2026-02-02 |
 | 8. Security Hardening | 2/2 | Complete | 2026-02-02 |
 | 9. Database Migrations | 3/3 | Complete | 2026-02-03 |
-| 10. Visual Regression | 0/3 | Not started | - |
+| 10. Visual Regression | 3/3 | Complete | 2026-02-03 |
 | 11. Accessibility Testing | 0/1 | Not started | - |
 | 12. API Contract Testing | 0/2 | Not started | - |
 | 13. Load Testing | 0/2 | Not started | - |
