@@ -23,7 +23,7 @@ v1.2 matures the CI/CD infrastructure with engineering best practices: PR qualit
 - [x] **Phase 11: Accessibility Testing** - axe-core integration with E2E tests
 - [x] **Phase 12: API Contract Testing** - OpenAPI spec validation
 - [x] **Phase 13: Load Testing** - k6 performance baselines
-- [ ] **Phase 14: Rollback Automation** - ArgoCD rollback with environment protection
+- [x] **Phase 14: Rollback Automation** - ArgoCD rollback with environment protection
 
 ## Phase Details
 
@@ -144,8 +144,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 14-01-PLAN.md — Unified rollback workflow with environment protection and rate limiting
-- [ ] 14-02-PLAN.md — Auto-rollback monitor and audit trail with commit notifications
+- [x] 14-01-PLAN.md — Unified rollback workflow with environment protection and rate limiting
+- [x] 14-02-PLAN.md — Auto-rollback monitor and audit trail with commit notifications
 
 ## Progress
 
@@ -161,7 +161,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | 11. Accessibility Testing | 3/3 | Complete | 2026-02-03 |
 | 12. API Contract Testing | 3/3 | Complete | 2026-02-03 |
 | 13. Load Testing | 3/3 | Complete | 2026-02-03 |
-| 14. Rollback Automation | 0/2 | Not started | - |
+| 14. Rollback Automation | 2/2 | Complete | 2026-02-03 |
 
 ---
 *Roadmap created: 2026-02-02*
