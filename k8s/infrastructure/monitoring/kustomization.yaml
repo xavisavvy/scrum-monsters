@@ -1,0 +1,37 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Monitoring Stack for ScrumQuest
+#
+# This installs:
+#   - Prometheus (metrics collection)
+#   - Grafana (dashboards and visualization)
+#   - Loki (log aggregation)
+#   - Promtail (log shipping)
+#
+# Usage:
+#   kubectl apply -k k8s/infrastructure/monitoring
+#
+# Access:
+#   - Grafana: kubectl port-forward svc/grafana 3000:80 -n monitoring
+#   - Prometheus: kubectl port-forward svc/prometheus 9090:9090 -n monitoring
+#
+# Note: For production, use Helm charts directly for more configuration options:
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo add grafana https://grafana.github.io/helm-charts
+#   helm install prometheus prometheus-community/kube-prometheus-stack -n monitoring
+#   helm install loki grafana/loki-stack -n monitoring
+
+namespace: monitoring
+
+resources:
+  - namespace.yaml
+  - prometheus/
+  - loki/
+  - promtail/
+  # ServiceMonitor for ScrumQuest app
+  - servicemonitor.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: scrumquest-monitoring

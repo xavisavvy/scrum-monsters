@@ -1,0 +1,125 @@
+# ArgoCD Application for ScrumQuest Production Environment
+#
+# Features:
+#   - MANUAL sync required (no auto-sync)
+#   - Self-healing disabled (manual control)
+#   - Pruning disabled by default (safety)
+#   - Requires approval before deployment
+#
+# Deploy:
+#   kubectl apply -f k8s/argocd-apps/scrumquest-prod.yaml
+#
+# Manual Sync:
+#   argocd app sync scrumquest-prod
+#   # Or via UI with approval workflow
+#
+# Rollback:
+#   argocd app rollback scrumquest-prod
+#   # Or: git revert <commit> && git push
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: scrumquest-prod
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/environment: production
+  # Finalize protection - prevents accidental deletion
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Notifications for production (requires notification controller)
+    notifications.argoproj.io/subscribe.on-sync-running.slack: scrumquest-deploys
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: scrumquest-deploys
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: scrumquest-alerts
+spec:
+  project: default
+
+  source:
+    # Repository URL - update to your actual repo
+    repoURL: https://github.com/your-org/scrumquest.git
+    # Production uses tagged releases
+    targetRevision: v1.0.0
+    path: k8s/overlays/prod
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: scrumquest-prod
+
+  syncPolicy:
+    # NO auto-sync for production - manual approval required
+    # automated: null
+
+    syncOptions:
+      # Create namespace if it doesn't exist
+      - CreateNamespace=true
+      # Validate manifests before applying
+      - Validate=true
+      # Apply out of sync only
+      - ApplyOutOfSyncOnly=true
+      # Server-side apply for better conflict resolution
+      - ServerSideApply=true
+      # Respect ignore differences
+      - RespectIgnoreDifferences=true
+
+    retry:
+      limit: 3
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 5m
+
+  # Health check configuration
+  ignoreDifferences:
+    # Ignore replica count changes (handled by HPA)
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+    # Ignore certain annotation updates
+    - group: ""
+      kind: Service
+      jsonPointers:
+        - /metadata/annotations
+
+  # Revision history limit for rollbacks
+  revisionHistoryLimit: 10
+---
+# Optional: AppProject for production with restricted permissions
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: scrumquest-production
+  namespace: argocd
+spec:
+  description: ScrumQuest Production Environment
+
+  # Only allow deploying from scrumquest repo
+  sourceRepos:
+    - https://github.com/your-org/scrumquest.git
+
+  # Only allow deploying to production namespace
+  destinations:
+    - namespace: scrumquest-prod
+      server: https://kubernetes.default.svc
+
+  # Deny all cluster-scoped resources except required ones
+  clusterResourceWhitelist:
+    - group: ""
+      kind: Namespace
+
+  # Allow all namespaced resources
+  namespaceResourceWhitelist:
+    - group: "*"
+      kind: "*"
+
+  # Role definitions for team access
+  roles:
+    - name: production-deployer
+      description: Can sync production applications
+      policies:
+        - p, proj:scrumquest-production:production-deployer, applications, sync, scrumquest-production/*, allow
+        - p, proj:scrumquest-production:production-deployer, applications, get, scrumquest-production/*, allow
+      groups:
+        - scrumquest-team

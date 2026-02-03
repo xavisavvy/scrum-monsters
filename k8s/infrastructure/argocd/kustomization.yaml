@@ -1,0 +1,48 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# ArgoCD for GitOps continuous deployment
+#
+# Usage:
+#   kubectl apply -k k8s/infrastructure/argocd
+#
+# Access ArgoCD UI:
+#   kubectl port-forward svc/argocd-server -n argocd 8080:443
+#   # Open https://localhost:8080
+#   # Get initial admin password:
+#   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d
+#
+# CLI login:
+#   argocd login localhost:8080
+#
+# After setup, deploy applications:
+#   kubectl apply -f k8s/argocd-apps/scrumquest-dev.yaml
+#   kubectl apply -f k8s/argocd-apps/scrumquest-prod.yaml
+
+namespace: argocd
+
+resources:
+  # ArgoCD stable release
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v2.13.3/manifests/install.yaml
+  # Custom ingress for ArgoCD UI
+  - ingress.yaml
+
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: scrumquest
+
+# Patch ArgoCD ConfigMap for repository configuration
+patches:
+  - target:
+      kind: ConfigMap
+      name: argocd-cm
+    patch: |-
+      - op: add
+        path: /data
+        value:
+          # Allow insecure repositories for local dev (disable in production)
+          repositories: |
+            - type: git
+              url: https://github.com/your-org/scrumquest
+          # Application reconciliation settings
+          timeout.reconciliation: 180s

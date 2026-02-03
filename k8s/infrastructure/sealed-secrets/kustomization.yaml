@@ -1,0 +1,39 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Install Bitnami Sealed Secrets Controller
+# This creates the controller that decrypts SealedSecrets into regular Secrets
+#
+# Usage:
+#   kubectl apply -k k8s/infrastructure/sealed-secrets
+#
+# After installation, use kubeseal CLI to encrypt secrets:
+#   kubeseal --controller-name=sealed-secrets-controller \
+#            --controller-namespace=kube-system \
+#            --format yaml < secret.yaml > sealed-secret.yaml
+
+namespace: kube-system
+
+resources:
+  - https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.27.2/controller.yaml
+
+# Add labels for identification
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: scrumquest
+
+# Patch the controller deployment for reliability
+patches:
+  - target:
+      kind: Deployment
+      name: sealed-secrets-controller
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "100m"

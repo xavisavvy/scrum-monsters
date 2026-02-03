@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scrumquest
+spec:
+  replicas: 3
+  template:
+    spec:
+      containers:
+        - name: scrumquest
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "200m"
+            limits:
+              memory: "1Gi"
+              cpu: "1000m"
+          env:
+            - name: LOG_LEVEL
+              value: "warn"
+      # Production anti-affinity for HA
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchLabels:
+                    app: scrumquest
+                topologyKey: kubernetes.io/hostname

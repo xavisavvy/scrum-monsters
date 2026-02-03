@@ -1,0 +1,47 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: scrumquest-prod
+
+namePrefix: prod-
+
+resources:
+  - ../../base
+
+# Production-specific labels
+commonLabels:
+  app.kubernetes.io/environment: production
+
+# Override image for production
+images:
+  - name: scrumquest
+    newName: scrumquest
+    newTag: v1.0.0
+
+# Production-specific patches
+patches:
+  - path: patches/deployment-patch.yaml
+  - path: patches/configmap-patch.yaml
+  - path: patches/ingress-patch.yaml
+  - path: patches/hpa-patch.yaml
+
+# Note: Production secrets MUST use Sealed Secrets
+# This generator is a placeholder - replace with SealedSecret reference in Phase 4
+secretGenerator:
+  - name: scrumquest-secrets
+    literals:
+      - DATABASE_URL=REPLACE_WITH_SEALED_SECRET
+      - SESSION_SECRET=REPLACE_WITH_SEALED_SECRET
+      - REDIS_URL=REPLACE_WITH_SEALED_SECRET
+      - GOOGLE_CLIENT_ID=REPLACE_WITH_SEALED_SECRET
+      - GOOGLE_CLIENT_SECRET=REPLACE_WITH_SEALED_SECRET
+      - GITHUB_CLIENT_ID=REPLACE_WITH_SEALED_SECRET
+      - GITHUB_CLIENT_SECRET=REPLACE_WITH_SEALED_SECRET
+  - name: postgres-secrets
+    literals:
+      - POSTGRES_USER=REPLACE_WITH_SEALED_SECRET
+      - POSTGRES_PASSWORD=REPLACE_WITH_SEALED_SECRET
+      - POSTGRES_DB=REPLACE_WITH_SEALED_SECRET
+
+generatorOptions:
+  disableNameSuffixHash: true

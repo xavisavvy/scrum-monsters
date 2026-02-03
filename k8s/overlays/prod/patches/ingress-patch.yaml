@@ -1,0 +1,53 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scrumquest-ingress
+  annotations:
+    # Enable SSL redirect for production
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # cert-manager for TLS (production Let's Encrypt)
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    # Rate limiting for production
+    nginx.ingress.kubernetes.io/limit-rps: "50"
+    nginx.ingress.kubernetes.io/limit-connections: "25"
+spec:
+  tls:
+    - hosts:
+        - scrumquest.com
+        - www.scrumquest.com
+      secretName: scrumquest-prod-tls
+  rules:
+    - host: scrumquest.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prod-scrumquest-service
+                port:
+                  number: 80
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: prod-scrumquest-service
+                port:
+                  number: 80
+    - host: www.scrumquest.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: prod-scrumquest-service
+                port:
+                  number: 80
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: prod-scrumquest-service
+                port:
+                  number: 80

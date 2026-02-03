@@ -1,0 +1,32 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: scrumquest-ingress
+  annotations:
+    # Self-signed certificate for local development
+    cert-manager.io/cluster-issuer: "selfsigned-issuer"
+    # Don't force SSL redirect in dev
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+spec:
+  tls:
+    - hosts:
+        - scrumquest-dev.local
+      secretName: scrumquest-dev-tls
+  rules:
+    - host: scrumquest-dev.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-scrumquest-service
+                port:
+                  number: 80
+          - path: /socket.io
+            pathType: Prefix
+            backend:
+              service:
+                name: dev-scrumquest-service
+                port:
+                  number: 80
