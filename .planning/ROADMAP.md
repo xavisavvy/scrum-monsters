@@ -81,10 +81,12 @@ Plans:
   1. Playwright captures screenshots of key UI states
   2. CI compares screenshots against baseline and reports differences
   3. Baseline updates require explicit developer action (not automatic)
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 10-01: TBD
+- [ ] 10-01-PLAN.md — Visual test infrastructure (Playwright config, helpers, CSS)
+- [ ] 10-02-PLAN.md — Visual regression test specs for game flow
+- [ ] 10-03-PLAN.md — CI workflow and PR labeling for visual changes
 
 ### Phase 11: Accessibility Testing
 **Goal**: Accessibility violations caught in CI before merge
@@ -151,7 +153,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 | 7. CI Foundations | 2/2 | Complete | 2026-02-02 |
 | 8. Security Hardening | 2/2 | Complete | 2026-02-02 |
 | 9. Database Migrations | 3/3 | Complete | 2026-02-03 |
-| 10. Visual Regression | 0/1 | Not started | - |
+| 10. Visual Regression | 0/3 | Not started | - |
 | 11. Accessibility Testing | 0/1 | Not started | - |
 | 12. API Contract Testing | 0/2 | Not started | - |
 | 13. Load Testing | 0/2 | Not started | - |
