@@ -1,0 +1,3317 @@
+asyncapi: 3.0.0
+info:
+  title: ScrumQuest WebSocket API
+  version: 1.0.0
+  description: |
+    Real-time multiplayer scrum poker estimation game WebSocket API.
+
+    ScrumQuest uses Socket.IO for real-time communication between clients and the server.
+    This specification documents all WebSocket events for lobby management, avatar selection,
+    battle mechanics, estimation/scoring, and combat systems.
+
+    Events are organized into categories:
+    - **Lobby Events**: Creating, joining, and managing game lobbies
+    - **Avatar Events**: Character selection and positioning
+    - **Battle Events**: Boss combat and player interactions
+    - **Estimation Events**: Score submission and voting
+    - **Session Events**: Fine-grained player session management
+    - **Combat Events**: Detailed combat mechanics
+    - **System Events**: State synchronization and recovery
+
+servers:
+  development:
+    host: localhost:5000
+    protocol: wss
+    description: Development server with Socket.IO
+  production:
+    host: scrumquest.app
+    protocol: wss
+    description: Production server
+
+defaultContentType: application/json
+
+channels:
+  # Client-to-Server Channel
+  clientToServer:
+    address: /
+    description: Events sent from client to server via Socket.IO
+    messages:
+      # Lobby Management
+      createLobby:
+        $ref: '#/components/messages/createLobby'
+      joinLobby:
+        $ref: '#/components/messages/joinLobby'
+      # Avatar and Team
+      selectAvatar:
+        $ref: '#/components/messages/selectAvatar'
+      assignTeam:
+        $ref: '#/components/messages/assignTeam'
+      changeOwnTeam:
+        $ref: '#/components/messages/changeOwnTeam'
+      # Ticket Management
+      addTickets:
+        $ref: '#/components/messages/addTickets'
+      removeTicket:
+        $ref: '#/components/messages/removeTicket'
+      updateJiraSettings:
+        $ref: '#/components/messages/updateJiraSettings'
+      # Lobby Movement
+      lobbyPlayerPos:
+        $ref: '#/components/messages/lobbyPlayerPos'
+      lobbyPlayerJump:
+        $ref: '#/components/messages/lobbyPlayerJump'
+      lobbyEmote:
+        $ref: '#/components/messages/lobbyEmote'
+      # Battle Control
+      startBattle:
+        $ref: '#/components/messages/startBattle'
+      submitScore:
+        $ref: '#/components/messages/submitScore'
+      updateDiscussionVote:
+        $ref: '#/components/messages/updateDiscussionVote'
+      attackBoss:
+        $ref: '#/components/messages/attackBoss'
+      proceedNextLevel:
+        $ref: '#/components/messages/proceedNextLevel'
+      restartGame:
+        $ref: '#/components/messages/restartGame'
+      # Performance and Control
+      playerPerformance:
+        $ref: '#/components/messages/playerPerformance'
+      abandonQuest:
+        $ref: '#/components/messages/abandonQuest'
+      forceReveal:
+        $ref: '#/components/messages/forceReveal'
+      updateTimerSettings:
+        $ref: '#/components/messages/updateTimerSettings'
+      # Media
+      youtubePlay:
+        $ref: '#/components/messages/youtubePlay'
+      youtubeStop:
+        $ref: '#/components/messages/youtubeStop'
+      # Admin Control
+      advancePhaseNow:
+        $ref: '#/components/messages/advancePhaseNow'
+      forceVotingProgression:
+        $ref: '#/components/messages/forceVotingProgression'
+      # Combat Movement
+      playerPos:
+        $ref: '#/components/messages/playerPos'
+      attackPlayer:
+        $ref: '#/components/messages/attackPlayer'
+      reviveStart:
+        $ref: '#/components/messages/reviveStart'
+      reviveCancel:
+        $ref: '#/components/messages/reviveCancel'
+      reviveTick:
+        $ref: '#/components/messages/reviveTick'
+      healParty:
+        $ref: '#/components/messages/healParty'
+      playerJump:
+        $ref: '#/components/messages/playerJump'
+      bossDamagePlayer:
+        $ref: '#/components/messages/bossDamagePlayer'
+      playerProjectile:
+        $ref: '#/components/messages/playerProjectile'
+      # Reconnection
+      reconnectWithToken:
+        $ref: '#/components/messages/reconnectWithToken'
+      requestMissedEvents:
+        $ref: '#/components/messages/requestMissedEvents'
+      # Minion and Discussion
+      attackMinion:
+        $ref: '#/components/messages/attackMinion'
+      finalizeEstimate:
+        $ref: '#/components/messages/finalizeEstimate'
+
+  # Server-to-Client Channel
+  serverToClient:
+    address: /
+    description: Events sent from server to client via Socket.IO
+    messages:
+      # Lobby Events
+      lobbyCreated:
+        $ref: '#/components/messages/lobbyCreated'
+      lobbyJoined:
+        $ref: '#/components/messages/lobbyJoined'
+      lobbyUpdated:
+        $ref: '#/components/messages/lobbyUpdated'
+      avatarSelected:
+        $ref: '#/components/messages/avatarSelected'
+      lobbyPlayerPosServer:
+        $ref: '#/components/messages/lobbyPlayerPosServer'
+      lobbyPlayerJumpServer:
+        $ref: '#/components/messages/lobbyPlayerJumpServer'
+      lobbyEmoteServer:
+        $ref: '#/components/messages/lobbyEmoteServer'
+      playerJoined:
+        $ref: '#/components/messages/playerJoined'
+      # Battle Events
+      battleStarted:
+        $ref: '#/components/messages/battleStarted'
+      scoreSubmitted:
+        $ref: '#/components/messages/scoreSubmitted'
+      scoresRevealed:
+        $ref: '#/components/messages/scoresRevealed'
+      bossAttacked:
+        $ref: '#/components/messages/bossAttacked'
+      bossDefeated:
+        $ref: '#/components/messages/bossDefeated'
+      questAbandoned:
+        $ref: '#/components/messages/questAbandoned'
+      gameOver:
+        $ref: '#/components/messages/gameOver'
+      bossHealed:
+        $ref: '#/components/messages/bossHealed'
+      modifierUpdated:
+        $ref: '#/components/messages/modifierUpdated'
+      # Error and State Events
+      gameError:
+        $ref: '#/components/messages/gameError'
+      votingTimeout:
+        $ref: '#/components/messages/votingTimeout'
+      playerDisconnected:
+        $ref: '#/components/messages/playerDisconnected'
+      hostTransferred:
+        $ref: '#/components/messages/hostTransferred'
+      timerUpdated:
+        $ref: '#/components/messages/timerUpdated'
+      # Media Sync
+      youtubePlaySynced:
+        $ref: '#/components/messages/youtubePlaySynced'
+      youtubeStopSynced:
+        $ref: '#/components/messages/youtubeStopSynced'
+      # Combat Events
+      playersPos:
+        $ref: '#/components/messages/playersPos'
+      playerStateUpdated:
+        $ref: '#/components/messages/playerStateUpdated'
+      playerAttacked:
+        $ref: '#/components/messages/playerAttacked'
+      partyHealed:
+        $ref: '#/components/messages/partyHealed'
+      reviveProgress:
+        $ref: '#/components/messages/reviveProgress'
+      reviveComplete:
+        $ref: '#/components/messages/reviveComplete'
+      reviveCancelled:
+        $ref: '#/components/messages/reviveCancelled'
+      bossRingAttack:
+        $ref: '#/components/messages/bossRingAttack'
+      playerProjectileFired:
+        $ref: '#/components/messages/playerProjectileFired'
+      # Reconnection Events
+      playerReconnected:
+        $ref: '#/components/messages/playerReconnected'
+      lobbySync:
+        $ref: '#/components/messages/lobbySync'
+      reconnectResponse:
+        $ref: '#/components/messages/reconnectResponse'
+      connectionLost:
+        $ref: '#/components/messages/connectionLost'
+      reconnectAttempt:
+        $ref: '#/components/messages/reconnectAttempt'
+      # Session Events
+      sessionPlayerJoined:
+        $ref: '#/components/messages/sessionPlayerJoined'
+      sessionPlayerLeft:
+        $ref: '#/components/messages/sessionPlayerLeft'
+      sessionHostChanged:
+        $ref: '#/components/messages/sessionHostChanged'
+      sessionPhaseChanged:
+        $ref: '#/components/messages/sessionPhaseChanged'
+      sessionTeamChanged:
+        $ref: '#/components/messages/sessionTeamChanged'
+      sessionAvatarSelected:
+        $ref: '#/components/messages/sessionAvatarSelected'
+      # Estimation Events
+      estimationVoteCast:
+        $ref: '#/components/messages/estimationVoteCast'
+      estimationVotesRevealed:
+        $ref: '#/components/messages/estimationVotesRevealed'
+      estimationConsensusReached:
+        $ref: '#/components/messages/estimationConsensusReached'
+      estimationTimerStarted:
+        $ref: '#/components/messages/estimationTimerStarted'
+      estimationTimerPaused:
+        $ref: '#/components/messages/estimationTimerPaused'
+      estimationTimerResumed:
+        $ref: '#/components/messages/estimationTimerResumed'
+      estimationTimerExpired:
+        $ref: '#/components/messages/estimationTimerExpired'
+      estimationEstimateForced:
+        $ref: '#/components/messages/estimationEstimateForced'
+      estimationDiscussionTimerStarted:
+        $ref: '#/components/messages/estimationDiscussionTimerStarted'
+      estimationDiscussionEnded:
+        $ref: '#/components/messages/estimationDiscussionEnded'
+      # Combat Fine-grained Events
+      combatBossDamaged:
+        $ref: '#/components/messages/combatBossDamaged'
+      combatBossHealed:
+        $ref: '#/components/messages/combatBossHealed'
+      combatBossEnraged:
+        $ref: '#/components/messages/combatBossEnraged'
+      combatBossTelegraph:
+        $ref: '#/components/messages/combatBossTelegraph'
+      combatBossDefeated:
+        $ref: '#/components/messages/combatBossDefeated'
+      combatPlayerDamaged:
+        $ref: '#/components/messages/combatPlayerDamaged'
+      combatPlayerDowned:
+        $ref: '#/components/messages/combatPlayerDowned'
+      combatPlayerRevived:
+        $ref: '#/components/messages/combatPlayerRevived'
+      combatRevivalStarted:
+        $ref: '#/components/messages/combatRevivalStarted'
+      combatRevivalCancelled:
+        $ref: '#/components/messages/combatRevivalCancelled'
+      combatPlayerEnteredBattle:
+        $ref: '#/components/messages/combatPlayerEnteredBattle'
+      combatModifierUpdated:
+        $ref: '#/components/messages/combatModifierUpdated'
+      combatCountdownStarted:
+        $ref: '#/components/messages/combatCountdownStarted'
+      combatCountdownTick:
+        $ref: '#/components/messages/combatCountdownTick'
+      combatCountdownComplete:
+        $ref: '#/components/messages/combatCountdownComplete'
+      combatTeamAttack:
+        $ref: '#/components/messages/combatTeamAttack'
+      combatMinionSpawned:
+        $ref: '#/components/messages/combatMinionSpawned'
+      combatMinionAttack:
+        $ref: '#/components/messages/combatMinionAttack'
+      combatMinionHealBoss:
+        $ref: '#/components/messages/combatMinionHealBoss'
+      combatMinionDamaged:
+        $ref: '#/components/messages/combatMinionDamaged'
+      combatMinionKilled:
+        $ref: '#/components/messages/combatMinionKilled'
+      # System Events
+      systemFullState:
+        $ref: '#/components/messages/systemFullState'
+      systemMissedEvents:
+        $ref: '#/components/messages/systemMissedEvents'
+
+operations:
+  # Client sends operations
+  sendCreateLobby:
+    action: send
+    channel:
+      $ref: '#/channels/clientToServer'
+    messages:
+      - $ref: '#/channels/clientToServer/messages/createLobby'
+    summary: Client creates a new game lobby
+
+  sendJoinLobby:
+    action: send
+    channel:
+      $ref: '#/channels/clientToServer'
+    messages:
+      - $ref: '#/channels/clientToServer/messages/joinLobby'
+    summary: Client joins an existing lobby
+
+  sendSelectAvatar:
+    action: send
+    channel:
+      $ref: '#/channels/clientToServer'
+    messages:
+      - $ref: '#/channels/clientToServer/messages/selectAvatar'
+    summary: Client selects their character avatar
+
+  sendSubmitScore:
+    action: send
+    channel:
+      $ref: '#/channels/clientToServer'
+    messages:
+      - $ref: '#/channels/clientToServer/messages/submitScore'
+    summary: Client submits their estimation score
+
+  sendAttackBoss:
+    action: send
+    channel:
+      $ref: '#/channels/clientToServer'
+    messages:
+      - $ref: '#/channels/clientToServer/messages/attackBoss'
+    summary: Client attacks the boss
+
+  sendReconnectWithToken:
+    action: send
+    channel:
+      $ref: '#/channels/clientToServer'
+    messages:
+      - $ref: '#/channels/clientToServer/messages/reconnectWithToken'
+    summary: Client attempts to reconnect using a token
+
+  # Server receives operations
+  receiveLobbyCreated:
+    action: receive
+    channel:
+      $ref: '#/channels/serverToClient'
+    messages:
+      - $ref: '#/channels/serverToClient/messages/lobbyCreated'
+    summary: Server notifies client of lobby creation
+
+  receiveLobbyUpdated:
+    action: receive
+    channel:
+      $ref: '#/channels/serverToClient'
+    messages:
+      - $ref: '#/channels/serverToClient/messages/lobbyUpdated'
+    summary: Server broadcasts lobby state update
+
+  receiveGameError:
+    action: receive
+    channel:
+      $ref: '#/channels/serverToClient'
+    messages:
+      - $ref: '#/channels/serverToClient/messages/gameError'
+    summary: Server sends error message to client
+
+components:
+  messages:
+    # =============================================
+    # CLIENT-TO-SERVER MESSAGES
+    # =============================================
+
+    # Lobby Management
+    createLobby:
+      name: create_lobby
+      title: Create Lobby
+      summary: Creates a new game lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CreateLobbyPayload'
+
+    joinLobby:
+      name: join_lobby
+      title: Join Lobby
+      summary: Joins an existing game lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/JoinLobbyPayload'
+
+    # Avatar and Team
+    selectAvatar:
+      name: select_avatar
+      title: Select Avatar
+      summary: Selects character avatar class
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SelectAvatarPayload'
+
+    assignTeam:
+      name: assign_team
+      title: Assign Team
+      summary: Host assigns player to a team
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AssignTeamPayload'
+
+    changeOwnTeam:
+      name: change_own_team
+      title: Change Own Team
+      summary: Player changes their own team
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ChangeOwnTeamPayload'
+
+    # Ticket Management
+    addTickets:
+      name: add_tickets
+      title: Add Tickets
+      summary: Adds Jira tickets to the lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AddTicketsPayload'
+
+    removeTicket:
+      name: remove_ticket
+      title: Remove Ticket
+      summary: Removes a ticket from the lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RemoveTicketPayload'
+
+    updateJiraSettings:
+      name: update_jira_settings
+      title: Update Jira Settings
+      summary: Updates Jira integration settings
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UpdateJiraSettingsPayload'
+
+    # Lobby Movement
+    lobbyPlayerPos:
+      name: lobby_player_pos
+      title: Lobby Player Position
+      summary: Updates player position in lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyPlayerPosPayload'
+
+    lobbyPlayerJump:
+      name: lobby_player_jump
+      title: Lobby Player Jump
+      summary: Player jump state in lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyPlayerJumpPayload'
+
+    lobbyEmote:
+      name: lobby_emote
+      title: Lobby Emote
+      summary: Player sends emote in lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyEmotePayload'
+
+    # Battle Control
+    startBattle:
+      name: start_battle
+      title: Start Battle
+      summary: Host starts the battle phase
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    submitScore:
+      name: submit_score
+      title: Submit Score
+      summary: Player submits estimation score
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SubmitScorePayload'
+
+    updateDiscussionVote:
+      name: update_discussion_vote
+      title: Update Discussion Vote
+      summary: Player updates vote during discussion
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UpdateDiscussionVotePayload'
+
+    attackBoss:
+      name: attack_boss
+      title: Attack Boss
+      summary: Player attacks the boss
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AttackBossPayload'
+
+    proceedNextLevel:
+      name: proceed_next_level
+      title: Proceed Next Level
+      summary: Advances to next boss level
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    restartGame:
+      name: restart_game
+      title: Restart Game
+      summary: Restarts the game
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    # Performance and Control
+    playerPerformance:
+      name: player_performance
+      title: Player Performance
+      summary: Reports player performance metrics
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerPerformancePayload'
+
+    abandonQuest:
+      name: abandon_quest
+      title: Abandon Quest
+      summary: Abandons the current quest
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    forceReveal:
+      name: force_reveal
+      title: Force Reveal
+      summary: Forces vote reveal
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    updateTimerSettings:
+      name: update_timer_settings
+      title: Update Timer Settings
+      summary: Updates voting timer settings
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/UpdateTimerSettingsPayload'
+
+    # Media
+    youtubePlay:
+      name: youtube_play
+      title: YouTube Play
+      summary: Starts YouTube video playback
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/YoutubePlayPayload'
+
+    youtubeStop:
+      name: youtube_stop
+      title: YouTube Stop
+      summary: Stops YouTube video playback
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    # Admin Control
+    advancePhaseNow:
+      name: advancePhaseNow
+      title: Advance Phase Now
+      summary: Admin forces phase advancement
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AdvancePhaseNowPayload'
+
+    forceVotingProgression:
+      name: forceVotingProgression
+      title: Force Voting Progression
+      summary: Forces voting to progress
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ForceVotingProgressionPayload'
+
+    # Combat Movement
+    playerPos:
+      name: player_pos
+      title: Player Position
+      summary: Updates player position in battle
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerPosPayload'
+
+    attackPlayer:
+      name: attack_player
+      title: Attack Player
+      summary: Player attacks another player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AttackPlayerPayload'
+
+    reviveStart:
+      name: revive_start
+      title: Revive Start
+      summary: Starts reviving a downed player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReviveTargetPayload'
+
+    reviveCancel:
+      name: revive_cancel
+      title: Revive Cancel
+      summary: Cancels reviving a player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReviveTargetPayload'
+
+    reviveTick:
+      name: revive_tick
+      title: Revive Tick
+      summary: Tick event for revive progress
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReviveTargetPayload'
+
+    healParty:
+      name: heal_party
+      title: Heal Party
+      summary: Heals all party members
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    playerJump:
+      name: player_jump
+      title: Player Jump
+      summary: Player jump state in battle
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerJumpPayload'
+
+    bossDamagePlayer:
+      name: boss_damage_player
+      title: Boss Damage Player
+      summary: Boss damages a player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BossDamagePlayerPayload'
+
+    playerProjectile:
+      name: player_projectile
+      title: Player Projectile
+      summary: Player fires a projectile
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerProjectilePayload'
+
+    # Reconnection
+    reconnectWithToken:
+      name: reconnect_with_token
+      title: Reconnect With Token
+      summary: Reconnects using session token
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReconnectWithTokenPayload'
+
+    requestMissedEvents:
+      name: request_missed_events
+      title: Request Missed Events
+      summary: Requests events missed during disconnect
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/RequestMissedEventsPayload'
+
+    # Minion and Discussion
+    attackMinion:
+      name: attack_minion
+      title: Attack Minion
+      summary: Attacks a minion player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AttackMinionPayload'
+
+    finalizeEstimate:
+      name: finalize_estimate
+      title: Finalize Estimate
+      summary: Finalizes the estimation value
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/FinalizeEstimatePayload'
+
+    # =============================================
+    # SERVER-TO-CLIENT MESSAGES
+    # =============================================
+
+    # Lobby Events
+    lobbyCreated:
+      name: lobby_created
+      title: Lobby Created
+      summary: Confirms lobby was created
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyCreatedPayload'
+
+    lobbyJoined:
+      name: lobby_joined
+      title: Lobby Joined
+      summary: Confirms player joined lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyJoinedPayload'
+
+    lobbyUpdated:
+      name: lobby_updated
+      title: Lobby Updated
+      summary: Broadcasts lobby state update
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyUpdatedPayload'
+
+    avatarSelected:
+      name: avatar_selected
+      title: Avatar Selected
+      summary: Broadcasts avatar selection
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/AvatarSelectedPayload'
+
+    lobbyPlayerPosServer:
+      name: lobby_player_pos
+      title: Lobby Player Position (Server)
+      summary: Broadcasts player position in lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyPlayerPosServerPayload'
+
+    lobbyPlayerJumpServer:
+      name: lobby_player_jump
+      title: Lobby Player Jump (Server)
+      summary: Broadcasts player jump in lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyPlayerJumpServerPayload'
+
+    lobbyEmoteServer:
+      name: lobby_emote
+      title: Lobby Emote (Server)
+      summary: Broadcasts emote in lobby
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyEmoteServerPayload'
+
+    playerJoined:
+      name: player_joined
+      title: Player Joined
+      summary: Broadcasts new player joining
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerJoinedPayload'
+
+    # Battle Events
+    battleStarted:
+      name: battle_started
+      title: Battle Started
+      summary: Battle phase has begun
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BattleStartedPayload'
+
+    scoreSubmitted:
+      name: score_submitted
+      title: Score Submitted
+      summary: Notifies that a player submitted score
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ScoreSubmittedPayload'
+
+    scoresRevealed:
+      name: scores_revealed
+      title: Scores Revealed
+      summary: Reveals all submitted scores
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ScoresRevealedPayload'
+
+    bossAttacked:
+      name: boss_attacked
+      title: Boss Attacked
+      summary: Boss was attacked
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BossAttackedPayload'
+
+    bossDefeated:
+      name: boss_defeated
+      title: Boss Defeated
+      summary: Boss has been defeated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyUpdatedPayload'
+
+    questAbandoned:
+      name: quest_abandoned
+      title: Quest Abandoned
+      summary: Quest was abandoned
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyUpdatedPayload'
+
+    gameOver:
+      name: game_over
+      title: Game Over
+      summary: Game has ended
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbyUpdatedPayload'
+
+    bossHealed:
+      name: boss_healed
+      title: Boss Healed
+      summary: Boss has healed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BossHealedPayload'
+
+    modifierUpdated:
+      name: modifier_updated
+      title: Modifier Updated
+      summary: Battle modifier changed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ModifierUpdatedPayload'
+
+    # Error and State Events
+    gameError:
+      name: game_error
+      title: Game Error
+      summary: Error message from server
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/GameErrorPayload'
+
+    votingTimeout:
+      name: voting_timeout
+      title: Voting Timeout
+      summary: Voting timer has expired
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/VotingTimeoutPayload'
+
+    playerDisconnected:
+      name: player_disconnected
+      title: Player Disconnected
+      summary: Player has disconnected
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerDisconnectedPayload'
+
+    hostTransferred:
+      name: host_transferred
+      title: Host Transferred
+      summary: Host status transferred to another player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/HostTransferredPayload'
+
+    timerUpdated:
+      name: timer_updated
+      title: Timer Updated
+      summary: Timer state has changed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TimerUpdatedPayload'
+
+    # Media Sync
+    youtubePlaySynced:
+      name: youtube_play_synced
+      title: YouTube Play Synced
+      summary: YouTube playback synced to all clients
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/YoutubePlayPayload'
+
+    youtubeStopSynced:
+      name: youtube_stop_synced
+      title: YouTube Stop Synced
+      summary: YouTube stopped for all clients
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    # Combat Events
+    playersPos:
+      name: players_pos
+      title: Players Positions
+      summary: All player positions update
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayersPosPayload'
+
+    playerStateUpdated:
+      name: player_state_updated
+      title: Player State Updated
+      summary: Player combat state changed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerStateUpdatedPayload'
+
+    playerAttacked:
+      name: player_attacked
+      title: Player Attacked
+      summary: Player attacked another player
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerAttackedPayload'
+
+    partyHealed:
+      name: party_healed
+      title: Party Healed
+      summary: Party members were healed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PartyHealedPayload'
+
+    reviveProgress:
+      name: revive_progress
+      title: Revive Progress
+      summary: Revive progress update
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReviveProgressPayload'
+
+    reviveComplete:
+      name: revive_complete
+      title: Revive Complete
+      summary: Player revive completed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReviveCompletePayload'
+
+    reviveCancelled:
+      name: revive_cancelled
+      title: Revive Cancelled
+      summary: Player revive was cancelled
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReviveCancelledPayload'
+
+    bossRingAttack:
+      name: boss_ring_attack
+      title: Boss Ring Attack
+      summary: Boss performs ring attack
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/BossRingAttackPayload'
+
+    playerProjectileFired:
+      name: player_projectile_fired
+      title: Player Projectile Fired
+      summary: Player fired a projectile
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerProjectileFiredPayload'
+
+    # Reconnection Events
+    playerReconnected:
+      name: player_reconnected
+      title: Player Reconnected
+      summary: Player has reconnected
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/PlayerReconnectedPayload'
+
+    lobbySync:
+      name: lobby_sync
+      title: Lobby Sync
+      summary: Full lobby state synchronization
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/LobbySyncPayload'
+
+    reconnectResponse:
+      name: reconnect_response
+      title: Reconnect Response
+      summary: Response to reconnection attempt
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReconnectResponsePayload'
+
+    connectionLost:
+      name: connection_lost
+      title: Connection Lost
+      summary: Connection to server lost
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EmptyPayload'
+
+    reconnectAttempt:
+      name: reconnect_attempt
+      title: Reconnect Attempt
+      summary: Reconnection attempt status
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/ReconnectAttemptPayload'
+
+    # Session Events
+    sessionPlayerJoined:
+      name: session:player_joined
+      title: Session Player Joined
+      summary: Fine-grained player join event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SessionPlayerJoinedPayload'
+
+    sessionPlayerLeft:
+      name: session:player_left
+      title: Session Player Left
+      summary: Fine-grained player leave event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SessionPlayerLeftPayload'
+
+    sessionHostChanged:
+      name: session:host_changed
+      title: Session Host Changed
+      summary: Fine-grained host change event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SessionHostChangedPayload'
+
+    sessionPhaseChanged:
+      name: session:phase_changed
+      title: Session Phase Changed
+      summary: Fine-grained phase change event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SessionPhaseChangedPayload'
+
+    sessionTeamChanged:
+      name: session:team_changed
+      title: Session Team Changed
+      summary: Fine-grained team change event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SessionTeamChangedPayload'
+
+    sessionAvatarSelected:
+      name: session:avatar_selected
+      title: Session Avatar Selected
+      summary: Fine-grained avatar selection event
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SessionAvatarSelectedPayload'
+
+    # Estimation Events
+    estimationVoteCast:
+      name: estimation:vote_cast
+      title: Estimation Vote Cast
+      summary: Player cast a vote
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationVoteCastPayload'
+
+    estimationVotesRevealed:
+      name: estimation:votes_revealed
+      title: Estimation Votes Revealed
+      summary: Team votes revealed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationVotesRevealedPayload'
+
+    estimationConsensusReached:
+      name: estimation:consensus_reached
+      title: Estimation Consensus Reached
+      summary: Team reached consensus
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationConsensusReachedPayload'
+
+    estimationTimerStarted:
+      name: estimation:timer_started
+      title: Estimation Timer Started
+      summary: Estimation timer started
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationTimerStartedPayload'
+
+    estimationTimerPaused:
+      name: estimation:timer_paused
+      title: Estimation Timer Paused
+      summary: Estimation timer paused
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationTimerPausedPayload'
+
+    estimationTimerResumed:
+      name: estimation:timer_resumed
+      title: Estimation Timer Resumed
+      summary: Estimation timer resumed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationTimerResumedPayload'
+
+    estimationTimerExpired:
+      name: estimation:timer_expired
+      title: Estimation Timer Expired
+      summary: Estimation timer expired
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationTimerExpiredPayload'
+
+    estimationEstimateForced:
+      name: estimation:estimate_forced
+      title: Estimation Estimate Forced
+      summary: Estimate was forced
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationEstimateForcedPayload'
+
+    estimationDiscussionTimerStarted:
+      name: estimation:discussion_timer_started
+      title: Estimation Discussion Timer Started
+      summary: Discussion timer started
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationDiscussionTimerStartedPayload'
+
+    estimationDiscussionEnded:
+      name: estimation:discussion_ended
+      title: Estimation Discussion Ended
+      summary: Discussion phase ended
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/EstimationDiscussionEndedPayload'
+
+    # Combat Fine-grained Events
+    combatBossDamaged:
+      name: combat:boss_damaged
+      title: Combat Boss Damaged
+      summary: Boss took damage
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatBossDamagedPayload'
+
+    combatBossHealed:
+      name: combat:boss_healed
+      title: Combat Boss Healed
+      summary: Boss healed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatBossHealedPayload'
+
+    combatBossEnraged:
+      name: combat:boss_enraged
+      title: Combat Boss Enraged
+      summary: Boss became enraged
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatBossEnragedPayload'
+
+    combatBossTelegraph:
+      name: combat:boss_telegraph
+      title: Combat Boss Telegraph
+      summary: Boss telegraphs attack
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatBossTelegraphPayload'
+
+    combatBossDefeated:
+      name: combat:boss_defeated
+      title: Combat Boss Defeated
+      summary: Boss was defeated
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SeqTimestampPayload'
+
+    combatPlayerDamaged:
+      name: combat:player_damaged
+      title: Combat Player Damaged
+      summary: Player took damage
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatPlayerDamagedPayload'
+
+    combatPlayerDowned:
+      name: combat:player_downed
+      title: Combat Player Downed
+      summary: Player was downed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatPlayerDownedPayload'
+
+    combatPlayerRevived:
+      name: combat:player_revived
+      title: Combat Player Revived
+      summary: Player was revived
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatPlayerRevivedPayload'
+
+    combatRevivalStarted:
+      name: combat:revival_started
+      title: Combat Revival Started
+      summary: Revival process started
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatRevivalStartedPayload'
+
+    combatRevivalCancelled:
+      name: combat:revival_cancelled
+      title: Combat Revival Cancelled
+      summary: Revival was cancelled
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatRevivalCancelledPayload'
+
+    combatPlayerEnteredBattle:
+      name: combat:player_entered_battle
+      title: Combat Player Entered Battle
+      summary: Player entered battle arena
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatPlayerEnteredBattlePayload'
+
+    combatModifierUpdated:
+      name: combat:modifier_updated
+      title: Combat Modifier Updated
+      summary: Combat modifier changed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatModifierUpdatedPayload'
+
+    combatCountdownStarted:
+      name: combat:countdown_started
+      title: Combat Countdown Started
+      summary: Combat countdown started
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatCountdownStartedPayload'
+
+    combatCountdownTick:
+      name: combat:countdown_tick
+      title: Combat Countdown Tick
+      summary: Combat countdown tick
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatCountdownTickPayload'
+
+    combatCountdownComplete:
+      name: combat:countdown_complete
+      title: Combat Countdown Complete
+      summary: Combat countdown finished
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatCountdownCompletePayload'
+
+    combatTeamAttack:
+      name: combat:team_attack
+      title: Combat Team Attack
+      summary: Team attack executed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatTeamAttackPayload'
+
+    combatMinionSpawned:
+      name: combat:minion_spawned
+      title: Combat Minion Spawned
+      summary: Minion was spawned
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatMinionSpawnedPayload'
+
+    combatMinionAttack:
+      name: combat:minion_attack
+      title: Combat Minion Attack
+      summary: Minion attacked
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatMinionAttackPayload'
+
+    combatMinionHealBoss:
+      name: combat:minion_heal_boss
+      title: Combat Minion Heal Boss
+      summary: Minion healed the boss
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatMinionHealBossPayload'
+
+    combatMinionDamaged:
+      name: combat:minion_damaged
+      title: Combat Minion Damaged
+      summary: Minion took damage
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatMinionDamagedPayload'
+
+    combatMinionKilled:
+      name: combat:minion_killed
+      title: Combat Minion Killed
+      summary: Minion was killed
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/CombatMinionKilledPayload'
+
+    # System Events
+    systemFullState:
+      name: system:full_state
+      title: System Full State
+      summary: Full lobby state sync
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SystemFullStatePayload'
+
+    systemMissedEvents:
+      name: system:missed_events
+      title: System Missed Events
+      summary: Replay of missed events
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/SystemMissedEventsPayload'
+
+  schemas:
+    # =============================================
+    # CORE TYPE SCHEMAS
+    # =============================================
+
+    Position:
+      type: object
+      description: 2D position coordinates
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: number
+          description: X coordinate
+        y:
+          type: number
+          description: Y coordinate
+
+    TeamType:
+      type: string
+      description: Player team assignment
+      enum:
+        - developers
+        - qa
+        - spectators
+
+    AvatarClass:
+      type: string
+      description: Character avatar class
+      enum:
+        - ranger
+        - rogue
+        - bard
+        - sorcerer
+        - wizard
+        - warrior
+        - paladin
+        - cleric
+        - oathbreaker
+        - monk
+
+    GamePhase:
+      type: string
+      description: Current game phase
+      enum:
+        - lobby
+        - avatar_selection
+        - battle
+        - scoring
+        - reveal
+        - discussion
+        - victory
+        - next_level
+        - game_over
+
+    EstimationScaleType:
+      type: string
+      description: Estimation scale type
+      enum:
+        - fibonacci
+        - doubling
+        - tshirt
+
+    ScoreValue:
+      oneOf:
+        - type: number
+        - type: string
+          const: '?'
+      description: Estimation score (number or question mark for abstain)
+
+    ReconnectResult:
+      type: string
+      description: Reconnection attempt result
+      enum:
+        - success
+        - lobby_closed
+        - host_changed
+        - invalid_token
+        - grace_expired
+        - server_error
+
+    DamageSource:
+      type: string
+      description: Source of damage
+      enum:
+        - boss
+        - player
+
+    # =============================================
+    # COMPLEX TYPE SCHEMAS
+    # =============================================
+
+    TimerSettings:
+      type: object
+      description: Timer configuration
+      required:
+        - enabled
+        - durationMinutes
+      properties:
+        enabled:
+          type: boolean
+        durationMinutes:
+          type: number
+          minimum: 1
+
+    JiraSettings:
+      type: object
+      description: Jira integration settings
+      properties:
+        baseUrl:
+          type: string
+          description: Jira base URL (e.g. https://company.atlassian.net/browse/)
+
+    ConsensusSettings:
+      type: object
+      description: Consensus countdown settings
+      required:
+        - countdownSeconds
+      properties:
+        countdownSeconds:
+          type: number
+          minimum: 1
+          default: 5
+
+    EstimationSettings:
+      type: object
+      description: Estimation scale settings
+      required:
+        - scaleType
+      properties:
+        scaleType:
+          $ref: '#/components/schemas/EstimationScaleType'
+        customTshirtMapping:
+          type: object
+          additionalProperties:
+            type: number
+          description: Custom point values for T-shirt sizes
+
+    TimerState:
+      type: object
+      description: Active timer state
+      required:
+        - startedAt
+        - durationMs
+        - isActive
+      properties:
+        startedAt:
+          type: number
+          description: Timestamp when timer started
+        durationMs:
+          type: number
+          description: Timer duration in milliseconds
+        isActive:
+          type: boolean
+
+    JiraTicket:
+      type: object
+      description: Jira ticket for estimation
+      required:
+        - id
+        - title
+        - description
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        storyPoints:
+          type: number
+
+    CompletedTicket:
+      type: object
+      description: Completed estimation ticket
+      required:
+        - id
+        - title
+        - description
+        - storyPoints
+        - completedAt
+        - teamBreakdown
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        storyPoints:
+          type: number
+        completedAt:
+          type: string
+          format: date-time
+        teamBreakdown:
+          type: object
+          properties:
+            developers:
+              type: object
+              properties:
+                participated:
+                  type: boolean
+                consensusScore:
+                  type: number
+            qa:
+              type: object
+              properties:
+                participated:
+                  type: boolean
+                consensusScore:
+                  type: number
+
+    Boss:
+      type: object
+      description: Boss entity
+      required:
+        - id
+        - name
+        - maxHealth
+        - currentHealth
+        - phase
+        - maxPhases
+        - sprite
+        - defeated
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        maxHealth:
+          type: number
+        currentHealth:
+          type: number
+        phase:
+          type: number
+        maxPhases:
+          type: number
+        sprite:
+          type: string
+        defeated:
+          type: boolean
+        lastRingAttack:
+          type: number
+
+    PlayerCombatState:
+      type: object
+      description: Player combat state
+      required:
+        - maxHp
+        - hp
+        - isDowned
+      properties:
+        maxHp:
+          type: number
+        hp:
+          type: number
+        isDowned:
+          type: boolean
+        lastDamagedBy:
+          type: string
+        revivedBy:
+          type: string
+        reviveEndsAt:
+          type: number
+        position:
+          $ref: '#/components/schemas/Position'
+        isJumping:
+          type: boolean
+
+    Player:
+      type: object
+      description: Player in a lobby
+      required:
+        - id
+        - name
+        - avatar
+        - avatarClass
+        - team
+        - isHost
+        - hasSubmittedScore
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        avatar:
+          $ref: '#/components/schemas/AvatarClass'
+        avatarClass:
+          $ref: '#/components/schemas/AvatarClass'
+        team:
+          $ref: '#/components/schemas/TeamType'
+        isHost:
+          type: boolean
+        currentScore:
+          $ref: '#/components/schemas/ScoreValue'
+        hasSubmittedScore:
+          type: boolean
+
+    TeamStats:
+      type: object
+      description: Team statistics
+      required:
+        - totalStoryPoints
+        - ticketsCompleted
+        - averageEstimationTime
+        - consensusRate
+        - accuracyScore
+        - participationRate
+        - achievements
+        - currentStreak
+        - bestStreak
+      properties:
+        totalStoryPoints:
+          type: number
+        ticketsCompleted:
+          type: number
+        averageEstimationTime:
+          type: number
+        consensusRate:
+          type: number
+        accuracyScore:
+          type: number
+        participationRate:
+          type: number
+        achievements:
+          type: array
+          items:
+            type: string
+        currentStreak:
+          type: number
+        bestStreak:
+          type: number
+
+    TeamCompetition:
+      type: object
+      description: Team competition state
+      required:
+        - developers
+        - qa
+        - currentRound
+        - winnerHistory
+        - seasonStart
+      properties:
+        developers:
+          $ref: '#/components/schemas/TeamStats'
+        qa:
+          $ref: '#/components/schemas/TeamStats'
+        currentRound:
+          type: number
+        winnerHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/TeamType'
+        seasonStart:
+          type: string
+
+    ConsensusCountdown:
+      type: object
+      description: Consensus countdown state
+      required:
+        - isActive
+        - remainingSeconds
+        - startedAt
+      properties:
+        isActive:
+          type: boolean
+        remainingSeconds:
+          type: number
+        startedAt:
+          type: number
+
+    Lobby:
+      type: object
+      description: Game lobby state
+      required:
+        - id
+        - name
+        - hostId
+        - players
+        - teams
+        - tickets
+        - gamePhase
+        - completedTickets
+        - teamCompetition
+        - playerCombatStates
+        - playerPositions
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        hostId:
+          type: string
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/Player'
+        teams:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/Player'
+        currentTicket:
+          $ref: '#/components/schemas/JiraTicket'
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/JiraTicket'
+        gamePhase:
+          $ref: '#/components/schemas/GamePhase'
+        boss:
+          $ref: '#/components/schemas/Boss'
+        completedTickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompletedTicket'
+        teamCompetition:
+          $ref: '#/components/schemas/TeamCompetition'
+        playerCombatStates:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/PlayerCombatState'
+        playerPositions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Position'
+        timerSettings:
+          $ref: '#/components/schemas/TimerSettings'
+        jiraSettings:
+          $ref: '#/components/schemas/JiraSettings'
+        consensusSettings:
+          $ref: '#/components/schemas/ConsensusSettings'
+        estimationSettings:
+          $ref: '#/components/schemas/EstimationSettings'
+        currentTimer:
+          $ref: '#/components/schemas/TimerState'
+        consensusCountdown:
+          $ref: '#/components/schemas/ConsensusCountdown'
+        votingStartedAt:
+          type: number
+        battleModifier:
+          type: number
+        battleStartTime:
+          type: number
+
+    TeamScores:
+      type: object
+      description: Team score mapping
+      properties:
+        developers:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ScoreValue'
+        qa:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ScoreValue'
+
+    TeamConsensus:
+      type: object
+      description: Team consensus state
+      properties:
+        developers:
+          type: object
+          properties:
+            hasConsensus:
+              type: boolean
+            score:
+              type: number
+        qa:
+          type: object
+          properties:
+            hasConsensus:
+              type: boolean
+            score:
+              type: number
+
+    LobbySync:
+      type: object
+      description: Full lobby synchronization data
+      required:
+        - lobby
+        - yourPlayer
+        - reconnectToken
+      properties:
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+        yourPlayer:
+          $ref: '#/components/schemas/Player'
+        reconnectToken:
+          type: string
+        pendingActions:
+          type: object
+          properties:
+            timers:
+              $ref: '#/components/schemas/TimerState'
+            consensus: {}
+            battleState: {}
+        stateChanges:
+          type: object
+          properties:
+            playersJoined:
+              type: array
+              items:
+                type: string
+            playersLeft:
+              type: array
+              items:
+                type: string
+            phaseChanged:
+              type: boolean
+            ticketsChanged:
+              type: boolean
+
+    ReconnectResponse:
+      type: object
+      description: Response to reconnection attempt
+      required:
+        - result
+      properties:
+        result:
+          $ref: '#/components/schemas/ReconnectResult'
+        lobbySync:
+          $ref: '#/components/schemas/LobbySync'
+        message:
+          type: string
+        newHost:
+          type: string
+
+    Projectile:
+      type: object
+      description: Projectile in boss ring attack
+      required:
+        - id
+        - x
+        - y
+        - targetX
+        - targetY
+        - emoji
+      properties:
+        id:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+        targetX:
+          type: number
+        targetY:
+          type: number
+        emoji:
+          type: string
+
+    HealedPlayer:
+      type: object
+      description: Player that was healed
+      required:
+        - playerId
+        - newHealth
+      properties:
+        playerId:
+          type: string
+        newHealth:
+          type: number
+
+    MissedEvent:
+      type: object
+      description: An event that was missed during disconnect
+      required:
+        - event
+        - data
+      properties:
+        event:
+          type: string
+        data: {}
+
+    # =============================================
+    # PAYLOAD SCHEMAS - CLIENT TO SERVER
+    # =============================================
+
+    EmptyPayload:
+      type: object
+      description: Empty payload for events with no data
+
+    CreateLobbyPayload:
+      type: object
+      required:
+        - lobbyName
+        - hostName
+      properties:
+        lobbyName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        hostName:
+          type: string
+          minLength: 1
+          maxLength: 50
+        initialSettings:
+          type: object
+          properties:
+            timerSettings:
+              $ref: '#/components/schemas/TimerSettings'
+            jiraSettings:
+              $ref: '#/components/schemas/JiraSettings'
+            estimationSettings:
+              $ref: '#/components/schemas/EstimationSettings'
+            customLobbyId:
+              type: string
+              pattern: '^[a-zA-Z0-9-]{3,30}$'
+
+    JoinLobbyPayload:
+      type: object
+      required:
+        - lobbyId
+        - playerName
+      properties:
+        lobbyId:
+          type: string
+          minLength: 1
+        playerName:
+          type: string
+          minLength: 1
+          maxLength: 50
+
+    SelectAvatarPayload:
+      type: object
+      required:
+        - avatarClass
+      properties:
+        avatarClass:
+          $ref: '#/components/schemas/AvatarClass'
+
+    AssignTeamPayload:
+      type: object
+      required:
+        - playerId
+        - team
+      properties:
+        playerId:
+          type: string
+        team:
+          $ref: '#/components/schemas/TeamType'
+
+    ChangeOwnTeamPayload:
+      type: object
+      required:
+        - team
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+
+    AddTicketsPayload:
+      type: object
+      required:
+        - tickets
+      properties:
+        tickets:
+          type: array
+          items:
+            $ref: '#/components/schemas/JiraTicket'
+
+    RemoveTicketPayload:
+      type: object
+      required:
+        - ticketId
+      properties:
+        ticketId:
+          type: string
+
+    UpdateJiraSettingsPayload:
+      type: object
+      required:
+        - jiraSettings
+      properties:
+        jiraSettings:
+          $ref: '#/components/schemas/JiraSettings'
+
+    LobbyPlayerPosPayload:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+        direction:
+          type: string
+
+    LobbyPlayerJumpPayload:
+      type: object
+      required:
+        - isJumping
+      properties:
+        isJumping:
+          type: boolean
+
+    LobbyEmotePayload:
+      type: object
+      required:
+        - message
+        - x
+        - y
+      properties:
+        message:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+
+    SubmitScorePayload:
+      type: object
+      required:
+        - score
+      properties:
+        score:
+          $ref: '#/components/schemas/ScoreValue'
+
+    UpdateDiscussionVotePayload:
+      type: object
+      required:
+        - score
+      properties:
+        score:
+          $ref: '#/components/schemas/ScoreValue'
+
+    AttackBossPayload:
+      type: object
+      required:
+        - damage
+      properties:
+        damage:
+          type: number
+          minimum: 0
+
+    PlayerPerformancePayload:
+      type: object
+      required:
+        - playerId
+        - team
+        - estimationTime
+        - score
+      properties:
+        playerId:
+          type: string
+        team:
+          $ref: '#/components/schemas/TeamType'
+        estimationTime:
+          type: number
+        score:
+          type: number
+        ticketId:
+          type: string
+
+    UpdateTimerSettingsPayload:
+      type: object
+      required:
+        - timerSettings
+      properties:
+        timerSettings:
+          $ref: '#/components/schemas/TimerSettings'
+
+    YoutubePlayPayload:
+      type: object
+      required:
+        - videoId
+        - url
+      properties:
+        videoId:
+          type: string
+        url:
+          type: string
+
+    AdvancePhaseNowPayload:
+      type: object
+      required:
+        - lobbyId
+        - playerId
+      properties:
+        lobbyId:
+          type: string
+        playerId:
+          type: string
+
+    ForceVotingProgressionPayload:
+      type: object
+      required:
+        - lobbyId
+      properties:
+        lobbyId:
+          type: string
+
+    PlayerPosPayload:
+      type: object
+      required:
+        - x
+        - y
+      properties:
+        x:
+          type: number
+        y:
+          type: number
+
+    AttackPlayerPayload:
+      type: object
+      required:
+        - targetId
+        - damage
+      properties:
+        targetId:
+          type: string
+        damage:
+          type: number
+
+    ReviveTargetPayload:
+      type: object
+      required:
+        - targetId
+      properties:
+        targetId:
+          type: string
+
+    PlayerJumpPayload:
+      type: object
+      required:
+        - isJumping
+      properties:
+        isJumping:
+          type: boolean
+
+    BossDamagePlayerPayload:
+      type: object
+      required:
+        - playerId
+        - damage
+      properties:
+        playerId:
+          type: string
+        damage:
+          type: number
+
+    PlayerProjectilePayload:
+      type: object
+      required:
+        - startX
+        - startY
+        - targetX
+        - targetY
+        - emoji
+      properties:
+        startX:
+          type: number
+        startY:
+          type: number
+        targetX:
+          type: number
+        targetY:
+          type: number
+        emoji:
+          type: string
+        targetPlayerId:
+          type: string
+
+    ReconnectWithTokenPayload:
+      type: object
+      required:
+        - reconnectToken
+      properties:
+        reconnectToken:
+          type: string
+          minLength: 1
+
+    RequestMissedEventsPayload:
+      type: object
+      required:
+        - lastSeq
+      properties:
+        lastSeq:
+          type: number
+
+    AttackMinionPayload:
+      type: object
+      required:
+        - minionPlayerId
+      properties:
+        minionPlayerId:
+          type: string
+
+    FinalizeEstimatePayload:
+      type: object
+      required:
+        - estimate
+      properties:
+        estimate:
+          type: number
+
+    # =============================================
+    # PAYLOAD SCHEMAS - SERVER TO CLIENT
+    # =============================================
+
+    LobbyCreatedPayload:
+      type: object
+      required:
+        - lobby
+        - inviteLink
+      properties:
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+        inviteLink:
+          type: string
+
+    LobbyJoinedPayload:
+      type: object
+      required:
+        - lobby
+        - player
+      properties:
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+        player:
+          $ref: '#/components/schemas/Player'
+
+    LobbyUpdatedPayload:
+      type: object
+      required:
+        - lobby
+      properties:
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+
+    AvatarSelectedPayload:
+      type: object
+      required:
+        - playerId
+        - avatar
+      properties:
+        playerId:
+          type: string
+        avatar:
+          $ref: '#/components/schemas/AvatarClass'
+
+    LobbyPlayerPosServerPayload:
+      type: object
+      required:
+        - playerId
+        - x
+        - y
+      properties:
+        playerId:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+        direction:
+          type: string
+
+    LobbyPlayerJumpServerPayload:
+      type: object
+      required:
+        - playerId
+        - isJumping
+      properties:
+        playerId:
+          type: string
+        isJumping:
+          type: boolean
+
+    LobbyEmoteServerPayload:
+      type: object
+      required:
+        - playerId
+        - message
+        - x
+        - y
+      properties:
+        playerId:
+          type: string
+        message:
+          type: string
+        x:
+          type: number
+        y:
+          type: number
+
+    PlayerJoinedPayload:
+      type: object
+      required:
+        - player
+        - lobby
+      properties:
+        player:
+          $ref: '#/components/schemas/Player'
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+
+    BattleStartedPayload:
+      type: object
+      required:
+        - lobby
+        - boss
+      properties:
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+        boss:
+          $ref: '#/components/schemas/Boss'
+
+    ScoreSubmittedPayload:
+      type: object
+      required:
+        - playerId
+        - team
+      properties:
+        playerId:
+          type: string
+        team:
+          $ref: '#/components/schemas/TeamType'
+
+    ScoresRevealedPayload:
+      type: object
+      required:
+        - teamScores
+        - teamConsensus
+      properties:
+        teamScores:
+          $ref: '#/components/schemas/TeamScores'
+        teamConsensus:
+          $ref: '#/components/schemas/TeamConsensus'
+
+    BossAttackedPayload:
+      type: object
+      required:
+        - playerId
+        - damage
+        - bossHealth
+      properties:
+        playerId:
+          type: string
+        damage:
+          type: number
+        bossHealth:
+          type: number
+
+    BossHealedPayload:
+      type: object
+      required:
+        - bossHealth
+        - healAmount
+      properties:
+        bossHealth:
+          type: number
+        healAmount:
+          type: number
+
+    ModifierUpdatedPayload:
+      type: object
+      required:
+        - modifier
+      properties:
+        modifier:
+          type: number
+
+    GameErrorPayload:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+
+    VotingTimeoutPayload:
+      type: object
+      required:
+        - submittedCount
+        - totalCount
+        - message
+      properties:
+        submittedCount:
+          type: number
+        totalCount:
+          type: number
+        message:
+          type: string
+
+    PlayerDisconnectedPayload:
+      type: object
+      required:
+        - playerId
+      properties:
+        playerId:
+          type: string
+
+    HostTransferredPayload:
+      type: object
+      required:
+        - oldHostId
+        - newHostId
+        - newHostName
+        - reason
+      properties:
+        oldHostId:
+          type: string
+        newHostId:
+          type: string
+        newHostName:
+          type: string
+        reason:
+          type: string
+
+    TimerUpdatedPayload:
+      type: object
+      required:
+        - timerState
+      properties:
+        timerState:
+          oneOf:
+            - $ref: '#/components/schemas/TimerState'
+            - type: 'null'
+
+    PlayersPosPayload:
+      type: object
+      required:
+        - positions
+      properties:
+        positions:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/Position'
+
+    PlayerStateUpdatedPayload:
+      type: object
+      required:
+        - playerId
+        - combatState
+      properties:
+        playerId:
+          type: string
+        combatState:
+          $ref: '#/components/schemas/PlayerCombatState'
+
+    PlayerAttackedPayload:
+      type: object
+      required:
+        - attackerId
+        - targetId
+        - damage
+        - targetHealth
+      properties:
+        attackerId:
+          type: string
+        targetId:
+          type: string
+        damage:
+          type: number
+        targetHealth:
+          type: number
+
+    PartyHealedPayload:
+      type: object
+      required:
+        - healerId
+        - healedPlayers
+      properties:
+        healerId:
+          type: string
+        healedPlayers:
+          type: array
+          items:
+            $ref: '#/components/schemas/HealedPlayer'
+
+    ReviveProgressPayload:
+      type: object
+      required:
+        - targetId
+        - reviverId
+        - progress
+      properties:
+        targetId:
+          type: string
+        reviverId:
+          type: string
+        progress:
+          type: number
+
+    ReviveCompletePayload:
+      type: object
+      required:
+        - targetId
+        - reviverId
+      properties:
+        targetId:
+          type: string
+        reviverId:
+          type: string
+
+    ReviveCancelledPayload:
+      type: object
+      required:
+        - targetId
+        - reviverId
+      properties:
+        targetId:
+          type: string
+        reviverId:
+          type: string
+
+    BossRingAttackPayload:
+      type: object
+      required:
+        - bossX
+        - bossY
+        - projectiles
+      properties:
+        bossX:
+          type: number
+        bossY:
+          type: number
+        projectiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Projectile'
+
+    PlayerProjectileFiredPayload:
+      type: object
+      required:
+        - playerId
+        - playerName
+        - startX
+        - startY
+        - targetX
+        - targetY
+        - emoji
+        - projectileId
+      properties:
+        playerId:
+          type: string
+        playerName:
+          type: string
+        startX:
+          type: number
+        startY:
+          type: number
+        targetX:
+          type: number
+        targetY:
+          type: number
+        emoji:
+          type: string
+        targetPlayerId:
+          type: string
+        projectileId:
+          type: string
+
+    PlayerReconnectedPayload:
+      type: object
+      required:
+        - playerId
+        - playerName
+      properties:
+        playerId:
+          type: string
+        playerName:
+          type: string
+
+    LobbySyncPayload:
+      $ref: '#/components/schemas/LobbySync'
+
+    ReconnectResponsePayload:
+      $ref: '#/components/schemas/ReconnectResponse'
+
+    ReconnectAttemptPayload:
+      type: object
+      required:
+        - attempt
+        - maxAttempts
+        - nextRetryIn
+      properties:
+        attempt:
+          type: number
+        maxAttempts:
+          type: number
+        nextRetryIn:
+          type: number
+
+    # Session Events Payloads
+    SeqTimestampPayload:
+      type: object
+      required:
+        - seq
+        - timestamp
+      properties:
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SessionPlayerJoinedPayload:
+      type: object
+      required:
+        - playerId
+        - playerName
+        - team
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        playerName:
+          type: string
+        team:
+          $ref: '#/components/schemas/TeamType'
+        avatar:
+          $ref: '#/components/schemas/AvatarClass'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SessionPlayerLeftPayload:
+      type: object
+      required:
+        - playerId
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SessionHostChangedPayload:
+      type: object
+      required:
+        - oldHostId
+        - newHostId
+        - newHostName
+        - seq
+        - timestamp
+      properties:
+        oldHostId:
+          type: string
+        newHostId:
+          type: string
+        newHostName:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SessionPhaseChangedPayload:
+      type: object
+      required:
+        - oldPhase
+        - newPhase
+        - seq
+        - timestamp
+      properties:
+        oldPhase:
+          $ref: '#/components/schemas/GamePhase'
+        newPhase:
+          $ref: '#/components/schemas/GamePhase'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SessionTeamChangedPayload:
+      type: object
+      required:
+        - playerId
+        - oldTeam
+        - newTeam
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        oldTeam:
+          $ref: '#/components/schemas/TeamType'
+        newTeam:
+          $ref: '#/components/schemas/TeamType'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SessionAvatarSelectedPayload:
+      type: object
+      required:
+        - playerId
+        - avatar
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        avatar:
+          $ref: '#/components/schemas/AvatarClass'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    # Estimation Events Payloads
+    EstimationVoteCastPayload:
+      type: object
+      required:
+        - playerId
+        - team
+        - hasVoted
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        team:
+          $ref: '#/components/schemas/TeamType'
+        hasVoted:
+          type: boolean
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationVotesRevealedPayload:
+      type: object
+      required:
+        - votes
+        - team
+        - seq
+        - timestamp
+      properties:
+        votes:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/ScoreValue'
+        team:
+          $ref: '#/components/schemas/TeamType'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationConsensusReachedPayload:
+      type: object
+      required:
+        - team
+        - consensusValue
+        - seq
+        - timestamp
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+        consensusValue:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationTimerStartedPayload:
+      type: object
+      required:
+        - team
+        - endsAt
+        - durationMs
+        - seq
+        - timestamp
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+        endsAt:
+          type: number
+        durationMs:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationTimerPausedPayload:
+      type: object
+      required:
+        - team
+        - remainingMs
+        - seq
+        - timestamp
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+        remainingMs:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationTimerResumedPayload:
+      type: object
+      required:
+        - team
+        - endsAt
+        - seq
+        - timestamp
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+        endsAt:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationTimerExpiredPayload:
+      type: object
+      required:
+        - team
+        - votedCount
+        - eligibleCount
+        - seq
+        - timestamp
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+        votedCount:
+          type: number
+        eligibleCount:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationEstimateForcedPayload:
+      type: object
+      required:
+        - team
+        - consensusValue
+        - seq
+        - timestamp
+      properties:
+        team:
+          $ref: '#/components/schemas/TeamType'
+        consensusValue:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationDiscussionTimerStartedPayload:
+      type: object
+      required:
+        - durationMs
+        - endsAt
+        - seq
+        - timestamp
+      properties:
+        durationMs:
+          type: number
+        endsAt:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    EstimationDiscussionEndedPayload:
+      type: object
+      required:
+        - reason
+        - finalEstimate
+        - seq
+        - timestamp
+      properties:
+        reason:
+          type: string
+        finalEstimate:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    # Combat Events Payloads
+    CombatBossDamagedPayload:
+      type: object
+      required:
+        - playerId
+        - damage
+        - newHp
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        damage:
+          type: number
+        newHp:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatBossHealedPayload:
+      type: object
+      required:
+        - healAmount
+        - newHp
+        - seq
+        - timestamp
+      properties:
+        healAmount:
+          type: number
+        newHp:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatBossEnragedPayload:
+      type: object
+      required:
+        - message
+        - seq
+        - timestamp
+      properties:
+        message:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatBossTelegraphPayload:
+      type: object
+      required:
+        - message
+        - delayMs
+        - seq
+        - timestamp
+      properties:
+        targetId:
+          type: string
+        attackType:
+          type: string
+        message:
+          type: string
+        delayMs:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatPlayerDamagedPayload:
+      type: object
+      required:
+        - playerId
+        - damage
+        - newHp
+        - source
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        damage:
+          type: number
+        newHp:
+          type: number
+        source:
+          $ref: '#/components/schemas/DamageSource'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatPlayerDownedPayload:
+      type: object
+      required:
+        - playerId
+        - countdownSeconds
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        countdownSeconds:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatPlayerRevivedPayload:
+      type: object
+      required:
+        - playerId
+        - reviverId
+        - newHp
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        reviverId:
+          type: string
+        newHp:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatRevivalStartedPayload:
+      type: object
+      required:
+        - reviverId
+        - targetId
+        - durationMs
+        - seq
+        - timestamp
+      properties:
+        reviverId:
+          type: string
+        targetId:
+          type: string
+        durationMs:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatRevivalCancelledPayload:
+      type: object
+      required:
+        - reviverId
+        - targetId
+        - reason
+        - seq
+        - timestamp
+      properties:
+        reviverId:
+          type: string
+        targetId:
+          type: string
+        reason:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatPlayerEnteredBattlePayload:
+      type: object
+      required:
+        - playerId
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatModifierUpdatedPayload:
+      type: object
+      required:
+        - modifier
+        - seq
+        - timestamp
+      properties:
+        modifier:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatCountdownStartedPayload:
+      type: object
+      required:
+        - durationSeconds
+        - startedAt
+        - seq
+        - timestamp
+      properties:
+        durationSeconds:
+          type: number
+        startedAt:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatCountdownTickPayload:
+      type: object
+      required:
+        - remainingSeconds
+        - multiplier
+        - seq
+        - timestamp
+      properties:
+        remainingSeconds:
+          type: number
+        multiplier:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatCountdownCompletePayload:
+      type: object
+      required:
+        - finalMultiplier
+        - seq
+        - timestamp
+      properties:
+        finalMultiplier:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatTeamAttackPayload:
+      type: object
+      required:
+        - damage
+        - multiplier
+        - newBossHp
+        - seq
+        - timestamp
+      properties:
+        damage:
+          type: number
+        multiplier:
+          type: number
+        newBossHp:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatMinionSpawnedPayload:
+      type: object
+      required:
+        - playerId
+        - avatar
+        - hp
+        - maxHp
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        avatar:
+          type: string
+        hp:
+          type: number
+        maxHp:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatMinionAttackPayload:
+      type: object
+      required:
+        - minionPlayerId
+        - targetId
+        - damage
+        - attackType
+        - seq
+        - timestamp
+      properties:
+        minionPlayerId:
+          type: string
+        targetId:
+          type: string
+        damage:
+          type: number
+        attackType:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatMinionHealBossPayload:
+      type: object
+      required:
+        - minionPlayerId
+        - healAmount
+        - newBossHp
+        - seq
+        - timestamp
+      properties:
+        minionPlayerId:
+          type: string
+        healAmount:
+          type: number
+        newBossHp:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatMinionDamagedPayload:
+      type: object
+      required:
+        - playerId
+        - damage
+        - newHp
+        - attackerId
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        damage:
+          type: number
+        newHp:
+          type: number
+        attackerId:
+          type: string
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    CombatMinionKilledPayload:
+      type: object
+      required:
+        - playerId
+        - killerId
+        - respawnInSeconds
+        - seq
+        - timestamp
+      properties:
+        playerId:
+          type: string
+        killerId:
+          type: string
+        respawnInSeconds:
+          type: number
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    # System Events Payloads
+    SystemFullStatePayload:
+      type: object
+      required:
+        - lobby
+        - seq
+        - timestamp
+      properties:
+        lobby:
+          $ref: '#/components/schemas/Lobby'
+        seq:
+          type: number
+        timestamp:
+          type: number
+
+    SystemMissedEventsPayload:
+      type: object
+      required:
+        - events
+      properties:
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissedEvent'
