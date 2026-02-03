@@ -9,9 +9,9 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### PR Workflow
 
-- [ ] **PR-01**: PRs require at least 1 reviewer approval before merge
-- [ ] **PR-02**: PRs use standardized template with summary, test plan, and checklist
-- [ ] **PR-03**: PRs require all CI status checks to pass before merge
+- [x] **PR-01**: PRs require at least 1 reviewer approval before merge
+- [x] **PR-02**: PRs use standardized template with summary, test plan, and checklist
+- [x] **PR-03**: PRs require all CI status checks to pass before merge
 
 ### Security Scanning
 
@@ -22,8 +22,8 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### Test Quality
 
-- [ ] **TEST-01**: CI fails if test coverage drops below 70% threshold
-- [ ] **TEST-02**: PR comments show coverage diff with lines changed
+- [x] **TEST-01**: CI fails if test coverage drops below 70% threshold
+- [x] **TEST-02**: PR comments show coverage diff with lines changed
 - [ ] **TEST-03**: Playwright captures and compares UI screenshots for visual regression
 - [ ] **TEST-04**: E2E tests validate accessibility using axe-core (no critical violations)
 
@@ -85,15 +85,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PR-01 | Phase 7 | Pending |
-| PR-02 | Phase 7 | Pending |
-| PR-03 | Phase 7 | Pending |
+| PR-01 | Phase 7 | Complete |
+| PR-02 | Phase 7 | Complete |
+| PR-03 | Phase 7 | Complete |
 | SEC-01 | Phase 8 | Pending |
 | SEC-02 | Phase 8 | Pending |
 | SEC-03 | Phase 8 | Pending |
 | SEC-04 | Phase 8 | Pending |
-| TEST-01 | Phase 7 | Pending |
-| TEST-02 | Phase 7 | Pending |
+| TEST-01 | Phase 7 | Complete |
+| TEST-02 | Phase 7 | Complete |
 | TEST-03 | Phase 10 | Pending |
 | TEST-04 | Phase 11 | Pending |
 | DB-01 | Phase 9 | Pending |

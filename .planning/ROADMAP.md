@@ -16,7 +16,7 @@ v1.2 matures the CI/CD infrastructure with engineering best practices: PR qualit
 - Phases 7-14 continue from v1.0 numbering (v1.1 was unnumbered)
 - Decimal phases (7.1, 7.2): Urgent insertions (marked with INSERTED)
 
-- [ ] **Phase 7: CI Foundations** - PR workflow and test coverage enforcement
+- [x] **Phase 7: CI Foundations** - PR workflow and test coverage enforcement
 - [ ] **Phase 8: Security Hardening** - Security scanning gates in CI
 - [ ] **Phase 9: Database Migrations** - Versioned migrations with deployment hooks
 - [ ] **Phase 10: Visual Regression** - Screenshot-based UI change detection
@@ -40,8 +40,8 @@ v1.2 matures the CI/CD infrastructure with engineering best practices: PR qualit
 **Plans**: 2 plans
 
 Plans:
-- [ ] 07-01-PLAN.md — PR templates, CODEOWNERS, and Vitest coverage thresholds
-- [ ] 07-02-PLAN.md — CI coverage reporting and branch protection configuration
+- [x] 07-01-PLAN.md — PR templates, CODEOWNERS, and Vitest coverage thresholds
+- [x] 07-02-PLAN.md — CI coverage reporting and branch protection configuration
 
 ### Phase 8: Security Hardening
 **Goal**: Security issues caught before code reaches main branch
@@ -147,7 +147,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 7. CI Foundations | 0/2 | Planned | - |
+| 7. CI Foundations | 2/2 | Complete | 2026-02-02 |
 | 8. Security Hardening | 0/2 | Not started | - |
 | 9. Database Migrations | 0/2 | Not started | - |
 | 10. Visual Regression | 0/1 | Not started | - |
