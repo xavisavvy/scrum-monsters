@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 7 - CI Foundations
+**Current focus:** Phase 8 - Security Hardening
 
 ## Current Position
 
-Phase: 7 of 14 (CI Foundations) - COMPLETE
-Plan: 2 of 2 in current phase
-Status: Verified
-Last activity: 2026-02-02 - Phase 7 complete, all must-haves verified
+Phase: 8 of 14 (Security Hardening)
+Plan: 1 of 3 in current phase
+Status: In progress
+Last activity: 2026-02-02 - Completed 08-01-PLAN.md (Security Scanning Configuration)
 
-Progress: [██                  ] 12%
+Progress: [███                 ] 13%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [██                  ] 12%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 2 (v1.2 milestone)
-- Average duration: 4 minutes
-- Total execution time: 0.13 hours
+- Total plans completed: 3 (v1.2 milestone)
+- Average duration: 3 minutes
+- Total execution time: 0.18 hours
 
 *Updated after each plan completion*
 
@@ -57,6 +57,8 @@ Recent decisions affecting current work:
 - [07-02]: Branch protection via GitHub API (1 approval, CI gates, linear history)
 - [07-02]: Coverage PR comments via vitest-coverage-report-action
 - [07-02]: Dynamic coverage badge via gist
+- [08-01]: CodeQL blocks high/critical security findings only (GitHub ruleset)
+- [08-01]: Two-point secret detection with graceful fallback (pre-commit + CI)
 
 ### Pending Todos
 
@@ -67,11 +69,12 @@ None.
 - [Research]: Production schema state may differ if manual SQL applied
 - [Research]: ArgoCD auto-sync config needs verification for rollback work
 - [Research]: 3D content may need exclusion from visual regression tests
+- [08-01]: Husky deprecation warning in pre-commit output (v10 breaking change)
 
 ## Session Continuity
 
 Last session: 2026-02-02
-Stopped at: Phase 7 complete, verified
+Stopped at: Completed 08-01-PLAN.md (Security Scanning Configuration)
 Resume file: None
 
-**Next step:** `/gsd:discuss-phase 8` or `/gsd:plan-phase 8` for Security Hardening
+**Next step:** `/gsd:execute-phase 8` for plan 08-02 (Dependency Vulnerability Scanning)
