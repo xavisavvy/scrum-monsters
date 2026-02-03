@@ -66,11 +66,12 @@ Plans:
   1. Schema changes produce versioned migration files (not db:push)
   2. CI fails if schema.ts changes without corresponding migration
   3. ArgoCD runs migrations before deploying new application version
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 09-01: TBD
-- [ ] 09-02: TBD
+- [ ] 09-01-PLAN.md — Local migration workflow with npm scripts and initial migration
+- [ ] 09-02-PLAN.md — CI migration validation with PostgreSQL service container
+- [ ] 09-03-PLAN.md — ArgoCD PreSync hook for deployment migration execution
 
 ### Phase 10: Visual Regression
 **Goal**: UI changes detected and reviewed before merge
@@ -149,7 +150,7 @@ Phases execute in numeric order: 7 -> 7.1 -> 7.2 -> 8 -> ... -> 14
 |-------|----------------|--------|-----------|
 | 7. CI Foundations | 2/2 | Complete | 2026-02-02 |
 | 8. Security Hardening | 2/2 | Complete | 2026-02-02 |
-| 9. Database Migrations | 0/2 | Not started | - |
+| 9. Database Migrations | 0/3 | Planned | - |
 | 10. Visual Regression | 0/1 | Not started | - |
 | 11. Accessibility Testing | 0/1 | Not started | - |
 | 12. API Contract Testing | 0/2 | Not started | - |
