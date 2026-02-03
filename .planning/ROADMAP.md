@@ -52,11 +52,11 @@ Plans:
   2. Commits with secrets/API keys are rejected before push
   3. PRs with unapproved dependency licenses cannot merge
   4. PRs with high/critical npm audit vulnerabilities cannot merge
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 08-01: TBD
-- [ ] 08-02: TBD
+- [ ] 08-01-PLAN.md — CodeQL merge blocking via rulesets and gitleaks secret detection
+- [ ] 08-02-PLAN.md — Dependency vulnerability scanning (audit-ci) and license compliance (license-checker)
 
 ### Phase 9: Database Migrations
 **Goal**: Schema changes deploy safely through versioned migrations
