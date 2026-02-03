@@ -164,6 +164,65 @@ jobs:
       - name: Check license compliance
         run: npm run license-check
 
+  validate-migrations:
+    name: Validate Migrations
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Apply migrations to fresh database
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+        run: npm run db:migrate
+
+      - name: Check for schema drift
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/test
+        run: |
+          # Generate would create files if schema changed without migration
+          npx drizzle-kit generate
+
+          # Check if any new files were generated
+          if [ -n "$(git status --porcelain migrations/)" ]; then
+            echo "::error::Schema changes detected without corresponding migration"
+            echo "Run: npm run db:migrate:generate"
+            echo ""
+            echo "Uncommitted changes in migrations/:"
+            git status migrations/
+            echo ""
+            echo "Diff:"
+            git diff migrations/
+            exit 1
+          fi
+
+          echo "Schema and migrations are in sync"
+
   # Summary job for branch protection rules
   ci-success:
     name: CI Success
