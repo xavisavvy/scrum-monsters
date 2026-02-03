@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-02)
 
 **Core value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
-**Current focus:** Phase 12 - API Contract Testing (IN PROGRESS)
+**Current focus:** Phase 12 - API Contract Testing (COMPLETE)
 
 ## Current Position
 
 Phase: 12 of 14 (API Contract Testing)
-Plan: 2 of 3 in current phase
-Status: In progress
-Last activity: 2026-02-03 - Completed 12-02-PLAN.md
+Plan: 3 of 3 in current phase
+Status: Phase complete
+Last activity: 2026-02-03 - Completed 12-03-PLAN.md
 
-Progress: [█████████░          ] 50%
+Progress: [██████████░         ] 55%
 
 ## Milestone Summary
 
@@ -36,9 +36,9 @@ Progress: [█████████░          ] 50%
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 15 (v1.2 milestone)
-- Average duration: 3.1 minutes
-- Total execution time: 0.77 hours
+- Total plans completed: 16 (v1.2 milestone)
+- Average duration: 3.0 minutes
+- Total execution time: 0.80 hours
 
 *Updated after each plan completion*
 
@@ -101,6 +101,10 @@ Recent decisions affecting current work:
 - [12-02]: AsyncAPI 3.0 format for WebSocket API documentation
 - [12-02]: Zod schemas separate from types for incremental adoption
 - [12-02]: ClientEventSchemas registry for dynamic middleware validation
+- [12-03]: Schemathesis pinned >=3.25.0,<4.0.0 for CI stability
+- [12-03]: hypothesis-seed=42 for reproducible contract tests
+- [12-03]: Gate job (api-contracts-success) aggregates all checks
+- [12-03]: JUnit report for PR visibility via action-junit-report
 
 ### Pending Todos
 
@@ -117,7 +121,7 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-03
-Stopped at: Completed 12-02-PLAN.md
+Stopped at: Completed 12-03-PLAN.md (Phase 12 complete)
 Resume file: None
 
-**Next step:** Continue with 12-03-PLAN.md (Contract Testing CI Integration)
+**Next step:** Continue with Phase 13 - Load Testing
