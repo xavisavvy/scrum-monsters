@@ -47,9 +47,9 @@ Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
 
 ### Deployment
 
-- [ ] **DEPLOY-01**: GitHub workflow triggers ArgoCD rollback with environment protection
-- [ ] **DEPLOY-02**: Rollback workflow requires approval for production
-- [ ] **DEPLOY-03**: Rollback creates audit trail in GitHub Actions history
+- [x] **DEPLOY-01**: GitHub workflow triggers ArgoCD rollback with environment protection
+- [x] **DEPLOY-02**: Rollback workflow requires approval for production
+- [x] **DEPLOY-03**: Rollback creates audit trail in GitHub Actions history
 
 ## Future Requirements
 
@@ -105,9 +105,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PERF-01 | Phase 13 | Complete |
 | PERF-02 | Phase 13 | Complete |
 | PERF-03 | Phase 13 | Complete |
-| DEPLOY-01 | Phase 14 | Pending |
-| DEPLOY-02 | Phase 14 | Pending |
-| DEPLOY-03 | Phase 14 | Pending |
+| DEPLOY-01 | Phase 14 | Complete |
+| DEPLOY-02 | Phase 14 | Complete |
+| DEPLOY-03 | Phase 14 | Complete |
 
 **Coverage:**
 - v1.2 requirements: 23 total
@@ -116,4 +116,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-02*
-*Last updated: 2026-02-03 after Phase 13 completion*
+*Last updated: 2026-02-03 after Phase 14 completion*
