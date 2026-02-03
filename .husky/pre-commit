@@ -1,1 +1,12 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "Running gitleaks secret detection..."
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --verbose --redact
+else
+  echo "Warning: gitleaks not installed. Install from https://github.com/gitleaks/gitleaks"
+  echo "Skipping local secret detection (CI will still catch secrets)"
+fi
+
 npm test
