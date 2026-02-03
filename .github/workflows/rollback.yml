@@ -267,21 +267,6 @@ jobs:
             "$STATE_FILE" > "${STATE_FILE}.tmp"
           mv "${STATE_FILE}.tmp" "$STATE_FILE"
 
-      - name: Record rollback in audit log
-        if: inputs.dry_run == false
-        run: |
-          mkdir -p .argocd-rollback
-
-          cat >> .argocd-rollback/rollback-history.jsonl << EOF
-          {"timestamp":"$(date -Iseconds)","environment":"${{ inputs.environment }}","component":"${{ inputs.component || 'all' }}","trigger":"manual","actor":"${{ github.actor }}","from_revision":"${{ steps.get-current.outputs.revision }}","to_revision":"${{ steps.get-target.outputs.previous-revision }}","to_deployment_id":"${{ steps.get-target.outputs.previous-id }}","reason":"${{ inputs.reason }}","workflow_run":"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}","duration_seconds":"${{ steps.rollback.outputs.duration }}","success":true}
-          EOF
-
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .argocd-rollback/
-          git commit -m "audit: rollback ${{ inputs.environment }} to ${{ steps.get-target.outputs.previous-revision }}"
-          git push
-
       - name: Generate Job Summary (Success)
         if: inputs.dry_run == false && steps.rollback.outputs.success == 'true'
         run: |
@@ -314,14 +299,54 @@ jobs:
           4. Monitor for 1 hour to ensure stability
           EOF
 
-  notify-commit:
-    name: Notify Original Commit
+  audit-and-notify:
+    name: Record Audit Trail
     runs-on: ubuntu-latest
     needs: rollback
-    if: needs.rollback.outputs.rollback-success == 'true'
+    if: needs.rollback.outputs.rollback-success == 'true' && github.event.inputs.dry_run == 'false'
+    permissions:
+      contents: write  # For git push
+      pull-requests: write  # For PR comments
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Record rollback in audit log
+        run: |
+          mkdir -p .argocd-rollback
+
+          # Determine trigger type based on reason prefix
+          TRIGGER="manual"
+          if [[ "${{ github.event.inputs.reason }}" == "[AUTO]"* ]]; then
+            TRIGGER="auto"
+          fi
+
+          # Create JSONL audit entry (one line, valid JSON)
+          ENTRY=$(jq -nc \
+            --arg ts "$(date -Iseconds)" \
+            --arg env "${{ github.event.inputs.environment }}" \
+            --arg comp "${{ github.event.inputs.component || 'all' }}" \
+            --arg trigger "$TRIGGER" \
+            --arg actor "${{ github.actor }}" \
+            --arg from "${{ needs.rollback.outputs.from-revision }}" \
+            --arg to "${{ needs.rollback.outputs.to-revision }}" \
+            --arg id "${{ needs.rollback.outputs.to-deployment-id }}" \
+            --arg reason "${{ github.event.inputs.reason }}" \
+            --arg run "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --argjson duration "${{ needs.rollback.outputs.duration || 0 }}" \
+            '{timestamp: $ts, environment: $env, component: $comp, trigger: $trigger, actor: $actor, from_revision: $from, to_revision: $to, to_deployment_id: $id, reason: $reason, workflow_run: $run, duration_seconds: $duration, success: true}')
+
+          echo "$ENTRY" >> .argocd-rollback/rollback-history.jsonl
+
+          # Commit audit log
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .argocd-rollback/rollback-history.jsonl
+          git diff --cached --quiet || git commit -m "audit: rollback ${{ github.event.inputs.environment }} to ${{ needs.rollback.outputs.to-revision }}"
+          git push
 
       - name: Post comment on rolled-back commit
         uses: peter-evans/commit-comment@v3
@@ -332,9 +357,11 @@ jobs:
 
             This commit was rolled back in **${{ github.event.inputs.environment }}** environment.
 
-            **Rolled back to:** ${{ needs.rollback.outputs.to-revision }}
-            **Reason:** ${{ github.event.inputs.reason }}
-            **Triggered by:** @${{ github.actor }}
-            **Workflow:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+            | Detail | Value |
+            |--------|-------|
+            | **Rolled back to** | `${{ needs.rollback.outputs.to-revision }}` |
+            | **Reason** | ${{ github.event.inputs.reason }} |
+            | **Triggered by** | @${{ github.actor }} |
+            | **Workflow run** | [${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}) |
 
             Please investigate the root cause before attempting to redeploy.
