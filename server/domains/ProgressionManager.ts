@@ -13,6 +13,12 @@
 
 import { ScopedEventBus } from '../events';
 import type { XPCurveConfig, XPSource, XP_RATES } from '../../shared/progressionTypes';
+import type {
+  EstimationVoteCastPayload,
+  CombatBossDamagedPayload,
+  EstimationFullConsensusReachedPayload,
+  CombatPlayerRevivedPayload,
+} from '../events/eventTypes';
 
 /**
  * Dependencies required by ProgressionManager
@@ -154,6 +160,58 @@ export class ProgressionManager {
   constructor(deps: ProgressionManagerDeps) {
     this.eventBus = deps.eventBus;
     this.curve = new XPCurve(DEFAULT_CURVE_CONFIG);
+
+    // Subscribe to XP-awarding events
+    this.setupEventSubscriptions();
+  }
+
+  /**
+   * Setup event subscriptions for XP triggers
+   */
+  private setupEventSubscriptions(): void {
+    // XP-01: Vote submission (10 XP)
+    this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
+
+    // XP-02: Boss damage (2 XP per damage point)
+    this.eventBus.on('combat:boss_damaged', this.handleBossDamaged.bind(this));
+
+    // XP-03: Consensus bonus (50 XP to all voters)
+    this.eventBus.on('estimation:full_consensus_reached', this.handleConsensus.bind(this));
+
+    // XP-04: Revival (30 XP to reviver)
+    this.eventBus.on('combat:player_revived', this.handleRevival.bind(this));
+  }
+
+  /**
+   * Handle vote cast event - award 10 XP for voting
+   */
+  private handleVoteCast(payload: EstimationVoteCastPayload): void {
+    this.awardXP(payload.lobbyId, payload.playerId, XP_RATE_VALUES.vote, 'vote');
+  }
+
+  /**
+   * Handle boss damaged event - award 2 XP per damage point
+   */
+  private handleBossDamaged(payload: CombatBossDamagedPayload): void {
+    const xp = payload.damage * XP_RATE_VALUES.boss_damage;
+    this.awardXP(payload.lobbyId, payload.playerId, xp, 'boss_damage');
+  }
+
+  /**
+   * Handle consensus reached event - award 50 XP to all voters
+   */
+  private handleConsensus(payload: EstimationFullConsensusReachedPayload): void {
+    // Note: We need access to the list of players who voted
+    // For now, this is a placeholder - will need lobby player access
+    // TODO: Add getActivePlayers callback to ProgressionManagerDeps
+    console.warn('Consensus XP award requires player list - not yet implemented');
+  }
+
+  /**
+   * Handle player revived event - award 30 XP to reviver
+   */
+  private handleRevival(payload: CombatPlayerRevivedPayload): void {
+    this.awardXP(payload.lobbyId, payload.reviverId, XP_RATE_VALUES.revival, 'revival');
   }
 
   /**
