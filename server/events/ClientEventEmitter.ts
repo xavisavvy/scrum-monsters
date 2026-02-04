@@ -93,6 +93,14 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('session:team_changed', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'session:team_changed', {
+        playerId: payload.playerId,
+        oldTeam: payload.oldTeam,
+        newTeam: payload.newTeam,
+      });
+    });
+
     this.eventBus.on('session:lobby_destroyed', (payload) => {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
@@ -345,6 +353,27 @@ export class ClientEventEmitter {
     this.eventBus.on('combat:cleanup_complete', (payload) => {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
+    });
+
+    // =============================================================================
+    // Progression Events
+    // =============================================================================
+
+    this.eventBus.on('progression:xp_awarded', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'progression:xp_awarded', {
+        playerId: payload.playerId,
+        amount: payload.amount,
+        source: payload.source,
+        newTotal: payload.newTotal,
+      });
+    });
+
+    this.eventBus.on('progression:level_up', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'progression:level_up', {
+        playerId: payload.playerId,
+        oldLevel: payload.oldLevel,
+        newLevel: payload.newLevel,
+      });
     });
   }
 

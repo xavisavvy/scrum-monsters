@@ -1,0 +1,36 @@
+# Gitleaks configuration for ScrumQuest
+# Prevents secrets from being committed to the repository
+
+# Use default gitleaks rules
+[extend]
+useDefault = true
+
+# Allowlist paths that don't need secret scanning
+[allowlist]
+description = "Allowlisted files and patterns"
+paths = [
+  '''node_modules/.*''',
+  '''\.git/.*''',
+  '''package-lock\.json''',
+  '''.*\.md''',
+  '''.*\.test\.[jt]sx?''',
+  '''.*\.spec\.[jt]sx?''',
+  '''.*\.e2e\.[jt]sx?''',
+  '''vitest\.config\.ts''',
+  '''playwright\.config\.ts''',
+  '''\.github/workflows/.*''',
+]
+
+# Allowlist common placeholder patterns
+regexes = [
+  '''(example|sample|placeholder|demo|test)''',
+  '''(TODO|CHANGEME|REPLACE_ME|YOUR_.*_HERE)''',
+  '''sk_test_.*''',  # Stripe test keys
+  '''pk_test_.*''',  # Stripe test public keys
+]
+
+# Custom rules for project-specific patterns
+[[rules]]
+id = "hardcoded-localhost-credentials"
+description = "Hardcoded credentials in localhost URLs"
+regex = '''(https?://[^:@\s]+:[^:@\s]+@localhost)'''

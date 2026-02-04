@@ -30,7 +30,12 @@ export default defineConfig({
     screenshot: "only-on-failure",
     // Record video on failure
     video: "retain-on-failure",
+    // Emulate prefers-reduced-motion for visual tests
+    reducedMotion: "reduce",
   },
+
+  // Use platform-agnostic snapshot paths (CI Docker ensures consistent rendering)
+  snapshotPathTemplate: "{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}",
 
   // Configure projects for major browsers
   projects: [
@@ -63,5 +68,11 @@ export default defineConfig({
   timeout: 30 * 1000,
   expect: {
     timeout: 5 * 1000,
+    // Visual regression testing configuration
+    toHaveScreenshot: {
+      maxDiffPixelRatio: 0.01,    // 1% diff allowed
+      threshold: 0.2,              // Color difference tolerance (YIQ space, default)
+      animations: "disabled",      // Disable CSS animations/transitions
+    },
   },
 });

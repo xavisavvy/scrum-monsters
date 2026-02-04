@@ -41,56 +41,64 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Prometheus metrics endpoint — v1.1
 - ✓ Grafana + Loki monitoring stack — v1.1
 - ✓ ArgoCD GitOps deployment — v1.1
+- ✓ PR workflow with required reviews and templates — v1.2
+- ✓ Security scanning (CodeQL SAST, gitleaks, audit-ci) — v1.2
+- ✓ Test coverage thresholds with PR reporting — v1.2
+- ✓ Visual regression testing with Playwright — v1.2
+- ✓ Drizzle versioned migrations with CI validation — v1.2
+- ✓ API contract testing with OpenAPI/Schemathesis — v1.2
+- ✓ Load testing with k6 (HTTP + WebSocket) — v1.2
+- ✓ Accessibility testing with axe-core — v1.2
+- ✓ ArgoCD rollback automation with audit trail — v1.2
 
 ### Active
 
-- [ ] PR workflow with required reviews and templates — v1.2
-- [ ] Security scanning (CodeQL/Snyk SAST) in CI — v1.2
-- [ ] Test coverage thresholds (80%+ enforced) — v1.2
-- [ ] Visual regression testing with Playwright — v1.2
-- [ ] Drizzle versioned migrations — v1.2
-- [ ] API contract testing with OpenAPI — v1.2
-- [ ] Load testing with k6 — v1.2
-- [ ] Accessibility testing with axe-core — v1.2
-- [ ] Automated changelog publishing — v1.2
-- [ ] ArgoCD rollback automation — v1.2
+- [ ] XP system with voting and combat triggers
+- [ ] Account-level progression with global unlocks
+- [ ] Class mastery system with class-specific rewards
+- [ ] Unique boss attack patterns per boss type
+- [ ] Boss difficulty scaling based on team level
+- [ ] Class-specific combat abilities
+- [ ] Team combo attacks for coordinated play
+- [ ] Combat items and consumables
 
 ### Out of Scope
 
-- XP/leveling system — future feature
-- New boss types or combat mechanics — keep existing combat
-- UI redesign — keep existing components
+- UI redesign — deferred to v1.4
+- Mobile responsiveness — deferred to v1.4
 - Database schema changes — in-memory state focus
 - Microservices architecture — network latency kills real-time performance
 - Full removal of lobby_updated fallback — intentionally retained for edge cases
 
 ## Context
 
-**Current State (v1.1 shipped):**
-- ~43k lines of TypeScript across client/server/shared
+**Current State (v1.2 shipped):**
+- ~70k lines of TypeScript/YAML across client/server/shared/k8s
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager
 - EventBus-based coordination with scoped subscriptions
 - Fine-grained events with 80-95% bandwidth reduction
-- 284+ tests including integration suite
-- Full CI/CD infrastructure with ESLint, Playwright E2E, Kubernetes overlays
-- GitOps deployment with ArgoCD
-- Observability stack: Prometheus metrics, Grafana dashboards, Loki logs
+- Comprehensive CI/CD: ESLint, Playwright E2E/visual/a11y, Vitest coverage
+- Security scanning: CodeQL SAST, gitleaks secrets, audit-ci, license-checker
+- Database migrations: Drizzle versioned, CI validation, ArgoCD PreSync
+- API contracts: OpenAPI 3.1, AsyncAPI 3.0, Schemathesis testing
+- Load testing: k6 HTTP/WebSocket with nightly runs
+- Deployment safety: ArgoCD rollback with environment protection and audit trail
+- Observability: Prometheus metrics, Grafana dashboards, Loki logs
 
-## Current Milestone: v1.2 SDLC Best Practices
+## Shipped Milestones
 
-**Goal:** Implement engineering best practices for PR workflow, security scanning, test quality gates, and deployment safety.
+- **v1.0 Domain Separation** (2025-12-15): Extracted domain managers, EventBus coordination, fine-grained events
+- **v1.1 CI/CD Infrastructure** (2026-02-01): ESLint, Playwright E2E, Kubernetes/Kustomize, ArgoCD GitOps, observability
+- **v1.2 SDLC Best Practices** (2026-02-03): PR gates, security scanning, migrations, contracts, load testing, rollback
+
+## Current Milestone: v1.3 Feature Work
+
+**Goal:** Make the game more engaging with progression systems, varied boss battles, and deeper combat mechanics.
 
 **Target features:**
-- PR workflow with required reviews and templates
-- Security scanning (CodeQL/Snyk) in CI pipeline
-- Test coverage thresholds (80%+ enforced)
-- Visual regression testing with Playwright
-- Drizzle versioned database migrations
-- API contract testing with OpenAPI validation
-- Load testing with k6 performance baselines
-- Accessibility testing with axe-core in E2E
-- Automated changelog publishing on releases
-- ArgoCD rollback automation on failures
+- XP/leveling system (account-wide + class mastery hybrid)
+- Boss attack pattern variety and difficulty scaling
+- Class abilities, team combos, and combat items
 
 **Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM, Pino, Prometheus
 
@@ -128,6 +136,12 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | ArgoCD over Flux | Better UI, easier debugging, wider adoption | ✓ Good |
 | Pino over Winston | Better performance, native JSON, smaller bundle | ✓ Good |
 | Prometheus + Loki over ELK | Lower resource usage, Grafana unification | ✓ Good |
+| 12% coverage baseline over 70% target | Pragmatic start, prevents regression, raise incrementally | ✓ Good |
+| CodeQL blocks high/critical only | Reduces noise from low-risk issues | ✓ Good |
+| ArgoCD PreSync hook for migrations | Run once per sync, failed migrations block deployment | ✓ Good |
+| Load tests never block PRs | Informational only, nightly runs track trends | ✓ Good |
+| Auto-rollback disabled for production | Manual intervention ensures proper investigation | ✓ Good |
+| JSONL audit trail for rollbacks | Simple append-only format, git history provides immutability | ✓ Good |
 
 ---
-*Last updated: 2026-02-02 after v1.2 milestone start*
+*Last updated: 2026-02-03 after v1.3 milestone start*

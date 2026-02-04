@@ -14,12 +14,15 @@ import {
 import { SpriteRenderer } from './SpriteRenderer';
 import { SpeechBubble } from './SpeechBubble';
 import { EmoteModal } from './EmoteModal';
+import { MagicEffect } from './MagicEffect';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings } from '@/lib/gameTypes';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
+import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
+import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
 import { Canvas } from '@react-three/fiber';
 import * as THREE from 'three';
 
@@ -28,6 +31,78 @@ const spectatorStyles = `
   @keyframes spectatorPulse {
     0%, 100% { opacity: 0.5; }
     50% { opacity: 0.8; }
+  }
+
+  @keyframes tavernDarkPulse {
+    0%, 100% {
+      background: rgba(0, 0, 0, 0.85);
+      box-shadow: inset 0 0 100px rgba(139, 0, 0, 0.3);
+    }
+    50% {
+      background: rgba(20, 0, 0, 0.9);
+      box-shadow: inset 0 0 150px rgba(255, 0, 0, 0.5);
+    }
+  }
+
+  @keyframes dragonFlyAcross {
+    0% {
+      transform: translateX(-200px) translateY(-50px) scaleX(-1);
+      opacity: 0;
+    }
+    10% {
+      transform: translateX(0) translateY(-30px) scaleX(-1);
+      opacity: 1;
+    }
+    45% {
+      transform: translateX(var(--target-x)) translateY(0) scaleX(-1);
+    }
+    55% {
+      transform: translateX(var(--target-x)) translateY(20px) scaleX(-1) scale(1.2);
+    }
+    70% {
+      transform: translateX(calc(var(--target-x) + 100px)) translateY(-20px) scaleX(-1);
+    }
+    100% {
+      transform: translateX(calc(100vw + 200px)) translateY(-100px) scaleX(-1);
+      opacity: 0;
+    }
+  }
+
+  @keyframes chaosRainbow {
+    0% { background: linear-gradient(45deg, rgba(255,0,0,0.3), rgba(255,127,0,0.3)); }
+    14% { background: linear-gradient(90deg, rgba(255,127,0,0.3), rgba(255,255,0,0.3)); }
+    28% { background: linear-gradient(135deg, rgba(255,255,0,0.3), rgba(0,255,0,0.3)); }
+    42% { background: linear-gradient(180deg, rgba(0,255,0,0.3), rgba(0,0,255,0.3)); }
+    57% { background: linear-gradient(225deg, rgba(0,0,255,0.3), rgba(75,0,130,0.3)); }
+    71% { background: linear-gradient(270deg, rgba(75,0,130,0.3), rgba(148,0,211,0.3)); }
+    85% { background: linear-gradient(315deg, rgba(148,0,211,0.3), rgba(255,0,0,0.3)); }
+    100% { background: linear-gradient(360deg, rgba(255,0,0,0.3), rgba(255,127,0,0.3)); }
+  }
+
+  @keyframes discoFlash {
+    0%, 100% { opacity: 0.2; }
+    50% { opacity: 0.5; }
+  }
+
+  @keyframes screenShake1 {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-2px, 1px); }
+    50% { transform: translate(2px, -1px); }
+    75% { transform: translate(-1px, 2px); }
+  }
+
+  @keyframes screenShake2 {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-4px, 2px); }
+    50% { transform: translate(4px, -2px); }
+    75% { transform: translate(-2px, 4px); }
+  }
+
+  @keyframes screenShake3 {
+    0%, 100% { transform: translate(0, 0); }
+    25% { transform: translate(-6px, 3px); }
+    50% { transform: translate(6px, -3px); }
+    75% { transform: translate(-3px, 6px); }
   }
 `;
 
@@ -92,6 +167,8 @@ export function Lobby() {
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
   const [duplicateNotification, setDuplicateNotification] = useState<string | null>(null);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [isEditingLobbyName, setIsEditingLobbyName] = useState(false);
+  const [editedLobbyName, setEditedLobbyName] = useState('');
   
   // Player movement state for lobby walking
   const [keys, setKeys] = useState<Set<string>>(new Set());
@@ -126,9 +203,86 @@ export function Lobby() {
     x: number;
     y: number;
   }>>({});
-  
+
+  // Magic effects state - tracks active effects per player
+  const [magicEffects, setMagicEffects] = useState<Record<string, {
+    effects: MagicEffectType[];
+    x: number;
+    timestamp: number;
+  }>>({});
+
+  // Dead players state - tracks players who used "die" magic word
+  const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
+
+  // Flying players state - tracks players who used "fly" magic word
+  const [flyingPlayers, setFlyingPlayers] = useState<Set<string>>(new Set());
+  const [flyHeight, setFlyHeight] = useState(0); // Current fly height for local player
+
+  // Frozen players state - tracks players affected by "hold person" spell
+  const [frozenPlayers, setFrozenPlayers] = useState<Set<string>>(new Set());
+
+  // Petrified players state - tracks players turned to stone
+  const [petrifiedPlayers, setPetrifiedPlayers] = useState<Set<string>>(new Set());
+
+  // Dark tavern state - triggered by massacre spell
+  const [tavernDarkMode, setTavernDarkMode] = useState(false);
+
+  // Chaos/disco mode state - triggered by chaos mode spell
+  const [chaosMode, setChaosMode] = useState(false);
+
+  // Invisible players state - half opacity for self, invisible to others
+  const [invisiblePlayers, setInvisiblePlayers] = useState<Set<string>>(new Set());
+  // Flicker state - controls random brief visibility of invisible players for others
+  const [invisibleFlicker, setInvisibleFlicker] = useState<Record<string, boolean>>({});
+
+  // Dragon attack state - triggered by "clever girl" spell
+  const [dragonAttack, setDragonAttack] = useState<{
+    active: boolean;
+    targetX: number;
+    targetPlayerId: string | null;
+  }>({ active: false, targetX: 0, targetPlayerId: null });
+
+  // Refs to track current state for socket event handlers (avoids stale closures)
+  // Note: currentLobbyRef is declared after useGameState hook below
+  const flyingPlayersRef = React.useRef(flyingPlayers);
+  const playerPositionsRef = React.useRef(playerPositions);
+  const myPositionRef = React.useRef(myPosition);
+  const invisiblePlayersRef = React.useRef(invisiblePlayers);
+
+  // Keep refs in sync with state
+  React.useEffect(() => { flyingPlayersRef.current = flyingPlayers; }, [flyingPlayers]);
+  React.useEffect(() => { playerPositionsRef.current = playerPositions; }, [playerPositions]);
+  React.useEffect(() => { myPositionRef.current = myPosition; }, [myPosition]);
+  React.useEffect(() => { invisiblePlayersRef.current = invisiblePlayers; }, [invisiblePlayers]);
+
+  // Speed buff state - tracks haste stacks (1-3) or slow per player
+  // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x speed
+  const [speedBuffs, setSpeedBuffs] = useState<Record<string, { type: 'haste' | 'slow'; stacks: number }>>({});
+
+  // Size buff state - tracks enlarge/reduce stacks (1-3) per player
+  // Enlarge stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x size
+  // Reduce stacks: 1 = 0.7x, 2 = 0.5x, 3 = 0.35x size (minimum to stay visible)
+  const [sizeBuffs, setSizeBuffs] = useState<Record<string, { type: 'enlarge' | 'reduce'; stacks: number }>>({});
+
+  // Screen shake state - intensity 0-3 based on enlarged player movement
+  const [screenShake, setScreenShake] = useState(0);
+
+  // Afterimage trail state for haste/slow effects
+  const [afterimages, setAfterimages] = useState<Array<{
+    id: string;
+    playerId: string;
+    x: number;
+    y: number; // Jump height at time of creation
+    timestamp: number;
+    type: 'haste' | 'slow';
+  }>>([]);
+
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer, inviteLink } = useGameState();
+
+  // Ref for currentLobby (declared here because it depends on useGameState)
+  const currentLobbyRef = React.useRef(currentLobby);
+  React.useEffect(() => { currentLobbyRef.current = currentLobby; }, [currentLobby]);
   const { 
     toggleMute, 
     isMuted, 
@@ -152,7 +306,69 @@ export function Lobby() {
       };
     }
   }, [currentLobby?.gamePhase, setLobbyMusic, playLobbyMusic, stopLobbyMusic]);
-  
+
+  // Auto-apply saved team preference when joining lobby
+  useEffect(() => {
+    if (!currentLobby || !currentPlayer || currentLobby.gamePhase !== 'lobby') return;
+
+    const savedTeam = TeamPreferenceStorage.loadTeam();
+    if (savedTeam && savedTeam !== currentPlayer.team) {
+      // Apply saved team preference
+      emit('change_own_team', { team: savedTeam });
+    }
+  }, [currentLobby?.id]); // Only run when joining a new lobby
+
+  // Reset dead players, speed buffs, flying, frozen, and invisible when battle starts (phase changes from lobby)
+  useEffect(() => {
+    if (currentLobby?.gamePhase && currentLobby.gamePhase !== 'lobby') {
+      // Clear all states when leaving lobby
+      setDeadPlayers(new Set());
+      setSpeedBuffs({});
+      setAfterimages([]);
+      setFlyingPlayers(new Set());
+      setFlyHeight(0);
+      setFrozenPlayers(new Set());
+      setPetrifiedPlayers(new Set());
+      setInvisiblePlayers(new Set());
+      setInvisibleFlicker({});
+      setSizeBuffs({});
+    }
+  }, [currentLobby?.gamePhase]);
+
+  // Random flicker effect for invisible players (makes them briefly visible to others)
+  useEffect(() => {
+    if (invisiblePlayers.size === 0) return;
+
+    const flickerInterval = setInterval(() => {
+      // For each invisible player, randomly decide if they flicker visible
+      const newFlicker: Record<string, boolean> = {};
+      invisiblePlayers.forEach(playerId => {
+        // 15% chance to flicker visible every 2 seconds
+        newFlicker[playerId] = Math.random() < 0.15;
+      });
+      setInvisibleFlicker(newFlicker);
+
+      // Auto-hide after 400ms
+      setTimeout(() => {
+        setInvisibleFlicker({});
+      }, 400);
+    }, 2000);
+
+    return () => clearInterval(flickerInterval);
+  }, [invisiblePlayers]);
+
+  // Clean up old afterimages
+  useEffect(() => {
+    if (afterimages.length === 0) return;
+
+    const cleanup = setInterval(() => {
+      const now = Date.now();
+      setAfterimages(prev => prev.filter(img => now - img.timestamp < 300)); // 300ms lifetime
+    }, 50);
+
+    return () => clearInterval(cleanup);
+  }, [afterimages.length]);
+
   // Handle keyboard input for lobby movement
   useEffect(() => {
     if (currentLobby?.gamePhase !== 'lobby') return;
@@ -181,15 +397,16 @@ export function Lobby() {
             jumpHeight: 0
           });
           // Emit jump start to other players
-          emit('player_jump', { isJumping: true });
+          emit('lobby_player_jump', { isJumping: true });
         }
         return;
       }
 
       // Prevent default for movement keys to avoid page scrolling
-      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
+      // Include up/down for flying players
+      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(event.code)) {
         event.preventDefault();
-        
+
         // Only add key if it's not already pressed (prevents key repeat)
         setKeys(prev => {
           if (prev.has(event.code)) return prev; // Key already pressed
@@ -208,7 +425,7 @@ export function Lobby() {
       // No spacebar handling needed in keyup for simple jump
 
       // Always remove the key on keyup
-      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD'].includes(event.code)) {
+      if (['ArrowLeft', 'ArrowRight', 'KeyA', 'KeyD', 'ArrowUp', 'ArrowDown', 'KeyW', 'KeyS'].includes(event.code)) {
         setKeys(prev => {
           const newKeys = new Set(prev);
           newKeys.delete(event.code);
@@ -233,25 +450,47 @@ export function Lobby() {
     }
 
     const movePlayer = () => {
+      // Check if player is frozen or petrified - no movement allowed
+      const playerId = currentPlayer?.id;
+      if (playerId && (frozenPlayers.has(playerId) || petrifiedPlayers.has(playerId))) {
+        return; // Can't move while frozen or petrified
+      }
+
       setMyPosition(prev => {
         let newX = prev.x;
         let direction: SpriteDirection = prev.direction;
         let moving = false;
-        
+
         // Get movement area width with proper fallback and safety checks
         const movementArea = movementAreaRef.current;
         if (!movementArea) return prev; // Don't move if area not available yet
-        
+
         const movementAreaWidth = movementArea.clientWidth;
         if (movementAreaWidth <= characterSize) return prev; // Safety check
-        
+
         const maxX = movementAreaWidth - characterSize;
 
+        // Calculate speed multiplier based on buffs
+        const isDead = playerId ? deadPlayers.has(playerId) : false;
+        const speedBuff = playerId ? speedBuffs[playerId] : undefined;
+
+        let speedMultiplier = 1;
+        if (isDead) {
+          speedMultiplier = 0.25; // Dead = 1/4 speed
+        } else if (speedBuff?.type === 'haste') {
+          // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x
+          speedMultiplier = 1 + (speedBuff.stacks * 0.5);
+        } else if (speedBuff?.type === 'slow') {
+          speedMultiplier = 0.5; // Slow = 1/2 speed
+        }
+
+        const effectiveSpeed = moveSpeed * speedMultiplier;
+
         // Use percent-based movement for consistency across screen sizes
-        const movePercentage = (moveSpeed / maxX) * 100;
+        const movePercentage = (effectiveSpeed / maxX) * 100;
         const currentPercent = (prev.x / maxX) * 100;
 
-        // Only allow left/right movement
+        // Horizontal movement (left/right)
         if (keys.has('ArrowLeft') || keys.has('KeyA')) {
           const newPercent = Math.max(0, currentPercent - movePercentage);
           newX = (newPercent / 100) * maxX;
@@ -265,10 +504,48 @@ export function Lobby() {
           moving = true;
         }
 
+        // Vertical movement (only when flying)
+        const isFlying = playerId ? flyingPlayers.has(playerId) : false;
+        if (isFlying) {
+          const maxFlyHeight = 150; // Max height in pixels
+          if (keys.has('ArrowUp') || keys.has('KeyW')) {
+            setFlyHeight(prev => Math.min(prev + effectiveSpeed * 2, maxFlyHeight));
+            moving = true;
+          }
+          if (keys.has('ArrowDown') || keys.has('KeyS')) {
+            setFlyHeight(prev => Math.max(prev - effectiveSpeed * 2, 0));
+            moving = true;
+          }
+        }
+
         // Emit position to server for other players to see
         if (moving) {
           const percentX = (newX / maxX) * 100;
           emit('lobby_player_pos', { x: percentX, y: 85, direction });
+
+          // Generate afterimages for haste/slow effects
+          if (speedBuff && playerId) {
+            const currentJumpHeight = jumpState.jumpHeight;
+            setAfterimages(prevImages => [
+              ...prevImages.slice(-10), // Keep only last 10 afterimages
+              {
+                id: `${playerId}-${Date.now()}`,
+                playerId,
+                x: prev.x,
+                y: currentJumpHeight,
+                timestamp: Date.now(),
+                type: speedBuff.type
+              }
+            ]);
+          }
+
+          // Trigger screen shake for enlarged players
+          const sizeBuff = playerId ? sizeBuffs[playerId] : undefined;
+          if (sizeBuff?.type === 'enlarge') {
+            setScreenShake(sizeBuff.stacks);
+            // Reset shake after short duration
+            setTimeout(() => setScreenShake(0), 100);
+          }
         }
 
         return { x: newX, direction };
@@ -277,7 +554,7 @@ export function Lobby() {
 
     const interval = setInterval(movePlayer, 16); // ~60 FPS for smooth movement
     return () => clearInterval(interval);
-  }, [keys, currentLobby?.gamePhase, emit]);
+  }, [keys, currentLobby?.gamePhase, emit, deadPlayers, speedBuffs, sizeBuffs, currentPlayer?.id, jumpState.jumpHeight, flyingPlayers, frozenPlayers, petrifiedPlayers]);
 
   // Simple jump animation
   useEffect(() => {
@@ -286,19 +563,38 @@ export function Lobby() {
     const jumpDuration = 600; // 600ms total jump time
     const maxHeight = 50; // 50px max jump height
     const startTime = Date.now();
+    let lastAfterimageTime = 0;
 
     const animateJump = () => {
       const elapsed = Date.now() - startTime;
       const progress = Math.min(elapsed / jumpDuration, 1);
-      
+
       // Sine wave for smooth up/down motion
       const height = Math.sin(progress * Math.PI) * maxHeight;
-      
+
       setJumpState(prev => ({
         ...prev,
         jumpHeight: height
       }));
-      
+
+      // Generate afterimages during jump if player has speed buff
+      const playerId = currentPlayer?.id;
+      const speedBuff = playerId ? speedBuffs[playerId] : undefined;
+      if (speedBuff && playerId && elapsed - lastAfterimageTime > 50) {
+        lastAfterimageTime = elapsed;
+        setAfterimages(prevImages => [
+          ...prevImages.slice(-10),
+          {
+            id: `${playerId}-jump-${Date.now()}`,
+            playerId,
+            x: myPosition.x,
+            y: height, // Capture current jump height
+            timestamp: Date.now(),
+            type: speedBuff.type
+          }
+        ]);
+      }
+
       if (progress < 1) {
         requestAnimationFrame(animateJump);
       } else {
@@ -308,18 +604,18 @@ export function Lobby() {
           jumpHeight: 0
         });
         // Emit landing event to other players
-        emit('player_jump', { isJumping: false });
+        emit('lobby_player_jump', { isJumping: false });
       }
     };
 
     requestAnimationFrame(animateJump);
-  }, [jumpState.isJumping, emit]);
+  }, [jumpState.isJumping, emit, currentPlayer?.id, speedBuffs, myPosition.x]);
 
   // Mobile touch jump handler
   const handleAvatarTap = () => {
     if (!jumpState.isJumping) {
       // Emit jump event to other players for mobile tap
-      emit('player_jump', { isJumping: true });
+      emit('lobby_player_jump', { isJumping: true });
       
       setJumpState({
         isJumping: true,
@@ -373,19 +669,50 @@ export function Lobby() {
       });
     };
 
-    const handleLobbyPlayerJump = ({ playerId, isJumping, jumpHeight }: { playerId: string; isJumping: boolean; jumpHeight?: number }) => {
+    const handleLobbyPlayerJump = ({ playerId, isJumping }: { playerId: string; isJumping: boolean }) => {
       if (playerId === currentPlayer?.id) return; // Skip own updates
 
-      setPlayerPositions(prev => ({
-        ...prev,
-        [playerId]: {
-          ...prev[playerId],
-          isJumping,
-          jumpHeight: jumpHeight || 0,
-          isCharging: false, // Stop charging when jumping
-          chargePower: 0
-        }
-      }));
+      if (isJumping) {
+        // Animate the jump for other players
+        const jumpDuration = 600; // Same as local player
+        const maxHeight = 50; // Same as local player
+        const startTime = Date.now();
+
+        const animateOtherPlayerJump = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / jumpDuration, 1);
+          const height = Math.sin(progress * Math.PI) * maxHeight;
+
+          setPlayerPositions(prev => ({
+            ...prev,
+            [playerId]: {
+              ...prev[playerId],
+              isJumping: progress < 1,
+              jumpHeight: height,
+              isCharging: false,
+              chargePower: 0
+            }
+          }));
+
+          if (progress < 1) {
+            requestAnimationFrame(animateOtherPlayerJump);
+          }
+        };
+
+        requestAnimationFrame(animateOtherPlayerJump);
+      } else {
+        // Just set not jumping
+        setPlayerPositions(prev => ({
+          ...prev,
+          [playerId]: {
+            ...prev[playerId],
+            isJumping: false,
+            jumpHeight: 0,
+            isCharging: false,
+            chargePower: 0
+          }
+        }));
+      }
     };
 
     const handleLobbyPlayerCharge = ({ playerId, isCharging, chargePower }: { playerId: string; isCharging: boolean; chargePower?: number }) => {
@@ -432,18 +759,319 @@ export function Lobby() {
       }, 300);
     };
 
-    const handleLobbyEmote = ({ playerId, message, x, y }: { 
-      playerId: string; 
-      message: string; 
-      x: number; 
-      y: number; 
+    const handleLobbyEmote = ({ playerId, message, x, y }: {
+      playerId: string;
+      message: string;
+      x: number;
+      y: number;
     }) => {
       const timestamp = Date.now();
       setEmotes(prev => ({
         ...prev,
         [playerId]: { message, timestamp, x, y }
       }));
-      
+
+      // Detect magic words and trigger effects
+      const detectedEffects = detectMagicWords(message);
+      if (detectedEffects.length > 0) {
+        const lobby = currentLobbyRef.current;
+
+        // Helper to resolve target IDs for a spell
+        // Returns array of player IDs - either targets from message or just the caster
+        const resolveTargets = (effectType: MagicEffectType): string[] => {
+          const spellWords = getSpellWords(effectType);
+          const targetNames = extractSpellTargets(message, spellWords);
+
+          if (!targetNames || !lobby) {
+            return [playerId]; // Self-cast
+          }
+
+          // Find matching players by name
+          const targetIds: string[] = [];
+          for (const name of targetNames) {
+            const player = lobby.players.find(
+              p => p.name.toLowerCase() === name.toLowerCase()
+            );
+            if (player) {
+              targetIds.push(player.id);
+            }
+          }
+
+          return targetIds.length > 0 ? targetIds : [playerId]; // Fall back to self if no valid targets
+        };
+
+        // Handle die - targetable
+        if (detectedEffects.includes('die')) {
+          const targets = resolveTargets('die');
+          targets.forEach(targetId => {
+            setDeadPlayers(prev => new Set([...prev, targetId]));
+          });
+        }
+
+        // Handle revive - targetable
+        if (detectedEffects.includes('revive')) {
+          const targets = resolveTargets('revive');
+          targets.forEach(targetId => {
+            setDeadPlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+          });
+        }
+
+        // Handle haste - targetable, stacks up to 3
+        if (detectedEffects.includes('haste')) {
+          const targets = resolveTargets('haste');
+          targets.forEach(targetId => {
+            setSpeedBuffs(prev => {
+              const current = prev[targetId];
+              if (current?.type === 'haste') {
+                return { ...prev, [targetId]: { type: 'haste', stacks: Math.min(current.stacks + 1, 3) } };
+              }
+              return { ...prev, [targetId]: { type: 'haste', stacks: 1 } };
+            });
+          });
+        }
+
+        // Handle slow - targetable
+        if (detectedEffects.includes('slow')) {
+          const targets = resolveTargets('slow');
+          targets.forEach(targetId => {
+            setSpeedBuffs(prev => ({ ...prev, [targetId]: { type: 'slow', stacks: 1 } }));
+          });
+        }
+
+        // Handle enlarge - targetable, stacks up to 3
+        if (detectedEffects.includes('enlarge')) {
+          const targets = resolveTargets('enlarge');
+          targets.forEach(targetId => {
+            setSizeBuffs(prev => {
+              const current = prev[targetId];
+              if (current?.type === 'enlarge') {
+                return { ...prev, [targetId]: { type: 'enlarge', stacks: Math.min(current.stacks + 1, 3) } };
+              }
+              return { ...prev, [targetId]: { type: 'enlarge', stacks: 1 } };
+            });
+          });
+        }
+
+        // Handle reduce - targetable, stacks up to 3
+        if (detectedEffects.includes('reduce')) {
+          const targets = resolveTargets('reduce');
+          targets.forEach(targetId => {
+            setSizeBuffs(prev => {
+              const current = prev[targetId];
+              if (current?.type === 'reduce') {
+                return { ...prev, [targetId]: { type: 'reduce', stacks: Math.min(current.stacks + 1, 3) } };
+              }
+              return { ...prev, [targetId]: { type: 'reduce', stacks: 1 } };
+            });
+          });
+        }
+
+        // Handle fly - targetable
+        if (detectedEffects.includes('fly')) {
+          const targets = resolveTargets('fly');
+          targets.forEach(targetId => {
+            setFlyingPlayers(prev => new Set([...prev, targetId]));
+          });
+        }
+
+        // Handle hold (freeze) - targetable, 5 second duration
+        if (detectedEffects.includes('hold')) {
+          const targets = resolveTargets('hold');
+          targets.forEach(targetId => {
+            setFrozenPlayers(prev => new Set([...prev, targetId]));
+            // Auto-unfreeze after 5 seconds
+            setTimeout(() => {
+              setFrozenPlayers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(targetId);
+                return newSet;
+              });
+            }, 5000);
+          });
+        }
+
+        // Handle petrify - targetable
+        if (detectedEffects.includes('petrify')) {
+          const targets = resolveTargets('petrify');
+          targets.forEach(targetId => {
+            setPetrifiedPlayers(prev => new Set([...prev, targetId]));
+            // Show effect on target
+            const targetPos = playerPositionsRef.current[targetId]?.x ?? 0;
+            setMagicEffects(prev => ({
+              ...prev,
+              [targetId]: { effects: ['petrify'], x: targetPos, timestamp: Date.now() }
+            }));
+          });
+        }
+
+        // Handle invisibility - targetable
+        if (detectedEffects.includes('invisibility')) {
+          const targets = resolveTargets('invisibility');
+          targets.forEach(targetId => {
+            setInvisiblePlayers(prev => new Set([...prev, targetId]));
+          });
+          // Note: Breaking invisibility on spell cast is handled separately below
+        }
+
+        // Handle dispel - targetable, removes all effects
+        if (detectedEffects.includes('dispel')) {
+          const targets = resolveTargets('dispel');
+          targets.forEach(targetId => {
+            setSpeedBuffs(prev => {
+              const newBuffs = { ...prev };
+              delete newBuffs[targetId];
+              return newBuffs;
+            });
+            setFlyingPlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+            setFrozenPlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+            setDeadPlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+            setInvisiblePlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+            setSizeBuffs(prev => {
+              const newBuffs = { ...prev };
+              delete newBuffs[targetId];
+              return newBuffs;
+            });
+            setPetrifiedPlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+          });
+        }
+
+        // === LOBBY-WIDE SPELLS (no targeting) ===
+
+        // Handle earthbind spell - all flying players crash and die
+        if (detectedEffects.includes('earthbind')) {
+          // Get all currently flying players from ref
+          const flyersToKill = Array.from(flyingPlayersRef.current);
+          if (flyersToKill.length > 0) {
+            // Remove all flyers from flying state
+            setFlyingPlayers(new Set());
+            // Kill all flyers
+            setDeadPlayers(prev => new Set([...prev, ...flyersToKill]));
+            // Show earthbind effect on each falling player
+            flyersToKill.forEach(flyerId => {
+              const flyerPos = playerPositionsRef.current[flyerId]?.x ?? 0;
+              setMagicEffects(prev => ({
+                ...prev,
+                [flyerId]: { effects: ['earthbind'], x: flyerPos, timestamp: Date.now() }
+              }));
+            });
+          }
+        }
+
+        // Handle massacre spell (avada kedavra) - kills all OTHER players, darkens tavern
+        if (detectedEffects.includes('massacre')) {
+          const lobby = currentLobbyRef.current;
+          if (lobby) {
+            // Kill all players except the caster
+            const playersToKill = lobby.players
+              .filter(p => p.id !== playerId)
+              .map(p => p.id);
+            setDeadPlayers(prev => new Set([...prev, ...playersToKill]));
+            // Remove flying state from killed players
+            setFlyingPlayers(prev => {
+              const newSet = new Set(prev);
+              playersToKill.forEach(id => newSet.delete(id));
+              return newSet;
+            });
+            // Darken the tavern for 15 seconds
+            setTavernDarkMode(true);
+            setTimeout(() => setTavernDarkMode(false), 15000);
+          }
+        }
+
+        // Handle mass revive spell - revives entire lobby
+        if (detectedEffects.includes('massrevive')) {
+          // Clear all dead players
+          setDeadPlayers(new Set());
+          // Also clear frozen state
+          setFrozenPlayers(new Set());
+        }
+
+        // Handle dragon attack spell - dragon eats a random player
+        if (detectedEffects.includes('dragon')) {
+          const lobby = currentLobbyRef.current;
+          if (lobby && lobby.players.length > 1) {
+            // Pick a random player (excluding the caster)
+            const eligiblePlayers = lobby.players.filter(p => p.id !== playerId);
+            if (eligiblePlayers.length > 0) {
+              const victim = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+              const victimPos = playerPositionsRef.current[victim.id]?.x ?? 200;
+              // Start dragon animation
+              setDragonAttack({ active: true, targetX: victimPos, targetPlayerId: victim.id });
+              // Kill the victim after dragon reaches them (at ~50% of animation)
+              setTimeout(() => {
+                setDeadPlayers(prev => new Set([...prev, victim.id]));
+                setFlyingPlayers(prev => {
+                  const newSet = new Set(prev);
+                  newSet.delete(victim.id);
+                  return newSet;
+                });
+              }, 1500);
+              // End dragon animation
+              setTimeout(() => {
+                setDragonAttack({ active: false, targetX: 0, targetPlayerId: null });
+              }, 3500);
+            }
+          }
+        }
+
+        // Handle chaos mode - rainbow disco effect for 5 seconds (lobby-wide)
+        if (detectedEffects.includes('chaos')) {
+          setChaosMode(true);
+          setTimeout(() => setChaosMode(false), 5000);
+        }
+
+        // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
+        if (!detectedEffects.includes('invisibility') && invisiblePlayersRef.current.has(playerId)) {
+          setInvisiblePlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(playerId);
+            return newSet;
+          });
+        }
+
+        // Get player's X position from playerPositions ref
+        const playerPos = playerPositionsRef.current[playerId];
+        const effectX = playerPos?.x ?? (x / 100) * (movementAreaRef.current?.clientWidth || 800);
+
+        setMagicEffects(prev => ({
+          ...prev,
+          [playerId]: { effects: detectedEffects, x: effectX, timestamp }
+        }));
+
+        // Auto-remove magic effects after 2.5 seconds
+        setTimeout(() => {
+          setMagicEffects(prev => {
+            const newEffects = { ...prev };
+            delete newEffects[playerId];
+            return newEffects;
+          });
+        }, 2500);
+      }
+
       // Auto-remove emote after 3.5 seconds
       setTimeout(() => {
         setEmotes(prev => {
@@ -545,8 +1173,44 @@ export function Lobby() {
   const changeTeam = (team: TeamType) => {
     // Only allow team changes in lobby phase
     if (currentLobby?.gamePhase !== 'lobby') return;
-    
+
+    // Save preference for future sessions
+    TeamPreferenceStorage.saveTeam(team);
+
     emit('change_own_team', { team });
+  };
+
+  const startEditingLobbyName = () => {
+    if (!isHost || !currentLobby) return;
+    setEditedLobbyName(currentLobby.name);
+    setIsEditingLobbyName(true);
+  };
+
+  const saveLobbyName = () => {
+    console.log('saveLobbyName called');
+    console.log('  editedLobbyName:', editedLobbyName);
+    console.log('  currentLobby?.name:', currentLobby?.name);
+
+    const trimmedName = editedLobbyName.trim();
+    console.log('  trimmedName:', trimmedName);
+
+    if (!trimmedName) {
+      console.log('  Empty name - skipping emit');
+      setIsEditingLobbyName(false);
+      return;
+    }
+    if (trimmedName !== currentLobby?.name) {
+      console.log('  Name changed - emitting update_lobby_name');
+      emit('update_lobby_name', { name: trimmedName });
+    } else {
+      console.log('  Name unchanged - skipping emit');
+    }
+    setIsEditingLobbyName(false);
+  };
+
+  const cancelEditingLobbyName = () => {
+    setIsEditingLobbyName(false);
+    setEditedLobbyName('');
   };
 
   const copyInviteLink = () => {
@@ -596,14 +1260,347 @@ export function Lobby() {
     const timestamp = Date.now();
     setEmotes(prev => ({
       ...prev,
-      [currentPlayer.id]: { 
-        message, 
-        timestamp, 
-        x: myPosition.x, 
+      [currentPlayer.id]: {
+        message,
+        timestamp,
+        x: myPosition.x,
         y: 0 // Local position for current player
       }
     }));
-    
+
+    // Detect magic words and trigger effects for local player
+    const detectedEffects = detectMagicWords(message);
+    if (detectedEffects.length > 0) {
+      // Helper to resolve target IDs for a spell
+      // Returns array of player IDs - either targets from message or just the caster
+      const resolveTargets = (effectType: MagicEffectType): string[] => {
+        const spellWords = getSpellWords(effectType);
+        const targetNames = extractSpellTargets(message, spellWords);
+
+        if (!targetNames || !currentLobby) {
+          return [currentPlayer.id]; // Self-cast
+        }
+
+        // Find matching players by name
+        const targetIds: string[] = [];
+        for (const name of targetNames) {
+          const player = currentLobby.players.find(
+            p => p.name.toLowerCase() === name.toLowerCase()
+          );
+          if (player) {
+            targetIds.push(player.id);
+          }
+        }
+
+        return targetIds.length > 0 ? targetIds : [currentPlayer.id]; // Fall back to self if no valid targets
+      };
+
+      // Handle die - targetable
+      if (detectedEffects.includes('die')) {
+        const targets = resolveTargets('die');
+        targets.forEach(targetId => {
+          setDeadPlayers(prev => new Set([...prev, targetId]));
+          // Break invisibility when dying
+          if (invisiblePlayersRef.current.has(targetId)) {
+            setInvisiblePlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+          }
+        });
+      }
+
+      // Handle revive - targetable
+      if (detectedEffects.includes('revive')) {
+        const targets = resolveTargets('revive');
+        targets.forEach(targetId => {
+          setDeadPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetId);
+            return newSet;
+          });
+        });
+      }
+
+      // Handle haste - targetable, stacks up to 3
+      if (detectedEffects.includes('haste')) {
+        const targets = resolveTargets('haste');
+        targets.forEach(targetId => {
+          setSpeedBuffs(prev => {
+            const current = prev[targetId];
+            if (current?.type === 'haste') {
+              return { ...prev, [targetId]: { type: 'haste', stacks: Math.min(current.stacks + 1, 3) } };
+            }
+            return { ...prev, [targetId]: { type: 'haste', stacks: 1 } };
+          });
+        });
+      }
+
+      // Handle slow - targetable
+      if (detectedEffects.includes('slow')) {
+        const targets = resolveTargets('slow');
+        targets.forEach(targetId => {
+          setSpeedBuffs(prev => ({ ...prev, [targetId]: { type: 'slow', stacks: 1 } }));
+        });
+      }
+
+      // Handle enlarge - targetable, stacks up to 3
+      if (detectedEffects.includes('enlarge')) {
+        const targets = resolveTargets('enlarge');
+        targets.forEach(targetId => {
+          setSizeBuffs(prev => {
+            const current = prev[targetId];
+            if (current?.type === 'enlarge') {
+              return { ...prev, [targetId]: { type: 'enlarge', stacks: Math.min(current.stacks + 1, 3) } };
+            }
+            return { ...prev, [targetId]: { type: 'enlarge', stacks: 1 } };
+          });
+        });
+      }
+
+      // Handle reduce - targetable, stacks up to 3
+      if (detectedEffects.includes('reduce')) {
+        const targets = resolveTargets('reduce');
+        targets.forEach(targetId => {
+          setSizeBuffs(prev => {
+            const current = prev[targetId];
+            if (current?.type === 'reduce') {
+              return { ...prev, [targetId]: { type: 'reduce', stacks: Math.min(current.stacks + 1, 3) } };
+            }
+            return { ...prev, [targetId]: { type: 'reduce', stacks: 1 } };
+          });
+        });
+      }
+
+      // Handle fly - targetable
+      if (detectedEffects.includes('fly')) {
+        const targets = resolveTargets('fly');
+        targets.forEach(targetId => {
+          setFlyingPlayers(prev => new Set([...prev, targetId]));
+        });
+      }
+
+      // Handle hold (freeze) - targetable, 5 second duration
+      if (detectedEffects.includes('hold')) {
+        const targets = resolveTargets('hold');
+        targets.forEach(targetId => {
+          setFrozenPlayers(prev => new Set([...prev, targetId]));
+          // Show magic effect on the target
+          const targetPos = targetId === currentPlayer.id
+            ? myPosition.x
+            : (playerPositions[targetId]?.x ?? 0);
+          setMagicEffects(prev => ({
+            ...prev,
+            [targetId]: { effects: ['hold'], x: targetPos, timestamp: Date.now() }
+          }));
+          // Auto-unfreeze after 5 seconds
+          setTimeout(() => {
+            setFrozenPlayers(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(targetId);
+              return newSet;
+            });
+          }, 5000);
+        });
+      }
+
+      // Handle petrify - targetable
+      if (detectedEffects.includes('petrify')) {
+        const targets = resolveTargets('petrify');
+        targets.forEach(targetId => {
+          setPetrifiedPlayers(prev => new Set([...prev, targetId]));
+          // Show effect on target
+          const targetPos = targetId === currentPlayer.id
+            ? myPosition.x
+            : (playerPositions[targetId]?.x ?? 0);
+          setMagicEffects(prev => ({
+            ...prev,
+            [targetId]: { effects: ['petrify'], x: targetPos, timestamp: Date.now() }
+          }));
+        });
+      }
+
+      // Handle invisibility - targetable
+      if (detectedEffects.includes('invisibility')) {
+        const targets = resolveTargets('invisibility');
+        targets.forEach(targetId => {
+          setInvisiblePlayers(prev => new Set([...prev, targetId]));
+        });
+      }
+
+      // Handle dispel - targetable, removes all effects
+      if (detectedEffects.includes('dispel')) {
+        const targets = resolveTargets('dispel');
+        targets.forEach(targetId => {
+          setSpeedBuffs(prev => {
+            const newBuffs = { ...prev };
+            delete newBuffs[targetId];
+            return newBuffs;
+          });
+          // Reset fly height if dispelling self
+          if (targetId === currentPlayer.id && flyingPlayersRef.current.has(targetId)) {
+            setFlyHeight(0);
+          }
+          setFlyingPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetId);
+            return newSet;
+          });
+          setFrozenPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetId);
+            return newSet;
+          });
+          setDeadPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetId);
+            return newSet;
+          });
+          setInvisiblePlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetId);
+            return newSet;
+          });
+          setSizeBuffs(prev => {
+            const newBuffs = { ...prev };
+            delete newBuffs[targetId];
+            return newBuffs;
+          });
+          setPetrifiedPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(targetId);
+            return newSet;
+          });
+        });
+      }
+
+      // === LOBBY-WIDE SPELLS (no targeting) ===
+
+      // Handle earthbind spell - all flying players crash and die
+      if (detectedEffects.includes('earthbind')) {
+        // Get all currently flying players from ref
+        const flyersToKill = Array.from(flyingPlayersRef.current);
+        if (flyersToKill.length > 0) {
+          // Reset local fly height if we're flying
+          if (flyingPlayersRef.current.has(currentPlayer.id)) {
+            setFlyHeight(0);
+          }
+          // Remove all flyers from flying state
+          setFlyingPlayers(new Set());
+          // Kill all flyers
+          setDeadPlayers(prev => new Set([...prev, ...flyersToKill]));
+          // Show earthbind effect on each falling player
+          flyersToKill.forEach(flyerId => {
+            const flyerPos = flyerId === currentPlayer.id
+              ? myPosition.x
+              : (playerPositions[flyerId]?.x ?? 0);
+            setMagicEffects(prev => ({
+              ...prev,
+              [flyerId]: { effects: ['earthbind'], x: flyerPos, timestamp: Date.now() }
+            }));
+          });
+        }
+      }
+
+      // Handle massacre spell (avada kedavra) - kills all OTHER players, darkens tavern
+      if (detectedEffects.includes('massacre')) {
+        if (currentLobby) {
+          // Kill all players except the caster
+          const playersToKill = currentLobby.players
+            .filter(p => p.id !== currentPlayer.id)
+            .map(p => p.id);
+          setDeadPlayers(prev => new Set([...prev, ...playersToKill]));
+          // Remove flying state from killed players
+          setFlyingPlayers(prev => {
+            const newSet = new Set(prev);
+            playersToKill.forEach(id => newSet.delete(id));
+            return newSet;
+          });
+          // Show massacre effect on each killed player
+          playersToKill.forEach(targetId => {
+            const targetPos = playerPositions[targetId]?.x ?? 0;
+            setMagicEffects(prev => ({
+              ...prev,
+              [targetId]: { effects: ['massacre'], x: targetPos, timestamp: Date.now() }
+            }));
+          });
+          // Darken the tavern for 15 seconds
+          setTavernDarkMode(true);
+          setTimeout(() => setTavernDarkMode(false), 15000);
+        }
+      }
+
+      // Handle mass revive spell - revives entire lobby
+      if (detectedEffects.includes('massrevive')) {
+        // Clear all dead players
+        setDeadPlayers(new Set());
+        // Also clear frozen state
+        setFrozenPlayers(new Set());
+      }
+
+      // Handle dragon attack spell - dragon eats a random player
+      if (detectedEffects.includes('dragon')) {
+        if (currentLobby && currentLobby.players.length > 1) {
+          // Pick a random player (excluding the caster)
+          const eligiblePlayers = currentLobby.players.filter(p => p.id !== currentPlayer.id);
+          if (eligiblePlayers.length > 0) {
+            const victim = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
+            const victimPos = playerPositions[victim.id]?.x ?? 200;
+            // Start dragon animation
+            setDragonAttack({ active: true, targetX: victimPos, targetPlayerId: victim.id });
+            // Kill the victim after dragon reaches them
+            setTimeout(() => {
+              setDeadPlayers(prev => new Set([...prev, victim.id]));
+              setFlyingPlayers(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(victim.id);
+                return newSet;
+              });
+              // Show fire effect on victim
+              setMagicEffects(prev => ({
+                ...prev,
+                [victim.id]: { effects: ['dragon', 'fire'], x: victimPos, timestamp: Date.now() }
+              }));
+            }, 1500);
+            // End dragon animation
+            setTimeout(() => {
+              setDragonAttack({ active: false, targetX: 0, targetPlayerId: null });
+            }, 3500);
+          }
+        }
+      }
+
+      // Handle chaos mode - rainbow disco effect for 5 seconds (lobby-wide)
+      if (detectedEffects.includes('chaos')) {
+        setChaosMode(true);
+        setTimeout(() => setChaosMode(false), 5000);
+      }
+
+      // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
+      if (!detectedEffects.includes('invisibility') && invisiblePlayersRef.current.has(currentPlayer.id)) {
+        setInvisiblePlayers(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(currentPlayer.id);
+          return newSet;
+        });
+      }
+
+      setMagicEffects(prev => ({
+        ...prev,
+        [currentPlayer.id]: { effects: detectedEffects, x: myPosition.x, timestamp }
+      }));
+
+      // Auto-remove magic effects after 2.5 seconds
+      setTimeout(() => {
+        setMagicEffects(prev => {
+          const newEffects = { ...prev };
+          delete newEffects[currentPlayer.id];
+          return newEffects;
+        });
+      }, 2500);
+    }
+
     // Auto-remove emote after 3.5 seconds
     setTimeout(() => {
       setEmotes(prev => {
@@ -672,8 +1669,14 @@ export function Lobby() {
 
   if (!currentLobby) return null;
 
+  // Determine screen shake animation based on intensity
+  const shakeAnimation = screenShake > 0 ? `screenShake${screenShake} 0.1s ease-in-out` : 'none';
+
   return (
-    <div className="retro-container relative overflow-x-hidden">
+    <div
+      className="retro-container relative overflow-x-hidden"
+      style={{ animation: shakeAnimation }}
+    >
       <style>{spectatorStyles}</style>
       
       {/* Mute Button - Top Right */}
@@ -687,11 +1690,49 @@ export function Lobby() {
         </RetroButton>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 relative" style={{ zIndex: 20 }}>        
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 relative" style={{ zIndex: 20 }}>
         <div className="text-center mb-6">
-          <h1 className="text-3xl font-bold retro-text-glow mb-2">
-            {currentLobby.name}
-          </h1>
+          {isEditingLobbyName ? (
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <input
+                type="text"
+                value={editedLobbyName}
+                onChange={(e) => setEditedLobbyName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') saveLobbyName();
+                  if (e.key === 'Escape') cancelEditingLobbyName();
+                }}
+                className="retro-input text-2xl font-bold text-center w-64"
+                autoFocus
+                maxLength={50}
+              />
+              <button
+                type="button"
+                onClick={saveLobbyName}
+                className="text-green-400 hover:text-green-300 text-xl p-1"
+                title="Save"
+              >
+                ✓
+              </button>
+              <button
+                type="button"
+                onClick={cancelEditingLobbyName}
+                className="text-red-400 hover:text-red-300 text-xl p-1"
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
+            <h1
+              className={`text-3xl font-bold retro-text-glow mb-2 inline-flex items-center justify-center gap-2 ${isHost ? 'cursor-pointer hover:text-blue-300 transition-colors' : ''}`}
+              onClick={isHost ? startEditingLobbyName : undefined}
+              title={isHost ? 'Click to edit lobby name' : undefined}
+            >
+              <span>{currentLobby.name}</span>
+              {isHost && <span className="text-sm opacity-50">✏️</span>}
+            </h1>
+          )}
           <div className="flex items-center justify-center gap-2">
             <p className="text-gray-400">
               Lobby Code: <span className="retro-text-glow-light text-xl font-mono">{currentLobby.id}</span>
@@ -902,78 +1943,74 @@ export function Lobby() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4 sm:gap-6">
-          {/* Teams Section */}
+          {/* Teams Section - Combined team selection and roster */}
           <div className="space-y-4 min-w-0">
-            {/* Team Selection */}
-            <RetroCard title="Choose Your Team">
-              <div className="mb-4">
-                <p className="text-sm text-gray-400 mb-3">
-                  Select your role for this scrum session:
-                </p>
-                <div className="grid grid-cols-1 gap-2">
-                  {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
-                    const team = teamKey as TeamType;
-                    const isCurrentTeam = currentPlayer?.team === team;
-                    
-                    return (
-                      <button
-                        key={team}
-                        onClick={() => changeTeam(team)}
-                        className={`p-3 text-left rounded border-2 transition-all ${
-                          isCurrentTeam 
-                            ? 'border-blue-500 bg-blue-500 bg-opacity-20 text-blue-200' 
-                            : 'border-gray-600 bg-gray-800 hover:border-gray-500 hover:bg-gray-700'
-                        }`}
-                      >
-                        <div className="font-medium">{teamName}</div>
-                        <div className="text-xs text-gray-400 mt-1">
-                          {team === 'developers' && 'Estimate story points and develop features'}
-                          {team === 'qa' && 'Provide testing perspective and quality insights'}
-                          {team === 'spectators' && 'Observe the session without voting'}
-                        </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            </RetroCard>
-
             <RetroCard title="Battle Teams">
-              <div className="space-y-4">
+              <p className="text-sm text-gray-400 mb-4">
+                Click a team to join. Your current team is highlighted.
+              </p>
+              <div className="space-y-3">
                 {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
                   const team = teamKey as TeamType;
                   const teamPlayers = currentLobby.teams[team] || [];
-                  
+                  const isCurrentTeam = currentPlayer?.team === team;
+
+                  const teamDescriptions: Record<TeamType, string> = {
+                    developers: 'Estimate story points and develop features',
+                    qa: 'Provide testing perspective and quality insights',
+                    spectators: 'Observe the session without voting'
+                  };
+
                   return (
-                    <div key={team} className="team-section">
-                      <h4 className="font-bold text-sm sm:text-lg mb-2 break-words">{teamName}</h4>
-                      <p className="text-xs sm:text-sm text-gray-400 mb-3">
-                        {teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}
-                      </p>
-                      
-                      <div className="player-list">
-                        {teamPlayers.map(player => (
-                          <div
-                            key={player.id}
-                            className={`player-chip ${player.isHost ? 'host' : ''} ${
-                              player.id === currentPlayer?.id ? 'border-blue-400' : ''
-                            }`}
-                          >
-                            <div className="flex-shrink-0">
-                              {renderPlayerSprite(player.avatar)}
-                            </div>
-                            <span className="min-w-0 truncate text-xs sm:text-sm">{player.name}</span>
-                            {player.isHost && <span className="text-xs whitespace-nowrap">(HOST)</span>}
-                            {player.id === currentPlayer?.id && <span className="text-xs text-blue-400 whitespace-nowrap">(YOU)</span>}
+                    <button
+                      key={team}
+                      onClick={() => changeTeam(team)}
+                      className={`w-full p-3 text-left rounded border-2 transition-all ${
+                        isCurrentTeam
+                          ? 'border-blue-500 bg-blue-500 bg-opacity-20'
+                          : 'border-gray-600 bg-gray-800 hover:border-gray-500 hover:bg-gray-700'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <div className={`font-bold text-sm sm:text-base ${isCurrentTeam ? 'text-blue-200' : 'text-white'}`}>
+                            {teamName}
                           </div>
-                        ))}
+                          <div className="text-xs text-gray-400 mt-0.5">
+                            {teamDescriptions[team]}
+                          </div>
+                        </div>
+                        <div className="text-xs text-gray-400 whitespace-nowrap ml-2">
+                          {teamPlayers.length} player{teamPlayers.length !== 1 ? 's' : ''}
+                        </div>
                       </div>
-                    </div>
+
+                      {/* Player roster */}
+                      {teamPlayers.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-2 pt-2 border-t border-gray-700">
+                          {teamPlayers.map(player => (
+                            <div
+                              key={player.id}
+                              className={`flex items-center gap-2 pl-1 pr-2 py-1 rounded-lg text-xs ${
+                                player.id === currentPlayer?.id
+                                  ? 'bg-blue-600 bg-opacity-30 border border-blue-400'
+                                  : 'bg-gray-700 bg-opacity-50'
+                              }`}
+                            >
+                              <div className="flex-shrink-0 scale-75 origin-center">
+                                {renderPlayerSprite(player.avatar)}
+                              </div>
+                              <span className="truncate max-w-[80px]">{player.name}</span>
+                              {player.isHost && <span className="text-yellow-400">*</span>}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </button>
                   );
                 })}
               </div>
             </RetroCard>
-
           </div>
 
           {/* Tickets Section */}
@@ -1221,42 +2258,136 @@ export function Lobby() {
               </div>
             );
           })}
-          
+
+          {/* Afterimages for haste/slow effects */}
+          {afterimages.map(img => {
+            const age = Date.now() - img.timestamp;
+            const opacity = Math.max(0, 1 - age / 300); // Fade out over 300ms
+            const player = currentLobby?.players.find(p => p.id === img.playerId);
+            if (!player) return null;
+
+            return (
+              <div
+                key={img.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${img.x}px`,
+                  bottom: `${img.y}px`,
+                  zIndex: 8,
+                  opacity: opacity * 0.6,
+                  filter: img.type === 'haste'
+                    ? 'hue-rotate(90deg) brightness(1.3)'
+                    : 'hue-rotate(200deg) brightness(0.8)',
+                  transform: `scaleX(${img.type === 'haste' ? 1.2 : 0.9})`
+                }}
+              >
+                <SpriteRenderer
+                  avatarClass={getAvatarClass(player)}
+                  animation="walk"
+                  direction={myPosition.direction}
+                  isMoving={true}
+                  size={characterSize}
+                />
+              </div>
+            );
+          })}
+
           {/* My Player Character */}
-          {currentPlayer && (
+          {currentPlayer && (() => {
+            // Calculate fly rotation based on movement direction
+            const isFlying = flyingPlayers.has(currentPlayer.id);
+            let flyRotation = 0;
+            if (isFlying && !frozenPlayers.has(currentPlayer.id)) {
+              // Vertical tilt: up = tilt back (-15deg), down = tilt forward (15deg)
+              if (keys.has('ArrowUp') || keys.has('KeyW')) flyRotation -= 15;
+              if (keys.has('ArrowDown') || keys.has('KeyS')) flyRotation += 15;
+              // Horizontal tilt: add slight banking
+              if (keys.has('ArrowLeft') || keys.has('KeyA')) flyRotation -= 8;
+              if (keys.has('ArrowRight') || keys.has('KeyD')) flyRotation += 8;
+            }
+
+            const isInvisible = invisiblePlayers.has(currentPlayer.id);
+
+            // Calculate size scale based on size buffs
+            // Enlarge: 1.5x, 2x, 2.5x | Reduce: 0.7x, 0.5x, 0.35x
+            const sizeBuff = sizeBuffs[currentPlayer.id];
+            let sizeScale = 1;
+            if (sizeBuff?.type === 'enlarge') {
+              sizeScale = 1 + (sizeBuff.stacks * 0.5); // 1.5x, 2x, 2.5x
+            } else if (sizeBuff?.type === 'reduce') {
+              const reduceScales = [0.7, 0.5, 0.35];
+              sizeScale = reduceScales[sizeBuff.stacks - 1] || 0.35;
+            }
+            const baseScale = jumpState.isJumping ? 1.05 : 1;
+            const totalScale = baseScale * sizeScale;
+
+            return (
             <div
               className="absolute transition-transform duration-100 ease-linear cursor-pointer select-none"
               style={{
                 left: `${myPosition.x}px`,
-                bottom: `${jumpState.jumpHeight}px`,
+                bottom: `${deadPlayers.has(currentPlayer.id) ? -20 : (isFlying ? flyHeight : jumpState.jumpHeight)}px`,
                 zIndex: 10,
-                transform: `scale(${jumpState.isJumping ? 1.05 : 1})`,
-                transition: jumpState.isJumping ? 'none' : 'transform 0.1s ease-linear'
+                transform: `scale(${totalScale}) ${deadPlayers.has(currentPlayer.id) ? 'rotate(90deg)' : (isFlying ? `rotate(${flyRotation}deg)` : '')}`,
+                transformOrigin: 'bottom center',
+                transition: deadPlayers.has(currentPlayer.id) ? 'transform 0.5s ease-out, bottom 0.5s ease-out' : (jumpState.isJumping || isFlying ? 'none' : 'transform 0.2s ease-out'),
+                opacity: isInvisible ? 0.5 : 1
               }}
               onClick={handleAvatarTap}
               onTouchStart={(e) => {
                 e.preventDefault(); // Prevent default touch behaviors
                 handleAvatarTap();
               }}
-              title="Tap to jump!"
+              title={isFlying ? "Use W/S or Up/Down to fly!" : (isInvisible ? "You are invisible!" : "Tap to jump!")}
             >
               {/* Player name above character */}
               <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
                 {currentPlayer.name}
+                {deadPlayers.has(currentPlayer.id) && ' 💀'}
+                {frozenPlayers.has(currentPlayer.id) && ' 🧊'}
+                {petrifiedPlayers.has(currentPlayer.id) && ' 🗿'}
+                {flyingPlayers.has(currentPlayer.id) && ' 🪶'}
+                {isInvisible && ' 👻'}
+                {sizeBuff?.type === 'enlarge' && (
+                  <span className="text-orange-400">
+                    {' '}{'🔺'.repeat(sizeBuff.stacks)}
+                  </span>
+                )}
+                {sizeBuff?.type === 'reduce' && (
+                  <span className="text-blue-400">
+                    {' '}{'🔻'.repeat(sizeBuff.stacks)}
+                  </span>
+                )}
+                {speedBuffs[currentPlayer.id]?.type === 'haste' && (
+                  <span className="text-lime-400">
+                    {' '}{'⚡'.repeat(speedBuffs[currentPlayer.id].stacks)}
+                  </span>
+                )}
+                {speedBuffs[currentPlayer.id]?.type === 'slow' && ' 🐌'}
               </div>
-              
+
               <div
                 className={currentPlayer.team === 'spectators' ? 'spectator-character' : ''}
                 style={{
-                  filter: currentPlayer.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none',
-                  animation: currentPlayer.team === 'spectators' ? 'spectatorPulse 2s ease-in-out infinite' : 'none'
+                  filter: deadPlayers.has(currentPlayer.id)
+                    ? 'grayscale(100%) brightness(0.7)'
+                    : petrifiedPlayers.has(currentPlayer.id)
+                    ? 'sepia(100%) saturate(50%) brightness(0.8) contrast(1.1)'
+                    : frozenPlayers.has(currentPlayer.id)
+                    ? 'hue-rotate(180deg) saturate(1.5) brightness(1.2)'
+                    : (currentPlayer.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none'),
+                  animation: (frozenPlayers.has(currentPlayer.id) || petrifiedPlayers.has(currentPlayer.id))
+                    ? 'none' // Frozen/Petrified = no animation
+                    : (currentPlayer.team === 'spectators' && !deadPlayers.has(currentPlayer.id)
+                      ? 'spectatorPulse 2s ease-in-out infinite'
+                      : 'none')
                 }}
               >
                 <SpriteRenderer
                   avatarClass={getAvatarClass(currentPlayer)}
-                  animation={jumpState.isJumping ? 'victory' : (keys.size > 0 ? 'walk' : 'idle')}
+                  animation={deadPlayers.has(currentPlayer.id) ? 'death' : (jumpState.isJumping ? 'victory' : (keys.size > 0 ? 'walk' : 'idle'))}
                   direction={myPosition.direction}
-                  isMoving={keys.size > 0}
+                  isMoving={!deadPlayers.has(currentPlayer.id) && keys.size > 0}
                   size={characterSize}
                 />
               </div>
@@ -1277,43 +2408,112 @@ export function Lobby() {
                   }}
                 />
               )}
+
+              {/* Current Player's Magic Effects */}
+              {magicEffects[currentPlayer.id] && magicEffects[currentPlayer.id].effects.map((effect, index) => (
+                <MagicEffect
+                  key={`${currentPlayer.id}-${effect}-${index}`}
+                  type={effect}
+                  x={characterSize / 2} // Center on character
+                  y={0}
+                  onComplete={() => {
+                    setMagicEffects(prev => {
+                      const newEffects = { ...prev };
+                      delete newEffects[currentPlayer.id];
+                      return newEffects;
+                    });
+                  }}
+                />
+              ))}
             </div>
-          )}
-          
+          );
+          })()}
+
           {/* Other Players */}
           {currentLobby.players
             .filter(player => player.id !== currentPlayer?.id)
             .map(player => {
               const position = playerPositions[player.id];
               if (!position) return null;
-              
+
+              const isDead = deadPlayers.has(player.id);
+              const isInvisible = invisiblePlayers.has(player.id);
+              const isFlickering = invisibleFlicker[player.id];
+              // Invisible players: normally hidden (0), flicker at 20%
+              const playerOpacity = isInvisible ? (isFlickering ? 0.2 : 0) : 1;
+
+              // Calculate size scale for other players
+              const otherSizeBuff = sizeBuffs[player.id];
+              let otherSizeScale = 1;
+              if (otherSizeBuff?.type === 'enlarge') {
+                otherSizeScale = 1 + (otherSizeBuff.stacks * 0.5); // 1.5x, 2x, 2.5x
+              } else if (otherSizeBuff?.type === 'reduce') {
+                const reduceScales = [0.7, 0.5, 0.35];
+                otherSizeScale = reduceScales[otherSizeBuff.stacks - 1] || 0.35;
+              }
+
               return (
                 <div
                   key={player.id}
                   className="absolute transition-transform duration-200 ease-out"
                   style={{
                     left: `${position.x}px`,
-                    bottom: `${position.jumpHeight || 0}px`,
-                    zIndex: 9
+                    bottom: `${isDead ? -20 : (position.jumpHeight || 0)}px`,
+                    zIndex: 9,
+                    transform: `scale(${otherSizeScale}) ${isDead ? 'rotate(90deg)' : ''}`,
+                    transformOrigin: 'bottom center',
+                    transition: isDead ? 'transform 0.5s ease-out, bottom 0.5s ease-out' : 'transform 0.2s ease-out, opacity 0.3s ease-in-out',
+                    opacity: playerOpacity,
+                    pointerEvents: isInvisible && !isFlickering ? 'none' : 'auto'
                   }}
                 >
                   {/* Player name above character */}
                   <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
                     {player.name}
+                    {isDead && ' 💀'}
+                    {frozenPlayers.has(player.id) && ' 🧊'}
+                    {petrifiedPlayers.has(player.id) && ' 🗿'}
+                    {flyingPlayers.has(player.id) && ' 🪶'}
+                    {otherSizeBuff?.type === 'enlarge' && (
+                      <span className="text-orange-400">
+                        {' '}{'🔺'.repeat(otherSizeBuff.stacks)}
+                      </span>
+                    )}
+                    {otherSizeBuff?.type === 'reduce' && (
+                      <span className="text-blue-400">
+                        {' '}{'🔻'.repeat(otherSizeBuff.stacks)}
+                      </span>
+                    )}
+                    {speedBuffs[player.id]?.type === 'haste' && (
+                      <span className="text-lime-400">
+                        {' '}{'⚡'.repeat(speedBuffs[player.id].stacks)}
+                      </span>
+                    )}
+                    {speedBuffs[player.id]?.type === 'slow' && ' 🐌'}
                   </div>
-                  
+
                   <div
                     className={player.team === 'spectators' ? 'spectator-character' : ''}
                     style={{
-                      filter: player.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none',
-                      animation: player.team === 'spectators' ? 'spectatorPulse 2s ease-in-out infinite' : 'none'
+                      filter: isDead
+                        ? 'grayscale(100%) brightness(0.7)'
+                        : petrifiedPlayers.has(player.id)
+                        ? 'sepia(100%) saturate(50%) brightness(0.8) contrast(1.1)'
+                        : frozenPlayers.has(player.id)
+                        ? 'hue-rotate(180deg) saturate(1.5) brightness(1.2)'
+                        : (player.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none'),
+                      animation: (frozenPlayers.has(player.id) || petrifiedPlayers.has(player.id))
+                        ? 'none' // Frozen/Petrified = no animation
+                        : (player.team === 'spectators' && !isDead
+                          ? 'spectatorPulse 2s ease-in-out infinite'
+                          : 'none')
                     }}
                   >
                     <SpriteRenderer
                       avatarClass={getAvatarClass(player)}
-                      animation={position.isJumping ? 'victory' : (position.isMoving ? 'walk' : 'idle')}
+                      animation={isDead ? 'death' : (position.isJumping ? 'victory' : (position.isMoving ? 'walk' : 'idle'))}
                       direction={position.direction}
-                      isMoving={position.isMoving}
+                      isMoving={!isDead && position.isMoving}
                       size={characterSize}
                     />
                   </div>
@@ -1334,6 +2534,23 @@ export function Lobby() {
                       }}
                     />
                   )}
+
+                  {/* Other Player's Magic Effects */}
+                  {magicEffects[player.id] && magicEffects[player.id].effects.map((effect, index) => (
+                    <MagicEffect
+                      key={`${player.id}-${effect}-${index}`}
+                      type={effect}
+                      x={characterSize / 2} // Center on character
+                      y={0}
+                      onComplete={() => {
+                        setMagicEffects(prev => {
+                          const newEffects = { ...prev };
+                          delete newEffects[player.id];
+                          return newEffects;
+                        });
+                      }}
+                    />
+                  ))}
                 </div>
               );
             })}
@@ -1343,14 +2560,14 @@ export function Lobby() {
           {/* Layer 4: Pixel Art Foreground Elements */}
           <div className="absolute inset-0" style={{ zIndex: 15 }}>
             {/* Simple pixel art shadows and depth elements */}
-            <div 
+            <div
               className="absolute bottom-8 left-1/4 w-16 h-8 opacity-30"
               style={{
                 background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
                 imageRendering: 'pixelated'
               }}
             />
-            <div 
+            <div
               className="absolute bottom-8 right-1/4 w-20 h-10 opacity-30"
               style={{
                 background: 'radial-gradient(ellipse, rgba(0,0,0,0.4) 0%, transparent 70%)',
@@ -1358,9 +2575,119 @@ export function Lobby() {
               }}
             />
           </div>
+
+          {/* Dark Tavern Overlay - triggered by massacre spell */}
+          {tavernDarkMode && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                zIndex: 50,
+                animation: 'tavernDarkPulse 3s ease-in-out infinite',
+              }}
+            >
+              {/* Ominous text - positioned at bottom of screen */}
+              <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center">
+                <div className="text-red-600 text-4xl font-bold animate-pulse" style={{ textShadow: '0 0 20px #ff0000' }}>
+                  ☠️ AVADA KEDAVRA ☠️
+                </div>
+                <div className="text-gray-400 text-sm mt-2">The darkness will lift soon...</div>
+              </div>
+            </div>
+          )}
+
+          {/* Chaos Mode Disco Overlay */}
+          {chaosMode && (
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                zIndex: 45,
+                animation: 'chaosRainbow 0.5s linear infinite',
+              }}
+            >
+              {/* Disco ball sparkles */}
+              <div className="absolute inset-0" style={{ animation: 'discoFlash 0.2s ease-in-out infinite' }}>
+                {[...Array(20)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute text-2xl"
+                    style={{
+                      left: `${Math.random() * 100}%`,
+                      top: `${Math.random() * 100}%`,
+                      animation: `sparkle-twinkle ${0.3 + Math.random() * 0.5}s ease-in-out infinite`,
+                      animationDelay: `${Math.random() * 0.5}s`,
+                    }}
+                  >
+                    ✨
+                  </div>
+                ))}
+              </div>
+              {/* Party text */}
+              <div className="absolute bottom-32 left-1/2 transform -translate-x-1/2 text-center">
+                <div
+                  className="text-4xl font-bold"
+                  style={{
+                    background: 'linear-gradient(90deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #8b00ff)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    textShadow: '0 0 20px rgba(255,255,255,0.5)',
+                    animation: 'pulse 0.3s ease-in-out infinite',
+                  }}
+                >
+                  🌈 CHAOS MODE 🌈
+                </div>
+                <div className="text-white text-lg mt-2" style={{ textShadow: '0 0 10px #fff' }}>
+                  🎵 💃 🕺 🎶
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Dragon Attack Animation */}
+          {dragonAttack.active && (
+            <div
+              className="absolute pointer-events-none"
+              style={{
+                zIndex: 100,
+                left: 0,
+                bottom: '100px',
+                '--target-x': `${dragonAttack.targetX}px`,
+                animation: 'dragonFlyAcross 3.5s ease-in-out forwards',
+              } as React.CSSProperties}
+            >
+              <div className="relative">
+                {/* Dragon emoji with fire breath */}
+                <span className="text-8xl" style={{ filter: 'drop-shadow(0 0 20px rgba(255, 100, 0, 0.8))' }}>
+                  🐉
+                </span>
+                {/* Fire trail */}
+                <span className="absolute -left-8 top-6 text-4xl animate-pulse">🔥</span>
+                <span className="absolute -left-16 top-8 text-3xl animate-pulse" style={{ animationDelay: '0.1s' }}>🔥</span>
+              </div>
+              {/* "Clever girl" text */}
+              <div className="absolute -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                <span className="text-orange-400 font-bold text-lg" style={{ textShadow: '0 0 10px #ff6600' }}>
+                  Clever girl...
+                </span>
+              </div>
+            </div>
+          )}
         </div>
       )}
       
+      {/* Emote FAB for touch devices (tablets/mobile) */}
+      {currentLobby?.gamePhase === 'lobby' && (
+        <button
+          onClick={() => setShowEmoteModal(true)}
+          className="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform md:hidden touch-manipulation"
+          title="Open Emote Menu"
+          style={{
+            boxShadow: '0 4px 14px rgba(147, 51, 234, 0.5)',
+          }}
+        >
+          💬
+        </button>
+      )}
+
       {/* Emote Modal */}
       <EmoteModal
         isOpen={showEmoteModal}
