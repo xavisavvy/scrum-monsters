@@ -13,6 +13,10 @@
  */
 
 import { GamePhase, TeamType } from '../../shared/gameEvents';
+import type {
+  ProgressionXPAwardedPayload,
+  ProgressionLevelUpPayload,
+} from '../../shared/progressionTypes';
 
 // =============================================================================
 // Session Domain Events
@@ -473,6 +477,10 @@ export interface DomainEventMap {
   'combat:minion_damaged': CombatMinionDamagedPayload;
   'combat:minion_killed': CombatMinionKilledPayload;
   'combat:battle_complete': CombatBattleCompletePayload;
+
+  // Progression events
+  'progression:xp_awarded': ProgressionXPAwardedPayload;
+  'progression:level_up': ProgressionLevelUpPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
