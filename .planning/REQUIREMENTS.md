@@ -21,7 +21,7 @@ Requirements for milestone v1.3. Each maps to roadmap phases.
 ### Class Mastery
 
 - [ ] **MSTR-01**: Player earns class-specific XP when playing a class
-- [ ] **MSTR-02**: Class mastery has tier progression (e.g., Novice → Expert → Master)
+- [ ] **MSTR-02**: Class mastery has tier progression (e.g., Novice -> Expert -> Master)
 - [ ] **MSTR-03**: Class mastery tier grants stat bonuses (HP, damage, cooldown reduction)
 - [ ] **MSTR-04**: Class mastery tier unlocks class-specific abilities
 
@@ -95,49 +95,49 @@ Explicitly excluded from v1.3. Documented to prevent scope creep.
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| XP-01 | TBD | Pending |
-| XP-02 | TBD | Pending |
-| XP-03 | TBD | Pending |
-| XP-04 | TBD | Pending |
-| XP-05 | TBD | Pending |
-| XP-06 | TBD | Pending |
-| XP-07 | TBD | Pending |
-| XP-08 | TBD | Pending |
-| MSTR-01 | TBD | Pending |
-| MSTR-02 | TBD | Pending |
-| MSTR-03 | TBD | Pending |
-| MSTR-04 | TBD | Pending |
-| BOSS-01 | TBD | Pending |
-| BOSS-02 | TBD | Pending |
-| BOSS-03 | TBD | Pending |
-| BOSS-04 | TBD | Pending |
-| BOSS-05 | TBD | Pending |
-| BOSS-06 | TBD | Pending |
-| ABIL-01 | TBD | Pending |
-| ABIL-02 | TBD | Pending |
-| ABIL-03 | TBD | Pending |
-| ABIL-04 | TBD | Pending |
-| CMBO-01 | TBD | Pending |
-| CMBO-02 | TBD | Pending |
-| CMBO-03 | TBD | Pending |
-| ITEM-01 | TBD | Pending |
-| ITEM-02 | TBD | Pending |
-| ITEM-03 | TBD | Pending |
-| ITEM-04 | TBD | Pending |
-| STAT-01 | TBD | Pending |
-| STAT-02 | TBD | Pending |
-| STAT-03 | TBD | Pending |
-| STAT-04 | TBD | Pending |
+| XP-01 | Phase 15 | Pending |
+| XP-02 | Phase 15 | Pending |
+| XP-03 | Phase 15 | Pending |
+| XP-04 | Phase 15 | Pending |
+| XP-05 | Phase 15 | Pending |
+| XP-06 | Phase 15 | Pending |
+| XP-07 | Phase 15 | Pending |
+| XP-08 | Phase 15 | Pending |
+| MSTR-01 | Phase 16 | Pending |
+| MSTR-02 | Phase 16 | Pending |
+| MSTR-03 | Phase 16 | Pending |
+| MSTR-04 | Phase 16 | Pending |
+| BOSS-01 | Phase 17 | Pending |
+| BOSS-02 | Phase 17 | Pending |
+| BOSS-03 | Phase 17 | Pending |
+| BOSS-04 | Phase 17 | Pending |
+| BOSS-05 | Phase 17 | Pending |
+| BOSS-06 | Phase 17 | Pending |
+| ABIL-01 | Phase 18 | Pending |
+| ABIL-02 | Phase 18 | Pending |
+| ABIL-03 | Phase 18 | Pending |
+| ABIL-04 | Phase 18 | Pending |
+| CMBO-01 | Phase 19 | Pending |
+| CMBO-02 | Phase 19 | Pending |
+| CMBO-03 | Phase 19 | Pending |
+| ITEM-01 | Phase 20 | Pending |
+| ITEM-02 | Phase 20 | Pending |
+| ITEM-03 | Phase 20 | Pending |
+| ITEM-04 | Phase 20 | Pending |
+| STAT-01 | Phase 20 | Pending |
+| STAT-02 | Phase 20 | Pending |
+| STAT-03 | Phase 20 | Pending |
+| STAT-04 | Phase 20 | Pending |
 
 **Coverage:**
 - v1.3 requirements: 33 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 33
+- Mapped to phases: 33
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-03*
-*Last updated: 2026-02-03 after initial definition*
+*Last updated: 2026-02-03 after roadmap creation*
