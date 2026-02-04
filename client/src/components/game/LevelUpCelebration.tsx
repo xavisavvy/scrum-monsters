@@ -26,7 +26,7 @@ const CLASS_EFFECTS: Record<AvatarClass, { color: string; secondary: string }> =
 
 export function LevelUpCelebration({ playerClass, onComplete }: LevelUpCelebrationProps) {
   const { levelUp, clearLevelUp } = useProgression();
-  const { playSuccess } = useAudio();
+  const { playLevelUp } = useAudio();
 
   const duration = 2500; // 2.5 seconds per CONTEXT.md
 
@@ -34,9 +34,8 @@ export function LevelUpCelebration({ playerClass, onComplete }: LevelUpCelebrati
   useEffect(() => {
     if (!levelUp?.active) return;
 
-    // Play level-up fanfare (using success sound as fallback)
-    // TODO: Add dedicated level-up sound in future task
-    playSuccess?.();
+    // Play level-up fanfare
+    playLevelUp?.();
 
     // Cleanup after duration
     const timer = setTimeout(() => {
@@ -45,7 +44,7 @@ export function LevelUpCelebration({ playerClass, onComplete }: LevelUpCelebrati
     }, duration);
 
     return () => clearTimeout(timer);
-  }, [levelUp?.active, clearLevelUp, onComplete, playSuccess]);
+  }, [levelUp?.active, clearLevelUp, onComplete, playLevelUp]);
 
   // Handle skip (click/keypress)
   const handleSkip = useCallback(() => {
