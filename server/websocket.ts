@@ -221,6 +221,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
         const lobby = sessionManager.createLobby(hostName, lobbyName, initialSettings);
+
+        // Sync player-lobby mapping to gameState for battle functions
+        gameState.syncPlayerToLobby(lobby.hostId, lobby);
+
         // Get the correct host based on environment
         const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
         const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
@@ -272,6 +276,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('join_lobby', ({ lobbyId, playerName }) => {
       try {
         const { lobby, player } = sessionManager.joinLobby(lobbyId, playerName);
+
+        // Sync player-lobby mapping to gameState for battle functions
+        gameState.syncPlayerToLobby(player.id, lobby);
 
         // Store player-socket mapping
         socket.data.playerId = player.id;
@@ -454,24 +461,94 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.addTicketsToLobby(playerId, tickets);
-      if (lobby) {
-        // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
-        console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
-      }
+      // Use sessionManager instead of legacy gameState
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) return;
+
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player?.isHost) return; // Only host can add tickets
+
+      lobby.tickets.push(...tickets);
+
+      // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
+      io.to(lobby.id).emit('lobby_updated', { lobby });
+      console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
     });
 
     socket.on('remove_ticket', ({ ticketId }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.removeTicketFromLobby(playerId, ticketId);
-      if (lobby) {
-        // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
-        console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
+      // Use sessionManager instead of legacy gameState
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) return;
+
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player?.isHost) return; // Only host can remove tickets
+
+      lobby.tickets = lobby.tickets.filter(t => t.id !== ticketId);
+
+      // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
+      io.to(lobby.id).emit('lobby_updated', { lobby });
+      console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
+    });
+
+    // Explicit leave lobby (user clicked back to menu)
+    socket.on('leave_lobby', () => {
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
+
+      console.log(`🚪 Player ${playerId} explicitly leaving lobby ${lobbyId}`);
+
+      // Remove player from lobby
+      const updatedLobby = sessionManager.removePlayer(playerId);
+
+      // Leave socket room
+      socket.leave(lobbyId);
+
+      // Clear socket data
+      socket.data.playerId = undefined;
+      socket.data.lobbyId = undefined;
+
+      // Notify remaining players
+      if (updatedLobby) {
+        io.to(lobbyId).emit('player_left', { playerId });
+        io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
       }
+    });
+
+    // Update lobby name (host only)
+    socket.on('update_lobby_name', ({ name }) => {
+      console.log(`📝 update_lobby_name received with name: "${name}"`);
+
+      const playerId = socket.data.playerId;
+      if (!playerId) {
+        console.log('❌ update_lobby_name: No playerId on socket');
+        return;
+      }
+
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) {
+        console.log(`❌ update_lobby_name: No lobby found for player ${playerId}`);
+        return;
+      }
+
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player?.isHost) {
+        console.log(`❌ update_lobby_name: Player ${playerId} is not host`);
+        return;
+      }
+
+      const trimmedName = name?.trim();
+      if (!trimmedName || trimmedName.length > 50) {
+        console.log(`❌ update_lobby_name: Invalid name (empty or too long): "${trimmedName}"`);
+        return;
+      }
+
+      lobby.name = trimmedName;
+      io.to(lobby.id).emit('lobby_updated', { lobby });
+      console.log(`✅ Host ${playerId} renamed lobby to "${trimmedName}"`);
     });
 
     // Lobby movement events for 2D sidescroller playground
@@ -596,15 +673,39 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('start_battle', () => {
       const playerId = socket.data.playerId;
       console.log(`🎮 start_battle received from socket ${socket.id}, playerId: ${playerId}`);
-      
+
       if (!playerId) {
         console.log('❌ No playerId found in socket data');
         return;
       }
 
-      const lobby = gameState.getLobbyByPlayerId(playerId);
+      // Use sessionManager to get the lobby (not gameState which has stale mappings)
+      const lobby = sessionManager.getPlayerLobby(playerId);
       if (!lobby) {
-        console.log(`❌ No lobby found for player ${playerId}`);
+        console.log(`❌ No lobby found for player ${playerId} via sessionManager`);
+        return;
+      }
+
+      // Check if player is host
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player?.isHost) {
+        console.log(`❌ Player ${playerId} is not host, cannot start battle`);
+        socket.emit('game_error', { message: 'Only the host can start the battle' });
+        return;
+      }
+
+      // Check if there are tickets
+      if (!lobby.tickets || lobby.tickets.length === 0) {
+        console.log(`❌ No tickets in lobby ${lobby.id}`);
+        socket.emit('game_error', { message: 'Add at least one ticket before starting' });
+        return;
+      }
+
+      // Check if there's at least one non-spectator player
+      const activeVoters = lobby.players.filter(p => p.team !== 'spectators');
+      if (activeVoters.length === 0) {
+        console.log(`❌ No active voters in lobby ${lobby.id}`);
+        socket.emit('game_error', { message: 'At least one player must be on a voting team' });
         return;
       }
 
@@ -616,13 +717,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           console.log(`❌ Battle start error: ${result.error}`);
           socket.emit('game_error', { message: result.error });
         } else {
-          const { lobby, boss } = result;
+          const { lobby: updatedLobby, boss } = result;
 
-          console.log(`✅ Battle started successfully for lobby ${lobby.id}`);
+          console.log(`✅ Battle started successfully for lobby ${updatedLobby.id}`);
           // Removed lobby_updated: battle_started event contains lobby
 
           // Start the battle (synchronous - relies on socket.io event ordering)
-          io.to(lobby.id).emit('battle_started', { lobby, boss });
+          io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
         }
       } else {
         console.log(`❌ startBattle returned null/undefined`);
@@ -1187,6 +1288,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           const { lobbySync } = response;
           const playerId = lobbySync.yourPlayer.id;
           const lobbyId = lobbySync.lobby.id;
+
+          // Sync player-lobby mapping to gameState for battle functions
+          gameState.syncPlayerToLobby(playerId, lobbySync.lobby);
 
           // Update socket data
           socket.data.playerId = playerId;
