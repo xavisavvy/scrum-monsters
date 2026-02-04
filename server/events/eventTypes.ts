@@ -62,6 +62,14 @@ export interface SessionPlayerDisconnectedPayload {
   graceExpiresAt: number;
 }
 
+/** Emitted when a player changes their team */
+export interface SessionTeamChangedPayload {
+  lobbyId: string;
+  playerId: string;
+  oldTeam: TeamType;
+  newTeam: TeamType;
+}
+
 // =============================================================================
 // Estimation Domain Events
 // =============================================================================
@@ -430,6 +438,7 @@ export interface DomainEventMap {
   'session:host_changed': SessionHostChangedPayload;
   'session:phase_changed': SessionPhaseChangedPayload;
   'session:lobby_destroyed': SessionLobbyDestroyedPayload;
+  'session:team_changed': SessionTeamChangedPayload;
 
   // Estimation events
   'estimation:vote_cast': EstimationVoteCastPayload;
