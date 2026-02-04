@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 15 of 20 (XP/Progression Foundation)
-Plan: 3 of 6 in current phase
+Plan: 4 of 6 in current phase
 Status: In progress
-Last activity: 2026-02-04 - Completed 15-03-PLAN.md (XP Bar UI Component)
+Last activity: 2026-02-04 - Completed 15-04-PLAN.md (Floating XP Feedback)
 
-Progress: [██████████████░░░░░░] 70% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [██████████████░░░░░░] 71% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 53 (v1.0: 30, v1.2: 21, v1.3: 2)
+- Total plans completed: 54 (v1.0: 30, v1.2: 21, v1.3: 3)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -52,6 +52,9 @@ Recent decisions affecting current work:
 - [15-01]: XP rates: vote=10, boss_damage=2x, consensus=50, revival=30
 - [15-03]: Progressive disclosure UI pattern (minimal by default, expand on hover)
 - [15-03]: JRPG aesthetic (gold gradient #b8860b → #ffd700 → #ffec8b with beveled edges)
+- [15-04]: Source-specific XP positioning (vote=left, boss=center, revival=right)
+- [15-04]: Bonus XP animations (consensus, revival) larger with pulse effect
+- [15-04]: R3F components need smoke tests only (WebGL not available in Vitest)
 
 ### Pending Todos
 
@@ -65,6 +68,6 @@ Open items from v1.2:
 
 ## Session Continuity
 
-Last session: 2026-02-04 01:09 UTC
-Stopped at: Completed 15-03-PLAN.md (XP Bar UI Component)
+Last session: 2026-02-04 01:10 UTC
+Stopped at: Completed 15-04-PLAN.md (Floating XP Feedback)
 Resume file: None
