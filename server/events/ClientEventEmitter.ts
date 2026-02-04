@@ -346,6 +346,27 @@ export class ClientEventEmitter {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
     });
+
+    // =============================================================================
+    // Progression Events
+    // =============================================================================
+
+    this.eventBus.on('progression:xp_awarded', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'progression:xp_awarded', {
+        playerId: payload.playerId,
+        amount: payload.amount,
+        source: payload.source,
+        newTotal: payload.newTotal,
+      });
+    });
+
+    this.eventBus.on('progression:level_up', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'progression:level_up', {
+        playerId: payload.playerId,
+        oldLevel: payload.oldLevel,
+        newLevel: payload.newLevel,
+      });
+    });
   }
 
   /**
