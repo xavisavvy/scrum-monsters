@@ -93,6 +93,14 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('session:team_changed', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'session:team_changed', {
+        playerId: payload.playerId,
+        oldTeam: payload.oldTeam,
+        newTeam: payload.newTeam,
+      });
+    });
+
     this.eventBus.on('session:lobby_destroyed', (payload) => {
       // Cleanup sequencer - NO client emit
       this.sequencer.cleanup(payload.lobbyId);
