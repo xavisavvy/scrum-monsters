@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 15 of 20 (XP/Progression Foundation)
-Plan: 2 of TBD in current phase
+Plan: 1 of TBD in current phase
 Status: In progress
-Last activity: 2026-02-03 - Completed 15-02-PLAN.md
+Last activity: 2026-02-04 - Completed 15-01-PLAN.md (XP Foundation)
 
 Progress: [██████████████░░░░░░] 70% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 53 (v1.0: 30, v1.2: 21, v1.3: 2)
+- Total plans completed: 52 (v1.0: 30, v1.2: 21, v1.3: 1)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -47,6 +47,9 @@ Recent decisions affecting current work:
 - [v1.0]: Domain separation (Session/Estimation/Combat) - foundation for new domains
 - [v1.0]: EventBus for cross-domain coordination - will use for XP events
 - [v1.2]: 12% coverage baseline - maintain during feature work
+- [15-01]: XP curve exponential (baseXP=100, exponent=1.5) for balanced progression
+- [15-01]: Per-lobby XP isolation with ProgressionManager domain
+- [15-01]: XP rates: vote=10, boss_damage=2x, consensus=50, revival=30
 
 ### Pending Todos
 
@@ -60,6 +63,6 @@ Open items from v1.2:
 
 ## Session Continuity
 
-Last session: 2026-02-03 18:04 UTC
-Stopped at: Completed 15-02-PLAN.md (Client Progression Store)
+Last session: 2026-02-04 02:03 UTC
+Stopped at: Completed 15-01-PLAN.md (XP Foundation with TDD)
 Resume file: None
