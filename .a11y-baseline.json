@@ -1,0 +1,6 @@
+{
+  "description": "Baseline of existing accessibility violations for gradual remediation",
+  "created": "2026-02-03",
+  "violations": [],
+  "notes": "Violations captured here are tracked for future fixes but do not block CI. Add fingerprints of existing violations to prevent false positives on legacy issues."
+}

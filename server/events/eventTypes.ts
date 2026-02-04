@@ -13,6 +13,10 @@
  */
 
 import { GamePhase, TeamType } from '../../shared/gameEvents';
+import type {
+  ProgressionXPAwardedPayload,
+  ProgressionLevelUpPayload,
+} from '../../shared/progressionTypes';
 
 // =============================================================================
 // Session Domain Events
@@ -56,6 +60,14 @@ export interface SessionPlayerDisconnectedPayload {
   playerId: string;
   disconnectedAt: number;
   graceExpiresAt: number;
+}
+
+/** Emitted when a player changes their team */
+export interface SessionTeamChangedPayload {
+  lobbyId: string;
+  playerId: string;
+  oldTeam: TeamType;
+  newTeam: TeamType;
 }
 
 // =============================================================================
@@ -426,6 +438,7 @@ export interface DomainEventMap {
   'session:host_changed': SessionHostChangedPayload;
   'session:phase_changed': SessionPhaseChangedPayload;
   'session:lobby_destroyed': SessionLobbyDestroyedPayload;
+  'session:team_changed': SessionTeamChangedPayload;
 
   // Estimation events
   'estimation:vote_cast': EstimationVoteCastPayload;
@@ -473,6 +486,10 @@ export interface DomainEventMap {
   'combat:minion_damaged': CombatMinionDamagedPayload;
   'combat:minion_killed': CombatMinionKilledPayload;
   'combat:battle_complete': CombatBattleCompletePayload;
+
+  // Progression events
+  'progression:xp_awarded': ProgressionXPAwardedPayload;
+  'progression:level_up': ProgressionLevelUpPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;

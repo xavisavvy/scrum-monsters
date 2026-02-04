@@ -1,0 +1,56 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: scrumquest-migration
+  labels:
+    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/component: migration
+  annotations:
+    # Run before main deployment sync
+    argocd.argoproj.io/hook: PreSync
+    # Delete old job before creating new one (allows re-runs)
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    # Run after secrets are synced (wave 0), before app (wave 10)
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  # Allow 2 retries before marking deployment as failed
+  backoffLimit: 2
+  # Clean up completed jobs after 1 hour
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: scrumquest-migration
+        app.kubernetes.io/name: scrumquest
+        app.kubernetes.io/component: migration
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: scrumquest:latest
+          command: ["npm", "run", "db:migrate"]
+          envFrom:
+            - secretRef:
+                name: scrumquest-secrets
+          env:
+            - name: LOG_LEVEL
+              value: "info"
+            - name: NODE_ENV
+              value: "production"
+          resources:
+            requests:
+              memory: "128Mi"
+              cpu: "100m"
+            limits:
+              memory: "256Mi"
+              cpu: "500m"
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 1001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop:
+                - ALL
+      securityContext:
+        fsGroup: 1001

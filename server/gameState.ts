@@ -642,6 +642,19 @@ class GameStateManager {
     return this.lobbies.get(lobbyId) || null;
   }
 
+  /**
+   * Sync player-lobby mapping from sessionManager
+   * Call this after sessionManager.joinLobby() or sessionManager.createLobby()
+   */
+  syncPlayerToLobby(playerId: string, lobby: Lobby): void {
+    // Store the lobby if not already present
+    if (!this.lobbies.has(lobby.id)) {
+      this.lobbies.set(lobby.id, lobby);
+    }
+    // Map player to lobby
+    this.playerToLobby.set(playerId, lobby.id);
+  }
+
   updatePlayerTeam(playerId: string, team: TeamType): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;

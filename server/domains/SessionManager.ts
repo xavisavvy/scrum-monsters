@@ -24,6 +24,7 @@ import {
   TimerSettings,
   JiraSettings,
   EstimationSettings,
+  AvatarClass,
 } from '../../shared/gameEvents';
 import {
   SessionError,
@@ -195,19 +196,58 @@ export class SessionManager {
       throw new LobbyNotFoundError(lobbyId);
     }
 
+    // Check for any existing disconnected players with the same name
+    // This handles the case where reconnect token expired but player is still in lobby
+    const stalePlayersToRemove = lobby.players.filter(
+      (p) => p.name === playerName && this.disconnectedPlayers.has(p.id)
+    );
+
+    // Preserve avatar and team from stale player if exists
+    let preservedAvatar: AvatarClass | undefined;
+    let preservedTeam: TeamType | undefined;
+    for (const stalePlayer of stalePlayersToRemove) {
+      console.log(`♻️ Removing stale disconnected player ${stalePlayer.name} (${stalePlayer.id}) before rejoin`);
+      // Preserve avatar and team selection from the old player
+      if (stalePlayer.avatarClass && stalePlayer.avatarClass !== 'warrior') {
+        preservedAvatar = stalePlayer.avatarClass;
+        console.log(`  📦 Preserving avatar: ${preservedAvatar}`);
+      }
+      if (stalePlayer.team) {
+        preservedTeam = stalePlayer.team;
+        console.log(`  📦 Preserving team: ${preservedTeam}`);
+      }
+      // Clean up the old player
+      this.disconnectedPlayers.delete(stalePlayer.id);
+      // Remove any reconnect tokens for this player
+      for (const [tokenString, token] of this.reconnectTokens.entries()) {
+        if (token.playerId === stalePlayer.id) {
+          this.reconnectTokens.delete(tokenString);
+        }
+      }
+      // Remove from lobby
+      this.removePlayer(stalePlayer.id);
+    }
+
+    // Re-fetch lobby in case it was modified by removePlayer
+    const updatedLobby = this.lobbies.get(lobbyId);
+    if (!updatedLobby) {
+      throw new LobbyNotFoundError(lobbyId);
+    }
+
     // Check if there's an active host (not disconnected)
-    const currentHost = lobby.players.find(p => p.id === lobby.hostId);
-    const hostIsDisconnected = currentHost && this.disconnectedPlayers.has(currentHost.id);
+    const currentHost = updatedLobby.players.find(p => p.id === updatedLobby.hostId);
+    const hostIsDisconnected = currentHost ? this.disconnectedPlayers.has(currentHost.id) : false;
     const noActiveHost = !currentHost || hostIsDisconnected;
 
     // Create new player - make them host if no active host exists
+    // Use preserved avatar/team from stale player if available
     const playerId = Math.random().toString(36).substring(2, 15);
     const player: Player = {
       id: playerId,
       name: playerName,
-      avatar: 'warrior',
-      avatarClass: 'warrior',
-      team: 'developers',
+      avatar: preservedAvatar || 'warrior',
+      avatarClass: preservedAvatar || 'warrior',
+      team: preservedTeam || 'developers',
       isHost: noActiveHost,
       hasSubmittedScore: false,
     };
@@ -217,26 +257,26 @@ export class SessionManager {
       if (currentHost) {
         currentHost.isHost = false;
       }
-      lobby.hostId = playerId;
+      updatedLobby.hostId = playerId;
     }
 
     // Add to lobby
-    lobby.players.push(player);
+    updatedLobby.players.push(player);
 
     // Initialize combat state and position
-    lobby.playerCombatStates[playerId] = {
+    updatedLobby.playerCombatStates[playerId] = {
       maxHp: 100,
       hp: 100,
       isDowned: false,
     };
 
-    lobby.playerPositions[playerId] = {
+    updatedLobby.playerPositions[playerId] = {
       x: Math.random() * 80 + 10,
       y: 80,
     };
 
     // Update team assignments
-    this.updateTeamAssignments(lobby);
+    this.updateTeamAssignments(updatedLobby);
 
     // Store player -> lobby mapping
     this.playerToLobby.set(playerId, lobbyId);
@@ -249,7 +289,7 @@ export class SessionManager {
       playerName,
     });
 
-    return { lobby, player };
+    return { lobby: updatedLobby, player };
   }
 
   /**
@@ -400,11 +440,24 @@ export class SessionManager {
       throw new PlayerNotFoundError(playerId);
     }
 
+    // Save old team for event
+    const oldTeam = player.team;
+
     // Update player team
     player.team = team;
 
     // Update team assignments
     this.updateTeamAssignments(lobby);
+
+    // Emit team changed event
+    if (oldTeam !== team) {
+      this.eventBus.emit('session:team_changed', {
+        lobbyId: lobby.id,
+        playerId,
+        oldTeam,
+        newTeam: team,
+      });
+    }
 
     return lobby;
   }

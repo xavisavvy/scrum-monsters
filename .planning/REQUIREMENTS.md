@@ -1,119 +1,143 @@
-# Requirements: ScrumQuest v1.2
+# Requirements: ScrumQuest v1.3 Game Progression
 
-**Defined:** 2026-02-02
+**Defined:** 2026-02-03
 **Core Value:** Focused estimation that doesn't bore people. Voting should be distraction-free, but waiting for others should be fun.
 
-## v1.2 Requirements
+## v1.3 Requirements
 
-Requirements for SDLC Best Practices milestone. Each maps to roadmap phases.
+Requirements for milestone v1.3. Each maps to roadmap phases.
 
-### PR Workflow
+### XP/Progression
 
-- [ ] **PR-01**: PRs require at least 1 reviewer approval before merge
-- [ ] **PR-02**: PRs use standardized template with summary, test plan, and checklist
-- [ ] **PR-03**: PRs require all CI status checks to pass before merge
+- [ ] **XP-01**: Player earns XP on vote submission
+- [ ] **XP-02**: Player earns XP on boss damage dealt
+- [ ] **XP-03**: Player earns bonus XP for consensus match (voting accuracy)
+- [ ] **XP-04**: Player earns XP for reviving teammates
+- [ ] **XP-05**: Player XP persists across sessions (account-level)
+- [ ] **XP-06**: Player level calculated from total XP using progression curve
+- [ ] **XP-07**: Player sees XP bar with current progress to next level
+- [ ] **XP-08**: Player sees level-up notification with celebration effect
 
-### Security Scanning
+### Class Mastery
 
-- [ ] **SEC-01**: CodeQL SAST blocks PRs on high/critical severity findings
-- [ ] **SEC-02**: Pre-commit hook detects secrets/API keys before commit
-- [ ] **SEC-03**: CI validates all dependencies use approved licenses
-- [ ] **SEC-04**: npm audit job blocks PRs on high/critical vulnerabilities
+- [ ] **MSTR-01**: Player earns class-specific XP when playing a class
+- [ ] **MSTR-02**: Class mastery has tier progression (e.g., Novice -> Expert -> Master)
+- [ ] **MSTR-03**: Class mastery tier grants stat bonuses (HP, damage, cooldown reduction)
+- [ ] **MSTR-04**: Class mastery tier unlocks class-specific abilities
 
-### Test Quality
+### Boss AI
 
-- [ ] **TEST-01**: CI fails if test coverage drops below 70% threshold
-- [ ] **TEST-02**: PR comments show coverage diff with lines changed
-- [ ] **TEST-03**: Playwright captures and compares UI screenshots for visual regression
-- [ ] **TEST-04**: E2E tests validate accessibility using axe-core (no critical violations)
+- [ ] **BOSS-01**: Each boss type has unique attack pool (5 bosses, distinct patterns)
+- [ ] **BOSS-02**: Boss enters different phases based on HP thresholds
+- [ ] **BOSS-03**: Boss attacks have telegraphing (visual warning before damage)
+- [ ] **BOSS-04**: Boss difficulty scales with team average level
+- [ ] **BOSS-05**: Boss enters enrage mode at low HP (faster attacks, more damage)
+- [ ] **BOSS-06**: Boss targets players based on threat (damage dealt, healing done)
 
-### Database
+### Class Abilities
 
-- [ ] **DB-01**: Schema changes use Drizzle versioned migrations instead of db:push
-- [ ] **DB-02**: CI validates migrations are generated for schema changes
-- [ ] **DB-03**: ArgoCD runs migrations via PreSync hook before deployment
+- [ ] **ABIL-01**: Each avatar class has 1-2 unique abilities
+- [ ] **ABIL-02**: Abilities have cooldown timers (server-authoritative)
+- [ ] **ABIL-03**: Player sees ability buttons with cooldown indicators
+- [ ] **ABIL-04**: Ability effects vary by class role (tank: taunt/shield, healer: heal/buff, DPS: damage/debuff)
 
-### API Contracts
+### Team Combos
 
-- [ ] **API-01**: OpenAPI spec documents all REST endpoints
-- [ ] **API-02**: CI validates API responses match OpenAPI spec
-- [ ] **API-03**: TypeScript types are generated from OpenAPI spec
+- [ ] **CMBO-01**: Specific class combinations trigger combo attacks
+- [ ] **CMBO-02**: Consensus-powered ultimate activates when entire team has voted
+- [ ] **CMBO-03**: Combo attacks deal bonus damage and have visual effects
 
-### Performance
+### Combat Items
 
-- [ ] **PERF-01**: k6 load tests establish baseline for HTTP endpoints
-- [ ] **PERF-02**: k6 load tests establish baseline for WebSocket connections
-- [ ] **PERF-03**: CI runs smoke load tests on PRs (quick performance check)
+- [ ] **ITEM-01**: Items are session-scoped consumables (no persistence between games)
+- [ ] **ITEM-02**: Items have effects: heal, damage boost, shield
+- [ ] **ITEM-03**: Player receives items on ticket completion
+- [ ] **ITEM-04**: Player can use items during combat phase
 
-### Deployment
+### Lifetime Stats
 
-- [ ] **DEPLOY-01**: GitHub workflow triggers ArgoCD rollback with environment protection
-- [ ] **DEPLOY-02**: Rollback workflow requires approval for production
-- [ ] **DEPLOY-03**: Rollback creates audit trail in GitHub Actions history
+- [ ] **STAT-01**: Track lifetime estimation stats (total votes, consensus rate, voting speed)
+- [ ] **STAT-02**: Track lifetime combat stats (damage dealt, bosses defeated, revives, deaths)
+- [ ] **STAT-03**: Display lifetime stats on player profile page
+- [ ] **STAT-04**: Display session stats in game over summary
 
 ## Future Requirements
 
-Deferred to v1.3 or later. Tracked but not in current roadmap.
+Deferred to v1.4 or later. Tracked but not in current roadmap.
 
-### Advanced Testing
+### Prestige/Endgame
 
-- **TEST-05**: Mutation testing with Stryker to validate test quality
-- **TEST-06**: Contract testing with Pact for service boundaries
-- **TEST-07**: Chaos engineering with fault injection
+- **PRSTG-01**: Player can prestige after max level (reset level, keep cosmetic rewards)
+- **PRSTG-02**: Prestige grants exclusive cosmetic unlocks
 
-### Advanced Deployment
+### Leaderboards
 
-- **DEPLOY-04**: Canary deployments with Argo Rollouts
-- **DEPLOY-05**: Automated rollback based on Prometheus metrics
-- **DEPLOY-06**: Blue/green deployment strategy
+- **LEAD-01**: Weekly leaderboards for XP gained
+- **LEAD-02**: Sprint-scoped leaderboards for teams
+
+### Advanced Boss AI
+
+- **ADVBOSS-01**: Boss learns player patterns across sessions (adaptive AI)
+- **ADVBOSS-02**: Boss remembers players between sessions
 
 ## Out of Scope
 
-Explicitly excluded. Documented to prevent scope creep.
+Explicitly excluded from v1.3. Documented to prevent scope creep.
 
 | Feature | Reason |
 |---------|--------|
-| 100% coverage requirement | Leads to coverage-chasing over test quality |
-| Visual regression for 3D canvas | GPU variance makes snapshots flaky |
-| Snyk over CodeQL | CodeQL is free and sufficient for current needs |
-| Full DAST scanning | Overkill for internal tool, defer to production hardening |
-| Percy/Chromatic | Start with free Playwright screenshots |
+| Persistent inventory | Items session-scoped for v1.3; persistence adds complexity |
+| Multi-class combo chains | Requires extensive balancing; 2-class combos sufficient for v1.3 |
+| XP penalties for "wrong" votes | Undermines scrum collaboration theme |
+| Pay-to-win progression | Violates core value of focused estimation |
+| UI redesign | Deferred to v1.4 UI Polish milestone |
+| Mobile responsiveness | Deferred to v1.4 UI Polish milestone |
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| PR-01 | Phase 7 | Pending |
-| PR-02 | Phase 7 | Pending |
-| PR-03 | Phase 7 | Pending |
-| SEC-01 | Phase 8 | Pending |
-| SEC-02 | Phase 8 | Pending |
-| SEC-03 | Phase 8 | Pending |
-| SEC-04 | Phase 8 | Pending |
-| TEST-01 | Phase 7 | Pending |
-| TEST-02 | Phase 7 | Pending |
-| TEST-03 | Phase 10 | Pending |
-| TEST-04 | Phase 11 | Pending |
-| DB-01 | Phase 9 | Pending |
-| DB-02 | Phase 9 | Pending |
-| DB-03 | Phase 9 | Pending |
-| API-01 | Phase 12 | Pending |
-| API-02 | Phase 12 | Pending |
-| API-03 | Phase 12 | Pending |
-| PERF-01 | Phase 13 | Pending |
-| PERF-02 | Phase 13 | Pending |
-| PERF-03 | Phase 13 | Pending |
-| DEPLOY-01 | Phase 14 | Pending |
-| DEPLOY-02 | Phase 14 | Pending |
-| DEPLOY-03 | Phase 14 | Pending |
+| XP-01 | Phase 15 | Pending |
+| XP-02 | Phase 15 | Pending |
+| XP-03 | Phase 15 | Pending |
+| XP-04 | Phase 15 | Pending |
+| XP-05 | Phase 15 | Pending |
+| XP-06 | Phase 15 | Pending |
+| XP-07 | Phase 15 | Pending |
+| XP-08 | Phase 15 | Pending |
+| MSTR-01 | Phase 16 | Pending |
+| MSTR-02 | Phase 16 | Pending |
+| MSTR-03 | Phase 16 | Pending |
+| MSTR-04 | Phase 16 | Pending |
+| BOSS-01 | Phase 17 | Pending |
+| BOSS-02 | Phase 17 | Pending |
+| BOSS-03 | Phase 17 | Pending |
+| BOSS-04 | Phase 17 | Pending |
+| BOSS-05 | Phase 17 | Pending |
+| BOSS-06 | Phase 17 | Pending |
+| ABIL-01 | Phase 18 | Pending |
+| ABIL-02 | Phase 18 | Pending |
+| ABIL-03 | Phase 18 | Pending |
+| ABIL-04 | Phase 18 | Pending |
+| CMBO-01 | Phase 19 | Pending |
+| CMBO-02 | Phase 19 | Pending |
+| CMBO-03 | Phase 19 | Pending |
+| ITEM-01 | Phase 20 | Pending |
+| ITEM-02 | Phase 20 | Pending |
+| ITEM-03 | Phase 20 | Pending |
+| ITEM-04 | Phase 20 | Pending |
+| STAT-01 | Phase 20 | Pending |
+| STAT-02 | Phase 20 | Pending |
+| STAT-03 | Phase 20 | Pending |
+| STAT-04 | Phase 20 | Pending |
 
 **Coverage:**
-- v1.2 requirements: 23 total
-- Mapped to phases: 23
+- v1.3 requirements: 33 total
+- Mapped to phases: 33
 - Unmapped: 0
 
 ---
-*Requirements defined: 2026-02-02*
-*Last updated: 2026-02-02 after roadmap creation*
+*Requirements defined: 2026-02-03*
+*Last updated: 2026-02-03 after roadmap creation*

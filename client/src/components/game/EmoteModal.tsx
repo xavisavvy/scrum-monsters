@@ -84,7 +84,37 @@ export function EmoteModal({ isOpen, onClose, onSubmit }: EmoteModalProps) {
             </div>
           </form>
 
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center space-y-2">
+            <p className="text-xs text-gray-400">
+              ✨ Magic words: <span className="text-cyan-400">fire</span>, <span className="text-blue-400">ice</span>, <span className="text-green-400">heal</span>, <span className="text-yellow-400">lightning</span>, <span className="text-purple-400">magic</span>, <span className="text-pink-400">love</span>, <span className="text-orange-400">confetti</span>
+            </p>
+            <p className="text-xs text-gray-400">
+              🎭 State: <span className="text-gray-400">die</span>, <span className="text-amber-400">revive</span>, <span className="text-lime-400">haste</span> (stacks 3x), <span className="text-indigo-400">slow</span>, <span className="text-sky-400">fly</span>
+            </p>
+            <p className="text-xs text-gray-400">
+              🎯 Target: <span className="text-cyan-400">hold person [name]</span>, <span className="text-cyan-400">freeze [name]</span>
+            </p>
+            <p className="text-xs text-gray-400">
+              💀 AoE: <span className="text-amber-600">earthbind</span> (kills flyers), <span className="text-green-600">avada kedavra</span> (kills all others)
+            </p>
+            <p className="text-xs text-gray-400">
+              👼 Revive all: <span className="text-yellow-400">for the alliance</span>, <span className="text-yellow-400">legends never die</span>
+            </p>
+            <p className="text-xs text-gray-400">
+              🐉 Dragon: <span className="text-orange-400">clever girl</span>, <span className="text-orange-400">dracarys</span> (eats random player)
+            </p>
+            <p className="text-xs text-gray-400">
+              ✨ Self: <span className="text-purple-400">dispel magic</span> (remove all effects), <span className="text-pink-400">chaos mode</span> (disco!)
+            </p>
+            <p className="text-xs text-gray-400">
+              👻 Stealth: <span className="text-gray-300">invisibility</span> (half opacity for you, invisible to others - breaks on spell cast or death)
+            </p>
+            <p className="text-xs text-gray-400">
+              📏 Size: <span className="text-orange-400">enlarge</span>/<span className="text-blue-400">reduce</span> (stacks 3x - grow huge or shrink tiny!)
+            </p>
+            <p className="text-xs text-gray-400">
+              🗿 Petrify: <span className="text-gray-400">petrify [names]</span> (turn to stone - use dispel to free)
+            </p>
             <p className="text-xs text-gray-500">
               Press <kbd className="px-1 py-0.5 bg-gray-700 rounded text-xs">Esc</kbd> to cancel
             </p>

@@ -222,6 +222,8 @@ export interface ClientToServerEvents {
     };
   }) => void;
   join_lobby: (data: { lobbyId: string; playerName: string }) => void;
+  leave_lobby: (data: Record<string, never>) => void;
+  update_lobby_name: (data: { name: string }) => void;
   select_avatar: (data: { avatarClass: AvatarClass }) => void;
   assign_team: (data: { playerId: string; team: TeamType }) => void;
   change_own_team: (data: { team: TeamType }) => void;
@@ -431,6 +433,32 @@ export interface ServerToClientEvents {
   'combat:minion_heal_boss': (data: { minionPlayerId: string; healAmount: number; newBossHp: number; seq: number; timestamp: number }) => void;
   'combat:minion_damaged': (data: { playerId: string; damage: number; newHp: number; attackerId: string; seq: number; timestamp: number }) => void;
   'combat:minion_killed': (data: { playerId: string; killerId: string; respawnInSeconds: number; seq: number; timestamp: number }) => void;
+
+  // Fine-grained progression events
+  'progression:xp_awarded': (data: {
+    playerId: string;
+    amount: number;
+    source: 'vote' | 'boss_damage' | 'consensus' | 'revival';
+    newTotal: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'progression:level_up': (data: {
+    playerId: string;
+    oldLevel: number;
+    newLevel: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'progression:sync': (data: {
+    playerId: string;
+    totalXP: number;
+    currentLevel: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
 
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;

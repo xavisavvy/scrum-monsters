@@ -225,6 +225,8 @@ export class MemStorage implements IStorage {
       musicVolume: profile.musicVolume ?? 0.5,
       sfxVolume: profile.sfxVolume ?? 0.7,
       settings: profile.settings || null,
+      totalXP: profile.totalXP ?? 0,
+      currentLevel: profile.currentLevel ?? 1,
       updatedAt: new Date(),
     };
     this.userProfiles.set(id, userProfile);

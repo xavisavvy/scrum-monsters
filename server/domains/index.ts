@@ -10,6 +10,7 @@ import { LobbyEventSequencer, createClientEventEmitter, ClientEventEmitter } fro
 import { SessionManager } from './SessionManager';
 import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
+import { ProgressionManager } from './ProgressionManager';
 import { Server } from 'socket.io';
 
 // Create shared event bus instance
@@ -73,9 +74,10 @@ const combatManager = new CombatManager({
     return player?.avatar ?? null;
   }
 });
+const progressionManager = new ProgressionManager({ eventBus });
 
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager };
 
 // Export sequencer for testing if needed
 export { lobbyEventSequencer };
@@ -84,6 +86,7 @@ export { lobbyEventSequencer };
 export type { SessionManager, SessionManagerDeps, CreateLobbyOptions } from './SessionManager';
 export type { EstimationManager, EstimationManagerDeps } from './EstimationManager';
 export type { CombatManager, CombatManagerDeps } from './CombatManager';
+export type { ProgressionManager, ProgressionManagerDeps } from './ProgressionManager';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
