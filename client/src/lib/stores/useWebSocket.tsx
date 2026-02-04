@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { LobbySnapshot, ReconnectResponse, LobbySync, ClientToServerEvents, ServerToClientEvents } from '@shared/gameEvents';
+import { useProgression } from './useProgression';
+import { useGameState } from './useGameState';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
@@ -247,14 +249,52 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     socket.on('reconnect_attempt', ({ attempt, maxAttempts, nextRetryIn }) => {
       console.log(`🔄 Reconnect attempt ${attempt}/${maxAttempts}, next retry in ${nextRetryIn}s`);
       set(state => ({
-        reconnection: { 
-          ...state.reconnection, 
-          attempt, 
-          maxAttempts, 
+        reconnection: {
+          ...state.reconnection,
+          attempt,
+          maxAttempts,
           nextRetryIn,
           status: 'reconnecting'
         }
       }));
+    });
+
+    // Progression event handlers
+    socket.on('progression:xp_awarded', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (data.playerId === currentPlayer?.id) {
+        useProgression.getState().handleXPAwarded({
+          playerId: data.playerId,
+          amount: data.amount,
+          source: data.source,
+          newTotal: data.newTotal,
+          timestamp: data.timestamp || Date.now(),
+        });
+      }
+    });
+
+    socket.on('progression:level_up', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (data.playerId === currentPlayer?.id) {
+        useProgression.getState().handleLevelUp({
+          playerId: data.playerId,
+          oldLevel: data.oldLevel,
+          newLevel: data.newLevel,
+          timestamp: data.timestamp || Date.now(),
+        });
+      }
+    });
+
+    socket.on('progression:sync', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (data.playerId === currentPlayer?.id) {
+        useProgression.getState().handleSync({
+          playerId: data.playerId,
+          totalXP: data.totalXP,
+          currentLevel: data.currentLevel,
+          timestamp: data.timestamp || Date.now(),
+        });
+      }
     });
 
     set({ socket });
