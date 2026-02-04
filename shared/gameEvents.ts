@@ -222,6 +222,8 @@ export interface ClientToServerEvents {
     };
   }) => void;
   join_lobby: (data: { lobbyId: string; playerName: string }) => void;
+  leave_lobby: (data: Record<string, never>) => void;
+  update_lobby_name: (data: { name: string }) => void;
   select_avatar: (data: { avatarClass: AvatarClass }) => void;
   assign_team: (data: { playerId: string; team: TeamType }) => void;
   change_own_team: (data: { team: TeamType }) => void;
