@@ -53,7 +53,14 @@ See `.planning/milestones/v1.2-ROADMAP.md`
   6. Player sees their current level based on accumulated XP
   7. Player sees XP bar showing progress toward next level
   8. Player sees level-up celebration when crossing level threshold
-**Plans**: TBD
+**Plans**: 6 plans
+Plans:
+- [ ] 15-01-PLAN.md — TDD: XP curve, types, and ProgressionManager domain
+- [ ] 15-02-PLAN.md — Client progression store and Socket.IO events
+- [ ] 15-03-PLAN.md — XP bar UI component with JRPG styling
+- [ ] 15-04-PLAN.md — Floating XP numbers with animations
+- [ ] 15-05-PLAN.md — Level-up celebration with class effects
+- [ ] 15-06-PLAN.md — Full integration and end-to-end wiring
 
 ### Phase 16: Class Mastery System
 
@@ -129,7 +136,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
-| 15. XP/Progression | v1.3 | 0/TBD | Not started | - |
+| 15. XP/Progression | v1.3 | 0/6 | Planned | - |
 | 16. Class Mastery | v1.3 | 0/TBD | Not started | - |
 | 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
 | 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
