@@ -17,6 +17,7 @@ interface AudioState {
   buttonSelectSound: HTMLAudioElement | null;
   explosionSound: HTMLAudioElement | null;
   walkingSound: HTMLAudioElement | null;
+  levelUpSound: HTMLAudioElement | null;
   musicTracks: MusicTrack[];
   currentTrackIndex: number;
   isMuted: boolean;
@@ -40,6 +41,7 @@ interface AudioState {
   setButtonSelectSound: (sound: HTMLAudioElement) => void;
   setExplosionSound: (sound: HTMLAudioElement) => void;
   setWalkingSound: (sound: HTMLAudioElement) => void;
+  setLevelUpSound: (sound: HTMLAudioElement) => void;
   setMusicTracks: (tracks: MusicTrack[]) => void;
   setYoutubeUrl: (url: string) => void;
   
@@ -50,6 +52,7 @@ interface AudioState {
   playSuccess: () => void;
   playButtonSelect: () => void;
   playExplosion: () => void;
+  playLevelUp: () => void;
   startWalkingSound: () => void;
   stopWalkingSound: () => void;
   playMenuMusic: () => void;
@@ -114,6 +117,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   buttonSelectSound: null,
   explosionSound: null,
   walkingSound: null,
+  levelUpSound: null,
   musicTracks: [],
   currentTrackIndex: 0,
   isMuted: initialMuteSettings.isMuted, // Load from localStorage
@@ -125,7 +129,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   fadeTimer: null,
   isTransitioning: false,
   youtubeUrl: '',
-  
+
   setBackgroundMusic: (music: HTMLAudioElement) => set({ backgroundMusic: music }),
   setMenuMusic: (music: HTMLAudioElement) => set({ menuMusic: music }),
   setLobbyMusic: (music: HTMLAudioElement) => set({ lobbyMusic: music }),
@@ -136,6 +140,7 @@ export const useAudio = create<AudioState>((set, get) => ({
   setButtonSelectSound: (sound: HTMLAudioElement) => set({ buttonSelectSound: sound }),
   setExplosionSound: (sound: HTMLAudioElement) => set({ explosionSound: sound }),
   setWalkingSound: (sound: HTMLAudioElement) => set({ walkingSound: sound }),
+  setLevelUpSound: (sound: HTMLAudioElement) => set({ levelUpSound: sound }),
   setMusicTracks: (tracks) => set({ musicTracks: tracks }),
   setYoutubeUrl: (url) => set({ youtubeUrl: url }),
   
@@ -268,12 +273,30 @@ export const useAudio = create<AudioState>((set, get) => ({
         console.log("Explosion sound skipped (muted)");
         return;
       }
-      
+
       // Clone the sound to allow overlapping playback
       const soundClone = explosionSound.cloneNode() as HTMLAudioElement;
       soundClone.volume = 0.6;
       soundClone.play().catch(error => {
         console.log("Explosion sound play prevented:", error);
+      });
+    }
+  },
+
+  playLevelUp: () => {
+    const { levelUpSound, isMuted } = get();
+    if (levelUpSound) {
+      // If sound is muted, don't play anything
+      if (isMuted) {
+        console.log("Level-up sound skipped (muted)");
+        return;
+      }
+
+      // Clone the sound to allow overlapping playback
+      const soundClone = levelUpSound.cloneNode() as HTMLAudioElement;
+      soundClone.volume = 0.7;
+      soundClone.play().catch(error => {
+        console.log("Level-up sound play prevented:", error);
       });
     }
   },
