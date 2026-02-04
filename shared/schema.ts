@@ -36,6 +36,8 @@ export const userProfiles = pgTable("user_profiles", {
   musicVolume: real("music_volume").default(0.5),
   sfxVolume: real("sfx_volume").default(0.7),
   settings: json("settings").$type<Record<string, unknown>>(), // Extensible settings
+  totalXP: integer("total_xp").default(0).notNull(),
+  currentLevel: integer("current_level").default(1).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -99,6 +101,8 @@ export const insertUserProfileSchema = createInsertSchema(userProfiles).pick({
   musicVolume: true,
   sfxVolume: true,
   settings: true,
+  totalXP: true,
+  currentLevel: true,
 });
 
 export const insertUserStatsSchema = createInsertSchema(userStats).pick({
