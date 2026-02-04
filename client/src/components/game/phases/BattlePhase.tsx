@@ -4,6 +4,11 @@ import { PhaseComponentProps } from './index';
 import { ScoreSubmission } from '@/components/game/ScoreSubmission';
 import { CountdownOverlay } from '@/components/game/CountdownOverlay';
 import { MinionDisplay } from '@/components/game/MinionDisplay';
+import { XPBar } from '@/components/game/XPBar';
+import { FloatingXPManager } from '@/components/game/FloatingXPManager';
+import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
+import { useProgression } from '@/lib/stores/useProgression';
+import { useGameState } from '@/lib/stores/useGameState';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -16,6 +21,9 @@ export function BattlePhase({
   onToggleSidebar,
   isTransitioning = false
 }: BattlePhaseProps) {
+  const { currentPlayer } = useGameState();
+  const { levelUp } = useProgression();
+
   // Don't render if no boss is available
   if (!boss) {
     return (
@@ -56,6 +64,20 @@ export function BattlePhase({
         onToggleSidebar={onToggleSidebar}
         className={isTransitioning ? 'transitioning' : ''}
       />
+
+      {/* XP System UI - Floating numbers in 3D scene */}
+      <FloatingXPManager />
+
+      {/* XP Bar - Bottom of screen */}
+      <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
+        <XPBar />
+      </div>
+
+      {/* Level-up celebration - Fullscreen overlay */}
+      {levelUp?.active && currentPlayer && (
+        <LevelUpCelebration playerClass={currentPlayer.avatar} />
+      )}
+
       <CountdownOverlay />
     </>
   );
