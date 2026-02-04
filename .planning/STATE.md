@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 15 of 20 (XP/Progression Foundation)
-Plan: 4 of 6 in current phase
+Plan: 5 of 6 in current phase
 Status: In progress
-Last activity: 2026-02-04 - Completed 15-04-PLAN.md (Floating XP Feedback)
+Last activity: 2026-02-04 - Completed 15-05-PLAN.md (Level-Up Celebration)
 
-Progress: [██████████████░░░░░░] 71% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [███████████████░░░░░] 73% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 54 (v1.0: 30, v1.2: 21, v1.3: 3)
+- Total plans completed: 55 (v1.0: 30, v1.2: 21, v1.3: 4)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -55,6 +55,9 @@ Recent decisions affecting current work:
 - [15-04]: Source-specific XP positioning (vote=left, boss=center, revival=right)
 - [15-04]: Bonus XP animations (consensus, revival) larger with pulse effect
 - [15-04]: R3F components need smoke tests only (WebGL not available in Vitest)
+- [15-05]: 2.5s auto-dismiss for level-up celebration (balanced impact vs. disruption)
+- [15-05]: Class-specific particle colors for visual variety and class identity
+- [15-05]: Audio store extension pattern (dedicated sound handlers vs. generic playSound)
 
 ### Pending Todos
 
@@ -68,6 +71,6 @@ Open items from v1.2:
 
 ## Session Continuity
 
-Last session: 2026-02-04 01:10 UTC
-Stopped at: Completed 15-04-PLAN.md (Floating XP Feedback)
+Last session: 2026-02-04 01:19 UTC
+Stopped at: Completed 15-05-PLAN.md (Level-Up Celebration)
 Resume file: None
