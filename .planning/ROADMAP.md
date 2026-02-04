@@ -36,6 +36,7 @@ See `.planning/milestones/v1.2-ROADMAP.md`
 - [ ] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system
 - [ ] **Phase 19: Team Combos** - Coordinated attacks and consensus ultimates
 - [ ] **Phase 20: Combat Items & Lifetime Stats** - Session consumables and persistent statistics
+- [x] **Phase 21: Lobby Magic & Emote System** ⚡ - Magic spells in lobby (PARTIALLY COMPLETE)
 
 ## Phase Details
 
@@ -127,6 +128,43 @@ Plans:
   8. Player sees session stats summary at game over
 **Plans**: TBD
 
+### Phase 21: Lobby Magic & Emote System ⚡ PARTIALLY COMPLETE
+
+**Goal**: Players can cast magic spells via emotes in the lobby for fun social interactions
+**Depends on**: Nothing (standalone social feature)
+**Requirements**: MAGIC-01 through MAGIC-17
+**Status**: Implemented ad-hoc, needs formal testing and polish
+**Success Criteria** (what must be TRUE):
+  1. ✅ Player can type magic words to trigger visual effects (fire, ice, heal, lightning, magic, love, confetti, rage, sleep, sparkle)
+  2. ✅ Player can change state with spells: die (X eyes), revive (restore), haste (speed up, 3x stack), slow (speed down), fly (levitate)
+  3. ✅ Player can target other players by name: "haste Bob", "slow Alice, Bob"
+  4. ✅ Player can freeze targets with "hold person [name]" or "freeze [name]" (5 second duration)
+  5. ✅ Player can cast "earthbind" to kill all flying players
+  6. ✅ Player can cast "avada kedavra" to kill all other players (darkens tavern 15s)
+  7. ✅ Player can cast "for the alliance" / "legends never die" to revive entire lobby
+  8. ✅ Player can summon dragon with "dracarys" / "clever girl" (eats random player)
+  9. ✅ Player can cast "dispel magic" on self or targets to remove all effects
+  10. ✅ Player can trigger "chaos mode" for 5-second disco rainbow effect
+  11. ✅ Player can cast "invisibility" (half opacity for self, invisible to others with random flicker)
+  12. ✅ Player can cast "enlarge" / "reduce" (stackable 3x size changes)
+  13. ✅ Player can cast "petrify [names]" to turn targets to stone (sepia, immobile)
+  14. ✅ Enlarged players cause screen shake when walking (intensity scales with stacks)
+  15. ✅ Invisibility breaks when casting other spells or dying
+  16. ✅ All targetable spells support multi-targeting: "spell name1, name2 and name3"
+  17. ✅ Tablet users can open emote menu via FAB button (bottom-left)
+**What's Missing**:
+  - Formal test coverage
+  - Code review and cleanup
+  - Server-side validation (currently client-only effects)
+  - Persistence of effects across reconnects
+  - Visual polish pass
+**Files Modified**:
+  - client/src/lib/utils/magicWords.ts (spell detection, targeting)
+  - client/src/components/game/Lobby.tsx (state management, handlers)
+  - client/src/components/game/MagicEffect.tsx (visual effects)
+  - client/src/components/game/EmoteModal.tsx (help text)
+**Plans**: TBD (needs formal planning for remaining work)
+
 ## Progress
 
 **Execution Order:**
@@ -136,9 +174,10 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
-| 15. XP/Progression | v1.3 | 0/6 | Planned | - |
+| 15. XP/Progression | v1.3 | 5/6 | In Progress | - |
 | 16. Class Mastery | v1.3 | 0/TBD | Not started | - |
 | 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
 | 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
 | 19. Team Combos | v1.3 | 0/TBD | Not started | - |
 | 20. Items & Stats | v1.3 | 0/TBD | Not started | - |
+| 21. Lobby Magic | v1.3 | N/A | ⚡ Partial | Ad-hoc |
