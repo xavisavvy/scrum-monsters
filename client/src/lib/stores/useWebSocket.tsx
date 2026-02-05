@@ -94,9 +94,13 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     }
 
     // Detect if we're on Replit production (scrummonsters.com domain)
-    const isReplitProduction = window.location.hostname.includes('scrummonsters.com') ||
-                               window.location.hostname.includes('.replit.dev') ||
-                               window.location.hostname.includes('.repl.co');
+    // SECURITY: Use proper hostname validation (not substring match)
+    // Prevents bypass attacks like: evil.com/scrummonsters.com
+    const hostname = window.location.hostname;
+    const isReplitProduction = hostname === 'scrummonsters.com' ||
+                               hostname === 'www.scrummonsters.com' ||
+                               hostname.endsWith('.replit.dev') ||
+                               hostname.endsWith('.repl.co');
 
     // Replit-optimized settings: More forgiving timeouts
     const socket = io(window.location.origin, {
