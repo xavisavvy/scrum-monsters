@@ -1,0 +1,73 @@
+name: Cleanup
+
+on:
+  schedule:
+    # Run weekly on Sunday at 2 AM
+    - cron: "0 2 * * 0"
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  packages: write
+
+jobs:
+  cleanup-runs:
+    name: Clean Old Workflow Runs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Delete old workflow runs
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          retain_days: 30
+          keep_minimum_runs: 5
+          delete_workflow_pattern: "all"
+
+  cleanup-caches:
+    name: Clean Old Caches
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cleanup caches
+        run: |
+          gh extension install actions/gh-actions-cache
+
+          echo "Fetching list of cache keys..."
+          cacheKeys=$(gh actions-cache list -R ${{ github.repository }} --limit 100 --sort created-at --order asc | cut -f 1)
+
+          # Keep only the 20 most recent caches
+          cacheCount=$(echo "$cacheKeys" | wc -l)
+          if [ $cacheCount -gt 20 ]; then
+            deleteCount=$((cacheCount - 20))
+            echo "Deleting $deleteCount old caches..."
+            echo "$cacheKeys" | head -n $deleteCount | while read key; do
+              echo "Deleting cache: $key"
+              gh actions-cache delete "$key" -R ${{ github.repository }} --confirm || true
+            done
+          else
+            echo "Cache count ($cacheCount) is within limit, no cleanup needed"
+          fi
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  cleanup-packages:
+    name: Clean Old Package Versions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Delete old package versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: ${{ github.event.repository.name }}
+          package-type: container
+          min-versions-to-keep: 10
+          delete-only-untagged-versions: true
+        continue-on-error: true

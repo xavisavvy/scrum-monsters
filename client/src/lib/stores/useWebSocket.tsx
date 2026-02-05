@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { LobbySnapshot, ReconnectResponse, LobbySync, ClientToServerEvents, ServerToClientEvents } from '@shared/gameEvents';
+import { useProgression } from './useProgression';
+import { useGameState } from './useGameState';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
@@ -19,17 +21,19 @@ interface WebSocketState {
   reconnection: ReconnectionState;
   lastLobbySnapshot: LobbySnapshot | null;
   heartbeatInterval: NodeJS.Timeout | null; // Keeps connection alive against infrastructure timeouts
-  
+
   // Core connection methods
   connect: () => void;
   disconnect: () => void;
   emit: <K extends keyof ClientToServerEvents>(event: K, data: Parameters<ClientToServerEvents[K]>[0]) => void;
-  
+
   // Reconnection methods
   attemptReconnection: () => void;
   manualRetry: () => void;
   clearReconnectionState: () => void;
   storeLobbySnapshot: (snapshot: LobbySnapshot) => void;
+  getReconnectToken: () => string | null;
+  reconnectToLobby: () => boolean; // Returns true if reconnect attempt was made
 }
 
 // Reconnection token storage
@@ -252,60 +256,53 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     socket.on('reconnect_attempt', ({ attempt, maxAttempts, nextRetryIn }) => {
       console.log(`🔄 Reconnect attempt ${attempt}/${maxAttempts}, next retry in ${nextRetryIn}s`);
       set(state => ({
-        reconnection: { 
-          ...state.reconnection, 
-          attempt, 
-          maxAttempts, 
+        reconnection: {
+          ...state.reconnection,
+          attempt,
+          maxAttempts,
           nextRetryIn,
           status: 'reconnecting'
         }
       }));
     });
 
-    // Remove any existing visibility handler before adding new one
-    if (visibilityHandler) {
-      document.removeEventListener('visibilitychange', visibilityHandler);
-    }
-
-    // Handle visibility change - check connection when tab becomes visible
-    visibilityHandler = () => {
-      if (document.visibilityState === 'visible') {
-        const currentSocket = get().socket;
-        const { reconnection } = get();
-        
-        // Skip if already reconnecting
-        if (reconnection.status === 'reconnecting') {
-          console.log('👁️ Tab visible - already reconnecting, skipping');
-          return;
-        }
-        
-        if (!currentSocket) {
-          console.log('👁️ Tab visible - no socket, triggering reconnection');
-          // Mark as disconnected and reset attempt count before reconnecting
-          set(state => ({
-            isConnected: false,
-            reconnection: { ...state.reconnection, status: 'disconnected', attempt: 0 }
-          }));
-          get().attemptReconnection();
-          return;
-        }
-        
-        if (!currentSocket.connected) {
-          console.log('👁️ Tab visible - socket disconnected, triggering reconnection');
-          // Mark as disconnected and reset attempt count before reconnecting
-          set(state => ({
-            isConnected: false,
-            reconnection: { ...state.reconnection, status: 'disconnected', attempt: 0 }
-          }));
-          get().attemptReconnection();
-        } else {
-          // Socket appears connected - send heartbeat to verify
-          console.log('👁️ Tab visible - verifying connection with heartbeat');
-          currentSocket.emit('client_heartbeat' as any);
-        }
+    // Progression event handlers
+    socket.on('progression:xp_awarded', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (data.playerId === currentPlayer?.id) {
+        useProgression.getState().handleXPAwarded({
+          playerId: data.playerId,
+          amount: data.amount,
+          source: data.source,
+          newTotal: data.newTotal,
+          timestamp: data.timestamp || Date.now(),
+        });
       }
-    };
-    document.addEventListener('visibilitychange', visibilityHandler);
+    });
+
+    socket.on('progression:level_up', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (data.playerId === currentPlayer?.id) {
+        useProgression.getState().handleLevelUp({
+          playerId: data.playerId,
+          oldLevel: data.oldLevel,
+          newLevel: data.newLevel,
+          timestamp: data.timestamp || Date.now(),
+        });
+      }
+    });
+
+    socket.on('progression:sync', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (data.playerId === currentPlayer?.id) {
+        useProgression.getState().handleSync({
+          playerId: data.playerId,
+          totalXP: data.totalXP,
+          currentLevel: data.currentLevel,
+          timestamp: data.timestamp || Date.now(),
+        });
+      }
+    });
 
     set({ socket });
   },
@@ -441,9 +438,27 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   emit: (event, data) => {
     const { socket } = get();
     if (socket && socket.connected) {
+      console.log(`📤 Emitting ${String(event)}:`, data);
       socket.emit(event, data);
     } else {
-      console.warn(`Cannot emit ${String(event)}: socket not connected`);
+      console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
     }
+  },
+
+  getReconnectToken: () => {
+    return getStoredReconnectToken();
+  },
+
+  reconnectToLobby: () => {
+    const { socket } = get();
+    const token = getStoredReconnectToken();
+
+    if (!socket || !socket.connected || !token) {
+      return false;
+    }
+
+    console.log('🔄 Attempting reconnection with stored token');
+    socket.emit('reconnect_with_token', { reconnectToken: token });
+    return true;
   }
 }));

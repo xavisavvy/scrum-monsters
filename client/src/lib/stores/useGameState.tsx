@@ -2,6 +2,25 @@ import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Lobby, Player, Boss, AttackAnimation } from '../gameTypes';
 
+interface CountdownState {
+  active: boolean;
+  remainingSeconds: number;
+  multiplier: number;
+}
+
+interface MinionClientState {
+  playerId: string;
+  hp: number;
+  maxHp: number;
+  isAlive: boolean;
+}
+
+interface DiscussionTimerState {
+  active: boolean;
+  endsAt: number;
+  durationMs: number;
+}
+
 interface GameState {
   currentLobby: Lobby | null;
   currentPlayer: Player | null;
@@ -9,7 +28,10 @@ interface GameState {
   attackAnimations: AttackAnimation[];
   inviteLink: string | null;
   error: string | null;
-  
+  countdown: CountdownState | null;
+  minions: Map<string, MinionClientState>;
+  discussionTimer: DiscussionTimerState | null;
+
   // Actions
   setLobby: (lobby: Lobby) => void;
   setPlayer: (player: Player) => void;
@@ -18,6 +40,10 @@ interface GameState {
   setError: (error: string | null) => void;
   addAttackAnimation: (animation: AttackAnimation) => void;
   removeAttackAnimation: (id: string) => void;
+  setCountdown: (countdown: CountdownState | null) => void;
+  addMinion: (minion: MinionClientState) => void;
+  removeMinion: (playerId: string) => void;
+  setDiscussionTimer: (timer: DiscussionTimerState | null) => void;
   clearAll: () => void;
 }
 
@@ -29,6 +55,9 @@ export const useGameState = create<GameState>()(
     attackAnimations: [],
     inviteLink: null,
     error: null,
+    countdown: null,
+    minions: new Map(),
+    discussionTimer: null,
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -54,14 +83,35 @@ export const useGameState = create<GameState>()(
       const { attackAnimations } = get();
       set({ attackAnimations: attackAnimations.filter(a => a.id !== id) });
     },
-    
+
+    setCountdown: (countdown) => set({ countdown }),
+
+    addMinion: (minion) => {
+      const { minions } = get();
+      const newMinions = new Map(minions);
+      newMinions.set(minion.playerId, minion);
+      set({ minions: newMinions });
+    },
+
+    removeMinion: (playerId) => {
+      const { minions } = get();
+      const newMinions = new Map(minions);
+      newMinions.delete(playerId);
+      set({ minions: newMinions });
+    },
+
+    setDiscussionTimer: (timer) => set({ discussionTimer: timer }),
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
       currentBoss: null,
       attackAnimations: [],
       inviteLink: null,
-      error: null
+      error: null,
+      countdown: null,
+      minions: new Map(),
+      discussionTimer: null
     })
   }))
 );

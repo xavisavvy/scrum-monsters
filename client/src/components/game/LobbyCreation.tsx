@@ -44,10 +44,15 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
     setTimeout(() => setIsCreating(false), 1000);
   };
 
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    handleCreateLobby();
+  };
+
   return (
     <div className="flex items-center justify-center min-h-screen px-4 py-8">
       <RetroCard title="Create Battle Lobby" className="w-full max-w-md">
-        <div className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-bold mb-2" htmlFor='hostName'>
               Your Name:
@@ -62,7 +67,7 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
               maxLength={20}
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-bold mb-2" htmlFor='lobbyName'>
               Lobby Name:
@@ -77,19 +82,19 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
               maxLength={30}
             />
           </div>
-          
+
           <RetroButton
-            onClick={handleCreateLobby}
+            type="submit"
             disabled={!lobbyName.trim() || !hostName.trim() || isCreating}
             className="w-full"
           >
             {isCreating ? 'Creating...' : 'Create Battle Lobby'}
           </RetroButton>
-          
+
           <div className="text-center text-sm text-gray-400">
             As the host, you'll control the battle progression
           </div>
-        </div>
+        </form>
       </RetroCard>
     </div>
   );

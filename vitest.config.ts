@@ -22,7 +22,7 @@ export default defineConfig({
     exclude: ["node_modules", "dist"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "json", "html"],
+      reporter: ["text", "json", "json-summary", "html"],
       include: ["client/src/**/*.{ts,tsx}", "server/**/*.ts", "shared/**/*.ts"],
       exclude: [
         "node_modules",
@@ -30,6 +30,12 @@ export default defineConfig({
         "**/*.spec.{ts,tsx}",
         "**/test/**",
       ],
+      thresholds: {
+        lines: 12,
+        branches: 9,
+        functions: 9,
+        statements: 12,
+      },
     },
   },
 });

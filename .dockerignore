@@ -1,0 +1,44 @@
+# Dependencies
+node_modules
+npm-debug.log*
+
+# Build output (we build in container)
+dist
+
+# Development
+.env
+.env.local
+.env.*.local
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+docs/
+
+# Testing
+coverage/
+.nyc_output/
+
+# Kubernetes/Docker (don't include in image)
+k8s/
+docker-compose*.yml
+Dockerfile*
+
+# Misc
+.beads/
+nul
+*.log

@@ -1,0 +1,91 @@
+.xp-bar-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 8px;
+  border: 2px solid #4a3f2f;
+  transition: all 0.3s ease;
+  min-width: 150px;
+}
+
+.xp-bar-container:hover {
+  min-width: 220px;
+}
+
+.xp-bar-container.pulsing {
+  animation: xp-pulse 0.6s ease-out;
+}
+
+@keyframes xp-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7); }
+  50% { box-shadow: 0 0 20px 5px rgba(255, 215, 0, 0.5); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+}
+
+.xp-level {
+  font-family: 'Press Start 2P', monospace;
+  font-size: 12px;
+  color: #ffd700;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.xp-bar-track {
+  flex: 1;
+  height: 12px;
+  background: linear-gradient(180deg, #2a2a2a 0%, #1a1a1a 100%);
+  border-radius: 6px;
+  border: 1px solid #4a4a4a;
+  overflow: hidden;
+  position: relative;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #b8860b 0%, #ffd700 50%, #ffec8b 100%);
+  border-radius: 5px;
+  transition: width 0.5s ease-out;
+  position: relative;
+}
+
+/* JRPG beveled edge effect */
+.xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 100%);
+  border-radius: 5px 5px 0 0;
+}
+
+.xp-details {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-family: 'Press Start 2P', monospace;
+  font-size: 8px;
+  color: #ccc;
+  white-space: nowrap;
+  animation: fade-in 0.2s ease-out;
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.xp-current {
+  color: #ffd700;
+}
+
+.xp-separator {
+  color: #666;
+}
+
+.xp-needed {
+  color: #999;
+}

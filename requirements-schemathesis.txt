@@ -1,0 +1,3 @@
+# Schemathesis for OpenAPI contract testing
+# Version pinned for CI reproducibility
+schemathesis>=3.25.0,<4.0.0

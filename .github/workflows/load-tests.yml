@@ -1,0 +1,269 @@
+name: Load Tests
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # 2 AM UTC daily
+  workflow_dispatch:
+    inputs:
+      run_idle_test:
+        description: 'Run idle connection test (5 minutes)'
+        required: false
+        default: false
+        type: boolean
+
+# No concurrency group - allow scheduled and manual runs
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '20'
+  K6_VERSION: 'v0.52.0'
+
+jobs:
+  http-load-tests:
+    name: HTTP Load Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: npm run start &
+        env:
+          NODE_ENV: production
+          PORT: 5000
+
+      - name: Wait for application health check
+        run: |
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:5000/api/health; then
+              echo "Application is ready"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 2
+          done
+          echo "Application failed to start"
+          exit 1
+
+      - name: Install k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/${{ env.K6_VERSION }}/k6-${{ env.K6_VERSION }}-linux-amd64.tar.gz -o k6.tar.gz
+          tar -xzf k6.tar.gz
+          sudo mv k6-${{ env.K6_VERSION }}-linux-amd64/k6 /usr/local/bin/
+          k6 version
+
+      - name: Run HTTP smoke test
+        continue-on-error: true
+        run: k6 run tests/load/http/smoke.test.js --out json=results-http-smoke.json
+        env:
+          K6_ENV: ci
+
+      - name: Run HTTP average load test
+        continue-on-error: true
+        run: k6 run tests/load/http/average-load.test.js --out json=results-http-load.json
+        env:
+          K6_ENV: ci
+
+      - name: Upload HTTP test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: http-load-test-results
+          path: results-http-*.json
+          retention-days: 30
+
+      - name: Generate HTTP summary
+        if: always()
+        run: |
+          echo "## HTTP Load Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Smoke Test (5 VUs, 30s)" >> $GITHUB_STEP_SUMMARY
+          if [ -f results-http-smoke.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            tail -1 results-http-smoke.json | jq -r '.metrics | to_entries | map("\(.key): \(.value.values | to_entries | map("\(.key)=\(.value|tostring)") | join(", "))") | .[]' >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Parse error" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No results file found" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Average Load Test (100 VUs, 40s)" >> $GITHUB_STEP_SUMMARY
+          if [ -f results-http-load.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            tail -1 results-http-load.json | jq -r '.metrics | to_entries | map("\(.key): \(.value.values | to_entries | map("\(.key)=\(.value|tostring)") | join(", "))") | .[]' >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Parse error" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No results file found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  websocket-load-tests:
+    name: WebSocket Load Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: npm run start &
+        env:
+          NODE_ENV: production
+          PORT: 5000
+
+      - name: Wait for application health check
+        run: |
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:5000/api/health; then
+              echo "Application is ready"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 2
+          done
+          echo "Application failed to start"
+          exit 1
+
+      - name: Install k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/${{ env.K6_VERSION }}/k6-${{ env.K6_VERSION }}-linux-amd64.tar.gz -o k6.tar.gz
+          tar -xzf k6.tar.gz
+          sudo mv k6-${{ env.K6_VERSION }}-linux-amd64/k6 /usr/local/bin/
+          k6 version
+
+      - name: Run WebSocket game flow test
+        continue-on-error: true
+        run: k6 run tests/load/websocket/game-flow.test.js --out json=results-ws-game.json
+        env:
+          K6_ENV: ci
+
+      - name: Upload WebSocket test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: websocket-load-test-results
+          path: results-ws-*.json
+          retention-days: 30
+
+      - name: Generate WebSocket summary
+        if: always()
+        run: |
+          echo "## WebSocket Load Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Game Flow Test (100 VUs, 30s)" >> $GITHUB_STEP_SUMMARY
+          if [ -f results-ws-game.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            tail -1 results-ws-game.json | jq -r '.metrics | to_entries | map("\(.key): \(.value.values | to_entries | map("\(.key)=\(.value|tostring)") | join(", "))") | .[]' >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Parse error" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No results file found" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  idle-connection-test:
+    name: Idle Connection Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event.inputs.run_idle_test == 'true' || github.event_name == 'schedule'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build application
+        run: npm run build
+
+      - name: Start application
+        run: npm run start &
+        env:
+          NODE_ENV: production
+          PORT: 5000
+
+      - name: Wait for application health check
+        run: |
+          echo "Waiting for application to be ready..."
+          for i in {1..30}; do
+            if curl -f http://localhost:5000/api/health; then
+              echo "Application is ready"
+              exit 0
+            fi
+            echo "Attempt $i failed, retrying..."
+            sleep 2
+          done
+          echo "Application failed to start"
+          exit 1
+
+      - name: Install k6
+        run: |
+          curl -L https://github.com/grafana/k6/releases/download/${{ env.K6_VERSION }}/k6-${{ env.K6_VERSION }}-linux-amd64.tar.gz -o k6.tar.gz
+          tar -xzf k6.tar.gz
+          sudo mv k6-${{ env.K6_VERSION }}-linux-amd64/k6 /usr/local/bin/
+          k6 version
+
+      - name: Run idle connection test
+        continue-on-error: true
+        run: k6 run tests/load/websocket/idle-connection.test.js --out json=results-idle.json
+        env:
+          K6_ENV: ci
+
+      - name: Upload idle connection test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: idle-connection-test-results
+          path: results-idle.json
+          retention-days: 30
+
+      - name: Generate idle connection summary
+        if: always()
+        run: |
+          echo "## Idle Connection Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+
+          echo "### Idle Connection Test (50 VUs, 5 minutes)" >> $GITHUB_STEP_SUMMARY
+          if [ -f results-idle.json ]; then
+            echo '```json' >> $GITHUB_STEP_SUMMARY
+            tail -1 results-idle.json | jq -r '.metrics | to_entries | map("\(.key): \(.value.values | to_entries | map("\(.key)=\(.value|tostring)") | join(", "))") | .[]' >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Parse error" >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+          else
+            echo "No results file found" >> $GITHUB_STEP_SUMMARY
+          fi

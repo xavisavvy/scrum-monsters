@@ -1,0 +1,50 @@
+# Let's Encrypt Staging Issuer
+# Use this for testing to avoid rate limits
+# Certificates will be marked as "untrusted" in browsers
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # Let's Encrypt staging endpoint
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # Email for certificate expiry notifications
+    # IMPORTANT: Change this to your actual email
+    email: admin@scrumquest.example.com
+    privateKeySecretRef:
+      name: letsencrypt-staging-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx
+---
+# Let's Encrypt Production Issuer
+# Use this for production - certificates are trusted by browsers
+# Rate limited: ~50 certificates per week per domain
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    # Let's Encrypt production endpoint
+    server: https://acme-v02.api.letsencrypt.org/directory
+    # Email for certificate expiry notifications
+    # IMPORTANT: Change this to your actual email
+    email: admin@scrumquest.example.com
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            ingressClassName: nginx
+---
+# Self-signed Issuer for local development
+# Certificates are self-signed and will show browser warnings
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: selfsigned-issuer
+spec:
+  selfSigned: {}

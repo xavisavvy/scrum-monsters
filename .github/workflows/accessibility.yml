@@ -1,0 +1,93 @@
+name: Accessibility Testing
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+      - ".github/ISSUE_TEMPLATE/**"
+      - ".github/DISCUSSION_TEMPLATE/**"
+
+concurrency:
+  group: a11y-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  accessibility:
+    name: Accessibility Tests (axe-core)
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.49.1-noble
+      options: --init --ipc=host
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run accessibility tests
+        id: a11y-tests
+        run: npm run test:a11y
+        continue-on-error: true
+
+      - name: Upload accessibility report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: accessibility-report
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v4
+        if: steps.a11y-tests.outcome == 'failure'
+        with:
+          name: a11y-test-results
+          path: test-results/
+          retention-days: 7
+
+      - name: Comment PR on failure
+        if: steps.a11y-tests.outcome == 'failure'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `### Accessibility Tests Failed
+
+            Critical or serious accessibility violations were found that block this PR.
+
+            **What this means:**
+            - WCAG 2.1 Level A violations or high-impact (critical/serious) issues were detected
+            - These issues significantly impact users with disabilities
+
+            **Next steps:**
+            1. [Download the accessibility report](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}) (Artifacts section)
+            2. Review violation details in the test output
+            3. Fix the identified accessibility issues
+            4. Each violation includes:
+               - Element selector
+               - WCAG rule violated
+               - Impact level
+               - Suggested fix
+               - Help URL with detailed guidance
+
+            **Resources:**
+            - [axe-core rule descriptions](https://dequeuniversity.com/rules/axe/4.6)
+            - [WCAG 2.1 Quick Reference](https://www.w3.org/WAI/WCAG21/quickref/)
+
+            _Note: Moderate and minor violations are logged as warnings but do not block merge._`
+            })
+
+      - name: Fail if tests failed
+        if: steps.a11y-tests.outcome == 'failure'
+        run: exit 1
