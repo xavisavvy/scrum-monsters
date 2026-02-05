@@ -807,35 +807,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('attack_boss', ({ damage }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
-
-      const result = gameState.attackBoss(playerId, damage);
-      if (result) {
-        const { lobby, bossHealth, ringAttack, healedBoss, modifier } = result;
-        
-        if (healedBoss) {
-          // Spectator healed the boss
-          io.to(lobby.id).emit('boss_healed', { bossHealth, healAmount: (modifier || 0) + 1 });
-        } else {
-          // Normal attack
-          io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
-        }
-        
-        // Emit modifier update if it changed
-        if (modifier !== undefined) {
-          io.to(lobby.id).emit('modifier_updated', { modifier });
-        }
-        
-        // If boss performs ring attack, broadcast it
-        if (ringAttack) {
-          io.to(lobby.id).emit('boss_ring_attack', ringAttack);
-        }
-
-        // Removed lobby_updated: combat:boss_damaged event emitted by combatManager
-      }
-    });
+    // REMOVED: Old attack_boss handler replaced by domain-based handler below (line ~1734)
     
     // Boss damage to player
     socket.on('boss_damage_player', ({ playerId, damage }: { playerId: string; damage: number }) => {
@@ -1731,12 +1703,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Player attacks boss
-    socket.on('attack_boss' as any, (data: { lobbyId: string }) => {
+    socket.on('attack_boss' as any, (data: { damage?: number }) => {
       try {
         const playerId = socket.data.playerId;
-        if (!playerId) return;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
 
-        const damage = combatManager.playerAttackBoss(data.lobbyId, playerId);
+        const damage = combatManager.playerAttackBoss(lobbyId, playerId);
         // Damage broadcast via eventBus (Phase 5), no need to emit here
         console.log(`Player ${playerId} attacked boss for ${damage} damage`);
       } catch (error) {
