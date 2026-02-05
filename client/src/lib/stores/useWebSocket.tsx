@@ -439,7 +439,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     const { socket } = get();
     if (socket && socket.connected) {
       console.log(`📤 Emitting ${String(event)}:`, data);
-      socket.emit(event, data);
+      (socket as any).emit(event, data);
     } else {
       console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
     }
