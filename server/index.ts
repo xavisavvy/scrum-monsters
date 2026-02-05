@@ -124,10 +124,10 @@ app.use((req, res, next) => {
   }
 
   // Serve the app (both API and client)
-  const port = parseInt(process.env.PORT || '5001', 10);
+  const port = parseInt(process.env.PORT || '5000', 10);
   server.listen({
     port,
-    host: process.env.HOST || "127.0.0.1",
+    host: process.env.HOST || "0.0.0.0",
   }, () => {
     log(`serving on port ${port}`);
   });
