@@ -4,7 +4,8 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "up": "docker compose up -d postgres && npm run db:push && npm run dev",
+    "bootstrap": "bash scripts/bootstrap.sh",
+    "up": "docker compose up -d --wait postgres && npm run db:push && npm run dev",
     "down": "docker compose down",
     "services:up": "docker compose up -d postgres",
     "services:down": "docker compose down",

@@ -306,13 +306,25 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:boss_damaged', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      const { currentLobby, setLobby, currentBoss, setBoss } = useGameState.getState();
+      // Update currentBoss state
       if (currentBoss) {
         const updatedBoss: Boss = {
           ...currentBoss,
-          currentHealth: data.newHealth
+          currentHealth: data.newHp
         };
         setBoss(updatedBoss);
+      }
+      // Also update currentLobby.boss (what BattleScreen reads)
+      if (currentLobby?.boss) {
+        const updatedLobby = {
+          ...currentLobby,
+          boss: {
+            ...currentLobby.boss,
+            currentHealth: data.newHp
+          }
+        };
+        setLobby(updatedLobby);
       }
     }
   });
@@ -322,15 +334,43 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:boss_healed', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      const { currentLobby, setLobby, currentBoss, setBoss } = useGameState.getState();
+      // Update currentBoss state
       if (currentBoss) {
         const updatedBoss: Boss = {
           ...currentBoss,
-          currentHealth: data.newHealth
+          currentHealth: data.newHp
         };
         setBoss(updatedBoss);
       }
+      // Also update currentLobby.boss
+      if (currentLobby?.boss) {
+        const updatedLobby = {
+          ...currentLobby,
+          boss: {
+            ...currentLobby.boss,
+            currentHealth: data.newHp
+          }
+        };
+        setLobby(updatedLobby);
+      }
     }
+  });
+
+  // Boss enrage - visual/audio feedback
+  socket.on('combat:boss_enraged', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('combat:boss_enraged', data, socket);
+    // TODO: Trigger enrage visual effect
+    console.log('Boss enraged:', data.message);
+  });
+
+  // Boss telegraph - attack warning
+  socket.on('combat:boss_telegraph', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('combat:boss_telegraph', data, socket);
+    // TODO: Show attack warning indicator
+    console.log('Boss telegraph:', data.attackType, 'targeting', data.targetId);
   });
 
   socket.on('combat:boss_defeated', (data: any) => {
@@ -338,13 +378,27 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:boss_defeated', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      const { currentLobby, setLobby, currentBoss, setBoss } = useGameState.getState();
+      // Update currentBoss state
       if (currentBoss) {
         const updatedBoss: Boss = {
           ...currentBoss,
-          defeated: true
+          defeated: true,
+          currentHealth: 0
         };
         setBoss(updatedBoss);
+      }
+      // Also update currentLobby.boss
+      if (currentLobby?.boss) {
+        const updatedLobby = {
+          ...currentLobby,
+          boss: {
+            ...currentLobby.boss,
+            defeated: true,
+            currentHealth: 0
+          }
+        };
+        setLobby(updatedLobby);
       }
     }
   });
@@ -417,6 +471,29 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
+  // Revival started - show channeling progress
+  socket.on('combat:revival_started', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('combat:revival_started', data, socket);
+    // TODO: Show revival channeling UI
+    console.log('Revival started:', data.reviverId, 'reviving', data.targetId);
+  });
+
+  // Revival cancelled
+  socket.on('combat:revival_cancelled', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('combat:revival_cancelled', data, socket);
+    // TODO: Cancel revival UI
+    console.log('Revival cancelled:', data.reason);
+  });
+
+  // Player entered battle (late joiner)
+  socket.on('combat:player_entered_battle', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('combat:player_entered_battle', data, socket);
+    console.log('Player entered battle:', data.playerId);
+  });
+
   socket.on('combat:modifier_updated', (data: any) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:modifier_updated', data, socket);
@@ -486,13 +563,25 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:team_attack', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      const { currentLobby, setLobby, currentBoss, setBoss } = useGameState.getState();
+      // Update currentBoss state
       if (currentBoss) {
         const updatedBoss: Boss = {
           ...currentBoss,
           currentHealth: data.newBossHp
         };
         setBoss(updatedBoss);
+      }
+      // Also update currentLobby.boss
+      if (currentLobby?.boss) {
+        const updatedLobby = {
+          ...currentLobby,
+          boss: {
+            ...currentLobby.boss,
+            currentHealth: data.newBossHp
+          }
+        };
+        setLobby(updatedLobby);
       }
     }
   });
@@ -580,6 +669,24 @@ export function setupEventHandlers(socket: Socket): void {
   });
 
   // ============================================================================
+  // PROGRESSION EVENTS
+  // ============================================================================
+
+  socket.on('progression:xp_awarded', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('progression:xp_awarded', data, socket);
+    // TODO: Trigger floating XP number animation
+    console.log(`XP awarded: +${data.amount} (${data.source}) to player ${data.playerId}`);
+  });
+
+  socket.on('progression:level_up', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    handleEvent('progression:level_up', data, socket);
+    // TODO: Trigger level-up celebration
+    console.log(`Level up! Player ${data.playerId}: ${data.oldLevel} -> ${data.newLevel}`);
+  });
+
+  // ============================================================================
   // SYSTEM EVENTS
   // ============================================================================
 
@@ -627,10 +734,15 @@ export function teardownEventHandlers(socket: Socket): void {
   // Combat events
   socket.off('combat:boss_damaged');
   socket.off('combat:boss_healed');
+  socket.off('combat:boss_enraged');
+  socket.off('combat:boss_telegraph');
   socket.off('combat:boss_defeated');
   socket.off('combat:player_damaged');
   socket.off('combat:player_downed');
   socket.off('combat:player_revived');
+  socket.off('combat:revival_started');
+  socket.off('combat:revival_cancelled');
+  socket.off('combat:player_entered_battle');
   socket.off('combat:modifier_updated');
   socket.off('combat:countdown_started');
   socket.off('combat:countdown_tick');
@@ -643,6 +755,10 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:minion_heal_boss');
   socket.off('combat:minion_damaged');
   socket.off('combat:minion_killed');
+
+  // Progression events
+  socket.off('progression:xp_awarded');
+  socket.off('progression:level_up');
 
   // System events
   socket.off('system:full_state');

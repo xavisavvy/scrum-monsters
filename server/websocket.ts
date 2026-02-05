@@ -262,6 +262,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           pendingActions: {},
           stateChanges: {}
         });
+
+        // Send full state event for fine-grained event system initialization
+        const emitter = getClientEventEmitter();
+        emitter.sendFullState(lobby.id, lobby, socket.id);
+
         console.log(`Lobby created: ${lobby.id} by ${hostName}`);
       } catch (error) {
         console.error('Error creating lobby:', error);
@@ -275,6 +280,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     socket.on('join_lobby', ({ lobbyId, playerName }) => {
       try {
+        // Join socket room FIRST so player receives their own session:player_joined event
+        socket.join(lobbyId);
+
         const { lobby, player } = sessionManager.joinLobby(lobbyId, playerName);
 
         // Sync player-lobby mapping to gameState for battle functions
@@ -283,9 +291,6 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Store player-socket mapping
         socket.data.playerId = player.id;
         socket.data.lobbyId = lobby.id;
-
-        // Join socket room
-        socket.join(lobby.id);
 
         // Generate reconnect token for the joining player
         const reconnectToken = sessionManager.generateReconnectToken(player.id, lobby.id, player.name);
@@ -720,7 +725,20 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           const { lobby: updatedLobby, boss } = result;
 
           console.log(`✅ Battle started successfully for lobby ${updatedLobby.id}`);
-          // Removed lobby_updated: battle_started event contains lobby
+
+          // Initialize CombatManager state for domain-based combat operations
+          const players = updatedLobby.players.map(p => ({ id: p.id, team: p.team }));
+          combatManager.initializeCombat(updatedLobby.id, players, 0);
+          console.log(`✅ CombatManager initialized for lobby ${updatedLobby.id}`);
+
+          // Initialize EstimationManager for voting/XP events
+          estimationManager.startEstimation(updatedLobby.id, updatedLobby.currentTicket!.id);
+          for (const p of updatedLobby.players) {
+            if (p.team !== 'spectators') {
+              estimationManager.addEligibleVoter(updatedLobby.id, p.id, p.team);
+            }
+          }
+          console.log(`✅ EstimationManager initialized for lobby ${updatedLobby.id}`);
 
           // Start the battle (synchronous - relies on socket.io event ordering)
           io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
@@ -1688,11 +1706,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // ============================================================================
 
     // Start combat (host initiates combat for a ticket)
-    socket.on('start_combat' as any, (data: { lobbyId: string; ticketIndex?: number }) => {
+    socket.on('start_combat' as any, (data: { ticketIndex?: number }) => {
       const playerId = socket.data.playerId;
-      if (!playerId) return;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
 
-      const lobby = sessionManager.getLobby(data.lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby) {
         socket.emit('game_error', { code: 'LOBBY_NOT_FOUND', message: 'Lobby not found' });
         return;
@@ -1706,9 +1725,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Initialize combat with active players
       const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
-      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0);
+      combatManager.initializeCombat(lobbyId, players, data.ticketIndex ?? 0);
 
-      console.log(`Combat initialized for lobby ${data.lobbyId}`);
+      console.log(`Combat initialized for lobby ${lobbyId}`);
     });
 
     // Player attacks boss
@@ -1731,12 +1750,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Player heals teammate
-    socket.on('heal_teammate' as any, (data: { lobbyId: string; targetId: string }) => {
+    socket.on('heal_teammate' as any, (data: { targetId: string }) => {
       try {
         const playerId = socket.data.playerId;
-        if (!playerId) return;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
 
-        combatManager.playerHealTeammate(data.lobbyId, playerId, data.targetId);
+        combatManager.playerHealTeammate(lobbyId, playerId, data.targetId);
         console.log(`Player ${playerId} healed ${data.targetId}`);
       } catch (error) {
         if (error instanceof CombatNotActiveError || error instanceof NotHealerClassError) {
@@ -1748,12 +1768,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Start revival
-    socket.on('start_revival' as any, (data: { lobbyId: string; targetId: string }) => {
+    socket.on('start_revival' as any, (data: { targetId: string }) => {
       try {
         const playerId = socket.data.playerId;
-        if (!playerId) return;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
 
-        const started = combatManager.startRevival(data.lobbyId, playerId, data.targetId);
+        const started = combatManager.startRevival(lobbyId, playerId, data.targetId);
         if (!started) {
           socket.emit('game_error', { code: 'REVIVAL_CONDITIONS_NOT_MET', message: 'Cannot start revival' });
         } else {
