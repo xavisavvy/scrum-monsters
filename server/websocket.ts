@@ -1028,8 +1028,17 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       console.log(`Host ${playerId} stopped YouTube music`);
     });
 
-    socket.on('advancePhaseNow', ({ lobbyId, playerId }) => {
+    socket.on('advancePhaseNow', () => {
       try {
+        // Get authenticated session data (prevents client spoofing)
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+        
+        if (!playerId || !lobbyId) {
+          socket.emit('game_error', { message: 'Not authenticated or not in a lobby' });
+          return;
+        }
+
         // Only allow host to manually advance phases
         const lobby = gameState.getLobby(lobbyId);
         if (!lobby || lobby.hostId !== playerId) {
