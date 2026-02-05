@@ -124,7 +124,10 @@ app.use((req, res, next) => {
   }
 
   // Serve the app (both API and client)
-  const port = parseInt(process.env.PORT || '5000', 10);
+  // Use port 5000 for Replit, 5001 for local development
+  const isReplit = process.env.REPLIT_DEPLOYMENT === '1' || process.env.REPLIT_DEV_DOMAIN;
+  const defaultPort = isReplit ? '5000' : '5001';
+  const port = parseInt(process.env.PORT || defaultPort, 10);
   server.listen({
     port,
     host: process.env.HOST || "0.0.0.0",

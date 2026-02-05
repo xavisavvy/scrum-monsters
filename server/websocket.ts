@@ -255,7 +255,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           host = `https://${process.env.REPLIT_DEV_DOMAIN}`;
         } else {
           // Local development - use configured port
-          const port = process.env.PORT || '5000';
+          const port = process.env.PORT || '5001';
           host = `http://localhost:${port}`;
         }
         const inviteLink = `${host}/join/${lobby.id}`;
