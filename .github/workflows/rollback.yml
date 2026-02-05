@@ -39,6 +39,8 @@ jobs:
   rate-limit-check:
     name: Check Rate Limits
     runs-on: ubuntu-latest
+    permissions:
+      contents: read  # For checkout
     outputs:
       rate-check: ${{ steps.rate-check.outputs.rate-check }}
     steps:
@@ -83,6 +85,9 @@ jobs:
     name: Rollback ${{ github.event.inputs.environment }}
     runs-on: ubuntu-latest
     needs: rate-limit-check
+    permissions:
+      contents: read  # For checkout
+      id-token: write  # For environment protection
     # Environment protection - production requires approval
     environment:
       name: ${{ github.event.inputs.environment == 'prod' && 'production' || (github.event.inputs.environment == 'staging' && 'staging' || 'development') }}
