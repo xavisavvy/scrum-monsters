@@ -30,7 +30,8 @@ class GameStateManager {
   private disconnectWatchdog: NodeJS.Timeout;
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
   private readonly TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
-  private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + Math.random();
+  // SECURITY: Use crypto-secure random for token secret (not Math.random())
+  private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + createHash('sha256').update(Date.now().toString() + process.pid.toString()).digest('hex');
 
   constructor(io?: any) {
     this.io = io;
