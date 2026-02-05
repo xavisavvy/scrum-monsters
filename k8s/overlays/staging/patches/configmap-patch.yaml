@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: scrumquest-config
+data:
+  NODE_ENV: "staging"
+  LOG_LEVEL: "info"
+  ALLOWED_ORIGINS: "https://staging.scrumquest.local,https://scrumquest-staging.example.com"

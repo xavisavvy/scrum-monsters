@@ -1,0 +1,71 @@
+# ArgoCD Application for ScrumQuest Staging Environment
+#
+# Features:
+#   - MANUAL sync required (no auto-sync)
+#   - Self-healing disabled (manual control)
+#   - Explicit revision history for rollback support
+#
+# Deploy:
+#   kubectl apply -f k8s/argocd-apps/scrumquest-staging.yaml
+#
+# Manual Sync:
+#   argocd app sync scrumquest-staging
+#
+# Rollback:
+#   argocd app rollback scrumquest-staging
+
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: scrumquest-staging
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/environment: staging
+  # Finalize protection - prevents accidental deletion
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    # Repository URL - update to your actual repo
+    repoURL: https://github.com/your-org/scrumquest.git
+    targetRevision: main
+    path: k8s/overlays/staging
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: scrumquest-staging
+
+  syncPolicy:
+    # NO auto-sync for staging - manual sync required
+    # automated: null
+
+    syncOptions:
+      # Create namespace if it doesn't exist
+      - CreateNamespace=true
+      # Validate manifests before applying
+      - Validate=true
+      # Apply out of sync only
+      - ApplyOutOfSyncOnly=true
+      # Server-side apply for better conflict resolution
+      - ServerSideApply=true
+
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+
+  # Health check configuration
+  ignoreDifferences:
+    # Ignore replica count changes (handled by HPA)
+    - group: apps
+      kind: Deployment
+      jsonPointers:
+        - /spec/replicas
+
+  # Revision history limit for rollbacks
+  revisionHistoryLimit: 10

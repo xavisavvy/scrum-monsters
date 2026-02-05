@@ -1,0 +1,19 @@
+# Default owner for everything
+* @Preston
+
+# Frontend
+/client/ @Preston
+*.tsx @Preston
+*.css @Preston
+
+# Backend
+/server/ @Preston
+
+# Shared types
+/shared/ @Preston
+
+# Infrastructure
+/k8s/ @Preston
+/.github/ @Preston
+Dockerfile @Preston
+docker-compose.yml @Preston

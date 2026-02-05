@@ -65,6 +65,18 @@ A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that g
 - **ESBuild** - Fast JavaScript bundler for production
 - **PostCSS** - CSS processing and optimization
 - **Drizzle Kit** - Database schema management and migrations
+- **ESLint** - Code linting with TypeScript and React rules
+- **Vitest** - Unit and integration testing
+- **Playwright** - End-to-end browser testing
+
+### Infrastructure & DevOps
+- **Kubernetes** - Container orchestration with Kustomize overlays
+- **ArgoCD** - GitOps continuous deployment
+- **Prometheus + Grafana** - Metrics and dashboards
+- **Loki + Promtail** - Log aggregation
+- **cert-manager** - Automatic TLS certificates
+- **Sealed Secrets** - Encrypted secrets in Git
+- **Pino** - Structured JSON logging
 
 ## 📋 Prerequisites
 
@@ -225,11 +237,31 @@ The application will be available at `http://localhost:5000`
 
 ### Available Scripts
 ```bash
+# Development
 npm run dev          # Start development server
 npm run build        # Build for production
 npm run start        # Start production server
 npm run check        # TypeScript type checking
+
+# Testing
+npm test             # Run unit/integration tests
+npm run test:watch   # Watch mode
+npm run test:coverage # With coverage report
+npm run test:e2e     # Run Playwright E2E tests
+npm run test:e2e:ui  # E2E tests with UI
+
+# Code Quality
+npm run lint         # Run ESLint
+npm run lint:fix     # Fix auto-fixable issues
+
+# Database
 npm run db:push      # Update database schema
+
+# Releases
+npm run release      # Auto-determine version bump
+npm run release:patch # Patch release (x.x.X)
+npm run release:minor # Minor release (x.X.0)
+npm run release:major # Major release (X.0.0)
 ```
 
 ### Development Tools
@@ -237,6 +269,11 @@ npm run db:push      # Update database schema
 - **TypeScript**: Strict type checking with immediate feedback
 - **Error Overlay**: Runtime error display in development
 - **Debug Modal**: In-game debug information (Tab key)
+
+### Testing
+- **Unit/Integration**: `npm test` runs Vitest suite (280+ tests)
+- **E2E**: `npm run test:e2e` runs Playwright browser tests
+- **Coverage**: `npm run test:coverage` generates coverage report
 
 ### Testing the Game
 1. Open multiple browser tabs/windows
@@ -279,6 +316,73 @@ For questions, bug reports, or feature requests:
 - Open an issue on GitHub
 - Check existing documentation
 - Review the troubleshooting guide
+
+## 🚢 Kubernetes Deployment
+
+ScrumQuest includes full Kubernetes deployment support with environment overlays.
+
+### Quick Start
+```bash
+# Deploy to development
+kubectl apply -k k8s/overlays/dev
+
+# Deploy to staging
+kubectl apply -k k8s/overlays/staging
+
+# Deploy to production
+kubectl apply -k k8s/overlays/prod
+```
+
+### Infrastructure Components
+```bash
+# Install Sealed Secrets controller
+kubectl apply -k k8s/infrastructure/sealed-secrets
+
+# Install cert-manager for TLS
+kubectl apply -k k8s/infrastructure/cert-manager
+
+# Install monitoring stack (Prometheus, Grafana, Loki)
+kubectl apply -k k8s/infrastructure/monitoring
+
+# Install ArgoCD for GitOps
+kubectl apply -k k8s/infrastructure/argocd
+```
+
+### Directory Structure
+```
+k8s/
+  base/                    # Shared manifests
+  overlays/
+    dev/                   # Development (1 replica, debug logging)
+    staging/               # Staging (2 replicas, TLS)
+    prod/                  # Production (3+ replicas, full TLS)
+  infrastructure/
+    sealed-secrets/        # Bitnami Sealed Secrets
+    cert-manager/          # Let's Encrypt certificates
+    monitoring/            # Prometheus + Grafana + Loki
+    argocd/                # GitOps deployment
+  argocd-apps/             # ArgoCD Application manifests
+```
+
+See [k8s/README.md](k8s/README.md) for detailed deployment instructions.
+
+## 📊 Observability
+
+### Metrics Endpoint
+The app exposes Prometheus metrics at `/metrics`:
+- `scrumquest_active_lobbies` - Current lobby count
+- `scrumquest_active_players` - Current player count
+- `scrumquest_websocket_connections` - WebSocket connections
+- `scrumquest_votes_submitted_total` - Vote submissions by team
+- `http_request_duration_seconds` - Request latency histogram
+
+### Structured Logging
+Logs are JSON-formatted in production using Pino:
+```json
+{"level":"info","time":"2026-02-02T...","component":"game","lobbyCode":"ABC123","event":"player_joined"}
+```
+
+Set log level via `LOG_LEVEL` environment variable (trace, debug, info, warn, error).
 
 ---
 

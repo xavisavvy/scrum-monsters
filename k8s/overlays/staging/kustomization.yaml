@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: scrumquest-staging
+
+namePrefix: staging-
+
+resources:
+  - ../../base
+
+# Staging-specific labels
+commonLabels:
+  app.kubernetes.io/environment: staging
+
+# Override image for staging
+images:
+  - name: scrumquest
+    newName: scrumquest
+    newTag: staging
+
+# Staging-specific patches
+patches:
+  - path: patches/deployment-patch.yaml
+  - path: patches/configmap-patch.yaml
+  - path: patches/ingress-patch.yaml
+
+# Note: Secrets should use Sealed Secrets in staging
+# This generator is a placeholder - replace with SealedSecret reference
+secretGenerator:
+  - name: scrumquest-secrets
+    literals:
+      - DATABASE_URL=postgresql://scrumquest:staging-password@staging-postgres-service:5432/scrumquest
+      - SESSION_SECRET=staging-session-secret-replace-with-sealed-secret
+      - REDIS_URL=redis://staging-redis-service:6379
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - GITHUB_CLIENT_ID=
+      - GITHUB_CLIENT_SECRET=
+  - name: postgres-secrets
+    literals:
+      - POSTGRES_USER=scrumquest
+      - POSTGRES_PASSWORD=staging-password
+      - POSTGRES_DB=scrumquest
+
+generatorOptions:
+  disableNameSuffixHash: true

@@ -1,11 +1,56 @@
 import express, { type Request, Response, NextFunction } from "express";
-import { registerRoutes } from "./routes";
+import session from "express-session";
+import connectPgSimple from "connect-pg-simple";
+import { registerRoutes, setSessionMiddleware } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeRedis, shutdownRedis, isRedisConnected } from "./redis";
+import { configurePassport } from "./auth/passport.js";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Session configuration
+const sessionSecret = process.env.SESSION_SECRET || "scrumquest-dev-secret-change-in-production";
+
+// Configure session store
+let sessionStore: session.Store | undefined;
+if (process.env.DATABASE_URL) {
+  const PgSession = connectPgSimple(session);
+  sessionStore = new PgSession({
+    conString: process.env.DATABASE_URL,
+    tableName: "sessions",
+    createTableIfMissing: true,
+  });
+  console.log("🔐 Using PostgreSQL session store");
+} else {
+  console.log("🔐 Using in-memory session store (no DATABASE_URL set)");
+}
+
+// Create session middleware (exported for Socket.IO integration)
+export const sessionMiddleware = session({
+  store: sessionStore,
+  secret: sessionSecret,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === "production",
+    httpOnly: true,
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    sameSite: "lax",
+  },
+  name: "scrumquest.sid",
+});
+
+app.use(sessionMiddleware);
+
+// Share session middleware with routes for Socket.IO
+setSessionMiddleware(sessionMiddleware);
+
+// Initialize Passport
+const passport = configurePassport();
+app.use(passport.initialize());
+app.use(passport.session());
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -78,14 +123,11 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client
-  const port = 5000;
+  // Serve the app (both API and client)
+  const port = parseInt(process.env.PORT || '5001', 10);
   server.listen({
     port,
-    host: "0.0.0.0",
-    // Remove reusePort in production to avoid load balancer issues
-    reusePort: process.env.NODE_ENV === "development",
+    host: process.env.HOST || "127.0.0.1",
   }, () => {
     log(`serving on port ${port}`);
   });

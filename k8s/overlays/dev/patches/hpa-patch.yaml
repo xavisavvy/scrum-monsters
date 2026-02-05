@@ -1,0 +1,8 @@
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: scrumquest-hpa
+spec:
+  # Disable autoscaling in dev
+  minReplicas: 1
+  maxReplicas: 2

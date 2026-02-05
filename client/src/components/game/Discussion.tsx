@@ -8,9 +8,10 @@ import { Player } from '@shared/gameEvents';
 const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21, '?'] as const;
 
 export function Discussion() {
-  const { currentLobby, currentPlayer } = useGameState();
+  const { currentLobby, currentPlayer, discussionTimer } = useGameState();
   const { emit, socket } = useWebSocket();
   const [selectedScore, setSelectedScore] = useState<number | '?' | null>(null);
+  const [remainingSeconds, setRemainingSeconds] = useState(0);
 
   // Auto-select current player's score when component mounts
   useEffect(() => {
@@ -19,13 +20,36 @@ export function Discussion() {
     }
   }, [currentPlayer?.currentScore]);
 
+  // Timer countdown effect
+  useEffect(() => {
+    if (!discussionTimer?.active) {
+      setRemainingSeconds(0);
+      return;
+    }
+
+    const updateRemaining = () => {
+      const remaining = Math.max(0, Math.floor((discussionTimer.endsAt - Date.now()) / 1000));
+      setRemainingSeconds(remaining);
+    };
+
+    updateRemaining();
+    const interval = setInterval(updateRemaining, 1000);
+    return () => clearInterval(interval);
+  }, [discussionTimer]);
+
   const handleUpdateVote = () => {
     if (selectedScore === null || !currentPlayer || currentPlayer.team === 'spectators') return;
-    
+
     emit('update_discussion_vote', { score: selectedScore });
   };
 
+  const handleFinalize = (estimate: number) => {
+    socket?.emit('finalize_estimate', { estimate });
+  };
+
   if (!currentLobby || !currentPlayer) return null;
+
+  const isHost = currentLobby.hostId === currentPlayer.id;
 
   const currentTicket = currentLobby.currentTicket;
   if (!currentTicket) return null;
@@ -48,9 +72,17 @@ export function Discussion() {
   
   const hasConsensus = currentLobby.teams.developers.length > 0 && currentLobby.teams.qa.length > 0
     ? devConsensus && qaConsensus && devScores[0] === qaScores[0]
-    : currentLobby.teams.developers.length > 0 
-      ? devConsensus 
+    : currentLobby.teams.developers.length > 0
+      ? devConsensus
       : qaConsensus;
+
+  // Collect unique voted values for finalize buttons
+  const uniqueVotedValues = Array.from(new Set([...devScores, ...qaScores])).sort((a, b) => a - b);
+
+  // Format timer display
+  const timerDisplay = remainingSeconds > 0
+    ? `${Math.floor(remainingSeconds / 60)}:${(remainingSeconds % 60).toString().padStart(2, '0')}`
+    : null;
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
@@ -78,33 +110,61 @@ export function Discussion() {
       {/* Discussion Status */}
       <RetroCard title="Team Discussion">
         <div className="space-y-4">
+          {/* Timer Display */}
+          {timerDisplay && discussionTimer?.active && (
+            <div className="text-center">
+              <div className="text-3xl font-mono font-bold text-yellow-400">
+                {timerDisplay}
+              </div>
+              <p className="text-xs text-gray-400">Time Remaining</p>
+            </div>
+          )}
+
           <div className="text-center">
             {hasConsensus ? (
               <div className="space-y-3">
                 <div className="text-green-400 text-lg font-bold">
-                  ✅ Consensus Reached! Auto-advancing soon...
+                  Consensus Reached! Auto-advancing soon...
                 </div>
-                {currentPlayer.isHost && (
+                {isHost && (
                   <button
-                    onClick={() => socket?.emit('advancePhaseNow', { 
+                    onClick={() => socket?.emit('advancePhaseNow', {
                       lobbyId: currentLobby.id,
-                      playerId: currentPlayer.id 
+                      playerId: currentPlayer.id
                     })}
                     className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded border-2 border-yellow-400 transition-colors"
                   >
-                    ⚡ Advance Now (Host)
+                    Advance Now (Host)
                   </button>
                 )}
               </div>
             ) : (
               <div className="text-orange-400 text-lg">
-                💭 Team Discussion in Progress
+                Team Discussion in Progress
               </div>
             )}
             <p className="text-sm text-gray-400 mt-2">
               Review individual votes below and update your estimate if needed
             </p>
           </div>
+
+          {/* Host Finalize Estimate Buttons */}
+          {isHost && discussionTimer?.active && uniqueVotedValues.length > 0 && !hasConsensus && (
+            <div className="mt-4 border-t border-gray-700 pt-4">
+              <div className="text-sm text-gray-400 mb-2 text-center">Finalize with a voted value:</div>
+              <div className="flex gap-2 flex-wrap justify-center">
+                {uniqueVotedValues.map((value) => (
+                  <button
+                    key={value}
+                    onClick={() => handleFinalize(value)}
+                    className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white rounded font-bold transition-colors"
+                  >
+                    {value}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </RetroCard>
 

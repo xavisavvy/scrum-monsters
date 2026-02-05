@@ -1,0 +1,809 @@
+openapi: 3.1.0
+info:
+  title: ScrumQuest API
+  version: 1.0.0
+  description: |
+    Real-time multiplayer scrum poker estimation game API.
+
+    ScrumQuest provides REST endpoints for authentication, user profiles,
+    and health checks. Real-time game functionality is handled via WebSocket
+    (Socket.IO) connections documented separately.
+
+servers:
+  - url: http://localhost:5000
+    description: Development server
+  - url: https://scrumquest.app
+    description: Production server (placeholder)
+
+tags:
+  - name: health
+    description: Health check endpoints for monitoring and load balancers
+  - name: auth
+    description: Authentication endpoints (local and OAuth)
+  - name: user
+    description: User profile, stats, and account management
+
+paths:
+  /api/health:
+    get:
+      operationId: getHealth
+      summary: Health check
+      description: Returns server health status for load balancer and monitoring
+      tags:
+        - health
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              example:
+                status: ok
+                timestamp: '2026-02-03T12:00:00.000Z'
+
+  /api/ws-health:
+    get:
+      operationId: getWebSocketHealth
+      summary: WebSocket health check
+      description: Returns WebSocket server status including connected clients and lobbies
+      tags:
+        - health
+      responses:
+        '200':
+          description: WebSocket server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSocketHealthResponse'
+              example:
+                status: ok
+                websocket:
+                  connected: 5
+                  lobbies: 2
+                  transports:
+                    - websocket
+                    - websocket
+                timestamp: '2026-02-03T12:00:00.000Z'
+        '503':
+          description: WebSocket server not initialized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebSocketHealthError'
+              example:
+                status: error
+                message: WebSocket server not initialized
+                timestamp: '2026-02-03T12:00:00.000Z'
+
+  /api/auth/me:
+    get:
+      operationId: getCurrentUser
+      summary: Get current user
+      description: Returns the currently authenticated user or null if not logged in
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Current user (or null if not authenticated)
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - user
+                properties:
+                  user:
+                    oneOf:
+                      - $ref: '#/components/schemas/User'
+                      - type: 'null'
+              examples:
+                authenticated:
+                  summary: User is logged in
+                  value:
+                    user:
+                      id: 1
+                      username: johndoe
+                      email: john@example.com
+                      displayName: John Doe
+                      avatarUrl: https://example.com/avatar.png
+                unauthenticated:
+                  summary: No user logged in
+                  value:
+                    user: null
+
+  /api/auth/register:
+    post:
+      operationId: registerUser
+      summary: Register new user
+      description: Create a new user account with email and password
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+            example:
+              email: john@example.com
+              password: securepassword123
+              username: johndoe
+              displayName: John Doe
+      responses:
+        '201':
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - user
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  summary: Missing required fields
+                  value:
+                    error: Email and password are required
+                shortPassword:
+                  summary: Password too short
+                  value:
+                    error: Password must be at least 8 characters
+                emailTaken:
+                  summary: Email already registered
+                  value:
+                    error: Email already registered
+                usernameTaken:
+                  summary: Username taken
+                  value:
+                    error: Username already taken
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/auth/login:
+    post:
+      operationId: loginUser
+      summary: Login with email/password
+      description: Authenticate user with email and password credentials
+      tags:
+        - auth
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            example:
+              email: john@example.com
+              password: securepassword123
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - user
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Invalid credentials
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/auth/logout:
+    post:
+      operationId: logoutUser
+      summary: Logout current user
+      description: End the current session and clear authentication cookies
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Logout successful
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                properties:
+                  success:
+                    type: boolean
+                    const: true
+              example:
+                success: true
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/auth/providers:
+    get:
+      operationId: getAuthProviders
+      summary: List available auth providers
+      description: Returns which authentication providers are configured and available
+      tags:
+        - auth
+      responses:
+        '200':
+          description: Available authentication providers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthProviders'
+              example:
+                google: true
+                github: true
+                local: true
+
+  /api/user/profile:
+    get:
+      operationId: getUserProfile
+      summary: Get user profile
+      description: Returns the authenticated user's profile settings
+      tags:
+        - user
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User profile
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - profile
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    put:
+      operationId: updateUserProfile
+      summary: Update user profile
+      description: Update the authenticated user's profile settings
+      tags:
+        - user
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProfileRequest'
+            example:
+              preferredAvatar: warrior
+              preferredTeam: developers
+              audioEnabled: true
+              musicVolume: 0.7
+              sfxVolume: 0.8
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - profile
+                properties:
+                  profile:
+                    $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/user/stats:
+    get:
+      operationId: getUserStats
+      summary: Get user stats
+      description: Returns the authenticated user's game statistics
+      tags:
+        - user
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: User statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - stats
+                properties:
+                  stats:
+                    $ref: '#/components/schemas/UserStats'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/user/history:
+    get:
+      operationId: getEstimationHistory
+      summary: Get estimation history
+      description: Returns the authenticated user's past estimation records
+      tags:
+        - user
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum number of records to return (default 50, max 100)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+      responses:
+        '200':
+          description: Estimation history
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - history
+                properties:
+                  history:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/EstimationHistory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/user/accounts:
+    get:
+      operationId: getUserAccounts
+      summary: Get connected OAuth accounts
+      description: Returns the authenticated user's linked OAuth provider accounts
+      tags:
+        - user
+      security:
+        - cookieAuth: []
+      responses:
+        '200':
+          description: Connected OAuth accounts
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - accounts
+                properties:
+                  accounts:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OAuthAccount'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /api/user/display-name:
+    put:
+      operationId: updateDisplayName
+      summary: Update display name
+      description: Update the authenticated user's display name
+      tags:
+        - user
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - displayName
+              properties:
+                displayName:
+                  type: string
+                  minLength: 2
+                  maxLength: 50
+                  description: New display name (2-50 characters)
+            example:
+              displayName: John Doe
+      responses:
+        '200':
+          description: Display name updated
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - user
+                properties:
+                  user:
+                    $ref: '#/components/schemas/User'
+        '400':
+          description: Invalid display name
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: Display name must be 2-50 characters
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                error: User not found
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+      description: Session cookie set after login
+
+  schemas:
+    User:
+      type: object
+      required:
+        - id
+        - username
+        - email
+        - displayName
+      properties:
+        id:
+          type: integer
+          description: Unique user identifier
+        username:
+          type: string
+          description: Unique username
+        email:
+          type: string
+          format: email
+          description: User's email address
+        displayName:
+          type: string
+          description: Display name shown in game
+        avatarUrl:
+          type: string
+          format: uri
+          nullable: true
+          description: URL to user's avatar image
+
+    UserProfile:
+      type: object
+      required:
+        - userId
+        - createdAt
+        - updatedAt
+      properties:
+        userId:
+          type: integer
+          description: User ID this profile belongs to
+        preferredAvatar:
+          type: string
+          nullable: true
+          description: Preferred avatar character
+        preferredTeam:
+          $ref: '#/components/schemas/TeamType'
+        audioEnabled:
+          type: boolean
+          nullable: true
+          description: Whether audio is enabled
+        musicVolume:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+          description: Music volume (0-1)
+        sfxVolume:
+          type: number
+          minimum: 0
+          maximum: 1
+          nullable: true
+          description: Sound effects volume (0-1)
+        settings:
+          type: object
+          nullable: true
+          additionalProperties: true
+          description: Additional user settings
+        createdAt:
+          type: string
+          format: date-time
+          description: Profile creation timestamp
+        updatedAt:
+          type: string
+          format: date-time
+          description: Profile last update timestamp
+
+    UserStats:
+      type: object
+      required:
+        - userId
+      properties:
+        userId:
+          type: integer
+          description: User ID these stats belong to
+        totalEstimations:
+          type: integer
+          description: Total number of estimations made
+        totalSessions:
+          type: integer
+          description: Total game sessions participated in
+        averageScore:
+          type: number
+          description: Average estimation accuracy score
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    EstimationHistory:
+      type: object
+      required:
+        - id
+        - userId
+        - createdAt
+      properties:
+        id:
+          type: integer
+          description: Estimation record ID
+        userId:
+          type: integer
+          description: User who made the estimation
+        sessionId:
+          type: string
+          nullable: true
+          description: Game session ID
+        estimate:
+          type: string
+          nullable: true
+          description: The estimate value
+        finalValue:
+          type: string
+          nullable: true
+          description: Final agreed value
+        createdAt:
+          type: string
+          format: date-time
+
+    OAuthAccount:
+      type: object
+      required:
+        - id
+        - provider
+        - createdAt
+      properties:
+        id:
+          type: integer
+          description: Account record ID
+        provider:
+          type: string
+          enum:
+            - google
+            - github
+          description: OAuth provider name
+        createdAt:
+          type: string
+          format: date-time
+          description: When account was linked
+
+    TeamType:
+      type: string
+      nullable: true
+      enum:
+        - developers
+        - qa
+        - spectators
+      description: Team assignment for estimation
+
+    Error:
+      type: object
+      required:
+        - error
+      properties:
+        error:
+          type: string
+          description: Error message
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          type: string
+          const: ok
+        timestamp:
+          type: string
+          format: date-time
+
+    WebSocketHealthResponse:
+      type: object
+      required:
+        - status
+        - websocket
+        - timestamp
+      properties:
+        status:
+          type: string
+          const: ok
+        websocket:
+          type: object
+          required:
+            - connected
+            - lobbies
+            - transports
+          properties:
+            connected:
+              type: integer
+              description: Number of connected WebSocket clients
+            lobbies:
+              type: integer
+              description: Number of active game lobbies
+            transports:
+              type: array
+              items:
+                type: string
+              description: Transport types used by connected clients
+        timestamp:
+          type: string
+          format: date-time
+
+    WebSocketHealthError:
+      type: object
+      required:
+        - status
+        - message
+        - timestamp
+      properties:
+        status:
+          type: string
+          const: error
+        message:
+          type: string
+          description: Error description
+        timestamp:
+          type: string
+          format: date-time
+
+    RegisterRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+        password:
+          type: string
+          minLength: 8
+          description: Password (minimum 8 characters)
+        username:
+          type: string
+          description: Optional username (defaults to email prefix)
+        displayName:
+          type: string
+          description: Optional display name (defaults to username)
+
+    LoginRequest:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          description: User's email address
+        password:
+          type: string
+          description: User's password
+
+    AuthProviders:
+      type: object
+      required:
+        - google
+        - github
+        - local
+      properties:
+        google:
+          type: boolean
+          description: Whether Google OAuth is available
+        github:
+          type: boolean
+          description: Whether GitHub OAuth is available
+        local:
+          type: boolean
+          description: Whether email/password login is available
+
+    UpdateProfileRequest:
+      type: object
+      properties:
+        preferredAvatar:
+          type: string
+          description: Preferred avatar character
+        preferredTeam:
+          $ref: '#/components/schemas/TeamType'
+        audioEnabled:
+          type: boolean
+          description: Whether audio is enabled
+        musicVolume:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Music volume (0-1)
+        sfxVolume:
+          type: number
+          minimum: 0
+          maximum: 1
+          description: Sound effects volume (0-1)
+        settings:
+          type: object
+          additionalProperties: true
+          description: Additional settings
+
+  responses:
+    Unauthorized:
+      description: Not authenticated
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Not authenticated
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Operation failed
+
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error: Invalid request parameters

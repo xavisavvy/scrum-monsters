@@ -15,17 +15,22 @@ import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
 import { CharacterTools } from '@/components/utils/CharacterTools';
 import { BossTools } from '@/components/utils/BossTools';
+import { UserMenu } from '@/components/auth/UserMenu';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
+import { useAuth } from '@/lib/stores/useAuth';
 import { useBacktickKey } from '@/hooks/useBacktickKey';
 import { useKonamiCode } from '@/hooks/useKonamiCode';
+import { setupEventHandlers, teardownEventHandlers } from '@/lib/socket/eventHandlers';
+import { useEventSync } from '@/lib/stores/useEventSync';
 import { CheatMenu } from '@/components/ui/CheatMenu';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ReconnectionStatus } from '@/components/ui/ReconnectionStatus';
 import { ConnectionIndicator } from '@/components/ui/ConnectionIndicator';
 import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
+import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import '@/styles/retro.css';
 
 // Lazy load heavy game components for better initial load performance
@@ -54,13 +59,14 @@ function App() {
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   const [showReconnectionDialog, setShowReconnectionDialog] = useState(false);
   const [lastLobby, setLastLobby] = useState(LastLobbyStorage.loadLastLobby());
+  const [isAttemptingRejoin, setIsAttemptingRejoin] = useState(false);
   
   // Force remount mechanism for critical phase transitions
   const [battleRemountKey, setBattleRemountKey] = useState(0);
   const [lastGamePhase, setLastGamePhase] = useState<string | null>(null);
   const [isBattleUnmounting, setIsBattleUnmounting] = useState(false);
   
-  const { socket, connect, disconnect, isConnected, reconnection } = useWebSocket();
+  const { socket, connect, disconnect, isConnected, reconnection, emit, reconnectToLobby, getReconnectToken, clearReconnectionState } = useWebSocket();
   const { 
     currentLobby, 
     currentPlayer, 
@@ -91,9 +97,46 @@ function App() {
   } = useAudio();
   
   // Direct selector for current track name to ensure re-renders
-  const currentTrackName = useAudio(state => 
+  const currentTrackName = useAudio(state =>
     state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
   );
+
+  // Auth state
+  const { checkAuth, isInitialized: authInitialized } = useAuth();
+
+  // Check auth on mount
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  // Handle OAuth redirect params
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const authStatus = urlParams.get('auth');
+    const authProvider = urlParams.get('provider');
+
+    if (authStatus === 'success' && authProvider) {
+      toast.success(`Signed in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
+        duration: 3000,
+      });
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('auth');
+      newUrl.searchParams.delete('provider');
+      window.history.replaceState(null, '', newUrl.toString());
+      // Refresh auth state
+      checkAuth();
+    } else if (authStatus === 'error' && authProvider) {
+      toast.error(`Failed to sign in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
+        duration: 5000,
+      });
+      // Clean up URL
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('auth');
+      newUrl.searchParams.delete('provider');
+      window.history.replaceState(null, '', newUrl.toString());
+    }
+  }, [checkAuth]);
 
   // Developer menu hotkey
   useBacktickKey(() => {
@@ -251,6 +294,16 @@ function App() {
     }
   }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
 
+  // Setup fine-grained event handlers (separate effect to avoid teardown on appState changes)
+  useEffect(() => {
+    if (!socket) return;
+    setupEventHandlers(socket);
+    return () => {
+      teardownEventHandlers(socket);
+      useEventSync.getState().reset();
+    };
+  }, [socket]);
+
   // Setup WebSocket event listeners
   useEffect(() => {
     if (!socket) return;
@@ -272,6 +325,8 @@ function App() {
       // Save last lobby for quick rejoin
       LastLobbyStorage.saveLastLobby(lobby.id, lobby.name);
       setLastLobby({ lobbyId: lobby.id, lobbyName: lobby.name, timestamp: Date.now() });
+      // Clear rejoin flag (fallback path was taken, new player created)
+      setIsAttemptingRejoin(false);
       setAppState('avatar_selection');
     });
 
@@ -280,25 +335,27 @@ function App() {
       console.log('📥 App received lobby sync from reconnection');
       setLobby(lobby);
       setPlayer(yourPlayer);
-      
+
       // Clear the reconnection timeout if it exists
       if ((window as any).__reconnectionTimeout) {
         clearTimeout((window as any).__reconnectionTimeout);
         (window as any).__reconnectionTimeout = null;
       }
-      
+
       // Check if this was a URL join scenario that was waiting for reconnection
       const urlParams = new URLSearchParams(window.location.search);
       const lobbyParam = urlParams.get('join');
-      
-      if (lobbyParam && lobbyParam.toUpperCase() === lobby.id) {
-        console.log('✅ URL join reconnection successful, transitioning to appropriate state');
-        
-        // Determine the appropriate state based on lobby phase and player avatar
-        if (lobby.gamePhase === 'lobby' && (!yourPlayer.avatar || yourPlayer.avatar === 'warrior')) {
-          setAppState('avatar_selection');
-        } else if (lobby.gamePhase === 'lobby') {
+
+      // Handle explicit rejoin (Rejoin button) or URL join
+      if (isAttemptingRejoin || (lobbyParam && lobbyParam.toUpperCase() === lobby.id)) {
+        console.log('✅ Reconnection successful, transitioning to appropriate state');
+        setIsAttemptingRejoin(false);
+
+        // For reconnections, trust the lobby phase - player already selected avatar
+        if (lobby.gamePhase === 'lobby') {
           setAppState('lobby');
+        } else if (lobby.gamePhase === 'avatar_selection') {
+          setAppState('avatar_selection');
         } else if (lobby.gamePhase === 'battle' || lobby.gamePhase === 'scoring' || lobby.gamePhase === 'reveal' || lobby.gamePhase === 'discussion') {
           setAppState('battle');
         } else {
@@ -311,18 +368,30 @@ function App() {
     socket.on('reconnect_response', ({ result, message, newHost }) => {
       const urlParams = new URLSearchParams(window.location.search);
       const lobbyParam = urlParams.get('join');
-      
+
       // Clear the reconnection timeout if it exists
       if ((window as any).__reconnectionTimeout) {
         clearTimeout((window as any).__reconnectionTimeout);
         (window as any).__reconnectionTimeout = null;
       }
-      
-      if (result !== 'success' && lobbyParam && appState === 'landing') {
-        console.log('❌ Reconnection failed during URL join, proceeding with manual join:', message);
-        setAppState('join_lobby');
+
+      if (result !== 'success') {
+        console.log('❌ Reconnection failed:', message);
+        setIsAttemptingRejoin(false);
+
+        // If lobby no longer exists, clear saved lobby info
+        if (result === 'lobby_closed') {
+          LastLobbyStorage.clearLastLobby();
+          setLastLobby(null);
+          toast.error('Lobby no longer exists');
+        }
+
+        // For URL joins, proceed to manual join screen
+        if (lobbyParam && appState === 'landing') {
+          setAppState('join_lobby');
+        }
       }
-      
+
       // Notify if player lost host status during disconnect
       if (result === 'success' && newHost) {
         toast.info(`${newHost} became the host while you were disconnected.`, {
@@ -333,8 +402,12 @@ function App() {
     });
 
     socket.on('lobby_updated', ({ lobby }) => {
+      // DEPRECATED: This event should no longer be emitted
+      // Fine-grained events should update state incrementally
+      console.warn('Received deprecated lobby_updated event - this should not happen');
+      // Still apply update as fallback for safety
       setLobby(lobby);
-      
+
       // Update currentPlayer with fresh data if they're still in the lobby
       if (currentPlayer) {
         const updatedPlayer = lobby.players.find(p => p.id === currentPlayer.id);
@@ -342,27 +415,27 @@ function App() {
           setPlayer(updatedPlayer);
         }
       }
-      
+
       // Handle Return Home functionality: transition from any battle-related phase back to lobby
       // If game phase is 'lobby' but we're still showing battle screen, return to lobby
       if (lobby.gamePhase === 'lobby' && appState === 'battle') {
         console.log(`🏠 Return Home: transitioning from battle to lobby (was in ${lastGamePhase})`);
         setAppState('lobby');
       }
-      
+
       // Force BattleScreen remount on ANY significant state change to prevent DOM reconciliation errors
       const shouldRemount = (
         (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') || // Entering battle
-        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' && 
+        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' &&
          JSON.stringify(currentLobby?.currentTicket) !== JSON.stringify(lobby.currentTicket)) // Ticket changed in battle
       );
-      
+
       if (shouldRemount) {
         console.log(`🔄 COMPREHENSIVE REMOUNT: ${lastGamePhase} → ${lobby.gamePhase}, ticket change detected`);
-        
+
         // Step 1: Unmount immediately
         setIsBattleUnmounting(true);
-        
+
         // Step 2: Remount after a brief delay with new key
         setTimeout(() => {
           setBattleRemountKey(prev => {
@@ -373,21 +446,38 @@ function App() {
           setIsBattleUnmounting(false);
         }, 100); // Increased delay for more reliable cleanup
       }
-      
+
       // Log all phase changes for debugging
       if (lastGamePhase !== lobby.gamePhase) {
         console.log(`📋 Phase transition: ${lastGamePhase} → ${lobby.gamePhase}`);
       }
-      
+
       // Track phase changes
       setLastGamePhase(lobby.gamePhase);
-      
+
       // Note: Removed auto-transition to battle - only transition on explicit battle_started event
     });
 
     socket.on('avatar_selected', ({ playerId, avatar }) => {
-      if (currentPlayer?.id === playerId && appState === 'avatar_selection') {
-        setAppState('lobby');
+      // Update the player's avatar in state
+      if (currentLobby) {
+        const updatedLobby = {
+          ...currentLobby,
+          players: currentLobby.players.map(p =>
+            p.id === playerId ? { ...p, avatar, avatarClass: avatar } : p
+          )
+        };
+        setLobby(updatedLobby);
+      }
+
+      // Update currentPlayer if this is us
+      if (currentPlayer?.id === playerId) {
+        setPlayer({ ...currentPlayer, avatar, avatarClass: avatar });
+
+        // Transition to lobby if we were in avatar selection
+        if (appState === 'avatar_selection') {
+          setAppState('lobby');
+        }
       }
     });
 
@@ -420,10 +510,17 @@ function App() {
       setError(message);
       toast.error(message);
       console.error('Game error:', message);
-      
+
       // Clear error after showing toast
       setTimeout(() => setError(null), 100);
-      
+
+      // If lobby not found, clear the saved last lobby info
+      if (message.toLowerCase().includes('lobby not found') || message.toLowerCase().includes('does not exist')) {
+        LastLobbyStorage.clearLastLobby();
+        setLastLobby(null);
+        setIsAttemptingRejoin(false);
+      }
+
       // If we're trying to join a lobby and it fails, fade menu music back in
       if (appState === 'join_lobby' && !isMuted) {
         setTimeout(() => {
@@ -496,13 +593,22 @@ function App() {
       socket.off('youtube_play_synced');
       socket.off('youtube_stop_synced');
     };
-  }, [socket, currentPlayer, appState, setLobby, setPlayer, setBoss, setInviteLink, setError]);
+  }, [socket, currentPlayer, currentLobby, appState, isAttemptingRejoin, setLobby, setPlayer, setBoss, setInviteLink, setError]);
 
   const handleBackToMenu = () => {
+    // Tell server we're leaving the lobby
+    if (currentLobby) {
+      emit('leave_lobby', {});
+    }
+
+    // Clear reconnection data so Rejoin doesn't show stale lobby
+    LastLobbyStorage.clearLastLobby();
+    setLastLobby(null);
+    clearReconnectionState();
+
     clearAll();
     setAppState('menu');
     window.history.replaceState(null, '', window.location.pathname);
-    // Remove duplicate fade-in - let appState effect handle it
   };
 
   const renderCurrentState = () => {
@@ -615,8 +721,27 @@ function App() {
                         onClick={() => {
                           playButtonSelect();
                           fadeOutMenuMusic();
-                          setJoinLobbyId(lastLobby.lobbyId);
-                          setAppState('join_lobby');
+                          setIsAttemptingRejoin(true);
+
+                          // Try reconnection with token first (preserves avatar)
+                          if (getReconnectToken() && reconnectToLobby()) {
+                            console.log('✅ Reconnecting with token (avatar preserved)');
+                            return;
+                          }
+
+                          // Fall back to join_lobby (new player, needs avatar selection)
+                          const savedName = PlayerNameStorage.loadName();
+                          if (savedName) {
+                            console.log('⚠️ No reconnect token, joining as new player');
+                            emit('join_lobby', {
+                              lobbyId: lastLobby.lobbyId.toUpperCase(),
+                              playerName: savedName
+                            });
+                          } else {
+                            setIsAttemptingRejoin(false);
+                            setJoinLobbyId(lastLobby.lobbyId);
+                            setAppState('join_lobby');
+                          }
                         }}
                         className="w-full"
                         variant="primary"
@@ -793,6 +918,21 @@ function App() {
           >
             ← Back to Menu
           </RetroButton>
+        </div>
+      )}
+
+      {/* User Menu and Mute Button (top right) - show on menu and marketing pages */}
+      {['landing', 'menu', 'about', 'features', 'pricing', 'support'].includes(appState) && (
+        <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
+          <RetroButton
+            onClick={toggleMute}
+            variant="secondary"
+            size="sm"
+            className={`${isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} flex items-center gap-2`}
+          >
+            {isMuted ? '🔇' : '🔊'}
+          </RetroButton>
+          <UserMenu />
         </div>
       )}
 

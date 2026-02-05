@@ -1,0 +1,7 @@
+# Auto-label PRs based on changed files
+# Used by actions/labeler
+
+visual-changes:
+  - changed-files:
+    - any-glob-to-any-file: 'e2e/visual-snapshots/**/*.png'
+    - any-glob-to-any-file: 'e2e/**/*-snapshots/**/*.png'
