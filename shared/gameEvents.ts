@@ -285,6 +285,14 @@ export interface ClientToServerEvents {
   attack_minion: (data: { minionPlayerId: string }) => void;
   // Discussion finalization
   finalize_estimate: (data: { estimate: number }) => void;
+  // Player charge attack
+  player_charge: (data: { isCharging: boolean; chargePower?: number }) => void;
+  // Battle emote
+  battle_emote: (data: { message: string; x: number; y: number }) => void;
+  // Return to lobby
+  return_to_lobby: () => void;
+  // Estimation settings
+  update_estimation_settings: (data: { estimationSettings: EstimationSettings }) => void;
 }
 
 export interface TeamScores {
@@ -309,7 +317,14 @@ export interface ServerToClientEvents {
     direction?: string;
   }) => void;
   lobby_player_jump: (data: { playerId: string; isJumping: boolean }) => void;
+  lobby_player_charge: (data: { playerId: string; isCharging: boolean; chargePower: number }) => void;
   lobby_emote: (data: {
+    playerId: string;
+    message: string;
+    x: number;
+    y: number;
+  }) => void;
+  battle_emote: (data: {
     playerId: string;
     message: string;
     x: number;
@@ -332,7 +347,8 @@ export interface ServerToClientEvents {
   game_over: (data: { lobby: Lobby }) => void;
   boss_healed: (data: { bossHealth: number; healAmount: number }) => void;
   modifier_updated: (data: { modifier: number }) => void;
-  game_error: (data: { message: string }) => void;
+  game_error: (data: { message: string; code?: string; tiedValues?: number[] }) => void;
+  player_left: (data: { playerId: string; playerName: string }) => void;
   voting_timeout: (data: { submittedCount: number; totalCount: number; message: string }) => void;
   player_disconnected: (data: { playerId: string }) => void;
   host_transferred: (data: { oldHostId: string; newHostId: string; newHostName: string; reason: string }) => void;

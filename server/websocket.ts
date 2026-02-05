@@ -320,10 +320,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('lobby_joined', { lobby, player });
 
           // Then immediately emit the phase-specific event to advance them
-          if (currentPhase === 'battle' || currentPhase === 'voting' || currentPhase === 'discussion' || currentPhase === 'reveal') {
+          if (currentPhase === 'battle' || currentPhase === 'scoring' || currentPhase === 'discussion' || currentPhase === 'reveal') {
             // Emit battle_started to transition client to battle screen
-            socket.emit('battle_started', { lobby, boss: lobby.boss });
-            console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+            if (lobby.boss) {
+              socket.emit('battle_started', { lobby, boss: lobby.boss });
+              console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+            }
           }
         }
 
@@ -529,7 +531,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Notify remaining players
       if (updatedLobby) {
-        io.to(lobbyId).emit('player_left', { playerId });
+        const leavingPlayer = updatedLobby.players.find(p => p.id === playerId);
+        io.to(lobbyId).emit('player_left', { playerId, playerName: leavingPlayer?.name || 'Unknown' });
         io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
       }
     });
