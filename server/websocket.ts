@@ -780,20 +780,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
               // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
               io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
               
-              // Check if teams agreed using same logic as gameState
-              const devTeamExists = updatedLobby.teams.developers.length > 0;
-              const qaTeamExists = updatedLobby.teams.qa.length > 0;
-              
-              let teamsAgree = false;
-              if (devTeamExists && qaTeamExists) {
-                teamsAgree = teamConsensus.developers.hasConsensus && 
-                            teamConsensus.qa.hasConsensus &&
-                            teamConsensus.developers.score === teamConsensus.qa.score;
-              } else if (devTeamExists && !qaTeamExists) {
-                teamsAgree = teamConsensus.developers.hasConsensus;
-              } else if (!devTeamExists && qaTeamExists) {
-                teamsAgree = teamConsensus.qa.hasConsensus;
-              }
+              // Check if teams agreed using EstimationManager
+              const teamsAgree = estimationManager.checkTeamsAgree(updatedLobby.id, updatedLobby.teams.developers.length, updatedLobby.teams.qa.length);
               
               if (teamsAgree && updatedLobby.boss?.defeated) {
                 io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
@@ -1021,20 +1009,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
         io.to(updatedLobby.id).emit('lobby_updated', { lobby: updatedLobby });
         
-        // Check if teams agreed using same logic as gameState
-        const devTeamExists = updatedLobby.teams.developers.length > 0;
-        const qaTeamExists = updatedLobby.teams.qa.length > 0;
-        
-        let teamsAgree = false;
-        if (devTeamExists && qaTeamExists) {
-          teamsAgree = teamConsensus.developers.hasConsensus && 
-                      teamConsensus.qa.hasConsensus &&
-                      teamConsensus.developers.score === teamConsensus.qa.score;
-        } else if (devTeamExists && !qaTeamExists) {
-          teamsAgree = teamConsensus.developers.hasConsensus;
-        } else if (!devTeamExists && qaTeamExists) {
-          teamsAgree = teamConsensus.qa.hasConsensus;
-        }
+        // Check if teams agreed using EstimationManager
+        const teamsAgree = estimationManager.checkTeamsAgree(updatedLobby.id, updatedLobby.teams.developers.length, updatedLobby.teams.qa.length);
         
         if (teamsAgree && updatedLobby.boss?.defeated) {
           io.to(updatedLobby.id).emit('boss_defeated', { lobby: updatedLobby });

@@ -17,7 +17,6 @@ describe('PhaseCoordinator', () => {
   const createTestLobby = (gamePhase: GamePhase = 'lobby'): Lobby => ({
     id: 'test-lobby',
     name: 'Test Lobby',
-    code: 'TEST',
     hostId: 'host1',
     gamePhase,
     players: [],
@@ -31,20 +30,41 @@ describe('PhaseCoordinator', () => {
       spectators: [],
     },
     playerCombatStates: {},
-    settings: {
-      timer: {
-        enabled: false,
-        durationMinutes: 5,
+    playerPositions: {},
+    teamCompetition: {
+      currentRound: 0,
+      winnerHistory: [],
+      seasonStart: new Date().toISOString(),
+      developers: {
+        totalStoryPoints: 0,
+        ticketsCompleted: 0,
+        averageEstimationTime: 0,
+        consensusRate: 0,
+        accuracyScore: 0,
+        participationRate: 0,
+        achievements: [],
+        currentStreak: 0,
+        bestStreak: 0,
       },
-      jira: {
-        enabled: false,
-        domain: '',
-        projectKey: '',
+      qa: {
+        totalStoryPoints: 0,
+        ticketsCompleted: 0,
+        averageEstimationTime: 0,
+        consensusRate: 0,
+        accuracyScore: 0,
+        participationRate: 0,
+        achievements: [],
+        currentStreak: 0,
+        bestStreak: 0,
       },
-      estimation: {
-        scale: 'fibonacci',
-        allowRevote: false,
-      },
+    },
+    timerSettings: {
+      enabled: false,
+      durationMinutes: 5,
+    },
+    jiraSettings: {},
+    estimationSettings: {
+      scaleType: 'fibonacci' as const,
     },
   });
 

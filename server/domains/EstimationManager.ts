@@ -1119,6 +1119,103 @@ export class EstimationManager {
   }
 
   /**
+   * Get team scores (player votes grouped by team)
+   * Returns Record<playerId, vote> for each team
+   * Used during reveal phase to show what each team member voted
+   */
+  getTeamScores(lobbyId: string): { developers: Record<string, number | '?'>; qa: Record<string, number | '?'> } {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    const teamScores = {
+      developers: {} as Record<string, number | '?'>,
+      qa: {} as Record<string, number | '?'>
+    };
+
+    // Extract votes for each team
+    for (const [playerId, vote] of estimation.teams.developers.votes) {
+      teamScores.developers[playerId] = vote;
+    }
+    for (const [playerId, vote] of estimation.teams.qa.votes) {
+      teamScores.qa[playerId] = vote;
+    }
+
+    return teamScores;
+  }
+
+  /**
+   * Get team consensus status (whether each team has consensus and what the value is)
+   * Returns hasConsensus and consensusValue for each team
+   * Only considers numeric votes (excludes '?' votes)
+   */
+  getTeamConsensus(lobbyId: string): {
+    developers: { hasConsensus: boolean; score?: number };
+    qa: { hasConsensus: boolean; score?: number };
+  } {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      throw new EstimationNotActiveError(lobbyId);
+    }
+
+    // Get numeric votes for each team (exclude '?')
+    const devScoreValues = Array.from(estimation.teams.developers.votes.values()).filter(
+      (vote): vote is number => typeof vote === 'number'
+    );
+    const qaScoreValues = Array.from(estimation.teams.qa.votes.values()).filter(
+      (vote): vote is number => typeof vote === 'number'
+    );
+
+    // Check consensus (all numeric votes are the same)
+    const devConsensus = devScoreValues.length > 0 && devScoreValues.every(score => score === devScoreValues[0]);
+    const qaConsensus = qaScoreValues.length > 0 && qaScoreValues.every(score => score === qaScoreValues[0]);
+
+    return {
+      developers: {
+        hasConsensus: devConsensus,
+        score: devConsensus ? devScoreValues[0] : undefined
+      },
+      qa: {
+        hasConsensus: qaConsensus,
+        score: qaConsensus ? qaScoreValues[0] : undefined
+      }
+    };
+  }
+
+  /**
+   * Check if teams agree on consensus
+   * Returns true if:
+   * - Both teams exist and have same consensus score, OR
+   * - Only one team exists and has consensus
+   * Takes into account which teams actually have members
+   */
+  checkTeamsAgree(lobbyId: string, devTeamSize: number, qaTeamSize: number): boolean {
+    const teamConsensus = this.getTeamConsensus(lobbyId);
+    
+    const devTeamExists = devTeamSize > 0;
+    const qaTeamExists = qaTeamSize > 0;
+
+    if (devTeamExists && qaTeamExists) {
+      // Both teams exist - require both to have consensus and agree on same score
+      return (
+        teamConsensus.developers.hasConsensus &&
+        teamConsensus.qa.hasConsensus &&
+        teamConsensus.developers.score === teamConsensus.qa.score
+      );
+    } else if (devTeamExists && !qaTeamExists) {
+      // Only developers exist - just need dev consensus
+      return teamConsensus.developers.hasConsensus;
+    } else if (!devTeamExists && qaTeamExists) {
+      // Only QA exists - just need QA consensus
+      return teamConsensus.qa.hasConsensus;
+    } else {
+      // No teams exist - no consensus possible
+      return false;
+    }
+  }
+
+  /**
    * Handles player joining a lobby (session event subscription)
    * If estimation is active, adds player to eligible voters based on their team
    */

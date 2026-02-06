@@ -1,6 +1,6 @@
 import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
-import { phaseCoordinator } from './domains/index.js';
+import { phaseCoordinator, estimationManager } from './domains/index.js';
 import { createHash, createHmac } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 
@@ -1450,48 +1450,9 @@ class GameStateManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'reveal') return null;
 
-    const teamScores = {
-      developers: {} as Record<string, number | '?'>,
-      qa: {} as Record<string, number | '?'>
-    };
-
-    // Separate scores by team
-    const developerPlayers = lobby.players.filter(p => p.team === 'developers' && p.currentScore !== undefined);
-    const qaPlayers = lobby.players.filter(p => p.team === 'qa' && p.currentScore !== undefined);
-    
-    developerPlayers.forEach(p => {
-      if (p.currentScore !== undefined) {
-        teamScores.developers[p.id] = p.currentScore;
-      }
-    });
-
-    qaPlayers.forEach(p => {
-      if (p.currentScore !== undefined) {
-        teamScores.qa[p.id] = p.currentScore;
-      }
-    });
-
-    // Check for consensus within each team (excluding "?" votes)
-    const devScoreValues = Object.values(teamScores.developers).filter(score => typeof score === 'number');
-    const qaScoreValues = Object.values(teamScores.qa).filter(score => typeof score === 'number');
-    
-    const devConsensus = devScoreValues.length > 0 && devScoreValues.every(score => score === devScoreValues[0]);
-    const qaConsensus = qaScoreValues.length > 0 && qaScoreValues.every(score => score === qaScoreValues[0]);
-
-    const teamConsensus = {
-      developers: { 
-        hasConsensus: devConsensus, 
-        score: devConsensus ? (devScoreValues[0] as number) : undefined 
-      },
-      qa: { 
-        hasConsensus: qaConsensus, 
-        score: qaConsensus ? (qaScoreValues[0] as number) : undefined 
-      }
-    };
-
-    // Handle cases where one or both teams are empty - check actual team membership
-    const devTeamExists = lobby.teams.developers.length > 0;
-    const qaTeamExists = lobby.teams.qa.length > 0;
+    // Get team scores and consensus from EstimationManager
+    const teamScores = estimationManager.getTeamScores(lobbyId);
+    const teamConsensus = estimationManager.getTeamConsensus(lobbyId);
     
     // Transition to discussion phase via PhaseCoordinator
     phaseCoordinator.transitionTo(lobby, 'discussion', {
@@ -1507,66 +1468,12 @@ class GameStateManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'discussion') return null;
 
-    const teamScores = {
-      developers: {} as Record<string, number | '?'>,
-      qa: {} as Record<string, number | '?'>
-    };
-
-    // Separate scores by team
-    const developerPlayers = lobby.players.filter(p => p.team === 'developers' && p.currentScore !== undefined);
-    const qaPlayers = lobby.players.filter(p => p.team === 'qa' && p.currentScore !== undefined);
+    // Get team scores and consensus from EstimationManager
+    const teamScores = estimationManager.getTeamScores(lobbyId);
+    const teamConsensus = estimationManager.getTeamConsensus(lobbyId);
     
-    developerPlayers.forEach(p => {
-      if (p.currentScore !== undefined) {
-        teamScores.developers[p.id] = p.currentScore;
-      }
-    });
-
-    qaPlayers.forEach(p => {
-      if (p.currentScore !== undefined) {
-        teamScores.qa[p.id] = p.currentScore;
-      }
-    });
-
-    // Check for consensus within each team (excluding "?" votes)
-    const devScoreValues = Object.values(teamScores.developers).filter(score => typeof score === 'number');
-    const qaScoreValues = Object.values(teamScores.qa).filter(score => typeof score === 'number');
-    
-    const devConsensus = devScoreValues.length > 0 && devScoreValues.every(score => score === devScoreValues[0]);
-    const qaConsensus = qaScoreValues.length > 0 && qaScoreValues.every(score => score === qaScoreValues[0]);
-
-    const teamConsensus = {
-      developers: { 
-        hasConsensus: devConsensus, 
-        score: devConsensus ? (devScoreValues[0] as number) : undefined 
-      },
-      qa: { 
-        hasConsensus: qaConsensus, 
-        score: qaConsensus ? (qaScoreValues[0] as number) : undefined 
-      }
-    };
-
-    // Handle cases where one or both teams are empty - check actual team membership
-    const devTeamExists = lobby.teams.developers.length > 0;
-    const qaTeamExists = lobby.teams.qa.length > 0;
-    
-    // Check if teams have consensus and agree on the same score
-    let teamsAgree = false;
-    
-    if (devTeamExists && qaTeamExists) {
-      // Both teams exist - require both to have consensus and agree
-      const bothTeamsHaveConsensus = devConsensus && qaConsensus;
-      teamsAgree = bothTeamsHaveConsensus && devScoreValues[0] === qaScoreValues[0];
-    } else if (devTeamExists && !qaTeamExists) {
-      // Only developers exist - just need dev consensus
-      teamsAgree = devConsensus;
-    } else if (!devTeamExists && qaTeamExists) {
-      // Only QA exists - just need QA consensus
-      teamsAgree = qaConsensus;
-    } else {
-      // No teams exist - no consensus possible
-      teamsAgree = false;
-    }
+    // Check if teams agree using EstimationManager
+    const teamsAgree = estimationManager.checkTeamsAgree(lobbyId, lobby.teams.developers.length, lobby.teams.qa.length);
 
     if (teamsAgree && lobby.boss && lobby.currentTicket) {
       // Check if countdown is already active
