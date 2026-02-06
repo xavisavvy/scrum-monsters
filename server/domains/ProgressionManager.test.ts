@@ -7,6 +7,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { XPCurve, ProgressionManager } from './ProgressionManager';
 import { ScopedEventBus } from '../events';
+import type { DomainEventMap } from '../events/eventTypes';
 
 // =============================================================================
 // XPCurve Tests
@@ -125,13 +126,13 @@ describe('ProgressionManager', () => {
 
     // Spy on event emissions
     const originalEmit = eventBus.emit.bind(eventBus);
-    eventBus.emit = ((event: string, payload: any) => {
-      if (!emittedEvents[event]) {
-        emittedEvents[event] = [];
+    eventBus.emit = (<K extends keyof DomainEventMap>(event: K, payload: DomainEventMap[K]) => {
+      if (!emittedEvents[event as string]) {
+        emittedEvents[event as string] = [];
       }
-      emittedEvents[event].push(payload);
+      emittedEvents[event as string].push(payload);
       return originalEmit(event, payload);
-    }) as any;
+    }) as typeof eventBus.emit;
 
     manager = new ProgressionManager({ eventBus });
   });
