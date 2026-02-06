@@ -2830,7 +2830,7 @@ export function Lobby() {
           {/* Shadow Clone Rendering */}
           {shadowClones.map(clone => {
             const cloneAge = Date.now() - clone.createdAt;
-            const opacity = cloneAge < 1500 ? 0.6 : Math.max(0, 0.6 - (cloneAge - 1500) / 500); // Fade out after 1.5s
+            const opacity = cloneAge < 1500 ? 0.8 : Math.max(0, 0.8 - (cloneAge - 1500) / 500); // Fade out after 1.5s
             
             // Calculate rotation for dancing clones
             const rotation = clone.isDancing && clone.danceAngle !== undefined 
@@ -2843,35 +2843,41 @@ export function Lobby() {
                 className="absolute pointer-events-none"
                 style={{
                   left: `${clone.x}px`,
-                  bottom: `${clone.y}%`,
+                  bottom: '15%', // Fixed position above ground
                   transform: 'translateX(-50%)',
-                  zIndex: 15,
+                  zIndex: 20,
                   opacity,
                   transition: clone.isDancing ? 'none' : 'opacity 0.5s ease-out',
                 }}
               >
-                {/* Clone character - semi-transparent with shadow effect */}
+                {/* Clone character - emoji based for visibility */}
                 <div 
-                  className="relative"
+                  className="relative flex flex-col items-center"
                   style={{
-                    filter: 'drop-shadow(0 0 8px rgba(74, 74, 74, 0.8))',
+                    filter: 'drop-shadow(0 0 10px rgba(74, 74, 74, 0.9))',
                     transform: clone.isDancing ? `rotate(${rotation}deg)` : 'none',
                     transition: 'transform 0.05s linear',
                   }}
                 >
-                  <SpriteRenderer
-                    avatarClass={clone.avatar as AvatarClass}
-                    animation="walk"
-                    direction="down"
-                    isMoving={clone.isDancing}
-                    size={2.5}
-                  />
+                  {/* Shadow ninja emoji */}
+                  <span className="text-6xl" style={{ 
+                    filter: 'grayscale(0.5) brightness(0.7)',
+                    textShadow: '0 0 8px rgba(0, 0, 0, 0.8)'
+                  }}>
+                    🥷
+                  </span>
                   {/* Shadow clone indicator */}
-                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
-                    <span className="text-gray-400 text-xs font-bold" style={{ textShadow: '0 0 4px #000' }}>
-                      {clone.isDancing ? '💃 Clone' : 'Clone'}
+                  <div className="absolute -top-8 whitespace-nowrap">
+                    <span className="text-gray-300 text-xs font-bold" style={{ textShadow: '0 0 6px #000' }}>
+                      {clone.isDancing ? '💃 Clone' : '⚔️ Clone'}
                     </span>
                   </div>
+                  {/* Smoke puff effect when fading */}
+                  {cloneAge > 1500 && (
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <span className="text-4xl opacity-50">💨</span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
