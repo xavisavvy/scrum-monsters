@@ -70,8 +70,8 @@ export class PhaseCoordinator {
     avatar_selection: ['battle'],
     battle: ['reveal', 'game_over'],
     scoring: ['reveal'], // Legacy phase, rarely used
-    reveal: ['discussion'],
-    discussion: ['victory', 'next_level'],
+    reveal: ['discussion', 'game_over'], // Can game over during reveal
+    discussion: ['victory', 'next_level', 'game_over'], // Can game over during discussion
     victory: ['lobby'],
     next_level: ['battle'],
     game_over: ['lobby'],
