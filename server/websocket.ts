@@ -751,79 +751,93 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     socket.on('submit_score', ({ score }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      // Track activity for host transfer selection
-      sessionManager.recordPlayerActivity(playerId);
+        // Track activity for host transfer selection
+        sessionManager.recordPlayerActivity(playerId);
 
-      const lobby = gameState.submitScore(playerId, score);
-      if (lobby) {
-        const player = lobby.players.find(p => p.id === playerId);
-        if (player) {
-          socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
-        }
+        const lobby = gameState.submitScore(playerId, score);
+        if (lobby) {
+          const player = lobby.players.find(p => p.id === playerId);
+          if (player) {
+            socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
+          }
 
-        // Removed lobby_updated: estimation:vote_cast event emitted by estimationManager
-        
-        // Check if all scores submitted and reveal
-        if (lobby.gamePhase === 'reveal') {
-          const result = gameState.revealScores(lobby.id);
-          if (result) {
-            const { lobby: updatedLobby, teamScores, teamConsensus } = result;
-            io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-            // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-            io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
-            
-            // Check if teams agreed using same logic as gameState
-            const devTeamExists = updatedLobby.teams.developers.length > 0;
-            const qaTeamExists = updatedLobby.teams.qa.length > 0;
-            
-            let teamsAgree = false;
-            if (devTeamExists && qaTeamExists) {
-              teamsAgree = teamConsensus.developers.hasConsensus && 
-                          teamConsensus.qa.hasConsensus &&
-                          teamConsensus.developers.score === teamConsensus.qa.score;
-            } else if (devTeamExists && !qaTeamExists) {
-              teamsAgree = teamConsensus.developers.hasConsensus;
-            } else if (!devTeamExists && qaTeamExists) {
-              teamsAgree = teamConsensus.qa.hasConsensus;
-            }
-            
-            if (teamsAgree && updatedLobby.boss?.defeated) {
-              io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
+          // Removed lobby_updated: estimation:vote_cast event emitted by estimationManager
+          
+          // Check if all scores submitted and reveal
+          if (lobby.gamePhase === 'reveal') {
+            const result = gameState.revealScores(lobby.id);
+            if (result) {
+              const { lobby: updatedLobby, teamScores, teamConsensus } = result;
+              io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+              // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
+              io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+              
+              // Check if teams agreed using same logic as gameState
+              const devTeamExists = updatedLobby.teams.developers.length > 0;
+              const qaTeamExists = updatedLobby.teams.qa.length > 0;
+              
+              let teamsAgree = false;
+              if (devTeamExists && qaTeamExists) {
+                teamsAgree = teamConsensus.developers.hasConsensus && 
+                            teamConsensus.qa.hasConsensus &&
+                            teamConsensus.developers.score === teamConsensus.qa.score;
+              } else if (devTeamExists && !qaTeamExists) {
+                teamsAgree = teamConsensus.developers.hasConsensus;
+              } else if (!devTeamExists && qaTeamExists) {
+                teamsAgree = teamConsensus.qa.hasConsensus;
+              }
+              
+              if (teamsAgree && updatedLobby.boss?.defeated) {
+                io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
+              }
             }
           }
         }
+      } catch (error) {
+        console.error('Error in submit_score handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to submit score'
+        });
       }
     });
 
     socket.on('update_discussion_vote', ({ score }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const lobby = gameState.updateDiscussionVote(playerId, score);
-      if (lobby) {
-        // Keep lobby_updated for discussion phase updates (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
-        
-        // Check for consensus and auto-advance - rely on gameState for consensus logic
-        const result = gameState.checkDiscussionConsensus(lobby.id);
-        if (result) {
-          const { lobby: updatedLobby } = result;
+        const lobby = gameState.updateDiscussionVote(playerId, score);
+        if (lobby) {
+          // Keep lobby_updated for discussion phase updates (not yet covered by fine-grained events)
+          io.to(lobby.id).emit('lobby_updated', { lobby });
           
-          // If lobby progressed beyond discussion phase, emit appropriate updates
-          if (updatedLobby.gamePhase !== 'discussion') {
-            // Auto-advance after a brief delay for players to see the consensus
-            setTimeout(() => {
-              // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-              io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
-              if (updatedLobby.boss?.defeated) {
-                io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
-              }
-            }, 2000);
+          // Check for consensus and auto-advance - rely on gameState for consensus logic
+          const result = gameState.checkDiscussionConsensus(lobby.id);
+          if (result) {
+            const { lobby: updatedLobby } = result;
+            
+            // If lobby progressed beyond discussion phase, emit appropriate updates
+            if (updatedLobby.gamePhase !== 'discussion') {
+              // Auto-advance after a brief delay for players to see the consensus
+              setTimeout(() => {
+                // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
+                io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+                if (updatedLobby.boss?.defeated) {
+                  io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
+                }
+              }, 2000);
+            }
           }
         }
+      } catch (error) {
+        console.error('Error in update_discussion_vote handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to update discussion vote'
+        });
       }
     });
 
@@ -831,27 +845,34 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     
     // Boss damage to player
     socket.on('boss_damage_player', ({ playerId, damage }: { playerId: string; damage: number }) => {
-      const attackerId = socket.data.playerId;
-      if (!attackerId) return;
+      try {
+        const attackerId = socket.data.playerId;
+        if (!attackerId) return;
 
-      const result = gameState.bossDamagePlayer(playerId, damage);
-      if (result) {
-        const { lobby, targetHealth, gameOver } = result;
-        
-        // Broadcast boss damage to room
-        io.to(lobby.id).emit('player_attacked', { 
-          attackerId: 'boss', 
-          targetId: playerId, 
-          damage, 
-          targetHealth 
-        });
-        
-        // Check for game over
-        if (gameOver) {
-          io.to(lobby.id).emit('game_over', { lobby });
+        const result = gameState.bossDamagePlayer(playerId, damage);
+        if (result) {
+          const { lobby, targetHealth, gameOver } = result;
+          
+          // Broadcast boss damage to room
+          io.to(lobby.id).emit('player_attacked', { 
+            attackerId: 'boss', 
+            targetId: playerId, 
+            damage, 
+            targetHealth 
+          });
+          
+          // Check for game over
+          if (gameOver) {
+            io.to(lobby.id).emit('game_over', { lobby });
+          }
+
+          // Removed lobby_updated: combat:player_damaged event emitted by combatManager
         }
-
-        // Removed lobby_updated: combat:player_damaged event emitted by combatManager
+      } catch (error) {
+        console.error('Error in boss_damage_player handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to process boss damage'
+        });
       }
     });
 
@@ -1142,95 +1163,130 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     // Player vs player combat
     socket.on('attack_player', ({ targetId, damage }: { targetId: string; damage: number }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      // For spectators, override target with nearest player
-      const lobby = gameState.getLobbyByPlayerId(playerId);
-      if (!lobby) return;
+        // For spectators, override target with nearest player
+        const lobby = gameState.getLobbyByPlayerId(playerId);
+        if (!lobby) return;
 
-      const attacker = lobby.players.find(p => p.id === playerId);
-      if (!attacker || attacker.team !== 'spectators') return;
+        const attacker = lobby.players.find(p => p.id === playerId);
+        if (!attacker || attacker.team !== 'spectators') return;
 
-      const actualTargetId = gameState.findNearestTarget(playerId) || targetId;
-      const result = gameState.attackPlayer(playerId, actualTargetId, damage);
-      
-      if (result) {
-        const { lobby: updatedLobby, targetHealth, gameOver, modifier } = result;
-        io.to(lobby.id).emit('player_attacked', { 
-          attackerId: playerId, 
-          targetId: actualTargetId, 
-          damage, 
-          targetHealth 
+        const actualTargetId = gameState.findNearestTarget(playerId) || targetId;
+        const result = gameState.attackPlayer(playerId, actualTargetId, damage);
+        
+        if (result) {
+          const { lobby: updatedLobby, targetHealth, gameOver, modifier } = result;
+          io.to(lobby.id).emit('player_attacked', { 
+            attackerId: playerId, 
+            targetId: actualTargetId, 
+            damage, 
+            targetHealth 
+          });
+          
+          // Emit modifier update
+          if (modifier !== undefined) {
+            io.to(lobby.id).emit('modifier_updated', { modifier });
+          }
+          
+          // Check for game over
+          if (gameOver) {
+            io.to(lobby.id).emit('game_over', { lobby: updatedLobby });
+          }
+
+          // Removed lobby_updated: combat:player_damaged event emitted by combatManager
+        }
+      } catch (error) {
+        console.error('Error in attack_player handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to attack player'
         });
-        
-        // Emit modifier update
-        if (modifier !== undefined) {
-          io.to(lobby.id).emit('modifier_updated', { modifier });
-        }
-        
-        // Check for game over
-        if (gameOver) {
-          io.to(lobby.id).emit('game_over', { lobby: updatedLobby });
-        }
-
-        // Removed lobby_updated: combat:player_damaged event emitted by combatManager
       }
     });
 
     // Party healing (priest special ability)
     socket.on('heal_party', () => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const result = gameState.healParty(playerId);
-      if (result) {
-        const { lobby, healedPlayers } = result;
-        io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
-        // Removed lobby_updated: party_healed event contains all necessary info
-        console.log(`💫 Priest ${playerId} healed party`);
+        const result = gameState.healParty(playerId);
+        if (result) {
+          const { lobby, healedPlayers } = result;
+          io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
+          // Removed lobby_updated: party_healed event contains all necessary info
+          console.log(`💫 Priest ${playerId} healed party`);
+        }
+      } catch (error) {
+        console.error('Error in heal_party handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to heal party'
+        });
       }
     });
 
     // Revival system
     socket.on('revive_start', ({ targetId }: { targetId: string }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const success = gameState.startRevive(playerId, targetId);
-      if (success) {
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
+        const success = gameState.startRevive(playerId, targetId);
+        if (success) {
+          const lobby = gameState.getLobbyByPlayerId(playerId);
+          if (lobby) {
+            io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
+          }
         }
+      } catch (error) {
+        console.error('Error in revive_start handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to start revival'
+        });
       }
     });
 
     socket.on('revive_cancel', ({ targetId }: { targetId: string }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const success = gameState.cancelRevive(playerId, targetId);
-      if (success) {
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+        const success = gameState.cancelRevive(playerId, targetId);
+        if (success) {
+          const lobby = gameState.getLobbyByPlayerId(playerId);
+          if (lobby) {
+            io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+          }
         }
+      } catch (error) {
+        console.error('Error in revive_cancel handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to cancel revival'
+        });
       }
     });
 
     socket.on('revive_tick', ({ targetId }: { targetId: string }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      // Update keep-alive and validate revival conditions
-      const isValid = gameState.tickRevive(playerId, targetId);
-      if (!isValid) {
-        // Revival was cancelled due to distance or state changes
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+        // Update keep-alive and validate revival conditions
+        const isValid = gameState.tickRevive(playerId, targetId);
+        if (!isValid) {
+          // Revival was cancelled due to distance or state changes
+          const lobby = gameState.getLobbyByPlayerId(playerId);
+          if (lobby) {
+            io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+          }
         }
+      } catch (error) {
+        console.error('Error in revive_tick handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to update revival progress'
+        });
       }
     });
 
