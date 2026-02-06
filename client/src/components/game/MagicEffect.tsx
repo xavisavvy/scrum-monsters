@@ -262,6 +262,15 @@ const EFFECT_CONFIGS: Record<MagicEffectType, {
     animation: 'petrify-stone',
     glow: 'rgba(128, 128, 128, 0.5)',
   },
+  shadowclone: {
+    particleCount: 16,
+    colors: ['#4a4a4a', '#2d2d2d', '#808080', '#1a1a1a', '#c0c0c0'],
+    characters: ['👤', '💨', '🌫️', '✨', '👥'],
+    spreadX: 80,
+    spreadY: 70,
+    animation: 'shadowclone-poof',
+    glow: 'rgba(74, 74, 74, 0.6)',
+  },
 };
 
 // CSS keyframes for each animation type
@@ -440,6 +449,15 @@ const animationStyles = `
     60% { transform: scale(1.1) translateY(-25px); opacity: 0.7; }
     80% { transform: scale(0.9) translateY(-35px); opacity: 0.4; }
     100% { transform: scale(0.6) translateY(-45px); opacity: 0; }
+  }
+
+  @keyframes shadowclone-poof {
+    0% { transform: scale(0.5) translateY(0) rotate(0deg); opacity: 0; }
+    15% { transform: scale(1.2) translateY(-10px) rotate(90deg); opacity: 1; }
+    30% { transform: scale(1.5) translateY(-20px) rotate(180deg); opacity: 0.9; }
+    50% { transform: scale(1.8) translateY(-35px) rotate(270deg); opacity: 0.7; }
+    70% { transform: scale(2) translateY(-50px) rotate(360deg); opacity: 0.4; }
+    100% { transform: scale(2.5) translateY(-70px) rotate(450deg); opacity: 0; }
   }
 
   @keyframes glow-pulse {

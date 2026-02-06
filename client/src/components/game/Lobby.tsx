@@ -19,7 +19,7 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings } from '@/lib/gameTypes';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings, AvatarClass } from '@/lib/gameTypes';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
 import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
@@ -241,6 +241,18 @@ export function Lobby() {
     targetX: number;
     targetPlayerId: string | null;
   }>({ active: false, targetX: 0, targetPlayerId: null });
+
+  // Shadow clone state - triggered by "shadow clone jutsu" spell
+  const [shadowClones, setShadowClones] = useState<Array<{
+    id: string;
+    sourcePlayerId: string;
+    avatar: string;
+    x: number;
+    y: number;
+    createdAt: number;
+    targetPlayerId: string | null;
+    hasAttacked: boolean;
+  }>>([]);
 
   // Refs to track current state for socket event handlers (avoids stale closures)
   // Note: currentLobbyRef is declared after useGameState hook below
@@ -1052,6 +1064,92 @@ export function Lobby() {
         if (detectedEffects.includes('chaos')) {
           setChaosMode(true);
           setTimeout(() => setChaosMode(false), 5000);
+        }
+
+        // Handle shadow clone jutsu - spawn 3 clones that attack nearest player
+        if (detectedEffects.includes('shadowclone')) {
+          const lobby = currentLobbyRef.current;
+          if (lobby) {
+            const caster = lobby.players.find(p => p.id === playerId);
+            if (caster) {
+              const casterPos = playerPositionsRef.current[playerId]?.x ?? 200;
+              
+              // Find target(s) - use spell targets if specified, otherwise use caster
+              const spellWords = getSpellWords('shadowclone');
+              const targetNames = extractSpellTargets(message, spellWords);
+              
+              let targetPlayers: typeof lobby.players = [];
+              if (targetNames && targetNames.length > 0) {
+                // Multi-target support - find all matching players
+                targetPlayers = targetNames
+                  .map(targetName => {
+                    const lowerTarget = targetName.toLowerCase();
+                    return lobby.players.find(p => 
+                      p.id !== playerId && p.name.toLowerCase().includes(lowerTarget)
+                    );
+                  })
+                  .filter((p): p is NonNullable<typeof p> => p !== undefined);
+              }
+              
+              // Fallback: if no valid targets, clone the caster
+              if (targetPlayers.length === 0) {
+                targetPlayers = [caster];
+              }
+              
+              // For each target player, create 3 shadow clones
+              targetPlayers.forEach(targetPlayer => {
+                const targetPos = playerPositionsRef.current[targetPlayer.id]?.x ?? casterPos;
+                
+                // Create 3 clones spread around the target position
+                const newClones = Array.from({ length: 3 }, (_, i) => {
+                  const spreadOffset = (i - 1) * 80; // -80, 0, +80 pixel spread
+                  return {
+                    id: `clone-${targetPlayer.id}-${Date.now()}-${i}`,
+                    sourcePlayerId: targetPlayer.id,
+                    avatar: targetPlayer.avatar,
+                    x: targetPos + spreadOffset,
+                    y: 85, // Start at ground level
+                    createdAt: Date.now(),
+                    targetPlayerId: null,
+                    hasAttacked: false,
+                  };
+                });
+                
+                setShadowClones(prev => [...prev, ...newClones]);
+                
+                // Each clone attacks the nearest player after 500ms
+                newClones.forEach((clone, i) => {
+                  setTimeout(() => {
+                    // Find nearest player (excluding the clone source)
+                    const eligibleTargets = lobby.players.filter(p => p.id !== targetPlayer.id);
+                    if (eligibleTargets.length > 0) {
+                      const cloneX = clone.x;
+                      const nearest = eligibleTargets.reduce((closest, player) => {
+                        const playerX = playerPositionsRef.current[player.id]?.x ?? 200;
+                        const distanceToPlayer = Math.abs(cloneX - playerX);
+                        const distanceToClosest = Math.abs(cloneX - (playerPositionsRef.current[closest.id]?.x ?? 200));
+                        return distanceToPlayer < distanceToClosest ? player : closest;
+                      });
+                      
+                      // Mark clone as having a target
+                      setShadowClones(prev => prev.map(c => 
+                        c.id === clone.id ? { ...c, targetPlayerId: nearest.id, hasAttacked: true } : c
+                      ));
+                      
+                      // Create projectile from clone to nearest player
+                      // TODO: Implement projectile emission here when we add the multiplayer sync
+                      
+                    }
+                  }, 500 + i * 100); // Stagger attacks by 100ms
+                });
+                
+                // Remove clones after they poof into smoke (2 seconds)
+                setTimeout(() => {
+                  setShadowClones(prev => prev.filter(c => !newClones.find(nc => nc.id === c.id)));
+                }, 2000);
+              });
+            }
+          }
         }
 
         // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
@@ -2681,6 +2779,49 @@ export function Lobby() {
               </div>
             </div>
           )}
+
+          {/* Shadow Clone Rendering */}
+          {shadowClones.map(clone => {
+            const cloneAge = Date.now() - clone.createdAt;
+            const opacity = cloneAge < 1500 ? 0.6 : Math.max(0, 0.6 - (cloneAge - 1500) / 500); // Fade out after 1.5s
+            
+            return (
+              <div
+                key={clone.id}
+                className="absolute pointer-events-none"
+                style={{
+                  left: `${clone.x}px`,
+                  bottom: `${clone.y}%`,
+                  transform: 'translateX(-50%)',
+                  zIndex: 15,
+                  opacity,
+                  transition: 'opacity 0.5s ease-out',
+                }}
+              >
+                {/* Clone character - semi-transparent with shadow effect */}
+                <div 
+                  className="relative"
+                  style={{
+                    filter: 'drop-shadow(0 0 8px rgba(74, 74, 74, 0.8))',
+                  }}
+                >
+                  <SpriteRenderer
+                    avatarClass={clone.avatar as AvatarClass}
+                    animation="idle"
+                    direction="down"
+                    isMoving={false}
+                    size={2.5}
+                  />
+                  {/* Shadow clone indicator */}
+                  <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                    <span className="text-gray-400 text-xs font-bold" style={{ textShadow: '0 0 4px #000' }}>
+                      Clone
+                    </span>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
       

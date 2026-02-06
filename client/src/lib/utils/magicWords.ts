@@ -28,7 +28,8 @@ export type MagicEffectType =
   | 'invisibility'
   | 'enlarge'
   | 'reduce'
-  | 'petrify';
+  | 'petrify'
+  | 'shadowclone';
 
 interface MagicWordConfig {
   type: MagicEffectType;
@@ -62,6 +63,7 @@ const MAGIC_WORD_CONFIG: MagicWordConfig[] = [
   { type: 'enlarge', words: ['enlarge', 'grow', 'giant', 'big', 'expand', 'embiggen'] },
   { type: 'reduce', words: ['reduce', 'shrink', 'tiny', 'small', 'minimize', 'diminish'] },
   { type: 'petrify', words: ['petrify', 'stone', 'medusa', 'basilisk', 'statue', 'flesh to stone'] },
+  { type: 'shadowclone', words: ['shadow clone jutsu', 'shadow clone', 'kage bunshin', 'multi shadow clone'] },
 ];
 
 /**
