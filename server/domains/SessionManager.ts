@@ -25,6 +25,7 @@ import {
   JiraSettings,
   EstimationSettings,
   AvatarClass,
+  JiraTicket,
 } from '../../shared/gameEvents';
 import {
   SessionError,
@@ -960,6 +961,94 @@ export class SessionManager {
     if (combatState) {
       combatState.isJumping = isJumping;
     }
+
+    return lobby;
+  }
+
+  /**
+   * Select avatar for a player
+   * @param playerId Player ID
+   * @param avatarClass Avatar class to select
+   * @returns Updated lobby
+   */
+  selectAvatar(playerId: string, avatarClass: AvatarClass): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(`No lobby found for player ${playerId}`);
+    }
+
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new PlayerNotFoundError(playerId);
+    }
+
+    player.avatar = avatarClass;
+    player.avatarClass = avatarClass; // Keep both for compatibility
+
+    // Emit avatar selected event
+    this.eventBus.emit('session:avatar_selected', {
+      lobbyId: lobby.id,
+      playerId,
+      avatar: avatarClass,
+    });
+
+    return lobby;
+  }
+
+  /**
+   * Add tickets to lobby (host only)
+   * @param playerId Host player ID
+   * @param tickets Tickets to add
+   * @returns Updated lobby
+   */
+  addTickets(playerId: string, tickets: JiraTicket[]): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(`No lobby found for player ${playerId}`);
+    }
+
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new PlayerNotFoundError(playerId);
+    }
+
+    if (!player.isHost) {
+      throw new PlayerNotHostError(playerId);
+    }
+
+    lobby.tickets.push(...tickets);
+
+    // Could emit event for ticket tracking
+    // this.eventBus.emit('session:tickets_added', { lobbyId: lobby.id, tickets });
+
+    return lobby;
+  }
+
+  /**
+   * Remove a ticket from lobby (host only)
+   * @param playerId Host player ID
+   * @param ticketId Ticket ID to remove
+   * @returns Updated lobby
+   */
+  removeTicket(playerId: string, ticketId: string): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(`No lobby found for player ${playerId}`);
+    }
+
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new PlayerNotFoundError(playerId);
+    }
+
+    if (!player.isHost) {
+      throw new PlayerNotHostError(playerId);
+    }
+
+    lobby.tickets = lobby.tickets.filter((t) => t.id !== ticketId);
+
+    // Could emit event for ticket tracking
+    // this.eventBus.emit('session:ticket_removed', { lobbyId: lobby.id, ticketId });
 
     return lobby;
   }

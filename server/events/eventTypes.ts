@@ -12,7 +12,7 @@
  * Event naming convention: domain:action (e.g., estimation:vote_cast)
  */
 
-import { GamePhase, TeamType } from '../../shared/gameEvents';
+import { GamePhase, TeamType, AvatarClass } from '../../shared/gameEvents';
 import type {
   ProgressionXPAwardedPayload,
   ProgressionLevelUpPayload,
@@ -68,6 +68,13 @@ export interface SessionTeamChangedPayload {
   playerId: string;
   oldTeam: TeamType;
   newTeam: TeamType;
+}
+
+/** Emitted when a player selects their avatar */
+export interface SessionAvatarSelectedPayload {
+  lobbyId: string;
+  playerId: string;
+  avatar: AvatarClass;
 }
 
 // =============================================================================
@@ -439,6 +446,7 @@ export interface DomainEventMap {
   'session:phase_changed': SessionPhaseChangedPayload;
   'session:lobby_destroyed': SessionLobbyDestroyedPayload;
   'session:team_changed': SessionTeamChangedPayload;
+  'session:avatar_selected': SessionAvatarSelectedPayload;
 
   // Estimation events
   'estimation:vote_cast': EstimationVoteCastPayload;

@@ -355,28 +355,26 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Track activity for host transfer selection
       sessionManager.recordPlayerActivity(playerId);
 
-      // Get lobby from sessionManager (not legacy gameState)
-      const lobby = sessionManager.getPlayerLobby(playerId);
-      if (!lobby) return;
+      try {
+        const lobby = sessionManager.selectAvatar(playerId, avatarClass);
 
-      // Find and update player's avatar
-      const player = lobby.players.find(p => p.id === playerId);
-      if (!player) return;
+        // Emit legacy event for App.tsx state transition
+        io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
 
-      player.avatar = avatarClass;
-      player.avatarClass = avatarClass;
-
-      // Emit legacy event for App.tsx state transition
-      io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
-
-      // Emit fine-grained event for incremental state updates
-      const emitter = getClientEventEmitter();
-      if (emitter) {
-        const seq = (emitter as any).sequencer.nextSeq(lobby.id);
-        const timestamp = Date.now();
-        const payload = { playerId, avatar: avatarClass, seq, timestamp };
-        (emitter as any).sequencer.bufferEvent(lobby.id, seq, 'session:avatar_selected', payload);
-        io.to(lobby.id).emit('session:avatar_selected', payload);
+        // Emit fine-grained event for incremental state updates
+        const emitter = getClientEventEmitter();
+        if (emitter) {
+          const seq = (emitter as any).sequencer.nextSeq(lobby.id);
+          const timestamp = Date.now();
+          const payload = { playerId, avatar: avatarClass, seq, timestamp };
+          (emitter as any).sequencer.bufferEvent(lobby.id, seq, 'session:avatar_selected', payload);
+          io.to(lobby.id).emit('session:avatar_selected', payload);
+        }
+      } catch (error) {
+        console.error('Error selecting avatar:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to select avatar'
+        });
       }
     });
 
@@ -468,36 +466,34 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      // Use sessionManager instead of legacy gameState
-      const lobby = sessionManager.getPlayerLobby(playerId);
-      if (!lobby) return;
-
-      const player = lobby.players.find(p => p.id === playerId);
-      if (!player?.isHost) return; // Only host can add tickets
-
-      lobby.tickets.push(...tickets);
-
-      // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
-      io.to(lobby.id).emit('lobby_updated', { lobby });
-      console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
+      try {
+        const lobby = sessionManager.addTickets(playerId, tickets);
+        // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
+      } catch (error) {
+        console.error('Error adding tickets:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to add tickets'
+        });
+      }
     });
 
     socket.on('remove_ticket', ({ ticketId }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      // Use sessionManager instead of legacy gameState
-      const lobby = sessionManager.getPlayerLobby(playerId);
-      if (!lobby) return;
-
-      const player = lobby.players.find(p => p.id === playerId);
-      if (!player?.isHost) return; // Only host can remove tickets
-
-      lobby.tickets = lobby.tickets.filter(t => t.id !== ticketId);
-
-      // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
-      io.to(lobby.id).emit('lobby_updated', { lobby });
-      console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
+      try {
+        const lobby = sessionManager.removeTicket(playerId, ticketId);
+        // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+        console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
+      } catch (error) {
+        console.error('Error removing ticket:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to remove ticket'
+        });
+      }
     });
 
     // Explicit leave lobby (user clicked back to menu)
