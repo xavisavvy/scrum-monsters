@@ -1216,6 +1216,44 @@ export class EstimationManager {
   }
 
   /**
+   * Gets the current timer state for a lobby
+   * Returns null if no active estimation or no active timer
+   */
+  public getTimerState(lobbyId: string): {
+    timeRemainingMs: number;
+    totalDurationMs: number;
+    isWarning: boolean;
+  } | null {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return null;
+    }
+
+    // Check both teams for active timers (we use developers as primary)
+    const devTeam = estimation.teams.developers;
+    const qaTeam = estimation.teams.qa;
+
+    // Find the first team with an active timer
+    const activeTeam = devTeam.timerStartedAt && devTeam.timerDurationMs ? devTeam : 
+                       qaTeam.timerStartedAt && qaTeam.timerDurationMs ? qaTeam : null;
+
+    if (!activeTeam || !activeTeam.timerStartedAt || !activeTeam.timerDurationMs) {
+      return null;
+    }
+
+    const now = Date.now();
+    const elapsed = now - activeTeam.timerStartedAt;
+    const remaining = Math.max(0, activeTeam.timerDurationMs - elapsed);
+    const isWarning = remaining <= 10000 && remaining > 0; // Warning at 10s or less
+
+    return {
+      timeRemainingMs: remaining,
+      totalDurationMs: activeTeam.timerDurationMs,
+      isWarning,
+    };
+  }
+
+  /**
    * Handles player joining a lobby (session event subscription)
    * If estimation is active, adds player to eligible voters based on their team
    */

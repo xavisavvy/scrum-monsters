@@ -189,6 +189,28 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     }
   }, 5 * 60 * 1000);
 
+  // Timer state broadcaster - sends timer updates every second to all active lobbies
+  setInterval(() => {
+    const lobbies = (sessionManager as any).lobbies;
+    if (!lobbies) return;
+
+    for (const lobby of lobbies.values()) {
+      // Only broadcast during phases that have timers (battle, discussion)
+      if (lobby.gamePhase === 'battle' || lobby.gamePhase === 'discussion') {
+        const timerState = estimationManager.getTimerState(lobby.id);
+        
+        // Convert to TimerState interface format or null
+        const formattedState = timerState ? {
+          startedAt: Date.now() - (timerState.totalDurationMs - timerState.timeRemainingMs),
+          durationMs: timerState.totalDurationMs,
+          isActive: timerState.timeRemainingMs > 0
+        } : null;
+
+        io.to(lobby.id).emit('timer_updated', { timerState: formattedState });
+      }
+    }
+  }, 1000); // Every 1 second
+
   // Set up revival completion watchdog
   setInterval(() => {
     const completedRevivals = (gameState as any).processRevivalSessions();

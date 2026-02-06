@@ -3,13 +3,14 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
-import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES } from '@/lib/gameTypes';
+import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES, TimerState } from '@/lib/gameTypes';
 
 export function ScoreSubmission() {
   const [selectedScore, setSelectedScore] = useState<number | string | '?' | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showConfirmation, setShowConfirmation] = useState(false);
+  const [timerState, setTimerState] = useState<TimerState | null>(null);
   const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer } = useGameState();
 
@@ -70,12 +71,18 @@ export function ScoreSubmission() {
       // Error is handled by game_error event, just reset loading state
     };
 
+    const handleTimerUpdate = (data: { timerState: TimerState | null }) => {
+      setTimerState(data.timerState);
+    };
+
     socket.on('vote_confirmed', handleVoteConfirmed);
     socket.on('game_error', handleError);
+    socket.on('timer_updated', handleTimerUpdate);
 
     return () => {
       socket.off('vote_confirmed', handleVoteConfirmed);
       socket.off('game_error', handleError);
+      socket.off('timer_updated', handleTimerUpdate);
     };
   }, [socket, currentPlayer?.id]);
 
@@ -86,6 +93,29 @@ export function ScoreSubmission() {
     setIsSubmitting(true);
     emit('submit_score', { score });
     setHasSubmitted(true);
+  };
+
+  // Format timer remaining time
+  const formatTimeRemaining = (timerState: TimerState | null): string => {
+    if (!timerState || !timerState.isActive) return '';
+    
+    const now = Date.now();
+    const elapsed = now - timerState.startedAt;
+    const remaining = Math.max(0, timerState.durationMs - elapsed);
+    
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
+  // Check if timer is in warning state (<10s)
+  const isTimerWarning = (timerState: TimerState | null): boolean => {
+    if (!timerState || !timerState.isActive) return false;
+    
+    const now = Date.now();
+    const elapsed = now - timerState.startedAt;
+    const remaining = Math.max(0, timerState.durationMs - elapsed);
+    return remaining <= 10000 && remaining > 0;
   };
 
   const currentTicket = currentLobby?.currentTicket;
@@ -299,6 +329,20 @@ export function ScoreSubmission() {
               </div>
             )}
           </div>
+
+          {/* Countdown Timer */}
+          {timerState && timerState.isActive && (
+            <div className="text-center">
+              <div className={`text-lg font-bold ${isTimerWarning(timerState) ? 'text-red-400 animate-pulse' : 'text-yellow-400'}`}>
+                ⏱️ {formatTimeRemaining(timerState)} remaining
+              </div>
+              {isTimerWarning(timerState) && (
+                <div className="text-xs text-red-400 mt-1">
+                  ⚠️ Hurry! Time is running out!
+                </div>
+              )}
+            </div>
+          )}
 
           {(currentPlayer.team === 'developers' || currentPlayer.team === 'qa') && hasSubmitted && (
             <p className="text-center text-green-400 text-sm">
