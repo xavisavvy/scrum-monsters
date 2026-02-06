@@ -101,28 +101,28 @@ app.use('/api/', apiLimiter);
 
 ---
 
-### 3. Update Dependencies (ScrumQuest-nzl) - P1 HIGH
+### 3. Update Dependencies (ScrumQuest-nzl) - ✅ COMPLETED
 
-**No code changes required - just update packages**
+**Updated:** prismjs and esbuild to latest versions
 
-**Installation:**
-```bash
-npm update prismjs esbuild
-npm audit fix
-```
+**Remaining Vulnerabilities:**
+- esbuild in drizzle-kit (dev-only transitive dependency)
+- 4 moderate severity issues total
+- All in dev dependencies, do NOT affect production
+- `.audit-ci.json` configured to ignore moderate (only blocks high/critical)
 
 **Verification:**
 ```bash
 npm audit
-npm list prismjs
-npm list esbuild
+npm list prismjs  # Updated
+npm list esbuild  # Updated (direct dependency)
 ```
 
 **Dependabot Alerts:**
-- Alert #1: esbuild development server vulnerability (moderate)
-- Alert #2: prismjs DOM Clobbering vulnerability (moderate)
+- Alert #1: esbuild development server vulnerability - ✅ Direct dependency updated
+- Alert #2: prismjs DOM Clobbering vulnerability - ✅ Fixed
 
-**Note:** esbuild is dev-only, so moderate priority. Update both anyway.
+**Status:** Safe for production deployment. Remaining vulnerabilities are dev-only.
 
 ---
 
