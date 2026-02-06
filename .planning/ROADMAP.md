@@ -72,13 +72,13 @@ Plans:
   1. Player earns class-specific XP when playing as that class
   2. Player sees their mastery tier for each class (Novice/Expert/Master)
   3. Player's class stats improve as they gain mastery tiers
-  4. Player unlocks class-specific abilities at higher mastery tiers
+  4. Mastery panel shows ability unlock teasers at Expert/Master tiers (ability system implemented in Phase 18)
 **Plans**: 6 plans
 Plans:
 - [ ] 16-01-PLAN.md — TDD: Mastery types, thresholds, stat bonuses, and ClassMasteryManager domain
 - [ ] 16-02-PLAN.md — Schema extension, storage, domain registration, and Socket.IO event forwarding
 - [ ] 16-03-PLAN.md — Client mastery store and lobby MasteryBadge component
-- [ ] 16-04-PLAN.md — Profile MasteryPanel with per-class progress bars
+- [ ] 16-04-PLAN.md — Profile MasteryPanel with per-class progress bars and ability unlock teasers
 - [ ] 16-05-PLAN.md — Tier-up broadcast celebration and combat stat bonus integration
 - [ ] 16-06-PLAN.md — End-to-end integration, wiring, and human verification
 
