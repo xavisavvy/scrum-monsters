@@ -1,0 +1,57 @@
+name: Contract Validation
+
+on:
+  pull_request:
+    paths:
+      - 'specs/**'
+      - 'shared/gameEvents.ts'
+      - 'shared/api-types.generated.ts'
+      - 'server/**'
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'specs/**'
+      - 'shared/gameEvents.ts'
+      - 'shared/api-types.generated.ts'
+
+jobs:
+  validate-contracts:
+    name: Validate API Contracts
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint OpenAPI spec
+        run: npm run lint:api-spec
+      
+      - name: Lint AsyncAPI spec
+        run: npm run lint:asyncapi-spec
+      
+      - name: Generate API types
+        run: npm run generate:api-types
+      
+      - name: Validate contract compliance
+        run: npm run validate:contracts
+      
+      - name: Check for uncommitted type changes
+        run: |
+          if ! git diff --exit-code shared/api-types.generated.ts; then
+            echo "❌ API types are out of sync with OpenAPI spec"
+            echo "Run: npm run generate:api-types"
+            echo "Then commit the changes"
+            exit 1
+          fi
+          echo "✅ API types are in sync"

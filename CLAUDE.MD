@@ -31,6 +31,11 @@ npm run test:e2e:ui  # E2E tests with interactive UI
 npm run lint         # Check for issues
 npm run lint:fix     # Auto-fix issues
 
+# API Contract Validation
+npm run lint:specs            # Lint OpenAPI + AsyncAPI specs
+npm run generate:api-types    # Generate types from OpenAPI
+npm run validate:contracts    # Full contract compliance check
+
 # Releases (standard-version)
 npm run release          # Auto-determine version bump
 npm run release:patch    # Patch release (x.x.X)
@@ -69,10 +74,15 @@ kubectl apply -k k8s/overlays/prod     # Deploy to production
 Phases are defined as `GamePhase` type in `shared/gameEvents.ts` and managed in `server/gameState.ts`.
 
 ### Real-time Events
-All WebSocket events defined in `shared/gameEvents.ts` under `ClientToServerEvents` and `ServerToClientEvents` interfaces. When adding events:
-1. Define interface in `shared/gameEvents.ts`
-2. Add handler in `server/socketHandlers.ts`
-3. Emit/listen in client components
+**Contract-first workflow**: Define in spec before implementation.
+
+1. **Add to AsyncAPI spec** (`specs/asyncapi.yaml`)
+2. **Update TypeScript interface** (`shared/gameEvents.ts`)
+3. **Validate alignment** (`npm run validate:contracts`)
+4. **Implement handler** (`server/socketHandlers.ts`)
+5. **Emit/listen** in client components
+
+See `docs/contract-first-development.md` for full workflow.
 
 ### State Sync
 Server emits `lobby_updated` event whenever game state changes. All state mutations in `gameState.ts` should broadcast to clients.

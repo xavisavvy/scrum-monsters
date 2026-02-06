@@ -6,4 +6,7 @@ else
   echo "Skipping local secret detection (CI will still catch secrets)"
 fi
 
+echo "Validating API contracts..."
+npm run validate:contracts
+
 npm test
