@@ -309,10 +309,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('lobby_joined', { lobby, player });
 
           // Then immediately emit the phase-specific event to advance them
-          if (currentPhase === 'battle' || currentPhase === 'voting' || currentPhase === 'discussion' || currentPhase === 'reveal') {
+          if (currentPhase === 'battle' || currentPhase === 'discussion' || currentPhase === 'reveal') {
             // Emit battle_started to transition client to battle screen
-            socket.emit('battle_started', { lobby, boss: lobby.boss });
-            console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+            if (lobby.boss) {
+              socket.emit('battle_started', { lobby, boss: lobby.boss });
+              console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+            }
           }
         }
 

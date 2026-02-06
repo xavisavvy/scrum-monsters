@@ -128,7 +128,7 @@ export function Discussion() {
                 </div>
                 {isHost && (
                   <button
-                    onClick={() => socket?.emit('advancePhaseNow')}
+                    onClick={() => socket?.emit('advancePhaseNow', { lobbyId: currentLobby?.id || '', playerId: currentPlayer?.id || '' })}
                     className="px-4 py-2 bg-yellow-600 hover:bg-yellow-500 text-white font-bold rounded border-2 border-yellow-400 transition-colors"
                   >
                     Advance Now (Host)

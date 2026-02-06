@@ -1,4 +1,4 @@
-import { Lobby, Boss } from '@shared/gameEvents';
+import { Lobby, Boss, ClientToServerEvents } from '@shared/gameEvents';
 
 /**
  * Base interface that all phase components must implement.
@@ -11,7 +11,10 @@ export interface PhaseComponentProps {
   onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
-  emit: (event: string, data?: any) => void;
+  emit: <K extends keyof ClientToServerEvents>(
+    event: K,
+    ...args: Parameters<ClientToServerEvents[K]> extends [] ? [] : [Parameters<ClientToServerEvents[K]>[0]]
+  ) => void;
   isTransitioning?: boolean;
 }
 

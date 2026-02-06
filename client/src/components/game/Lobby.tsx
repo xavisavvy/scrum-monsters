@@ -628,8 +628,9 @@ export function Lobby() {
   useEffect(() => {
     if (!socket || currentLobby?.gamePhase !== 'lobby') return;
 
-    const handleLobbyPlayerPos = ({ playerId, x, direction }: { playerId: string; x: number; direction?: SpriteDirection }) => {
+    const handleLobbyPlayerPos = ({ playerId, x, y: _y, direction }: { playerId: string; x: number; y: number; direction?: string }) => {
       if (playerId === currentPlayer?.id) return; // Skip own updates
+      // Note: y position not yet implemented in playerPositions state (TODO: track vertical position)
 
       setPlayerPositions(prev => {
         const movementArea = movementAreaRef.current;
@@ -639,13 +640,13 @@ export function Lobby() {
         const maxX = Math.max(0, movementAreaWidth - characterSize);
         
         // Clear any existing timeout for this player
-        const currentPlayer = prev[playerId];
-        if (currentPlayer?.timeoutId) {
-          clearTimeout(currentPlayer.timeoutId);
+        const existingPlayerData = prev[playerId];
+        if (existingPlayerData?.timeoutId) {
+          clearTimeout(existingPlayerData.timeoutId);
         }
         
         // Set a timeout to stop animation after 300ms of no updates
-        const timeoutId = setTimeout(() => {
+        const timeoutId: NodeJS.Timeout = setTimeout(() => {
           setPlayerPositions(prevPositions => ({
             ...prevPositions,
             [playerId]: {
@@ -658,9 +659,9 @@ export function Lobby() {
         return {
           ...prev,
           [playerId]: {
-            ...currentPlayer,
+            ...(existingPlayerData || { direction: 'right' as SpriteDirection, isMoving: false }),
             x: Math.max(0, Math.min(maxX, (x / 100) * maxX)),
-            direction: direction || 'right',
+            direction: (direction as SpriteDirection) || 'right',
             isMoving: true,
             lastUpdate: Date.now(),
             timeoutId
@@ -1167,7 +1168,7 @@ export function Lobby() {
   const startBattle = () => {
     const lobbyTickets = currentLobby?.tickets || [];
     if (lobbyTickets.length === 0) return;
-    emit('start_battle', {});
+    emit('start_battle');
   };
 
   const changeTeam = (team: TeamType) => {

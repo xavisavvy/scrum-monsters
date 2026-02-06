@@ -36,25 +36,28 @@ export function TeamPerformanceTracker() {
         ? submissionTime - metrics.estimationStartTime 
         : 0;
 
-      setMetrics(prev => ({
-        ...prev,
-        teamSubmissions: {
-          ...prev.teamSubmissions,
-          [currentPlayer.id]: {
-            time: estimationTime,
-            score: currentPlayer.currentScore!
+      // Only track numeric scores
+      if (typeof currentPlayer.currentScore === 'number') {
+        setMetrics(prev => ({
+          ...prev,
+          teamSubmissions: {
+            ...prev.teamSubmissions,
+            [currentPlayer.id]: {
+              time: estimationTime,
+              score: currentPlayer.currentScore as number
+            }
           }
-        }
-      }));
+        }));
 
-      // Emit performance data to server
-      emit('player_performance', {
-        playerId: currentPlayer.id,
-        team: currentPlayer.team,
-        estimationTime,
-        score: currentPlayer.currentScore,
-        ticketId: currentLobby?.currentTicket?.id
-      });
+        // Emit performance data to server
+        emit('player_performance', {
+          playerId: currentPlayer.id,
+          team: currentPlayer.team,
+          estimationTime,
+          score: currentPlayer.currentScore,
+          ticketId: currentLobby?.currentTicket?.id
+        });
+      }
     }
   }, [currentPlayer?.hasSubmittedScore, currentPlayer?.currentScore, metrics.estimationStartTime, emit, currentPlayer?.id, currentPlayer?.team, currentLobby?.currentTicket?.id]);
 

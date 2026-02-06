@@ -668,6 +668,8 @@ export function BattleScreen() {
             lobby={currentLobby} 
             currentPlayer={currentPlayer}
             emit={emit}
+            sidebarCollapsed={!sidebarExpanded}
+            onToggleSidebar={() => setSidebarExpanded(!sidebarExpanded)}
           />
         );
 
