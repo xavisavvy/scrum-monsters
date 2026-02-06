@@ -131,6 +131,12 @@ export interface EstimationVotingTimeoutPayload {
   totalCount: number;
 }
 
+/** Emitted when all eligible voters have cast their votes */
+export interface EstimationAllVotesCastPayload {
+  lobbyId: string;
+  voteCount: number;
+}
+
 /** Emitted when voting timer starts for a team */
 export interface EstimationTimerStartedPayload {
   lobbyId: string;
@@ -411,9 +417,36 @@ export interface CombatMinionKilledPayload {
   respawnInSeconds: number;
 }
 
-/** Emitted when battle phase completes (team attack landed or boss defeated) */
+/** Emitted when a battle phase completes (team attack landed or boss defeated) */
 export interface CombatBattleCompletePayload {
   lobbyId: string;
+}
+
+/** Emitted when all players in a lobby are downed */
+export interface CombatAllPlayersDownedPayload {
+  lobbyId: string;
+  downedCount: number;
+}
+
+// =============================================================================
+// Phase Domain Events
+// =============================================================================
+
+/** Emitted when game phase changes */
+export interface PhaseChangedPayload {
+  lobbyId: string;
+  oldPhase: GamePhase;
+  newPhase: GamePhase;
+  reason: string;
+  initiator?: string; // playerId if user-triggered
+}
+
+/** Emitted when a phase transition is rejected */
+export interface PhaseTransitionRejectedPayload {
+  lobbyId: string;
+  fromPhase: GamePhase;
+  toPhase: GamePhase;
+  reason: string;
 }
 
 // =============================================================================
@@ -456,6 +489,7 @@ export interface DomainEventMap {
   'estimation:full_consensus_reached': EstimationFullConsensusReachedPayload;
   'estimation:voting_started': EstimationVotingStartedPayload;
   'estimation:voting_timeout': EstimationVotingTimeoutPayload;
+  'estimation:all_votes_cast': EstimationAllVotesCastPayload;
   'estimation:timer_started': EstimationTimerStartedPayload;
   'estimation:timer_paused': EstimationTimerPausedPayload;
   'estimation:timer_resumed': EstimationTimerResumedPayload;
@@ -494,6 +528,11 @@ export interface DomainEventMap {
   'combat:minion_damaged': CombatMinionDamagedPayload;
   'combat:minion_killed': CombatMinionKilledPayload;
   'combat:battle_complete': CombatBattleCompletePayload;
+  'combat:all_players_downed': CombatAllPlayersDownedPayload;
+
+  // Phase events
+  'phase:changed': PhaseChangedPayload;
+  'phase:transition_rejected': PhaseTransitionRejectedPayload;
 
   // Progression events
   'progression:xp_awarded': ProgressionXPAwardedPayload;

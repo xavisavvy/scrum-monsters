@@ -11,6 +11,7 @@ import { SessionManager } from './SessionManager';
 import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
 import { ProgressionManager } from './ProgressionManager';
+import { PhaseCoordinator } from './PhaseCoordinator';
 import { Server } from 'socket.io';
 
 // Create shared event bus instance
@@ -76,8 +77,16 @@ const combatManager = new CombatManager({
 });
 const progressionManager = new ProgressionManager({ eventBus });
 
+// Create PhaseCoordinator with domain dependencies
+const phaseCoordinator = new PhaseCoordinator({
+  eventBus,
+  sessionManager,
+  estimationManager,
+  combatManager,
+});
+
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager, progressionManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, phaseCoordinator };
 
 // Export sequencer for testing if needed
 export { lobbyEventSequencer };
@@ -87,6 +96,7 @@ export type { SessionManager, SessionManagerDeps, CreateLobbyOptions } from './S
 export type { EstimationManager, EstimationManagerDeps } from './EstimationManager';
 export type { CombatManager, CombatManagerDeps } from './CombatManager';
 export type { ProgressionManager, ProgressionManagerDeps } from './ProgressionManager';
+export type { PhaseCoordinator, PhaseCoordinatorDeps, TransitionContext } from './PhaseCoordinator';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
