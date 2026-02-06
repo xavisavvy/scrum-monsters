@@ -226,6 +226,65 @@ export class EstimationManager {
 
     // Check for consensus
     this.checkConsensus(lobbyId, team);
+
+    // Check if all eligible voters have now voted
+    this.checkAllVotesCast(lobbyId);
+  }
+
+  /**
+   * Checks if all eligible voters across all teams have cast votes
+   * and emits estimation:all_votes_cast if so
+   */
+  private checkAllVotesCast(lobbyId: string): void {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return;
+    }
+
+    let totalEligible = 0;
+    let totalVoted = 0;
+
+    // Count across both teams
+    for (const team of ['developers', 'qa'] as const) {
+      if (!this.isVotingTeam(team)) continue;
+      const teamState = estimation.teams[team];
+      totalEligible += teamState.eligibleVoters.size;
+      totalVoted += teamState.votes.size;
+    }
+
+    // If all eligible voters have voted, emit event
+    if (totalEligible > 0 && totalVoted === totalEligible) {
+      this.eventBus.emit('estimation:all_votes_cast', {
+        lobbyId,
+        voteCount: totalVoted,
+      });
+    }
+  }
+
+  /**
+   * Returns whether all eligible voters have cast their votes
+   * Used by PhaseCoordinator for validation before transitioning to reveal
+   */
+  public hasAllVotes(lobbyId: string): boolean {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return false;
+    }
+
+    for (const team of ['developers', 'qa'] as const) {
+      if (!this.isVotingTeam(team)) continue;
+      const teamState = estimation.teams[team];
+      
+      // Skip teams with no eligible voters
+      if (teamState.eligibleVoters.size === 0) continue;
+
+      // Check if all eligible voters have voted
+      if (teamState.votes.size !== teamState.eligibleVoters.size) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -417,6 +476,20 @@ export class EstimationManager {
       eligibleCount,
     });
 
+    // Check if we should transition to reveal (if both teams have had timeout or voted)
+    const shouldReveal = this.shouldRevealAfterTimeout(lobbyId);
+    if (shouldReveal) {
+      // Emit voting timeout event for PhaseCoordinator
+      const totalEligible = this.getTotalEligibleVoters(lobbyId);
+      const totalVoted = this.getTotalVotes(lobbyId);
+      
+      this.eventBus.emit('estimation:voting_timeout', {
+        lobbyId,
+        submittedCount: totalVoted,
+        totalCount: totalEligible,
+      });
+    }
+
     // If votes were cast, reveal them
     if (votedCount > 0) {
       teamState.phase = "revealed";
@@ -424,6 +497,69 @@ export class EstimationManager {
       // No votes, stay in voting phase
       teamState.phase = "voting";
     }
+  }
+
+  /**
+   * Returns whether we should transition to reveal after a timeout
+   */
+  private shouldRevealAfterTimeout(lobbyId: string): boolean {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return false;
+    }
+
+    // Check if both teams have either finished voting or timed out
+    for (const team of ['developers', 'qa'] as const) {
+      if (!this.isVotingTeam(team)) continue;
+      const teamState = estimation.teams[team];
+      
+      // Skip teams with no eligible voters
+      if (teamState.eligibleVoters.size === 0) continue;
+
+      // Team hasn't finished if timer is still running and not all voted
+      const allVoted = teamState.votes.size === teamState.eligibleVoters.size;
+      const timerRunning = teamState.timerHandle !== undefined;
+      
+      if (timerRunning && !allVoted) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Returns total number of eligible voters across all teams
+   */
+  private getTotalEligibleVoters(lobbyId: string): number {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return 0;
+    }
+
+    let total = 0;
+    for (const team of ['developers', 'qa'] as const) {
+      if (!this.isVotingTeam(team)) continue;
+      total += estimation.teams[team].eligibleVoters.size;
+    }
+    return total;
+  }
+
+  /**
+   * Returns total number of votes cast across all teams
+   */
+  private getTotalVotes(lobbyId: string): number {
+    const estimation = this.estimations.get(lobbyId);
+    if (!estimation) {
+      return 0;
+    }
+
+    let total = 0;
+    for (const team of ['developers', 'qa'] as const) {
+      if (!this.isVotingTeam(team)) continue;
+      total += estimation.teams[team].votes.size;
+    }
+    return total;
   }
 
   /**

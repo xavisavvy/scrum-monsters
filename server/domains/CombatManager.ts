@@ -1255,6 +1255,47 @@ export class CombatManager {
   }
 
   /**
+   * Checks if all players are downed (including permanently downed/ghost)
+   * and emits combat:all_players_downed if so
+   */
+  private checkAllPlayersDowned(lobbyId: string): void {
+    if (this.areAllPlayersDowned(lobbyId)) {
+      const combatState = this.combatStates.get(lobbyId);
+      if (!combatState) return;
+
+      const downedCount = Array.from(combatState.players.values()).filter(
+        p => p.combatState === 'downed' || p.combatState === 'ghost'
+      ).length;
+
+      this.eventBus.emit('combat:all_players_downed', {
+        lobbyId,
+        downedCount,
+      });
+    }
+  }
+
+  /**
+   * Returns whether all players in combat are downed or ghost
+   * Used by PhaseCoordinator for validation before transitioning to game_over
+   */
+  public areAllPlayersDowned(lobbyId: string): boolean {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return false;
+    }
+
+    // Check if any player is still fighting
+    for (const playerState of combatState.players.values()) {
+      if (playerState.combatState === 'fighting') {
+        return false;
+      }
+    }
+
+    // All players are downed or ghost
+    return combatState.players.size > 0; // Need at least one player
+  }
+
+  /**
    * Player heals a teammate (healer-only)
    */
   playerHealTeammate(lobbyId: string, healerId: string, targetId: string): void {
