@@ -754,15 +754,20 @@ class GameStateManager {
     const player = lobby.players.find(p => p.id === playerId);
     if (!player || player.team === 'spectators') return null;
 
-    // Validate score is from allowed values
-    const validScores = [1, 2, 3, 5, 8, 13, 21, '?'];
-    if (!validScores.includes(score)) return null;
-
     // Check if score is actually changing (idempotency)
     if (player.currentScore === score) return null;
 
+    // Update lobby state for client display
     player.currentScore = score;
     player.hasSubmittedScore = true;
+
+    // Delegate to EstimationManager for consensus tracking
+    try {
+      estimationManager.changeVoteDuringDiscussion(lobby.id, playerId, player.team, score);
+    } catch (error) {
+      // If EstimationManager throws, log but continue for backward compatibility
+      console.warn(`EstimationManager.changeVoteDuringDiscussion failed for ${playerId}:`, error);
+    }
 
     return lobby;
   }
@@ -1290,18 +1295,28 @@ class GameStateManager {
     const player = lobby.players.find(p => p.id === playerId);
     if (!player || player.team === 'spectators') return null;
 
+    // Update lobby state for client display
     player.currentScore = score;
     player.hasSubmittedScore = true;
 
-    // Enhanced voting logic with deadlock prevention
-    const shouldAdvanceToReveal = this.checkVotingCompletion(lobby);
-    if (shouldAdvanceToReveal) {
-      // Phase transition handled by EstimationManager via estimation:all_votes_cast event
-      // Clear any existing voting timeout
-      const existingTimeout = this.votingTimeouts.get(lobby.id);
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-        this.votingTimeouts.delete(lobby.id);
+    // Delegate vote tracking to EstimationManager
+    // This will handle consensus detection, timers, and emit events
+    try {
+      estimationManager.castVote(lobby.id, playerId, player.team, score);
+    } catch (error) {
+      // If EstimationManager throws (not active, invalid vote, etc.), 
+      // continue anyway for backward compatibility
+      console.warn(`EstimationManager.castVote failed for ${playerId}:`, error);
+      
+      // Fallback: use legacy checkVotingCompletion logic
+      const shouldAdvanceToReveal = this.checkVotingCompletion(lobby);
+      if (shouldAdvanceToReveal) {
+        // Clear any existing voting timeout
+        const existingTimeout = this.votingTimeouts.get(lobby.id);
+        if (existingTimeout) {
+          clearTimeout(existingTimeout);
+          this.votingTimeouts.delete(lobby.id);
+        }
       }
     }
 
