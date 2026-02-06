@@ -372,17 +372,20 @@ export function Lobby() {
     return () => clearInterval(flickerInterval);
   }, [invisiblePlayers]);
 
-  // Clean up old afterimages
+  // Clean up old afterimages - runs continuously
   useEffect(() => {
-    if (afterimages.length === 0) return;
-
     const cleanup = setInterval(() => {
       const now = Date.now();
-      setAfterimages(prev => prev.filter(img => now - img.timestamp < 300)); // 300ms lifetime
-    }, 50);
+      setAfterimages(prev => {
+        // Remove afterimages older than 300ms
+        const filtered = prev.filter(img => now - img.timestamp < 300);
+        // Also limit to last 15 afterimages as a safety measure
+        return filtered.slice(-15);
+      });
+    }, 100); // Check every 100ms
 
     return () => clearInterval(cleanup);
-  }, [afterimages.length]);
+  }, []); // Run once on mount, cleanup continuously
 
   // Handle keyboard input for lobby movement
   useEffect(() => {
@@ -551,7 +554,7 @@ export function Lobby() {
             const currentVerticalHeight = isFlying ? flyHeight : jumpState.jumpHeight;
             
             setAfterimages(prevImages => [
-              ...prevImages.slice(-10), // Keep only last 10 afterimages
+              ...prevImages.slice(-8), // Keep only last 8 afterimages per source
               {
                 id: `${playerId}-${Date.now()}`,
                 playerId,
@@ -607,7 +610,7 @@ export function Lobby() {
       if (speedBuff && playerId && elapsed - lastAfterimageTime > 50) {
         lastAfterimageTime = elapsed;
         setAfterimages(prevImages => [
-          ...prevImages.slice(-10),
+          ...prevImages.slice(-8), // Keep only last 8 afterimages per source
           {
             id: `${playerId}-jump-${Date.now()}`,
             playerId,
