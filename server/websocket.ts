@@ -767,6 +767,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           const player = lobby.players.find(p => p.id === playerId);
           if (player) {
             socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
+            
+            // Confirm vote to submitter
+            socket.emit('vote_confirmed', { playerId, score, timestamp: Date.now() });
           }
 
           // Removed lobby_updated: estimation:vote_cast event emitted by estimationManager

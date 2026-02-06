@@ -8,7 +8,9 @@ import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES } from '@/lib
 export function ScoreSubmission() {
   const [selectedScore, setSelectedScore] = useState<number | string | '?' | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
-  const { emit } = useWebSocket();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const { emit, socket } = useWebSocket();
   const { currentLobby, currentPlayer } = useGameState();
 
   // Get the scoring options based on the lobby's estimation scale
@@ -45,13 +47,43 @@ export function ScoreSubmission() {
     if (currentPlayer && !currentPlayer.hasSubmittedScore) {
       setHasSubmitted(false);
       setSelectedScore(null);
+      setIsSubmitting(false);
+      setShowConfirmation(false);
     }
   }, [currentPlayer?.hasSubmittedScore]);
 
+  // Listen for vote confirmation from server
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleVoteConfirmed = (data: { playerId: string; score: number | '?'; timestamp: number }) => {
+      if (data.playerId === currentPlayer?.id) {
+        setIsSubmitting(false);
+        setShowConfirmation(true);
+        // Hide confirmation after 2 seconds
+        setTimeout(() => setShowConfirmation(false), 2000);
+      }
+    };
+
+    const handleError = (data: { message: string }) => {
+      setIsSubmitting(false);
+      // Error is handled by game_error event, just reset loading state
+    };
+
+    socket.on('vote_confirmed', handleVoteConfirmed);
+    socket.on('game_error', handleError);
+
+    return () => {
+      socket.off('vote_confirmed', handleVoteConfirmed);
+      socket.off('game_error', handleError);
+    };
+  }, [socket, currentPlayer?.id]);
+
   const handleScoreSubmit = () => {
-    if (selectedScore === null) return;
+    if (selectedScore === null || isSubmitting) return;
     
     const score: number | "?" = selectedScore === '?' ? '?' : (typeof selectedScore === 'number' ? selectedScore : parseInt(selectedScore, 10));
+    setIsSubmitting(true);
     emit('submit_score', { score });
     setHasSubmitted(true);
   };
@@ -151,11 +183,23 @@ export function ScoreSubmission() {
             <div className="text-center">
               <RetroButton
                 onClick={handleScoreSubmit}
-                disabled={selectedScore === null}
+                disabled={selectedScore === null || isSubmitting}
                 className="px-8"
                 variant="accent"
               >
-                Submit Score: {selectedScore ?? '?'}
+                {isSubmitting ? (
+                  <>
+                    <span className="inline-block animate-spin mr-2">⏳</span>
+                    Submitting...
+                  </>
+                ) : showConfirmation ? (
+                  <>
+                    <span className="mr-2">✅</span>
+                    Vote Confirmed!
+                  </>
+                ) : (
+                  `Submit Score: ${selectedScore ?? '?'}`
+                )}
               </RetroButton>
             </div>
           </div>

@@ -337,6 +337,7 @@ export interface ServerToClientEvents {
   player_left: (data: { playerId: string }) => void;
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
   score_submitted: (data: { playerId: string; team: TeamType }) => void;
+  vote_confirmed: (data: { playerId: string; score: number | '?'; timestamp: number }) => void;
   scores_revealed: (data: {
     teamScores: TeamScores;
     teamConsensus: TeamConsensus;
