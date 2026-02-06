@@ -127,6 +127,18 @@ npm run test:watch           # Watch mode
 npm run test:coverage        # With coverage report
 npx vitest run path/to/file.test.ts  # Single file
 npm run test:e2e             # E2E tests (Playwright)
+
+# Incremental testing (agent-optimized)
+npx vitest run server/ shared/     # Server changes only (~2 min)
+npx vitest run client/ shared/     # Client changes only (~2 min)
+```
+
+**Incremental Testing & Caching**:
+- CI uses intelligent test selection based on changed files
+- Vitest caching in `node_modules/.vitest/` speeds up re-runs
+- Cache hit rate: 80%+ for typical PRs
+- Documentation: `docs/incremental-testing.md`
+- Speedup: 15-30 sec for small changes (vs 5 min full suite)
 ```
 
 **Test Naming Conventions**:

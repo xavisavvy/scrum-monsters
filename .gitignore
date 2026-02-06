@@ -37,6 +37,7 @@ vite.config.ts.*
 # Test coverage
 coverage
 *.lcov
+node_modules/.vitest
 
 # Database
 *.sqlite

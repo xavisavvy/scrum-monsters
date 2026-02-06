@@ -20,6 +20,18 @@ export default defineConfig({
       "shared/**/*.{test,spec}.ts",
     ],
     exclude: ["node_modules", "dist"],
+    // Enable test result caching for faster re-runs
+    cache: {
+      dir: 'node_modules/.vitest'
+    },
+    // Pool options for better performance
+    pool: 'threads',
+    poolOptions: {
+      threads: {
+        singleThread: false,
+        isolate: true
+      }
+    },
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "json-summary", "html"],

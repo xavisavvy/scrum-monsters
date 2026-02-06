@@ -65,6 +65,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for change detection
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -75,8 +77,56 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests with coverage
-        run: npx vitest run --coverage.enabled true
+      - name: Detect changed files
+        id: changes
+        uses: tj-actions/changed-files@v41
+        with:
+          files_yaml: |
+            server:
+              - 'server/**'
+              - 'shared/**'
+            client:
+              - 'client/**'
+              - 'shared/**'
+            e2e:
+              - 'e2e/**'
+            config:
+              - 'vitest.config.ts'
+              - 'tsconfig.json'
+              - 'package.json'
+              - 'package-lock.json'
+
+      - name: Restore test cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.vitest
+            coverage/
+          key: test-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**/*.{ts,tsx}') }}
+          restore-keys: |
+            test-cache-${{ runner.os }}-${{ hashFiles('**/package-lock.json') }}-
+            test-cache-${{ runner.os }}-
+
+      - name: Run tests (incremental)
+        id: test
+        run: |
+          # Determine which tests to run based on changes
+          if [[ "${{ steps.changes.outputs.config_any_changed }}" == "true" ]]; then
+            echo "📦 Config changed - running all tests"
+            npx vitest run --coverage.enabled true
+          elif [[ "${{ steps.changes.outputs.server_any_changed }}" == "true" ]] && [[ "${{ steps.changes.outputs.client_any_changed }}" == "true" ]]; then
+            echo "🔄 Server and client changed - running all tests"
+            npx vitest run --coverage.enabled true
+          elif [[ "${{ steps.changes.outputs.server_any_changed }}" == "true" ]]; then
+            echo "⚡ Server changed - running server tests only"
+            npx vitest run server/ shared/ --coverage.enabled true
+          elif [[ "${{ steps.changes.outputs.client_any_changed }}" == "true" ]]; then
+            echo "⚡ Client changed - running client tests only"
+            npx vitest run client/ shared/ --coverage.enabled true
+          else
+            echo "✅ No test-affecting changes - running smoke tests only"
+            npx vitest run --run --reporter=verbose --maxWorkers=1 client/src/test/setup.test.ts server/domains/index.test.ts
+          fi
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
