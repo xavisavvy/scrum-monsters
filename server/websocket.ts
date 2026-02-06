@@ -569,7 +569,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       // Validate that player is in lobby phase
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
         console.log(`Player ${playerId} tried to move but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
         return;
@@ -590,7 +590,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       // Validate that player is in lobby phase
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
         console.log(`Player ${playerId} tried to jump but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
         return;
@@ -609,7 +609,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       
       if (!playerId || !lobbyId) return;
 
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
         return;
       }
@@ -628,7 +628,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       // Validate that player is in lobby phase
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
         console.log(`Player ${playerId} tried to emote but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
         return;
@@ -658,7 +658,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       // Validate that player is in battle phase
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'battle') {
         console.log(`Player ${playerId} tried to battle emote but lobby is not in battle phase: ${lobby?.gamePhase || 'not found'}`);
         return;
@@ -885,7 +885,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.getLobbyByPlayerId(playerId);
+      const lobby = sessionManager.getPlayerLobby(playerId);
       if (!lobby || lobby.gamePhase !== 'battle') return;
 
       const player = lobby.players.find(p => p.id === playerId);
@@ -1049,7 +1049,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       // Only allow host to control YouTube music
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.hostId !== playerId) {
         socket.emit('game_error', { message: 'Only the host can control YouTube music' });
         return;
@@ -1067,7 +1067,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       // Only allow host to control YouTube music
-      const lobby = gameState.getLobby(lobbyId);
+      const lobby = sessionManager.getLobby(lobbyId);
       if (!lobby || lobby.hostId !== playerId) {
         socket.emit('game_error', { message: 'Only the host can control YouTube music' });
         return;
@@ -1090,7 +1090,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         }
 
         // Only allow host to manually advance phases
-        const lobby = gameState.getLobby(lobbyId);
+        const lobby = sessionManager.getLobby(lobbyId);
         if (!lobby || lobby.hostId !== playerId) {
           socket.emit('game_error', { message: 'Only the host can manually advance phases' });
           return;
