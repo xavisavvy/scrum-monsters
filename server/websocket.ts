@@ -10,6 +10,8 @@ import {
   sessionManager,
   estimationManager,
   combatManager,
+  progressionManager,
+  phaseCoordinator,
   eventBus,
   initializeClientEventEmitter,
   getClientEventEmitter,
@@ -127,21 +129,27 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       });
     }
 
-    // Determine next phase
+    // Determine next phase via PhaseCoordinator
     const currentIndex = lobby.tickets?.findIndex(t => t.id === lobby.currentTicket?.id) ?? -1;
     const remainingTickets = lobby.tickets?.slice(currentIndex + 1) ?? [];
 
     if (remainingTickets.length > 0) {
-      // More tickets - go to next_level phase
-      lobby.gamePhase = 'next_level';
+      // More tickets - transition to next_level phase
+      phaseCoordinator.transitionTo(lobby, 'next_level', {
+        reason: 'discussion_ended_more_tickets',
+        initiator: 'system'
+      });
       eventBus.emit('session:phase_changed', {
         lobbyId,
         oldPhase: 'discussion',
         newPhase: 'next_level',
       });
     } else {
-      // No more tickets - victory
-      lobby.gamePhase = 'victory';
+      // No more tickets - transition to victory
+      phaseCoordinator.transitionTo(lobby, 'victory', {
+        reason: 'discussion_ended_all_complete',
+        initiator: 'system'
+      });
       eventBus.emit('session:phase_changed', {
         lobbyId,
         oldPhase: 'discussion',
@@ -927,7 +935,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Reset game state for next round
         lobby.currentTicket = nextTicket;
-        lobby.gamePhase = 'battle';
+        
+        // Transition to battle phase via PhaseCoordinator
+        phaseCoordinator.transitionTo(lobby, 'battle', {
+          reason: 'proceed_next_level_handler',
+          initiator: playerId
+        });
 
         // Reset estimation state
         estimationManager.cleanupLobby(lobbyId);
