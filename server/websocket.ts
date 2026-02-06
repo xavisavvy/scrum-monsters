@@ -1303,36 +1303,51 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     // Timer settings update
     socket.on('update_timer_settings', ({ timerSettings }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const lobby = gameState.updateTimerSettings(playerId, timerSettings);
-      if (lobby) {
+        const lobby = sessionManager.updateTimerSettings(playerId, timerSettings);
         // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
+      } catch (error) {
+        console.error('Error in update_timer_settings handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to update timer settings'
+        });
       }
     });
 
     socket.on('update_jira_settings', ({ jiraSettings }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const lobby = gameState.updateJiraSettings(playerId, jiraSettings);
-      if (lobby) {
+        const lobby = sessionManager.updateJiraSettings(playerId, jiraSettings);
         // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
+      } catch (error) {
+        console.error('Error in update_jira_settings handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to update Jira settings'
+        });
       }
     });
 
     socket.on('update_estimation_settings', ({ estimationSettings }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
+      try {
+        const playerId = socket.data.playerId;
+        if (!playerId) return;
 
-      const lobby = gameState.updateEstimationSettings(playerId, estimationSettings);
-      if (lobby) {
+        const lobby = sessionManager.updateEstimationSettings(playerId, estimationSettings);
         // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
         console.log(`Estimation settings updated by ${playerId} in lobby ${lobby.id}`);
+      } catch (error) {
+        console.error('Error in update_estimation_settings handler:', error);
+        socket.emit('game_error', {
+          message: error instanceof Error ? error.message : 'Failed to update estimation settings'
+        });
       }
     });
 

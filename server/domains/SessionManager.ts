@@ -841,4 +841,85 @@ export class SessionManager {
       }
     }
   }
+
+  /**
+   * Updates timer settings for a lobby (host only)
+   */
+  updateTimerSettings(playerId: string, timerSettings: TimerSettings): Lobby {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) {
+      throw new LobbyNotFoundError(`Player ${playerId} not in any lobby`);
+    }
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(lobbyId);
+    }
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) {
+      throw new PlayerNotHostError(playerId);
+    }
+
+    lobby.timerSettings = timerSettings;
+
+    // Could emit event if other domains need to know
+    // this.eventBus.emit('session:timer_settings_updated', { lobbyId, timerSettings });
+
+    return lobby;
+  }
+
+  /**
+   * Updates Jira settings for a lobby (host only)
+   */
+  updateJiraSettings(playerId: string, jiraSettings: JiraSettings): Lobby {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) {
+      throw new LobbyNotFoundError(`Player ${playerId} not in any lobby`);
+    }
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(lobbyId);
+    }
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) {
+      throw new PlayerNotHostError(playerId);
+    }
+
+    lobby.jiraSettings = jiraSettings;
+
+    // Could emit event if other domains need to know
+    // this.eventBus.emit('session:jira_settings_updated', { lobbyId, jiraSettings });
+
+    return lobby;
+  }
+
+  /**
+   * Updates estimation settings for a lobby (host only)
+   */
+  updateEstimationSettings(playerId: string, estimationSettings: EstimationSettings): Lobby {
+    const lobbyId = this.playerToLobby.get(playerId);
+    if (!lobbyId) {
+      throw new LobbyNotFoundError(`Player ${playerId} not in any lobby`);
+    }
+
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(lobbyId);
+    }
+
+    const player = lobby.players.find(p => p.id === playerId);
+    if (!player?.isHost) {
+      throw new PlayerNotHostError(playerId);
+    }
+
+    lobby.estimationSettings = estimationSettings;
+
+    // Could emit event if other domains need to know
+    // this.eventBus.emit('session:estimation_settings_updated', { lobbyId, estimationSettings });
+
+    return lobby;
+  }
 }
