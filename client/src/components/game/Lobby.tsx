@@ -491,17 +491,23 @@ export function Lobby() {
         const currentPercent = (prev.x / maxX) * 100;
 
         // Horizontal movement (left/right)
+        // Check both directions independently to allow diagonal movement
+        let horizontalMovement = 0;
         if (keys.has('ArrowLeft') || keys.has('KeyA')) {
-          const newPercent = Math.max(0, currentPercent - movePercentage);
-          newX = (newPercent / 100) * maxX;
+          horizontalMovement -= movePercentage;
           direction = 'left';
           moving = true;
         }
         if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          const newPercent = Math.min(100, currentPercent + movePercentage);
-          newX = (newPercent / 100) * maxX;
+          horizontalMovement += movePercentage;
           direction = 'right';
           moving = true;
+        }
+        
+        // Apply horizontal movement
+        if (horizontalMovement !== 0) {
+          const newPercent = Math.max(0, Math.min(100, currentPercent + horizontalMovement));
+          newX = (newPercent / 100) * maxX;
         }
 
         // Vertical movement (only when flying)
@@ -525,14 +531,17 @@ export function Lobby() {
 
           // Generate afterimages for haste/slow effects
           if (speedBuff && playerId) {
-            const currentJumpHeight = jumpState.jumpHeight;
+            // Capture current vertical position (jump or fly height)
+            const isFlying = flyingPlayers.has(playerId);
+            const currentVerticalHeight = isFlying ? flyHeight : jumpState.jumpHeight;
+            
             setAfterimages(prevImages => [
               ...prevImages.slice(-10), // Keep only last 10 afterimages
               {
                 id: `${playerId}-${Date.now()}`,
                 playerId,
                 x: prev.x,
-                y: currentJumpHeight,
+                y: currentVerticalHeight,
                 timestamp: Date.now(),
                 type: speedBuff.type
               }

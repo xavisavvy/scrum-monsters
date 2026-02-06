@@ -134,6 +134,14 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           const bossWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
           targetX = bossWorld.x;
           targetY = bossWorld.y;
+          
+          // Calculate base damage
+          const baseDamage = 10;
+          const bossDamage = Math.floor(baseDamage * (currentLobby?.battleModifier || 1));
+          
+          // Emit attack to server for dev/qa players attacking boss
+          emit('attack_boss', { damage: bossDamage });
+          console.log(`💥 Keyboard attack deals ${bossDamage} damage to boss!`);
         }
         
         // Calculate character center position (corrected for top-based positioning)
