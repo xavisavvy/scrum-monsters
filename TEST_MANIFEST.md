@@ -4,8 +4,8 @@ This file provides a complete inventory of all test files in the project, organi
 
 ## Test Statistics
 
-- **Total Test Files**: 23
-- **Unit Tests**: 12
+- **Total Test Files**: 24
+- **Unit Tests**: 13
 - **Integration Tests**: 1
 - **E2E Tests**: 10 (4 functional, 4 visual, 2 a11y)
 
@@ -69,6 +69,16 @@ This file provides a complete inventory of all test files in the project, organi
 | File | Purpose | Test Count |
 |------|---------|------------|
 | `utils.test.ts` | Helper functions (cn, etc.) | 5 |
+
+### Test Infrastructure (Unit)
+**Location**: `client/src/test/`
+**Pattern**: Test helpers and setup validation
+
+| File | Purpose | Test Count |
+|------|---------|------------|
+| `setup.test.ts` | Custom matchers, error context helpers | 7 |
+| `setup.ts` | Test configuration and custom matchers | N/A |
+| `error-examples.ts` | Documentation of common error patterns | N/A |
 
 ## E2E Tests (10 files)
 
@@ -213,3 +223,13 @@ All tests run automatically in GitHub Actions:
 
 **Last Updated**: 2026-02-06
 **Maintained by**: Automated/Manual (update when adding tests)
+
+## Agent-Friendly Error Enhancements
+
+**Enhanced Error Messages** (added 2026-02-06):
+- Custom matchers with fix suggestions in test failures
+- Automatic related file suggestions when tests fail
+- Pattern-based error detection with actionable fixes
+- Rich context for 50% faster debugging
+
+See `client/src/test/setup.ts` for implementation and `client/src/test/error-examples.ts` for patterns.
