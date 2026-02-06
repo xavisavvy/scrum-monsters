@@ -239,6 +239,20 @@ export function ScoreSubmission() {
               <div className="text-xs text-gray-500">
                 {devPlayers.length === 0 ? '' : (devSubmitted === devPlayers.length ? '✅ Ready' : '⏳ Voting...')}
               </div>
+              
+              {/* Individual player vote indicators */}
+              {devPlayers.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-blue-500/20">
+                  <div className="text-xs space-y-1">
+                    {devPlayers.map(p => (
+                      <div key={p.id} className="flex items-center justify-between">
+                        <span className="text-gray-300 truncate max-w-[120px]">{p.name}</span>
+                        <span>{p.hasSubmittedScore ? '✅' : '⏳'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* QA Status */}
@@ -252,6 +266,20 @@ export function ScoreSubmission() {
               <div className="text-xs text-gray-500">
                 {qaPlayers.length === 0 ? '' : (qaSubmitted === qaPlayers.length ? '✅ Ready' : '⏳ Testing...')}
               </div>
+              
+              {/* Individual player vote indicators */}
+              {qaPlayers.length > 0 && (
+                <div className="mt-2 pt-2 border-t border-green-500/20">
+                  <div className="text-xs space-y-1">
+                    {qaPlayers.map(p => (
+                      <div key={p.id} className="flex items-center justify-between">
+                        <span className="text-gray-300 truncate max-w-[120px]">{p.name}</span>
+                        <span>{p.hasSubmittedScore ? '✅' : '⏳'}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
