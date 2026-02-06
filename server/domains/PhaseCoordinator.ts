@@ -106,7 +106,7 @@ export class PhaseCoordinator {
     }
 
     // Re-validate conditions for specific transitions
-    if (!this.validateTransitionConditions(lobby.id, currentPhase, targetPhase)) {
+    if (!this.validateTransitionConditions(lobby.id, currentPhase, targetPhase, context)) {
       this.emitRejection(
         lobby.id,
         currentPhase,
@@ -167,15 +167,22 @@ export class PhaseCoordinator {
    * @param lobbyId Lobby ID
    * @param currentPhase Current phase
    * @param targetPhase Target phase
+   * @param context Optional context for specialized validation
    * @returns True if conditions are met
    */
   private validateTransitionConditions(
     lobbyId: string,
     currentPhase: GamePhase,
-    targetPhase: GamePhase
+    targetPhase: GamePhase,
+    context?: TransitionContext
   ): boolean {
-    // battle → reveal: require all votes cast
+    // battle → reveal: require all votes cast (unless voting timeout)
     if (currentPhase === 'battle' && targetPhase === 'reveal') {
+      // Voting timeout is always allowed (even if not all votes submitted)
+      if (context?.reason === 'voting_timeout') {
+        return true;
+      }
+      // For other reasons (e.g., all_votes_cast), validate that votes are actually complete
       return this.canTransitionToReveal(lobbyId);
     }
 
@@ -198,9 +205,7 @@ export class PhaseCoordinator {
    * Validates all eligible voters have submitted votes
    */
   private canTransitionToReveal(lobbyId: string): boolean {
-    // Note: EstimationManager will have this method added in Task 1.3
-    // For now, return true (will be implemented)
-    return true;
+    return this.estimationManager.hasAllVotes(lobbyId);
   }
 
   /**
@@ -208,9 +213,7 @@ export class PhaseCoordinator {
    * Validates all players are downed
    */
   private canTransitionToGameOver(lobbyId: string): boolean {
-    // Note: CombatManager will have this method added in Task 1.3
-    // For now, return true (will be implemented)
-    return true;
+    return this.combatManager.areAllPlayersDowned(lobbyId);
   }
 
   /**
