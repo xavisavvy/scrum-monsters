@@ -953,8 +953,8 @@ class GameStateManager {
     const player = lobby.players.find(p => p.id === playerId);
     if (!player?.isHost) return null;
 
-    // Force reveal by changing phase to reveal
-    lobby.gamePhase = 'reveal';
+    // Force reveal - PhaseCoordinator will handle transition to reveal via events
+    // Note: This may need to be refactored to emit an event or call PhaseCoordinator directly
     return this.revealScores(lobby.id);
   }
 
@@ -988,11 +988,11 @@ class GameStateManager {
 
     console.log(`👁️ Spectator ${attacker.name} attacked ${target.name} for ${actualDamage} damage (modifier: ${modifier})`);
 
-    // Check for game over
+    // Check for game over - PhaseCoordinator handles transition via combat:all_players_downed event
     const gameOver = this.checkGameOver(lobby);
     if (gameOver) {
-      lobby.gamePhase = 'game_over';
       console.log('💀 GAME OVER - All developers/QA are downed!');
+      // Phase transition handled by CombatManager.checkAllPlayersDowned() → combat:all_players_downed event
     }
 
     return { lobby, targetHealth: targetState.hp, gameOver, modifier };
@@ -1083,11 +1083,11 @@ class GameStateManager {
       targetState.isDowned = true;
     }
 
-    // Check for game over
+    // Check for game over - PhaseCoordinator handles transition via combat:all_players_downed event
     const gameOver = this.checkGameOver(lobby);
     if (gameOver) {
-      lobby.gamePhase = 'game_over';
       console.log('💀 GAME OVER - All developers/QA are downed!');
+      // Phase transition handled by CombatManager.checkAllPlayersDowned() → combat:all_players_downed event
     }
 
     return { lobby, targetHealth: targetState.hp, gameOver };
@@ -1184,7 +1184,11 @@ class GameStateManager {
             }
           });
         } else {
-          lobby.gamePhase = 'victory';
+          // All tickets complete - transition to victory
+          phaseCoordinator.transitionTo(lobby, 'victory', {
+            reason: 'proceed_all_tickets_complete',
+            initiator: playerId
+          });
         }
         break;
     }
@@ -1292,7 +1296,7 @@ class GameStateManager {
     // Enhanced voting logic with deadlock prevention
     const shouldAdvanceToReveal = this.checkVotingCompletion(lobby);
     if (shouldAdvanceToReveal) {
-      lobby.gamePhase = 'reveal';
+      // Phase transition handled by EstimationManager via estimation:all_votes_cast event
       // Clear any existing voting timeout
       const existingTimeout = this.votingTimeouts.get(lobby.id);
       if (existingTimeout) {
@@ -1381,8 +1385,8 @@ class GameStateManager {
     console.log(`⏰ Voting timeout reached for lobby ${lobbyId}: ${submittedPlayers.length}/${connectedPlayers.length} voted`);
 
     // Force advancement if at least one person voted
+    // Phase transition handled by EstimationManager via estimation:voting_timeout event
     if (submittedPlayers.length > 0) {
-      lobby.gamePhase = 'reveal';
       this.votingTimeouts.delete(lobbyId);
       
       // Emit update via IO
@@ -1430,8 +1434,11 @@ class GameStateManager {
       this.votingTimeouts.delete(lobby.id);
     }
 
-    // Force advancement to reveal phase
-    lobby.gamePhase = 'reveal';
+    // Force advancement to reveal phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'reveal', {
+      reason: 'host_force_advance',
+      initiator: playerId
+    });
 
     const message = `Host forced voting progression with ${submittedPlayers.length}/${connectedPlayers.length} votes`;
     console.log(`🚀 ${message} in lobby ${lobby.id}`);
@@ -1486,8 +1493,11 @@ class GameStateManager {
     const devTeamExists = lobby.teams.developers.length > 0;
     const qaTeamExists = lobby.teams.qa.length > 0;
     
-    // Transition to discussion phase to allow players to see individual votes and update them
-    lobby.gamePhase = 'discussion';
+    // Transition to discussion phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'discussion', {
+      reason: 'reveal_complete',
+      initiator: 'system'
+    });
 
     return { lobby, teamScores, teamConsensus };
   }
@@ -2023,8 +2033,7 @@ class GameStateManager {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'battle') return;
 
-    // Force reveal phase if timer expires
-    lobby.gamePhase = 'reveal';
+    // Phase transition handled by EstimationManager via estimation:voting_timeout event
     lobby.currentTimer = undefined;
     this.timerIntervals.delete(lobbyId);
   }
@@ -2039,8 +2048,11 @@ class GameStateManager {
     // Clear any active timer
     this.clearTimer(lobby.id);
 
-    // Force transition to reveal phase
-    lobby.gamePhase = 'reveal';
+    // Force transition to reveal phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'reveal', {
+      reason: 'host_force_reveal',
+      initiator: playerId
+    });
     return lobby;
   }
 
