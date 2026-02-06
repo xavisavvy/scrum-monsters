@@ -78,14 +78,62 @@ All WebSocket events defined in `shared/gameEvents.ts` under `ClientToServerEven
 Server emits `lobby_updated` event whenever game state changes. All state mutations in `gameState.ts` should broadcast to clients.
 
 ## Testing
-Tests use Vitest with happy-dom. Test files located alongside source with `.test.ts`/`.spec.ts` suffix:
-- `client/src/**/*.{test,spec}.{ts,tsx}`
-- `server/**/*.{test,spec}.ts`
-- `shared/**/*.{test,spec}.ts`
 
-Setup file: `client/src/test/setup.ts`
+### Test Organization
 
-Path aliases available: `@` (client/src), `@shared` (shared)
+**Philosophy**: Tests live close to the code they test for discoverability and maintenance.
+
+**Test Types & Locations**:
+
+1. **Unit Tests** - Co-located with source files
+   ```
+   server/domains/SessionManager.ts
+   server/domains/SessionManager.test.ts  ✅ Same directory
+   ```
+
+2. **Integration Tests** - In `__tests__/` subdirectory or dedicated `integration/` folder
+   ```
+   server/integration/gameFlow.test.ts    ✅ Cross-domain flows
+   server/domains/__tests__/integration.test.ts  ✅ Alternative pattern
+   ```
+
+3. **E2E Tests** - In `e2e/` directory by feature area
+   ```
+   e2e/lobby.spec.ts              ✅ Functional E2E
+   e2e/visual/lobby.visual.spec.ts    ✅ Visual regression
+   e2e/a11y/lobby.a11y.spec.ts        ✅ Accessibility
+   ```
+
+4. **Component Tests** - Co-located with components
+   ```
+   client/src/components/game/XPBar.tsx
+   client/src/components/game/XPBar.test.tsx  ✅ Same directory
+   ```
+
+**Test Framework**: Vitest with happy-dom
+**Setup file**: `client/src/test/setup.ts`
+**Path aliases**: `@` (client/src), `@shared` (shared)
+
+**Coverage Thresholds** (vitest.config.ts):
+- Lines: 12%
+- Branches: 8.5%
+- Functions: 9%
+- Statements: 12%
+
+**Running Tests**:
+```bash
+npm test                      # All tests once
+npm run test:watch           # Watch mode
+npm run test:coverage        # With coverage report
+npx vitest run path/to/file.test.ts  # Single file
+npm run test:e2e             # E2E tests (Playwright)
+```
+
+**Test Naming Conventions**:
+- Use `describe()` for grouping related tests
+- Use `it()` for individual test cases (not `test()`)
+- Use async/await instead of done() callbacks (Vitest pattern)
+- Wrap array.push() in event listeners: `() => { arr.push(x); }` not `() => arr.push(x)`
 
 ## Debugging
 - **Tab key** in-game shows debug overlay (player positions, states)
