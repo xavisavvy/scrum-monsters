@@ -922,4 +922,45 @@ export class SessionManager {
 
     return lobby;
   }
+
+  /**
+   * Update player position in lobby (for combat/3D movement)
+   * @param playerId Player ID
+   * @param position Position with x and y coordinates (0-100)
+   * @returns Updated lobby
+   */
+  updatePlayerPosition(playerId: string, position: { x: number; y: number }): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(`No lobby found for player ${playerId}`);
+    }
+
+    // Store position as percentages (0-100) with clamping
+    lobby.playerPositions[playerId] = {
+      x: Math.max(0, Math.min(100, position.x)),
+      y: Math.max(0, Math.min(100, position.y))
+    };
+
+    return lobby;
+  }
+
+  /**
+   * Set player jumping state (for combat animations)
+   * @param playerId Player ID
+   * @param isJumping Whether player is jumping
+   * @returns Updated lobby
+   */
+  setPlayerJumping(playerId: string, isJumping: boolean): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) {
+      throw new LobbyNotFoundError(`No lobby found for player ${playerId}`);
+    }
+
+    const combatState = lobby.playerCombatStates[playerId];
+    if (combatState) {
+      combatState.isJumping = isJumping;
+    }
+
+    return lobby;
+  }
 }

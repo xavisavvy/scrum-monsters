@@ -1154,10 +1154,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updatePlayerPosition(playerId, { x, y });
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updatePlayerPosition(playerId, { x, y });
         // Broadcast position updates to room (throttled)
         socket.to(lobby.id).emit('players_pos', { positions: lobby.playerPositions });
+      } catch (error) {
+        console.error('Error updating player position:', error);
       }
     });
 
@@ -1295,9 +1297,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.setPlayerJumping(playerId, isJumping);
-      if (lobby) {
-        // Removed lobby_updated: jumping state is transient, not critical for sync
+      try {
+        sessionManager.setPlayerJumping(playerId, isJumping);
+        // Jumping state is transient, not critical for sync - no broadcast needed
+      } catch (error) {
+        console.error('Error updating player jumping state:', error);
       }
     });
 
