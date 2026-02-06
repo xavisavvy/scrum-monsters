@@ -252,6 +252,9 @@ export function Lobby() {
     createdAt: number;
     targetPlayerId: string | null;
     hasAttacked: boolean;
+    isDancing: boolean;
+    danceAngle?: number; // Angle in radians for circular dance motion
+    centerX?: number; // Center X position for dancing
   }>>([]);
 
   // Refs to track current state for socket event handlers (avoids stale closures)
@@ -1100,9 +1103,15 @@ export function Lobby() {
               targetPlayers.forEach(targetPlayer => {
                 const targetPos = playerPositionsRef.current[targetPlayer.id]?.x ?? casterPos;
                 
+                // Check if there are any valid attack targets (excluding the target player)
+                const eligibleTargets = lobby.players.filter(p => p.id !== targetPlayer.id);
+                const shouldDance = eligibleTargets.length === 0;
+                
                 // Create 3 clones spread around the target position
                 const newClones = Array.from({ length: 3 }, (_, i) => {
                   const spreadOffset = (i - 1) * 80; // -80, 0, +80 pixel spread
+                  const initialAngle = (i * 2 * Math.PI) / 3; // Evenly spaced around circle (0°, 120°, 240°)
+                  
                   return {
                     id: `clone-${targetPlayer.id}-${Date.now()}-${i}`,
                     sourcePlayerId: targetPlayer.id,
@@ -1112,41 +1121,76 @@ export function Lobby() {
                     createdAt: Date.now(),
                     targetPlayerId: null,
                     hasAttacked: false,
+                    isDancing: shouldDance,
+                    danceAngle: shouldDance ? initialAngle : undefined,
+                    centerX: shouldDance ? targetPos : undefined,
                   };
                 });
                 
                 setShadowClones(prev => [...prev, ...newClones]);
                 
-                // Each clone attacks the nearest player after 500ms
-                newClones.forEach((clone, i) => {
+                if (shouldDance) {
+                  // Dance animation - update positions in a circle
+                  const danceRadius = 100; // Radius of the circular dance
+                  const danceSpeed = 0.08; // Radians per frame (controls rotation speed)
+                  
+                  const danceInterval = setInterval(() => {
+                    setShadowClones(prev => prev.map(c => {
+                      if (!newClones.find(nc => nc.id === c.id)) return c;
+                      if (!c.isDancing || c.danceAngle === undefined || c.centerX === undefined) return c;
+                      
+                      // Update angle for rotation
+                      const newAngle = c.danceAngle + danceSpeed;
+                      
+                      // Calculate new position on circle
+                      const newX = c.centerX + Math.cos(newAngle) * danceRadius;
+                      
+                      return {
+                        ...c,
+                        x: newX,
+                        danceAngle: newAngle,
+                      };
+                    }));
+                  }, 50); // Update every 50ms for smooth animation
+                  
+                  // Stop dancing and clean up after 1.5 seconds
                   setTimeout(() => {
-                    // Find nearest player (excluding the clone source)
-                    const eligibleTargets = lobby.players.filter(p => p.id !== targetPlayer.id);
-                    if (eligibleTargets.length > 0) {
-                      const cloneX = clone.x;
-                      const nearest = eligibleTargets.reduce((closest, player) => {
-                        const playerX = playerPositionsRef.current[player.id]?.x ?? 200;
-                        const distanceToPlayer = Math.abs(cloneX - playerX);
-                        const distanceToClosest = Math.abs(cloneX - (playerPositionsRef.current[closest.id]?.x ?? 200));
-                        return distanceToPlayer < distanceToClosest ? player : closest;
-                      });
-                      
-                      // Mark clone as having a target
-                      setShadowClones(prev => prev.map(c => 
-                        c.id === clone.id ? { ...c, targetPlayerId: nearest.id, hasAttacked: true } : c
-                      ));
-                      
-                      // Create projectile from clone to nearest player
-                      // TODO: Implement projectile emission here when we add the multiplayer sync
-                      
-                    }
-                  }, 500 + i * 100); // Stagger attacks by 100ms
-                });
-                
-                // Remove clones after they poof into smoke (2 seconds)
-                setTimeout(() => {
-                  setShadowClones(prev => prev.filter(c => !newClones.find(nc => nc.id === c.id)));
-                }, 2000);
+                    clearInterval(danceInterval);
+                  }, 1500);
+                  
+                  // Remove clones after they poof into smoke (2 seconds)
+                  setTimeout(() => {
+                    setShadowClones(prev => prev.filter(c => !newClones.find(nc => nc.id === c.id)));
+                  }, 2000);
+                } else {
+                  // Attack mode - each clone attacks the nearest player after 500ms
+                  newClones.forEach((clone, i) => {
+                    setTimeout(() => {
+                      if (eligibleTargets.length > 0) {
+                        const cloneX = clone.x;
+                        const nearest = eligibleTargets.reduce((closest, player) => {
+                          const playerX = playerPositionsRef.current[player.id]?.x ?? 200;
+                          const distanceToPlayer = Math.abs(cloneX - playerX);
+                          const distanceToClosest = Math.abs(cloneX - (playerPositionsRef.current[closest.id]?.x ?? 200));
+                          return distanceToPlayer < distanceToClosest ? player : closest;
+                        });
+                        
+                        // Mark clone as having a target
+                        setShadowClones(prev => prev.map(c => 
+                          c.id === clone.id ? { ...c, targetPlayerId: nearest.id, hasAttacked: true } : c
+                        ));
+                        
+                        // Create projectile from clone to nearest player
+                        // TODO: Implement projectile emission here when we add the multiplayer sync
+                      }
+                    }, 500 + i * 100); // Stagger attacks by 100ms
+                  });
+                  
+                  // Remove clones after they poof into smoke (2 seconds)
+                  setTimeout(() => {
+                    setShadowClones(prev => prev.filter(c => !newClones.find(nc => nc.id === c.id)));
+                  }, 2000);
+                }
               });
             }
           }
@@ -2785,6 +2829,11 @@ export function Lobby() {
             const cloneAge = Date.now() - clone.createdAt;
             const opacity = cloneAge < 1500 ? 0.6 : Math.max(0, 0.6 - (cloneAge - 1500) / 500); // Fade out after 1.5s
             
+            // Calculate rotation for dancing clones
+            const rotation = clone.isDancing && clone.danceAngle !== undefined 
+              ? (clone.danceAngle * 180 / Math.PI) % 360 // Convert radians to degrees
+              : 0;
+            
             return (
               <div
                 key={clone.id}
@@ -2795,7 +2844,7 @@ export function Lobby() {
                   transform: 'translateX(-50%)',
                   zIndex: 15,
                   opacity,
-                  transition: 'opacity 0.5s ease-out',
+                  transition: clone.isDancing ? 'none' : 'opacity 0.5s ease-out',
                 }}
               >
                 {/* Clone character - semi-transparent with shadow effect */}
@@ -2803,19 +2852,21 @@ export function Lobby() {
                   className="relative"
                   style={{
                     filter: 'drop-shadow(0 0 8px rgba(74, 74, 74, 0.8))',
+                    transform: clone.isDancing ? `rotate(${rotation}deg)` : 'none',
+                    transition: 'transform 0.05s linear',
                   }}
                 >
                   <SpriteRenderer
                     avatarClass={clone.avatar as AvatarClass}
-                    animation="idle"
+                    animation="walk"
                     direction="down"
-                    isMoving={false}
+                    isMoving={clone.isDancing}
                     size={2.5}
                   />
                   {/* Shadow clone indicator */}
                   <div className="absolute -top-6 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
                     <span className="text-gray-400 text-xs font-bold" style={{ textShadow: '0 0 4px #000' }}>
-                      Clone
+                      {clone.isDancing ? '💃 Clone' : 'Clone'}
                     </span>
                   </div>
                 </div>
