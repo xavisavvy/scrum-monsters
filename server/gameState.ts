@@ -1,5 +1,6 @@
 import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
+import { phaseCoordinator } from './domains/index.js';
 import { createHash, createHmac } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 
@@ -785,8 +786,13 @@ class GameStateManager {
     // Count active participants for health scaling
     const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
 
-    // Initialize game state
-    lobby.gamePhase = 'battle';
+    // Transition to battle phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'battle', {
+      reason: 'start_battle',
+      initiator: playerId
+    });
+
+    // Initialize game state (business logic)
     lobby.currentTicket = tickets[0];
     lobby.boss = this.createBossFromTickets(tickets, activeParticipants);
     
@@ -822,7 +828,7 @@ class GameStateManager {
 
     if (lobby.gamePhase !== 'next_level') return null;
 
-    // Move to next ticket
+    // Move to next ticket (business logic)
     const nextTicketIndex = lobby.completedTickets.length;
     if (nextTicketIndex < lobby.tickets.length) {
       // Count active participants for consistent health scaling
@@ -830,7 +836,12 @@ class GameStateManager {
       
       lobby.currentTicket = lobby.tickets[nextTicketIndex];
       lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex), activeParticipants);
-      lobby.gamePhase = 'battle';
+      
+      // Transition to battle phase via PhaseCoordinator
+      phaseCoordinator.transitionTo(lobby, 'battle', {
+        reason: 'proceed_next_level',
+        initiator: playerId
+      });
       
       // Reset battle modifier for new battle
       lobby.battleModifier = 0;
@@ -849,7 +860,11 @@ class GameStateManager {
         }
       });
     } else {
-      lobby.gamePhase = 'victory';
+      // All tickets complete - transition to victory
+      phaseCoordinator.transitionTo(lobby, 'victory', {
+        reason: 'all_tickets_complete',
+        initiator: playerId
+      });
     }
 
     return lobby;
@@ -862,8 +877,13 @@ class GameStateManager {
     const player = lobby.players.find(p => p.id === playerId);
     if (!player?.isHost) return null;
 
-    // Reset to lobby state
-    lobby.gamePhase = 'lobby';
+    // Transition to lobby phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'lobby', {
+      reason: 'abandon_quest',
+      initiator: playerId
+    });
+
+    // Reset game state (business logic)
     lobby.currentTicket = undefined;
     lobby.boss = undefined;
     lobby.completedTickets = [];
@@ -902,8 +922,13 @@ class GameStateManager {
       return null;
     }
 
-    // Return to lobby state but preserve completed objectives
-    lobby.gamePhase = 'lobby';
+    // Transition to lobby phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'lobby', {
+      reason: 'return_to_lobby',
+      initiator: playerId
+    });
+
+    // Reset game state (business logic)
     lobby.currentTicket = undefined;
     lobby.boss = undefined;
     // Note: Keep completedTickets to preserve victory progress
@@ -1099,8 +1124,13 @@ class GameStateManager {
 
     if (lobby.tickets.length === 0) return null;
 
-    // Initialize game state
-    lobby.gamePhase = 'avatar_selection';
+    // Transition to avatar_selection phase via PhaseCoordinator
+    phaseCoordinator.transitionTo(lobby, 'avatar_selection', {
+      reason: 'start_game',
+      initiator: playerId
+    });
+
+    // Initialize game state (business logic)
     lobby.currentTicket = lobby.tickets[0];
     
     // Count active participants for health scaling (even in avatar selection phase)
@@ -1119,10 +1149,14 @@ class GameStateManager {
 
     switch (lobby.gamePhase) {
       case 'avatar_selection':
-        lobby.gamePhase = 'battle';
+        // Transition to battle phase via PhaseCoordinator
+        phaseCoordinator.transitionTo(lobby, 'battle', {
+          reason: 'proceed_from_avatar_selection',
+          initiator: playerId
+        });
         break;
       case 'next_level':
-        // Move to next ticket
+        // Move to next ticket (business logic)
         const nextTicketIndex = lobby.completedTickets.length;
         if (nextTicketIndex < lobby.tickets.length) {
           // Count active participants for consistent health scaling
@@ -1130,7 +1164,12 @@ class GameStateManager {
           
           lobby.currentTicket = lobby.tickets[nextTicketIndex];
           lobby.boss = this.createBossFromTickets(lobby.tickets.slice(nextTicketIndex), activeParticipants);
-          lobby.gamePhase = 'battle';
+          
+          // Transition to battle phase via PhaseCoordinator
+          phaseCoordinator.transitionTo(lobby, 'battle', {
+            reason: 'proceed_next_level',
+            initiator: playerId
+          });
           
           // Reset player states for new battle
           lobby.players.forEach(p => {
@@ -1650,10 +1689,18 @@ class GameStateManager {
     lobby.completedTickets.push(completedTicket);
     
     if (lobby.completedTickets.length >= lobby.tickets.length) {
-      lobby.gamePhase = 'victory';
+      // All tickets complete - transition to victory
+      phaseCoordinator.transitionTo(lobby, 'victory', {
+        reason: 'consensus_all_complete',
+        initiator: 'system'
+      });
       lobby.boss.defeated = true;
     } else {
-      lobby.gamePhase = 'next_level';
+      // More tickets - transition to next_level
+      phaseCoordinator.transitionTo(lobby, 'next_level', {
+        reason: 'consensus_more_tickets',
+        initiator: 'system'
+      });
       lobby.boss.defeated = true;
       // Progress to next phase/ticket
       // Count active participants for consistent health scaling
