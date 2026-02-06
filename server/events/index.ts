@@ -66,6 +66,9 @@ export type {
   CombatMinionSpawnedPayload,
   CombatMinionAttackPayload,
   CombatMinionHealBossPayload,
+  // Phase events
+  PhaseChangedPayload,
+  PhaseTransitionRejectedPayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';

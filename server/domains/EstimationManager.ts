@@ -18,6 +18,7 @@ import type {
   SessionPlayerLeftPayload,
   SessionLobbyDestroyedPayload,
   CombatBattleCompletePayload,
+  PhaseChangedPayload,
 } from "../events";
 import { TeamType } from "../../shared/gameEvents";
 import {
@@ -112,6 +113,9 @@ export class EstimationManager {
 
     // Subscribe to combat events for phase transitions
     this.eventBus.on('combat:battle_complete', this.handleBattleComplete.bind(this));
+
+    // Subscribe to phase changes
+    this.eventBus.on('phase:changed', this.handlePhaseChange.bind(this));
   }
 
   /**
@@ -1196,6 +1200,22 @@ export class EstimationManager {
    */
   private handleBattleComplete(payload: CombatBattleCompletePayload): void {
     this.startDiscussionPhase(payload.lobbyId);
+  }
+
+  /**
+   * Handle phase changes to initialize or cleanup estimation state
+   */
+  private handlePhaseChange(payload: PhaseChangedPayload): void {
+    const { lobbyId, newPhase } = payload;
+
+    // Cleanup estimation when returning to lobby
+    if (newPhase === 'lobby') {
+      this.cleanupLobby(lobbyId);
+    }
+
+    // Note: Estimation initialization (when entering battle) is still handled
+    // by websocket handlers, as it requires the ticket context
+    // that isn't available in the phase event payload
   }
 }
 

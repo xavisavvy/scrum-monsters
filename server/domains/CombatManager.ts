@@ -19,6 +19,7 @@ import type {
   SessionLobbyDestroyedPayload,
   EstimationVoteCastPayload,
   EstimationFullConsensusReachedPayload,
+  PhaseChangedPayload,
   MinionState,
 } from '../events';
 import { TeamType, AvatarClass } from '../../shared/gameEvents';
@@ -183,6 +184,7 @@ export class CombatManager {
       'estimation:full_consensus_reached',
       this.handleFullConsensus.bind(this)
     );
+    this.eventBus.on('phase:changed', this.handlePhaseChange.bind(this));
   }
 
   // =============================================================================
@@ -368,6 +370,22 @@ export class CombatManager {
   private handleLobbyDestroyed(payload: SessionLobbyDestroyedPayload): void {
     const { lobbyId } = payload;
     this.cleanupLobby(lobbyId);
+  }
+
+  /**
+   * Handle phase changes to initialize or cleanup combat state
+   */
+  private handlePhaseChange(payload: PhaseChangedPayload): void {
+    const { lobbyId, newPhase } = payload;
+
+    // Cleanup combat when returning to lobby or game over
+    if (newPhase === 'lobby' || newPhase === 'game_over') {
+      this.cleanupLobby(lobbyId);
+    }
+
+    // Note: Combat initialization (when entering battle) is still handled
+    // by websocket handlers, as it requires additional context (players, ticket)
+    // that isn't available in the phase event payload
   }
 
   // =============================================================================
