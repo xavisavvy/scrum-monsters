@@ -1,0 +1,72 @@
+name: Planning Validation
+
+on:
+  pull_request:
+    paths:
+      - '.planning/**'
+      - 'scripts/validate-planning.js'
+      - '.github/workflows/planning-validation.yml'
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  validate-planning:
+    name: Validate Planning Artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Need full history for file change detection
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run planning validation
+        id: validate
+        run: |
+          echo "::group::Planning Validation"
+          node scripts/validate-planning.js
+          echo "::endgroup::"
+        continue-on-error: true
+
+      - name: Comment on PR
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `## ⚠️ Planning Validation Issues Detected
+              
+The planning validation script found some issues with .planning/ artifacts.
+
+**Action Required:**
+- Review the validation output in the workflow logs
+- Ensure all PLAN.md files have corresponding SUMMARY.md files
+- Verify STATE.md is up to date
+- Check for orphaned or malformed files
+
+Run locally to see details:
+\`\`\`bash
+node scripts/validate-planning.js
+\`\`\`
+
+*Note: Warnings are informational. Errors must be fixed before merge.*`
+            });
+
+      - name: Fail if errors found
+        if: steps.validate.outcome == 'failure'
+        run: |
+          echo "::error::Planning validation failed. See logs above for details."
+          exit 1
