@@ -1166,13 +1166,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (!playerId) return;
 
         // For spectators, override target with nearest player
-        const lobby = gameState.getLobbyByPlayerId(playerId);
+        const lobby = sessionManager.getPlayerLobby(playerId);
         if (!lobby) return;
 
         const attacker = lobby.players.find(p => p.id === playerId);
         if (!attacker || attacker.team !== 'spectators') return;
 
-        const actualTargetId = gameState.findNearestTarget(playerId) || targetId;
+        const actualTargetId = combatManager.findNearestTarget(lobby.id, playerId) || targetId;
         const result = gameState.attackPlayer(playerId, actualTargetId, damage);
         
         if (result) {
@@ -1210,13 +1210,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const playerId = socket.data.playerId;
         if (!playerId) return;
 
-        const result = gameState.healParty(playerId);
-        if (result) {
-          const { lobby, healedPlayers } = result;
-          io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
-          // Removed lobby_updated: party_healed event contains all necessary info
-          console.log(`💫 Priest ${playerId} healed party`);
-        }
+        const lobby = sessionManager.getPlayerLobby(playerId);
+        if (!lobby) return;
+
+        const healedPlayers = combatManager.healParty(lobby.id, playerId);
+        io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
+        console.log(`💫 Priest ${playerId} healed ${healedPlayers.length} party members`);
       } catch (error) {
         console.error('Error in heal_party handler:', error);
         socket.emit('game_error', {
@@ -1231,12 +1230,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const playerId = socket.data.playerId;
         if (!playerId) return;
 
-        const success = gameState.startRevive(playerId, targetId);
+        const lobby = sessionManager.getPlayerLobby(playerId);
+        if (!lobby) return;
+
+        const success = combatManager.startRevival(lobby.id, playerId, targetId);
         if (success) {
-          const lobby = gameState.getLobbyByPlayerId(playerId);
-          if (lobby) {
-            io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
-          }
+          io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
         }
       } catch (error) {
         console.error('Error in revive_start handler:', error);
@@ -1251,13 +1250,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const playerId = socket.data.playerId;
         if (!playerId) return;
 
-        const success = gameState.cancelRevive(playerId, targetId);
-        if (success) {
-          const lobby = gameState.getLobbyByPlayerId(playerId);
-          if (lobby) {
-            io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
-          }
-        }
+        const lobby = sessionManager.getPlayerLobby(playerId);
+        if (!lobby) return;
+
+        combatManager.cancelRevival(playerId, 'player_cancelled');
+        io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
       } catch (error) {
         console.error('Error in revive_cancel handler:', error);
         socket.emit('game_error', {
@@ -1267,24 +1264,17 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     socket.on('revive_tick', ({ targetId }: { targetId: string }) => {
+      // Note: CombatManager handles automatic ticking internally
+      // This client-side tick is now a no-op for backwards compatibility
+      // The CombatManager will auto-cancel if conditions aren't met
       try {
         const playerId = socket.data.playerId;
         if (!playerId) return;
 
-        // Update keep-alive and validate revival conditions
-        const isValid = gameState.tickRevive(playerId, targetId);
-        if (!isValid) {
-          // Revival was cancelled due to distance or state changes
-          const lobby = gameState.getLobbyByPlayerId(playerId);
-          if (lobby) {
-            io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
-          }
-        }
+        // No action needed - CombatManager handles validation automatically
+        // Client can continue sending ticks for heartbeat if needed
       } catch (error) {
         console.error('Error in revive_tick handler:', error);
-        socket.emit('game_error', {
-          message: error instanceof Error ? error.message : 'Failed to update revival progress'
-        });
       }
     });
 

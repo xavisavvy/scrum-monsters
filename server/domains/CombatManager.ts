@@ -1512,6 +1512,109 @@ export class CombatManager {
   }
 
   /**
+   * Heal party (Cleric ability)
+   * Heals all non-spectator players for 50% of their max HP
+   * @param lobbyId Lobby identifier
+   * @param healerId Player ID of the healer
+   * @returns Array of healed players with their new HP
+   */
+  healParty(lobbyId: string, healerId: string): Array<{ playerId: string; newHealth: number }> {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      throw new CombatNotActiveError(lobbyId);
+    }
+
+    const healerState = combatState.players.get(healerId);
+    if (!healerState) {
+      throw new PlayerNotInCombatError(healerId);
+    }
+
+    // Validate healer is cleric class
+    if (this.getPlayerClass) {
+      const healerClass = this.getPlayerClass(lobbyId, healerId);
+      if (healerClass !== 'cleric') {
+        throw new NotHealerClassError(healerId, healerClass ?? 'unknown');
+      }
+    }
+
+    const healedPlayers: Array<{ playerId: string; newHealth: number }> = [];
+
+    // Heal all players for 50% of max HP
+    for (const [playerId, playerState] of combatState.players) {
+      const healAmount = Math.floor(playerState.maxHp * 0.5);
+      const oldHp = playerState.hp;
+      playerState.hp = Math.min(playerState.maxHp, playerState.hp + healAmount);
+
+      // If player was downed and healed, revive them
+      if (playerState.isDowned && playerState.hp > 0) {
+        playerState.isDowned = false;
+        playerState.combatState = 'fighting';
+        playerState.hasBeenRevived = true;
+
+        // Clear down timer
+        if (playerState.downTimerHandle) {
+          clearTimeout(playerState.downTimerHandle);
+          playerState.downTimerHandle = undefined;
+        }
+
+        // Emit revival event
+        this.eventBus.emit('combat:player_revived', {
+          lobbyId,
+          playerId,
+          reviverId: healerId,
+        });
+      }
+
+      if (playerState.hp > oldHp) {
+        healedPlayers.push({ playerId, newHealth: playerState.hp });
+      }
+    }
+
+    return healedPlayers;
+  }
+
+  /**
+   * Find nearest target for PvP combat
+   * @param lobbyId Lobby identifier
+   * @param attackerId Attacker player ID
+   * @returns ID of nearest non-spectator, non-downed player, or null
+   */
+  findNearestTarget(lobbyId: string, attackerId: string): string | null {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      return null;
+    }
+
+    const attackerState = combatState.players.get(attackerId);
+    if (!attackerState || !attackerState.position) {
+      return null;
+    }
+
+    const attackerPos = attackerState.position;
+    let nearestTarget: string | null = null;
+    let nearestDistance = Infinity;
+
+    // Find nearest non-downed player (exclude self)
+    for (const [playerId, playerState] of combatState.players) {
+      if (playerId === attackerId || playerState.isDowned || !playerState.position) {
+        continue;
+      }
+
+      const distance = Math.sqrt(
+        Math.pow(attackerPos.x - playerState.position.x, 2) +
+        Math.pow(attackerPos.y - playerState.position.y, 2)
+      );
+
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearestTarget = playerId;
+      }
+    }
+
+    return nearestTarget;
+  }
+
+  /**
    * Get current combat state for a lobby
    */
   getCombatState(lobbyId: string): LobbyCombatState | undefined {
