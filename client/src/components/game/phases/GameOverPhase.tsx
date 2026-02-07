@@ -49,7 +49,7 @@ export function GameOverPhase({
             
             {/* Total Party Kill Text */}
             <div className="space-y-4">
-              <h1 className="text-5xl font-bold retro-text-glow text-red-500 uppercase tracking-wider">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold retro-text-glow text-red-500 uppercase tracking-wider whitespace-nowrap">
                 💀 Total Party Kill 💀
               </h1>
               <h2 className="text-2xl font-bold text-red-400">

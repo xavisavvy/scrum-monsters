@@ -133,13 +133,13 @@ export function BossEnrageEffect({
 
         {/* Warning text */}
         <div
-          className="absolute top-1/3 left-1/2 transform -translate-x-1/2 -translate-y-1/2"
+          className="absolute top-1/3 left-0 right-0 transform -translate-y-1/2 text-center px-4"
           style={{
             animation: 'enrage-pulse 2s ease-out forwards',
           }}
         >
           <div
-            className="text-6xl font-bold uppercase tracking-wider"
+            className="text-4xl sm:text-5xl md:text-6xl font-bold uppercase tracking-wider whitespace-nowrap"
             style={{
               color: '#ff0000',
               textShadow: '0 0 20px rgba(255, 0, 0, 0.9), 0 0 40px rgba(0, 255, 0, 0.6), 0 0 60px rgba(139, 0, 0, 0.8)',
