@@ -37,6 +37,7 @@ export interface CombatManagerDeps {
   eventBus: ScopedEventBus;
   getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
+  getPlayerPosition?: (lobbyId: string, playerId: string) => { x: number; y: number } | null;
 }
 
 // =============================================================================
@@ -170,11 +171,13 @@ export class CombatManager {
   private readonly eventBus: ScopedEventBus;
   private readonly getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   private readonly getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
+  private readonly getPlayerPosition?: (lobbyId: string, playerId: string) => { x: number; y: number } | null;
 
   constructor(deps: CombatManagerDeps) {
     this.eventBus = deps.eventBus;
     this.getPlayerTeam = deps.getPlayerTeam;
     this.getPlayerClass = deps.getPlayerClass;
+    this.getPlayerPosition = deps.getPlayerPosition;
 
     // Subscribe to cross-domain events
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
@@ -526,6 +529,7 @@ export class CombatManager {
 
     // Random chance for boss to counter-attack with ring projectiles (10%)
     if (boss.hp > 0 && Math.random() < 0.1) {
+      console.log(`💥 Boss ring attack triggered! (${boss.hp}/${boss.maxHp} HP remaining)`);
       this.emitBossRingAttack(lobbyId);
     }
 
@@ -565,10 +569,13 @@ export class CombatManager {
     // Get all fighting players with positions
     const targets = Array.from(combatState.players.values())
       .filter(p => p.combatState === 'fighting')
-      .map(p => ({
-        playerId: p.playerId,
-        position: p.position || { x: 50, y: 80 }
-      }));
+      .map(p => {
+        const position = this.getPlayerPosition?.(lobbyId, p.playerId) || { x: 50, y: 80 };
+        return {
+          playerId: p.playerId,
+          position
+        };
+      });
 
     if (targets.length === 0) return;
 
@@ -611,6 +618,8 @@ export class CombatManager {
       projectiles,
       targetCount: targets.length
     });
+    
+    console.log(`🎯 Boss ring attack: ${projectiles.length} projectiles targeting ${targets.length} players`);
   }
 
   /**

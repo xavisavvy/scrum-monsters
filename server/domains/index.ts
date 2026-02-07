@@ -73,6 +73,12 @@ const combatManager = new CombatManager({
     if (!lobby) return null;
     const player = lobby.players.find(p => p.id === playerId);
     return player?.avatar ?? null;
+  },
+  // Provide position lookup callback
+  getPlayerPosition: (lobbyId: string, playerId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    return lobby.playerPositions[playerId] ?? null;
   }
 });
 const progressionManager = new ProgressionManager({ eventBus });
