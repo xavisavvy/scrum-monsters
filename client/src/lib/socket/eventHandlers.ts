@@ -361,7 +361,11 @@ export function setupEventHandlers(socket: Socket): void {
   socket.on('combat:boss_enraged', (data: any) => {
     const { handleEvent } = useEventSync.getState();
     handleEvent('combat:boss_enraged', data, socket);
-    // TODO: Trigger enrage visual effect
+    
+    // Trigger enrage visual effect
+    const { setBossEnraged } = useGameState.getState();
+    setBossEnraged?.(true);
+    
     console.log('Boss enraged:', data.message);
   });
 

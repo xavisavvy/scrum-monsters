@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 // Reverted to original approach for simpler fix
 import { BossDisplay } from './BossDisplay';
+import { BossEnrageEffect } from './BossEnrageEffect';
 import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
@@ -26,7 +27,7 @@ import { usePhaseVictoryImage } from '@/lib/victoryImages';
 import { useViewport } from '@/lib/hooks/useViewport';
 
 export function BattleScreen() {
-  const { currentLobby, addAttackAnimation, currentPlayer } = useGameState();
+  const { currentLobby, addAttackAnimation, currentPlayer, bossEnraged, setBossEnraged } = useGameState();
   const { emit, socket } = useWebSocket();
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
@@ -35,6 +36,9 @@ export function BattleScreen() {
   
   // Collapsible sidebar state
   const [sidebarExpanded, setSidebarExpanded] = useState(true);
+  
+  // Boss enrage effect state
+  const [showEnrageEffect, setShowEnrageEffect] = useState(false);
   
   // Copy button feedback states
   const [copyFeedback, setCopyFeedback] = useState<Record<string, boolean>>({});
@@ -189,6 +193,19 @@ export function BattleScreen() {
       socket.off('battle_emote', handleBattleEmote);
     };
   }, [socket]);
+
+  // Watch for boss enrage and trigger visual effect
+  useEffect(() => {
+    if (bossEnraged) {
+      setShowEnrageEffect(true);
+      // Auto-hide after effect completes
+      const timer = setTimeout(() => {
+        setShowEnrageEffect(false);
+        setBossEnraged(false);
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [bossEnraged, setBossEnraged]);
 
   // Handle emote submission
   const handleEmoteSubmit = (message: string) => {
@@ -771,6 +788,17 @@ export function BattleScreen() {
 
       {/* YouTube Audio Player (hidden) */}
       <YoutubeAudioPlayer />
+
+      {/* Boss Enrage Effect */}
+      {showEnrageEffect && (
+        <BossEnrageEffect
+          onComplete={() => {
+            setShowEnrageEffect(false);
+            setBossEnraged(false);
+          }}
+          duration={3000}
+        />
+      )}
     </div>
   );
 }

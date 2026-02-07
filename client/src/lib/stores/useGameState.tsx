@@ -31,6 +31,7 @@ interface GameState {
   countdown: CountdownState | null;
   minions: Map<string, MinionClientState>;
   discussionTimer: DiscussionTimerState | null;
+  bossEnraged: boolean;
 
   // Actions
   setLobby: (lobby: Lobby) => void;
@@ -44,6 +45,7 @@ interface GameState {
   addMinion: (minion: MinionClientState) => void;
   removeMinion: (playerId: string) => void;
   setDiscussionTimer: (timer: DiscussionTimerState | null) => void;
+  setBossEnraged: (enraged: boolean) => void;
   clearAll: () => void;
 }
 
@@ -58,6 +60,7 @@ export const useGameState = create<GameState>()(
     countdown: null,
     minions: new Map(),
     discussionTimer: null,
+    bossEnraged: false,
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -102,6 +105,8 @@ export const useGameState = create<GameState>()(
 
     setDiscussionTimer: (timer) => set({ discussionTimer: timer }),
 
+    setBossEnraged: (enraged) => set({ bossEnraged: enraged }),
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
@@ -111,7 +116,8 @@ export const useGameState = create<GameState>()(
       error: null,
       countdown: null,
       minions: new Map(),
-      discussionTimer: null
+      discussionTimer: null,
+      bossEnraged: false
     })
   }))
 );
