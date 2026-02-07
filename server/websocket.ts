@@ -879,9 +879,16 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Use CombatManager to apply damage (will emit events and check for game over)
         combatManager.applyDamageToPlayer(lobby.id, playerId, damage);
         
-        // Get updated player state for client notification
+        // Get updated player state from CombatManager
         const playerState = (combatManager as any).combatStates.get(lobby.id)?.players.get(playerId);
         const targetHealth = playerState?.hp ?? 0;
+        const isDowned = playerState?.isDowned ?? false;
+        
+        // Sync to lobby.playerCombatStates for client compatibility
+        if (lobby.playerCombatStates[playerId]) {
+          lobby.playerCombatStates[playerId].hp = targetHealth;
+          lobby.playerCombatStates[playerId].isDowned = isDowned;
+        }
         
         // Broadcast boss damage to room
         io.to(lobby.id).emit('player_attacked', { 
@@ -1213,9 +1220,16 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Use CombatManager to apply damage (will emit events and check for game over)
         combatManager.applyDamageToPlayer(lobby.id, actualTargetId, actualDamage);
         
-        // Get updated player state for client notification
+        // Get updated player state from CombatManager
         const playerState = (combatManager as any).combatStates.get(lobby.id)?.players.get(actualTargetId);
         const targetHealth = playerState?.hp ?? 0;
+        const isDowned = playerState?.isDowned ?? false;
+        
+        // Sync to lobby.playerCombatStates for client compatibility
+        if (lobby.playerCombatStates[actualTargetId]) {
+          lobby.playerCombatStates[actualTargetId].hp = targetHealth;
+          lobby.playerCombatStates[actualTargetId].isDowned = isDowned;
+        }
 
         io.to(lobby.id).emit('player_attacked', { 
           attackerId: playerId, 
