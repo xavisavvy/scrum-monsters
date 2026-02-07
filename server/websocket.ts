@@ -866,25 +866,25 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const attackerId = socket.data.playerId;
         if (!attackerId) return;
 
-        const result = gameState.bossDamagePlayer(playerId, damage);
-        if (result) {
-          const { lobby, targetHealth, gameOver } = result;
-          
-          // Broadcast boss damage to room
-          io.to(lobby.id).emit('player_attacked', { 
-            attackerId: 'boss', 
-            targetId: playerId, 
-            damage, 
-            targetHealth 
-          });
-          
-          // Check for game over
-          if (gameOver) {
-            io.to(lobby.id).emit('game_over', { lobby });
-          }
+        const lobby = sessionManager.getPlayerLobby(playerId);
+        if (!lobby) return;
 
-          // Removed lobby_updated: combat:player_damaged event emitted by combatManager
-        }
+        // Use CombatManager to apply damage (will emit events and check for game over)
+        combatManager.applyDamageToPlayer(lobby.id, playerId, damage);
+        
+        // Get updated player state for client notification
+        const playerState = (combatManager as any).combatStates.get(lobby.id)?.players.get(playerId);
+        const targetHealth = playerState?.hp ?? 0;
+        
+        // Broadcast boss damage to room
+        io.to(lobby.id).emit('player_attacked', { 
+          attackerId: 'boss', 
+          targetId: playerId, 
+          damage, 
+          targetHealth 
+        });
+
+        // Game over is now handled by PhaseCoordinator via combat:all_players_downed event
       } catch (error) {
         console.error('Error in boss_damage_player handler:', error);
         socket.emit('game_error', {
@@ -1187,29 +1187,31 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (!attacker || attacker.team !== 'spectators') return;
 
         const actualTargetId = combatManager.findNearestTarget(lobby.id, playerId) || targetId;
-        const result = gameState.attackPlayer(playerId, actualTargetId, damage);
         
-        if (result) {
-          const { lobby: updatedLobby, targetHealth, gameOver, modifier } = result;
-          io.to(lobby.id).emit('player_attacked', { 
-            attackerId: playerId, 
-            targetId: actualTargetId, 
-            damage, 
-            targetHealth 
-          });
-          
-          // Emit modifier update
-          if (modifier !== undefined) {
-            io.to(lobby.id).emit('modifier_updated', { modifier });
-          }
-          
-          // Check for game over
-          if (gameOver) {
-            io.to(lobby.id).emit('game_over', { lobby: updatedLobby });
-          }
+        // Get current modifier for damage calculation
+        const modifier = (gameState as any).getCurrentModifier(lobby);
+        const actualDamage = 1 + modifier; // Spectator damage is 1 + modifier
 
-          // Removed lobby_updated: combat:player_damaged event emitted by combatManager
+        // Use CombatManager to apply damage (will emit events and check for game over)
+        combatManager.applyDamageToPlayer(lobby.id, actualTargetId, actualDamage);
+        
+        // Get updated player state for client notification
+        const playerState = (combatManager as any).combatStates.get(lobby.id)?.players.get(actualTargetId);
+        const targetHealth = playerState?.hp ?? 0;
+
+        io.to(lobby.id).emit('player_attacked', { 
+          attackerId: playerId, 
+          targetId: actualTargetId, 
+          damage: actualDamage, 
+          targetHealth 
+        });
+        
+        // Emit modifier update
+        if (modifier !== undefined) {
+          io.to(lobby.id).emit('modifier_updated', { modifier });
         }
+
+        // Game over is now handled by PhaseCoordinator via combat:all_players_downed event
       } catch (error) {
         console.error('Error in attack_player handler:', error);
         socket.emit('game_error', {

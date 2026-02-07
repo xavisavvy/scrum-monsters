@@ -1270,6 +1270,9 @@ export class CombatManager {
         this.cancelRevivalSession(sessionKey, 'permanent_down');
       }
     }
+
+    // Check if all players are now downed (triggers game over)
+    this.checkAllPlayersDowned(lobbyId);
   }
 
   /**
