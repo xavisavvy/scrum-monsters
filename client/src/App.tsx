@@ -7,6 +7,8 @@ import { RoomJoin } from '@/components/game/RoomJoin';
 import { Lobby } from '@/components/game/Lobby';
 import { AvatarSelection } from '@/components/game/AvatarSelection';
 import { BattleScreen } from '@/components/game/BattleScreen';
+import { GameOverPhase } from '@/components/game/phases/GameOverPhase';
+import { VictoryPhase } from '@/components/game/phases/VictoryPhase';
 import { LandingPage } from '@/components/marketing/LandingPage';
 import { AboutPage } from '@/components/marketing/AboutPage';
 import { FeaturesPage } from '@/components/marketing/FeaturesPage';
@@ -882,6 +884,29 @@ function App() {
         );
 
       default:
+        // Handle game phases that don't have app states (phase-based UI)
+        if (currentLobby?.gamePhase === 'game_over') {
+          return (
+            <GameOverPhase
+              lobby={currentLobby}
+              currentPlayer={currentPlayer}
+              emit={emit}
+              sidebarCollapsed={false}
+              onToggleSidebar={() => {}}
+            />
+          );
+        }
+        if (currentLobby?.gamePhase === 'victory') {
+          return (
+            <VictoryPhase
+              lobby={currentLobby}
+              currentPlayer={currentPlayer}
+              emit={emit}
+              sidebarCollapsed={false}
+              onToggleSidebar={() => {}}
+            />
+          );
+        }
         return null;
     }
   };
