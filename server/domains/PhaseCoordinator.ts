@@ -66,7 +66,7 @@ export class PhaseCoordinator {
    * Maps current phase → array of valid next phases
    */
   private readonly NORMAL_TRANSITIONS: Record<GamePhase, GamePhase[]> = {
-    lobby: ['avatar_selection'],
+    lobby: ['avatar_selection', 'battle'], // Support both avatar selection flow and direct battle start
     avatar_selection: ['battle'],
     battle: ['reveal', 'game_over'],
     scoring: ['reveal'], // Legacy phase, rarely used

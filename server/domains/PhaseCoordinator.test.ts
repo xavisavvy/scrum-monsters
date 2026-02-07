@@ -169,25 +169,25 @@ describe('PhaseCoordinator', () => {
   });
 
   describe('State Machine - Invalid Transitions', () => {
-    it('should reject lobby → battle transition (must go through avatar_selection)', () => {
+    it('should allow lobby → battle transition (direct start without avatar selection)', () => {
       const lobby = createTestLobby('lobby');
       const emitSpy = vi.spyOn(eventBus, 'emit');
 
       phaseCoordinator.transitionTo(lobby, 'battle', {
-        reason: 'invalid_skip',
+        reason: 'start_battle',
         initiator: 'host1',
       });
 
-      // Phase should NOT change
-      expect(lobby.gamePhase).toBe('lobby');
+      // Phase SHOULD change
+      expect(lobby.gamePhase).toBe('battle');
 
-      // Should emit rejection event
+      // Should emit success event
       expect(emitSpy).toHaveBeenCalledWith(
-        'phase:transition_rejected',
+        'phase:changed',
         expect.objectContaining({
           lobbyId: 'test-lobby',
-          fromPhase: 'lobby',
-          toPhase: 'battle',
+          oldPhase: 'lobby',
+          newPhase: 'battle',
         })
       );
     });
