@@ -113,7 +113,7 @@ export function useSpriteAnimation({
       console.warn(`⚠️ Frame out of bounds: ${avatarClass} col=${col} row=${row}`);
     }
     
-    console.log(`🎯 ${avatarClass}: frame(${col},${row}) size=${frameWidth}x${frameHeight}`);
+    // console.log(`🎯 ${avatarClass}: frame(${col},${row}) size=${frameWidth}x${frameHeight}`);
     
     return {
       x: col * frameWidth,
