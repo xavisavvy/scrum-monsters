@@ -864,10 +864,17 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('boss_damage_player', ({ playerId, damage }: { playerId: string; damage: number }) => {
       try {
         const attackerId = socket.data.playerId;
-        if (!attackerId) return;
+        if (!attackerId) {
+          console.warn('[boss_damage_player] No attackerId in socket.data');
+          return;
+        }
 
         const lobby = sessionManager.getPlayerLobby(playerId);
-        if (!lobby) return;
+        if (!lobby) {
+          console.warn(`[boss_damage_player] Lobby not found for player ${playerId}`);
+          socket.emit('game_error', { message: 'Lobby not found', code: 'LOBBY_NOT_FOUND' });
+          return;
+        }
 
         // Use CombatManager to apply damage (will emit events and check for game over)
         combatManager.applyDamageToPlayer(lobby.id, playerId, damage);
@@ -888,7 +895,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       } catch (error) {
         console.error('Error in boss_damage_player handler:', error);
         socket.emit('game_error', {
-          message: error instanceof Error ? error.message : 'Failed to process boss damage'
+          message: error instanceof Error ? error.message : 'Failed to process boss damage',
+          code: error instanceof Error ? (error as any).code : undefined
         });
       }
     });
@@ -1177,14 +1185,24 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('attack_player', ({ targetId, damage }: { targetId: string; damage: number }) => {
       try {
         const playerId = socket.data.playerId;
-        if (!playerId) return;
+        if (!playerId) {
+          console.warn('[attack_player] No playerId in socket.data');
+          return;
+        }
 
         // For spectators, override target with nearest player
         const lobby = sessionManager.getPlayerLobby(playerId);
-        if (!lobby) return;
+        if (!lobby) {
+          console.warn(`[attack_player] Lobby not found for player ${playerId}`);
+          socket.emit('game_error', { message: 'Lobby not found', code: 'LOBBY_NOT_FOUND' });
+          return;
+        }
 
         const attacker = lobby.players.find(p => p.id === playerId);
-        if (!attacker || attacker.team !== 'spectators') return;
+        if (!attacker || attacker.team !== 'spectators') {
+          console.warn(`[attack_player] Invalid attacker: ${attacker?.name} (team: ${attacker?.team})`);
+          return;
+        }
 
         const actualTargetId = combatManager.findNearestTarget(lobby.id, playerId) || targetId;
         
@@ -1215,7 +1233,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       } catch (error) {
         console.error('Error in attack_player handler:', error);
         socket.emit('game_error', {
-          message: error instanceof Error ? error.message : 'Failed to attack player'
+          message: error instanceof Error ? error.message : 'Failed to attack player',
+          code: error instanceof Error ? (error as any).code : undefined
         });
       }
     });
