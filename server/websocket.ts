@@ -1855,6 +1855,19 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const lobbyId = socket.data.lobbyId;
         if (!playerId || !lobbyId) return;
 
+        // Validate player is not a spectator
+        const lobby = sessionManager.getLobby(lobbyId);
+        if (!lobby) {
+          socket.emit('game_error', { code: 'LOBBY_NOT_FOUND', message: 'Lobby not found' });
+          return;
+        }
+        
+        const player = lobby.players.find(p => p.id === playerId);
+        if (player?.team === 'spectators') {
+          socket.emit('game_error', { code: 'INVALID_ACTION', message: 'Spectators cannot attack the boss' });
+          return;
+        }
+
         const damage = combatManager.playerAttackBoss(lobbyId, playerId);
         // Damage broadcast via eventBus (Phase 5), no need to emit here
         console.log(`Player ${playerId} attacked boss for ${damage} damage`);

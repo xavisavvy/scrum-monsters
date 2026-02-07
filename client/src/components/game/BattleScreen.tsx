@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 // Reverted to original approach for simpler fix
 import { BossDisplay } from './BossDisplay';
 import { BossEnrageEffect } from './BossEnrageEffect';
+import { MinionDisplay } from './MinionDisplay';
 import { ScoreSubmission } from './ScoreSubmission';
 import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
@@ -270,6 +271,11 @@ export function BattleScreen() {
   }, [currentLobby?.gamePhase, fadeInBossMusic, stopBossMusic]); // Removed currentLobby?.boss dependency
 
   const handleBossAttack = () => {
+    // Spectators should not attack the boss
+    if (currentPlayer?.team === 'spectators') {
+      return;
+    }
+
     const damage = Math.floor(Math.random() * 50) + 10;
     
     // Add visual attack animation with consistent coordinate system (percentages)
@@ -316,7 +322,15 @@ export function BattleScreen() {
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
             {/* Collapsible Sidebar */}
-            {renderCollapsibleSidebar(<ScoreSubmission />)}
+            {renderCollapsibleSidebar(
+              <div className="space-y-4">
+                <ScoreSubmission />
+                {/* Show minion display for non-spectators to target */}
+                {currentPlayer && currentPlayer.team !== 'spectators' && (
+                  <MinionDisplay />
+                )}
+              </div>
+            )}
 
             {/* Timer Display - Top Left */}
             <TimerDisplay />
