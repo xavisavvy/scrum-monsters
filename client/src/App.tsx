@@ -540,7 +540,7 @@ function App() {
       }
     });
 
-    socket.on('boss_ring_attack', ({ bossX, bossY, projectiles }) => {
+    socket.on('boss_ring_attack', ({ projectiles }) => {
       console.log('💀 Boss ring attack received!', projectiles.length, 'projectiles');
       // Handle boss ring attack visual effects
     });

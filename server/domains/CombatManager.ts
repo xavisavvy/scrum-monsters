@@ -524,6 +524,11 @@ export class CombatManager {
       bossHealth: boss.hp,
     });
 
+    // Random chance for boss to counter-attack with ring projectiles (10%)
+    if (boss.hp > 0 && Math.random() < 0.1) {
+      this.emitBossRingAttack(lobbyId);
+    }
+
     // Check for enrage (50% HP threshold)
     if (!boss.isEnraged && boss.hp <= boss.maxHp * 0.5 && boss.hp > 0) {
       boss.isEnraged = true;
@@ -548,6 +553,64 @@ export class CombatManager {
     }
 
     return damage;
+  }
+
+  /**
+   * Boss counter-attack: Emit ring projectiles toward all fighting players
+   */
+  private emitBossRingAttack(lobbyId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState || !combatState.boss) return;
+
+    // Get all fighting players with positions
+    const targets = Array.from(combatState.players.values())
+      .filter(p => p.combatState === 'fighting')
+      .map(p => ({
+        playerId: p.playerId,
+        position: p.position || { x: 50, y: 80 }
+      }));
+
+    if (targets.length === 0) return;
+
+    // Create 6 projectiles in a ring pattern around each player
+    const projectiles: Array<{
+      id: string;
+      startX: number;
+      startY: number;
+      targetX: number;
+      targetY: number;
+      progress: number;
+      emoji: string;
+    }> = [];
+    const projectileCount = 6;
+
+    targets.forEach(target => {
+      for (let i = 0; i < projectileCount; i++) {
+        const angle = (i / projectileCount) * 2 * Math.PI;
+        const radius = 5 + Math.random() * 3; // 5-8% radius
+
+        const targetX = target.position.x + Math.cos(angle) * radius;
+        const targetY = target.position.y + Math.sin(angle) * radius;
+
+        projectiles.push({
+          id: Math.random().toString(36).substring(2, 15),
+          startX: 50, // Boss center (percentage)
+          startY: 40, // Boss center (percentage)
+          targetX: Math.max(5, Math.min(95, targetX)), // Keep within bounds
+          targetY: Math.max(5, Math.min(95, targetY)),
+          progress: 0,
+          emoji: '💥'
+        });
+      }
+    });
+
+    // Emit ring attack event
+    this.eventBus.emit('combat:boss_ring_attack', {
+      lobbyId,
+      type: 'ring',
+      projectiles,
+      targetCount: targets.length
+    });
   }
 
   /**

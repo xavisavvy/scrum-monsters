@@ -382,14 +382,13 @@ export interface ServerToClientEvents {
   revive_complete: (data: { targetId: string; reviverId: string }) => void;
   revive_cancelled: (data: { targetId: string; reviverId: string }) => void;
   boss_ring_attack: (data: {
-    bossX: number;
-    bossY: number;
     projectiles: Array<{
       id: string;
-      x: number;
-      y: number;
+      startX: number;
+      startY: number;
       targetX: number;
       targetY: number;
+      progress: number;
       emoji: string;
     }>;
   }) => void;

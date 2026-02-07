@@ -286,6 +286,21 @@ export interface CombatBossEnragedPayload {
   message: string;
 }
 
+export interface CombatBossRingAttackPayload {
+  lobbyId: string;
+  type: 'ring';
+  projectiles: Array<{
+    id: string;
+    startX: number;
+    startY: number;
+    targetX: number;
+    targetY: number;
+    progress: number;
+    emoji: string;
+  }>;
+  targetCount: number;
+}
+
 /** Emitted when boss telegraphs a big attack */
 export interface CombatBossTelegraphPayload {
   lobbyId: string;
@@ -512,6 +527,7 @@ export interface DomainEventMap {
   'combat:battle_initialized': CombatBattleInitializedPayload;
   'combat:player_entered_battle': CombatPlayerEnteredBattlePayload;
   'combat:boss_enraged': CombatBossEnragedPayload;
+  'combat:boss_ring_attack': CombatBossRingAttackPayload;
   'combat:boss_telegraph': CombatBossTelegraphPayload;
   'combat:revival_started': CombatRevivalStartedPayload;
   'combat:revival_cancelled': CombatRevivalCancelledPayload;

@@ -104,6 +104,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // EVENT BUS SUBSCRIPTIONS - Phase transition handlers
   // ==========================================================================
 
+  // Handle boss ring attack events
+  eventBus.on('combat:boss_ring_attack', (payload) => {
+    const { lobbyId, projectiles } = payload;
+    io.to(lobbyId).emit('boss_ring_attack', { projectiles });
+  });
+
   // Handle discussion_ended to transition to next_level or victory
   eventBus.on('estimation:discussion_ended', (payload) => {
     const { lobbyId, finalEstimate } = payload;
