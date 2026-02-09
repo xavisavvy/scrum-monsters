@@ -8,6 +8,13 @@
       "when": 1770100148600,
       "tag": "0000_sharp_midnight",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1770626549928,
+      "tag": "0001_special_sphinx",
+      "breakpoints": true
     }
   ]
 }
