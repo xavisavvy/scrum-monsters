@@ -67,6 +67,17 @@ const {
   getCsrfTokenFromRequest: (req) => req.headers["x-csrf-token"] as string | undefined,
 });
 
+// Apply CSRF protection to all non-ignored methods
+app.use(doubleCsrfProtection);
+
+// Handle CSRF errors explicitly
+app.use((err: unknown, _req: Request, res: Response, next: NextFunction) => {
+  if (err === invalidCsrfTokenError) {
+    return res.status(403).json({ error: "Invalid CSRF token" });
+  }
+  next(err);
+});
+
 // Expose CSRF token generation for routes that need it
 export const csrfProtection = doubleCsrfProtection;
 
