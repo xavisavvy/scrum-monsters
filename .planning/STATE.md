@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 16 of 20 (Class Mastery System) — IN PROGRESS
-Plan: 4/5 complete
-Status: Plan 16-04 complete (Client Class Mastery State & UI)
-Last activity: 2026-02-11 - Plan 16-04 execution complete
+Plan: 5/5 complete
+Status: Plan 16-05 complete (Tier-Up Celebration & Avatar Selection Mastery Display)
+Last activity: 2026-02-11 - Plan 16-05 execution complete
 
 Progress: [███████████████░░░░░] 75% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 75% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 62 (v1.0: 30, v1.2: 21, v1.3: 11)
+- Total plans completed: 63 (v1.0: 30, v1.2: 21, v1.3: 12)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -76,6 +76,10 @@ Recent decisions affecting current work:
 - [16-04]: Client-side tier calculation using ClassMasteryXPCurve for instant UI updates
 - [16-04]: Progressive disclosure for MasteryProgressBar (only render if class has data)
 - [16-04]: JRPG gold gradient aesthetic for mastery UI matching global XP bar
+- [16-05]: Bottom-right toast positioning to avoid fullscreen level-up overlap
+- [16-05]: Priority handling pattern: tier-up defers to level-up celebration when both trigger
+- [16-05]: 3-second auto-dismiss for tier-up toast (vs 2.5s for level-up)
+- [16-05]: Progressive disclosure for mastery badges (Expert/Master only, no Novice badge)
 
 ### Pending Todos
 
@@ -90,5 +94,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Plan 16-04 complete (Client Class Mastery State & UI). Ready for Plan 16-05 (Avatar Selection Mastery UI).
+Stopped at: Plan 16-05 complete (Tier-Up Celebration & Avatar Selection Mastery Display). Phase 16 complete, ready for next phase.
 Resume file: None
