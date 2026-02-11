@@ -498,6 +498,45 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
+  socket.on('combat:boss_telegraph', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:boss_telegraph', data, socket);
+    if (processed) {
+      const { setTelegraph } = useGameState.getState();
+      setTelegraph({
+        message: data.message,
+        delayMs: data.delayMs,
+        targetId: data.targetId,
+        attackType: data.attackType,
+        visualEffect: data.visualEffect || 'none',
+        bossType: data.bossType,
+      });
+      // Auto-clear telegraph after duration
+      setTimeout(() => {
+        const { clearTelegraph } = useGameState.getState();
+        clearTelegraph();
+      }, data.delayMs + 500); // Extra 500ms for attack animation
+    }
+  });
+
+  socket.on('combat:boss_enraged', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:boss_enraged', data, socket);
+    if (processed) {
+      const { setBossEnraged } = useGameState.getState();
+      setBossEnraged(data.message);
+    }
+  });
+
+  socket.on('combat:boss_phase_transition', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:boss_phase_transition', data, socket);
+    if (processed) {
+      const { setBossPhase } = useGameState.getState();
+      setBossPhase(data.newPhase, data.message, data.bossType);
+    }
+  });
+
   // ============================================================================
   // MINION EVENTS
   // ============================================================================
@@ -629,6 +668,9 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:boss_damaged');
   socket.off('combat:boss_healed');
   socket.off('combat:boss_defeated');
+  socket.off('combat:boss_telegraph');
+  socket.off('combat:boss_enraged');
+  socket.off('combat:boss_phase_transition');
   socket.off('combat:player_damaged');
   socket.off('combat:player_downed');
   socket.off('combat:player_revived');

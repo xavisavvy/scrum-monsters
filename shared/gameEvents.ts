@@ -435,7 +435,8 @@ export interface ServerToClientEvents {
   'combat:boss_damaged': (data: { playerId: string; damage: number; newHp: number; seq: number; timestamp: number }) => void;
   'combat:boss_healed': (data: { healAmount: number; newHp: number; seq: number; timestamp: number }) => void;
   'combat:boss_enraged': (data: { message: string; seq: number; timestamp: number }) => void;
-  'combat:boss_telegraph': (data: { targetId?: string; attackType?: string; message: string; delayMs: number; seq: number; timestamp: number }) => void;
+  'combat:boss_telegraph': (data: { targetId?: string; attackType?: string; message: string; delayMs: number; visualEffect?: string; bossType?: string; seq: number; timestamp: number }) => void;
+  'combat:boss_phase_transition': (data: { newPhase: number; previousPhase: number; message: string; bossType: string; seq: number; timestamp: number }) => void;
   'combat:boss_defeated': (data: { seq: number; timestamp: number }) => void;
   'combat:player_damaged': (data: { playerId: string; damage: number; newHp: number; source: 'boss' | 'player'; seq: number; timestamp: number }) => void;
   'combat:player_downed': (data: { playerId: string; countdownSeconds: number; seq: number; timestamp: number }) => void;
