@@ -13,6 +13,7 @@ import {
   progressionManager,
   classMasteryManager,
   abilityManager,
+  itemManager,
   registerPlayerUserId,
   eventBus,
   initializeClientEventEmitter,
@@ -1920,6 +1921,30 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Success - events emitted by AbilityManager and effect handlers in domains/index.ts
       console.log(`Player ${playerId} used ability ${abilityId}`);
+    });
+
+    socket.on('use_item', ({ itemType }: { itemType: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) {
+        socket.emit('game_error', { message: 'Not in a lobby' });
+        return;
+      }
+
+      if (lobby.gamePhase !== 'battle') {
+        socket.emit('game_error', { message: 'Items only usable in battle phase' });
+        return;
+      }
+
+      const result = itemManager.useItem(lobby.id, playerId, itemType as any);
+      if (!result.success) {
+        socket.emit('game_error', { message: result.error || 'Item use failed' });
+        return;
+      }
+
+      console.log(`Player ${playerId} used item ${itemType}`);
     });
 
     // Start revival
