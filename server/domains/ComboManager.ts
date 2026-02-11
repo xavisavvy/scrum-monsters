@@ -221,6 +221,7 @@ export class ComboManager {
       participantPlayerIds,
       damage,
       damageMultiplier: combo.damageMultiplier,
+      visualEffect: combo.visualEffect,
     });
   }
 
