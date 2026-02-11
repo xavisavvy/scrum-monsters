@@ -36,6 +36,10 @@ export interface CombatManagerDeps {
   eventBus: ScopedEventBus;
   getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
+  classMasteryManager?: {
+    getMasteryMultiplier: (lobbyId: string, playerId: string, avatarClass: AvatarClass | null) => number;
+    getUnlockedAbilities: (lobbyId: string, playerId: string, avatarClass: AvatarClass | null) => string[];
+  };
 }
 
 // =============================================================================
@@ -169,11 +173,13 @@ export class CombatManager {
   private readonly eventBus: ScopedEventBus;
   private readonly getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   private readonly getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
+  private readonly classMasteryManager: CombatManagerDeps['classMasteryManager'];
 
   constructor(deps: CombatManagerDeps) {
     this.eventBus = deps.eventBus;
     this.getPlayerTeam = deps.getPlayerTeam;
     this.getPlayerClass = deps.getPlayerClass;
+    this.classMasteryManager = deps.classMasteryManager;
 
     // Subscribe to cross-domain events
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
@@ -478,9 +484,10 @@ export class CombatManager {
       throw new PlayerNotInCombatError(playerId);
     }
 
-    // Get player class and calculate damage
+    // Get player class and mastery multiplier
     const playerClass = this.getPlayerClass?.(lobbyId, playerId);
-    const baseDamage = this.getClassBaseDamage(playerClass);
+    const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, playerId, playerClass) ?? 1.0;
+    const baseDamage = this.getClassBaseDamage(playerClass, masteryMultiplier);
     const damage = Math.floor(baseDamage * combatState.battleModifier);
 
     // Reduce boss HP
@@ -534,34 +541,44 @@ export class CombatManager {
 
   /**
    * Get base damage for a class
+   * @param avatarClass The player's class
+   * @param masteryMultiplier Mastery damage multiplier (1.0 Novice, 1.1 Expert, 1.2 Master)
    */
-  private getClassBaseDamage(avatarClass: AvatarClass | null | undefined): number {
+  private getClassBaseDamage(avatarClass: AvatarClass | null | undefined, masteryMultiplier: number = 1.0): number {
+    let baseDamage: number;
+
     switch (avatarClass) {
       // Tank classes - lower damage
       case 'warrior':
       case 'paladin':
       case 'oathbreaker':
-        return 15;
+        baseDamage = 15;
+        break;
 
       // DPS classes - standard damage
       case 'ranger':
       case 'rogue':
       case 'monk':
-        return 20;
+        baseDamage = 20;
+        break;
 
       // Glass cannon - high damage
       case 'sorcerer':
       case 'wizard':
-        return 25;
+        baseDamage = 25;
+        break;
 
       // Healer classes - lowest damage
       case 'cleric':
       case 'bard':
-        return 12;
+        baseDamage = 12;
+        break;
 
       default:
-        return 20; // Default to standard DPS damage
+        baseDamage = 20; // Default to standard DPS damage
     }
+
+    return Math.floor(baseDamage * masteryMultiplier);
   }
 
   /**
@@ -572,12 +589,13 @@ export class CombatManager {
     const combatState = this.combatStates.get(lobbyId);
     if (!combatState || !combatState.boss) return;
 
-    // Calculate base team damage (sum of all fighting player base damages)
+    // Calculate base team damage (sum of all fighting player base damages with mastery multipliers)
     let baseDamage = 0;
     for (const player of combatState.players.values()) {
       if (player.combatState === 'fighting') {
         const playerClass = this.getPlayerClass?.(lobbyId, player.playerId);
-        baseDamage += this.getClassBaseDamage(playerClass);
+        const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, player.playerId, playerClass) ?? 1.0;
+        baseDamage += this.getClassBaseDamage(playerClass, masteryMultiplier);
       }
     }
 
@@ -817,9 +835,10 @@ export class CombatManager {
       return 0;
     }
 
-    // Calculate damage (use player's base damage)
+    // Calculate damage (use player's base damage with mastery multiplier)
     const playerClass = this.getPlayerClass?.(lobbyId, playerId);
-    const baseDamage = this.getClassBaseDamage(playerClass);
+    const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, playerId, playerClass) ?? 1.0;
+    const baseDamage = this.getClassBaseDamage(playerClass, masteryMultiplier);
     const damage = Math.floor(baseDamage * combatState.battleModifier);
 
     // Apply damage
@@ -1516,6 +1535,20 @@ export class CombatManager {
    */
   getCombatState(lobbyId: string): LobbyCombatState | undefined {
     return this.combatStates.get(lobbyId);
+  }
+
+  /**
+   * Check if a player can use a class-specific ability based on mastery tier
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @param abilityId Ability ID to check
+   * @returns True if player has unlocked the ability
+   */
+  public canUseClassAbility(lobbyId: string, playerId: string, abilityId: string): boolean {
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
+    if (!playerClass || !this.classMasteryManager) return false;
+    const unlockedAbilities = this.classMasteryManager.getUnlockedAbilities(lobbyId, playerId, playerClass);
+    return unlockedAbilities.includes(abilityId);
   }
 
   /**
