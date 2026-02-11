@@ -82,36 +82,42 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| THEME-01 | — | Pending |
-| THEME-02 | — | Pending |
-| THEME-03 | — | Pending |
-| THEME-04 | — | Pending |
-| THEME-05 | — | Pending |
-| THEME-06 | — | Pending |
-| THEME-07 | — | Pending |
-| MOBILE-01 | — | Pending |
-| MOBILE-02 | — | Pending |
-| MOBILE-03 | — | Pending |
-| MOBILE-04 | — | Pending |
-| MOBILE-05 | — | Pending |
-| MOBILE-06 | — | Pending |
-| MOBILE-07 | — | Pending |
-| ROUTE-01 | — | Pending |
-| ROUTE-02 | — | Pending |
-| ROUTE-03 | — | Pending |
-| ROUTE-04 | — | Pending |
-| ROUTE-05 | — | Pending |
-| ROUTE-06 | — | Pending |
-| ROUTE-07 | — | Pending |
-| LOBBY-01 | — | Pending |
-| LOBBY-02 | — | Pending |
-| LOBBY-03 | — | Pending |
+| THEME-01 | Phase 21 | Pending |
+| THEME-02 | Phase 21 | Pending |
+| THEME-03 | Phase 21 | Pending |
+| THEME-04 | Phase 21 | Pending |
+| THEME-05 | Phase 21 | Pending |
+| THEME-06 | Phase 21 | Pending |
+| THEME-07 | Phase 21 | Pending |
+| MOBILE-01 | Phase 22 | Pending |
+| MOBILE-02 | Phase 22 | Pending |
+| MOBILE-03 | Phase 22 | Pending |
+| MOBILE-04 | Phase 22 | Pending |
+| MOBILE-05 | Phase 22 | Pending |
+| MOBILE-06 | Phase 22 | Pending |
+| MOBILE-07 | Phase 22 | Pending |
+| ROUTE-01 | Phase 23 | Pending |
+| ROUTE-02 | Phase 23 | Pending |
+| ROUTE-03 | Phase 23 | Pending |
+| ROUTE-04 | Phase 23 | Pending |
+| ROUTE-05 | Phase 23 | Pending |
+| ROUTE-06 | Phase 23 | Pending |
+| ROUTE-07 | Phase 23 | Pending |
+| LOBBY-01 | Phase 24 | Pending |
+| LOBBY-02 | Phase 24 | Pending |
+| LOBBY-03 | Phase 24 | Pending |
 
 **Coverage:**
 - v2.0 requirements: 24 total
-- Mapped to phases: 0
-- Unmapped: 24 ⚠️
+- Mapped to phases: 24/24 ✓
+- Unmapped: 0
+
+**Phase Distribution:**
+- Phase 21 (JRPG Theme Foundation): 7 requirements
+- Phase 22 (Mobile UX Critical Path): 7 requirements
+- Phase 23 (Routing & SEO Infrastructure): 7 requirements
+- Phase 24 (Lobby Polish & Animations): 3 requirements
 
 ---
 *Requirements defined: 2026-02-11*
-*Last updated: 2026-02-11 after initial definition*
+*Last updated: 2026-02-11 after v2.0 roadmap creation*
