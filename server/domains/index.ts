@@ -15,6 +15,7 @@ import { ClassMasteryManager } from './ClassMasteryManager';
 import { AbilityManager } from './AbilityManager';
 import { ComboManager } from './ComboManager';
 import { ItemManager } from './ItemManager';
+import { StatsTracker } from './StatsTracker';
 import { Server } from 'socket.io';
 import { storage } from '../storage';
 
@@ -199,6 +200,14 @@ const itemManager = new ItemManager({
   },
 });
 
+const statsTracker = new StatsTracker({
+  eventBus,
+  storage,
+  getUserId: (lobbyId: string, playerId: string) => {
+    return playerUserIdMap.get(playerId);
+  },
+});
+
 // =============================================================================
 // Active Buff Tracking (damage_boost, shield)
 // =============================================================================
@@ -305,6 +314,7 @@ eventBus.on('session:lobby_destroyed', (payload) => {
 eventBus.on('session:lobby_destroyed', (payload) => {
   itemManager.cleanupLobby(payload.lobbyId);
   cleanupBuffs(payload.lobbyId);
+  statsTracker.cleanupLobby(payload.lobbyId);
 });
 
 // Award items on ticket completion (discussion_ended = ticket done)
@@ -442,7 +452,7 @@ eventBus.on('ability:effect_applied', (payload) => {
 });
 
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager, comboManager, itemManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager, comboManager, itemManager, statsTracker };
 
 // Export player-user ID mapping helpers
 export function registerPlayerUserId(playerId: string, userId: number): void {
@@ -465,6 +475,7 @@ export type { ClassMasteryManager, ClassMasteryManagerDeps } from './ClassMaster
 export type { AbilityManager, AbilityManagerDeps } from './AbilityManager';
 export type { ComboManager, ComboManagerDeps } from './ComboManager';
 export type { ItemManager, ItemManagerDeps } from './ItemManager';
+export type { StatsTracker, StatsTrackerDeps } from './StatsTracker';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
