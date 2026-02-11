@@ -113,7 +113,11 @@ Plans:
   2. Abilities have server-enforced cooldowns that prevent spam
   3. Player sees ability buttons with visual cooldown indicators
   4. Ability effects match the class role (tanks protect, healers heal, DPS damages)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 18-01-PLAN.md — TDD: Shared ability types and AbilityManager domain (cooldowns, effects)
+- [ ] 18-02-PLAN.md — Server wiring: Socket.IO events, domain instantiation, ClientEventEmitter
+- [ ] 18-03-PLAN.md — Client UI: useAbilities store, AbilityBar/AbilityButton, BattlePhase integration
 
 ### Phase 19: Team Combos
 
