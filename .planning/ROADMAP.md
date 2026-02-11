@@ -32,7 +32,7 @@ See `.planning/milestones/v1.2-ROADMAP.md`
 
 - [x] **Phase 15: XP/Progression Foundation** - Account-level XP tracking with visual feedback
 - [x] **Phase 16: Class Mastery System** - Class-specific progression with tier unlocks (COMPLETE 2026-02-11)
-- [ ] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling
+- [x] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling (COMPLETE 2026-02-11)
 - [ ] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system
 - [ ] **Phase 19: Team Combos** - Coordinated attacks and consensus ultimates
 - [ ] **Phase 20: Combat Items & Lifetime Stats** - Session consumables and persistent statistics
@@ -83,25 +83,25 @@ Plans:
 - [x] 16-04-PLAN.md — Client store and mastery display UI components
 - [x] 16-05-PLAN.md — Tier-up celebration and avatar selection mastery display
 
-### Phase 17: Boss AI Patterns
+### Phase 17: Boss AI Patterns ✅ COMPLETE (2026-02-11)
 
 **Goal**: Each boss type feels distinct with unique attack patterns and dynamic difficulty
 **Depends on**: Phase 15 (difficulty scales with team level)
 **Requirements**: BOSS-01, BOSS-02, BOSS-03, BOSS-04, BOSS-05, BOSS-06
 **Success Criteria** (what must be TRUE):
-  1. Each of 5 boss types uses distinct attack patterns (not the same attacks)
-  2. Boss changes behavior at HP thresholds (e.g., new attacks at 50% HP)
-  3. Player sees visual warning before boss attacks land (telegraphing)
-  4. Higher average team level results in more challenging boss encounters
-  5. Boss becomes more aggressive at low HP (faster attacks, more damage)
-  6. Boss prioritizes targeting players who deal more damage or healing
-**Plans**: 5 plans
+  1. ✅ Each of 5 boss types uses distinct attack patterns (not the same attacks)
+  2. ✅ Boss changes behavior at HP thresholds (e.g., new attacks at 50% HP)
+  3. ✅ Player sees visual warning before boss attacks land (telegraphing)
+  4. ✅ Higher average team level results in more challenging boss encounters
+  5. ✅ Boss becomes more aggressive at low HP (faster attacks, more damage)
+  6. ✅ Boss prioritizes targeting players who deal more damage or healing
+**Plans**: 5 plans (all complete)
 Plans:
-- [ ] 17-01-PLAN.md — TDD: BossStateMachine, PatternSequencer, ThreatEvaluator core
-- [ ] 17-02-PLAN.md — 5 boss behavior definitions + BossAI coordinator
-- [ ] 17-03-PLAN.md — CombatManager integration with BossAI, phase transitions, level scaling
-- [ ] 17-04-PLAN.md — Client telegraph UI, phase transition visuals, event wiring
-- [ ] 17-05-PLAN.md — Production wiring: progressionManager dep, boss sprite passthrough
+- [x] 17-01-PLAN.md — TDD: BossStateMachine, PatternSequencer, ThreatEvaluator core
+- [x] 17-02-PLAN.md — 5 boss behavior definitions + BossAI coordinator
+- [x] 17-03-PLAN.md — CombatManager integration with BossAI, phase transitions, level scaling
+- [x] 17-04-PLAN.md — Client telegraph UI, phase transition visuals, event wiring
+- [x] 17-05-PLAN.md — Production wiring: progressionManager dep, boss sprite passthrough
 
 ### Phase 18: Class Abilities
 
@@ -190,7 +190,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
 | 15. XP/Progression | v1.3 | 8/8 | Complete | 2026-02-10 |
 | 16. Class Mastery | v1.3 | 5/5 | Complete | 2026-02-11 |
-| 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
+| 17. Boss AI Patterns | v1.3 | 5/5 | Complete | 2026-02-11 |
 | 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
 | 19. Team Combos | v1.3 | 0/TBD | Not started | - |
 | 20. Items & Stats | v1.3 | 0/TBD | Not started | - |
