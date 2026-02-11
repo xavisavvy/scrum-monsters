@@ -148,7 +148,12 @@ Plans:
   6. Player's lifetime combat stats are tracked (damage dealt, bosses defeated, revives, deaths)
   7. Player can view lifetime stats on their profile page
   8. Player sees session stats summary at game over
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 20-01-PLAN.md -- TDD: Shared item types and ItemManager domain (inventory, validation, effects)
+- [ ] 20-02-PLAN.md -- TDD: Shared stats types, schema extension, and StatsTracker domain (event-driven tracking)
+- [ ] 20-03-PLAN.md -- Item server wiring (Socket.IO, domain integration, awards) and client UI (ItemBar, BattlePhase)
+- [ ] 20-04-PLAN.md -- Stats server wiring (StatsTracker instantiation, event forwarding) and client UI (session summary, profile)
 
 ### Phase 21: Lobby Magic & Emote System ⚡ PARTIALLY COMPLETE
 
