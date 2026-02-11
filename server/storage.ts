@@ -275,6 +275,10 @@ export class MemStorage implements IStorage {
       totalDamageDealt: stats.totalDamageDealt ?? 0,
       totalHealing: stats.totalHealing ?? 0,
       revivesPerformed: stats.revivesPerformed ?? 0,
+      totalVotes: stats.totalVotes ?? 0,
+      consensusRate: stats.consensusRate ?? 0,
+      averageVotingSpeedMs: stats.averageVotingSpeedMs ?? 0,
+      totalDeaths: stats.totalDeaths ?? 0,
       updatedAt: new Date(),
     };
     this.userStatsMap.set(id, userStatsEntry);
@@ -527,6 +531,10 @@ export class PgStorage implements IStorage {
       totalDamageDealt: stats.totalDamageDealt ?? 0,
       totalHealing: stats.totalHealing ?? 0,
       revivesPerformed: stats.revivesPerformed ?? 0,
+      totalVotes: stats.totalVotes ?? 0,
+      consensusRate: stats.consensusRate ?? 0,
+      averageVotingSpeedMs: stats.averageVotingSpeedMs ?? 0,
+      totalDeaths: stats.totalDeaths ?? 0,
     }).returning();
     return result[0];
   }

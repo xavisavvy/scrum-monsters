@@ -52,6 +52,10 @@ export const userStats = pgTable("user_stats", {
   totalDamageDealt: integer("total_damage_dealt").default(0).notNull(),
   totalHealing: integer("total_healing").default(0).notNull(),
   revivesPerformed: integer("revives_performed").default(0).notNull(),
+  totalVotes: integer("total_votes").default(0).notNull(),
+  consensusRate: real("consensus_rate").default(0), // Percentage: votes in consensus / total votes * 100
+  averageVotingSpeedMs: integer("avg_voting_speed_ms").default(0),
+  totalDeaths: integer("total_deaths").default(0).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -126,6 +130,10 @@ export const insertUserStatsSchema = createInsertSchema(userStats).pick({
   totalDamageDealt: true,
   totalHealing: true,
   revivesPerformed: true,
+  totalVotes: true,
+  consensusRate: true,
+  averageVotingSpeedMs: true,
+  totalDeaths: true,
 });
 
 export const insertEstimationHistorySchema = createInsertSchema(estimationHistory).pick({
