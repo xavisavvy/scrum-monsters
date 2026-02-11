@@ -35,6 +35,9 @@ import type {
   ItemUsedPayload as ItemUsedPayloadImport,
   ItemEffectAppliedPayload as ItemEffectAppliedPayloadImport,
 } from '../../shared/itemTypes';
+import type {
+  StatsSessionCompletePayload,
+} from '../../shared/statsTypes';
 
 // Re-export ability types for server event usage
 export type AbilityUsedPayload = AbilityUsedPayloadImport;
@@ -49,6 +52,9 @@ export type ConsensusUltimatePayload = ConsensusUltimatePayloadImport;
 export type ItemAwardedPayload = ItemAwardedPayloadImport;
 export type ItemUsedPayload = ItemUsedPayloadImport;
 export type ItemEffectAppliedPayload = ItemEffectAppliedPayloadImport;
+
+// Re-export stats types for server event usage
+export type { StatsSessionCompletePayload } from '../../shared/statsTypes';
 
 // =============================================================================
 // Session Domain Events
@@ -452,6 +458,14 @@ export interface CombatBossPhaseTransitionPayload {
   bossType: string;       // e.g., 'bug-hydra'
 }
 
+/** Emitted when shield absorbs damage */
+export interface CombatShieldAbsorbedPayload {
+  lobbyId: string;
+  playerId: string;
+  absorbed: number;
+  shieldRemaining: number;
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -530,6 +544,7 @@ export interface DomainEventMap {
   'combat:minion_killed': CombatMinionKilledPayload;
   'combat:battle_complete': CombatBattleCompletePayload;
   'combat:boss_phase_transition': CombatBossPhaseTransitionPayload;
+  'combat:shield_absorbed': CombatShieldAbsorbedPayload;
 
   // Progression events
   'progression:xp_awarded': ProgressionXPAwardedPayload;
@@ -552,6 +567,9 @@ export interface DomainEventMap {
   'item:awarded': ItemAwardedPayload;
   'item:used': ItemUsedPayload;
   'item:effect_applied': ItemEffectAppliedPayload;
+
+  // Stats events
+  'stats:session_complete': StatsSessionCompletePayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;

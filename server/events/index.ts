@@ -77,6 +77,8 @@ export type {
   ItemAwardedPayload,
   ItemUsedPayload,
   ItemEffectAppliedPayload,
+  // Stats events
+  StatsSessionCompletePayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';
