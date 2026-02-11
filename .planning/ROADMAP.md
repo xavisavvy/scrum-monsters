@@ -33,7 +33,7 @@ See `.planning/milestones/v1.2-ROADMAP.md`
 - [x] **Phase 15: XP/Progression Foundation** - Account-level XP tracking with visual feedback
 - [x] **Phase 16: Class Mastery System** - Class-specific progression with tier unlocks (COMPLETE 2026-02-11)
 - [x] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling (COMPLETE 2026-02-11)
-- [ ] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system
+- [x] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system (COMPLETE 2026-02-11)
 - [ ] **Phase 19: Team Combos** - Coordinated attacks and consensus ultimates
 - [ ] **Phase 20: Combat Items & Lifetime Stats** - Session consumables and persistent statistics
 - [x] **Phase 21: Lobby Magic & Emote System** ⚡ - Magic spells in lobby (PARTIALLY COMPLETE)
@@ -103,21 +103,21 @@ Plans:
 - [x] 17-04-PLAN.md — Client telegraph UI, phase transition visuals, event wiring
 - [x] 17-05-PLAN.md — Production wiring: progressionManager dep, boss sprite passthrough
 
-### Phase 18: Class Abilities
+### Phase 18: Class Abilities ✅ COMPLETE (2026-02-11)
 
 **Goal**: Each avatar class has unique abilities that define its combat role
 **Depends on**: Phase 16 (mastery unlocks abilities), Phase 17 (abilities need bosses to test against)
 **Requirements**: ABIL-01, ABIL-02, ABIL-03, ABIL-04
 **Success Criteria** (what must be TRUE):
-  1. Each avatar class has 1-2 unique abilities (Tank: taunt/shield, Healer: heal/buff, DPS: damage/debuff)
-  2. Abilities have server-enforced cooldowns that prevent spam
-  3. Player sees ability buttons with visual cooldown indicators
-  4. Ability effects match the class role (tanks protect, healers heal, DPS damages)
-**Plans**: 3 plans
+  1. ✅ Each avatar class has 1-2 unique abilities (Tank: taunt/shield, Healer: heal/buff, DPS: damage/debuff)
+  2. ✅ Abilities have server-enforced cooldowns that prevent spam
+  3. ✅ Player sees ability buttons with visual cooldown indicators
+  4. ✅ Ability effects match the class role (tanks protect, healers heal, DPS damages)
+**Plans**: 3 plans (all complete)
 Plans:
-- [ ] 18-01-PLAN.md — TDD: Shared ability types and AbilityManager domain (cooldowns, effects)
-- [ ] 18-02-PLAN.md — Server wiring: Socket.IO events, domain instantiation, ClientEventEmitter
-- [ ] 18-03-PLAN.md — Client UI: useAbilities store, AbilityBar/AbilityButton, BattlePhase integration
+- [x] 18-01-PLAN.md — TDD: Shared ability types and AbilityManager domain (cooldowns, effects)
+- [x] 18-02-PLAN.md — Server wiring: Socket.IO events, domain instantiation, ClientEventEmitter
+- [x] 18-03-PLAN.md — Client UI: useAbilities store, AbilityBar/AbilityButton, BattlePhase integration
 
 ### Phase 19: Team Combos
 
@@ -195,7 +195,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 | 15. XP/Progression | v1.3 | 8/8 | Complete | 2026-02-10 |
 | 16. Class Mastery | v1.3 | 5/5 | Complete | 2026-02-11 |
 | 17. Boss AI Patterns | v1.3 | 5/5 | Complete | 2026-02-11 |
-| 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
+| 18. Class Abilities | v1.3 | 3/3 | Complete | 2026-02-11 |
 | 19. Team Combos | v1.3 | 0/TBD | Not started | - |
 | 20. Items & Stats | v1.3 | 0/TBD | Not started | - |
 | 21. Lobby Magic | v1.3 | N/A | ⚡ Partial | Ad-hoc |
