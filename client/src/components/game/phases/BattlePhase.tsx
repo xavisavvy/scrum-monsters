@@ -15,6 +15,8 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useAbilitySync } from '@/lib/stores/useAbilities';
 import { ComboNotification } from '@/components/game/ComboNotification';
 import { useComboSync } from '@/lib/stores/useComboState';
+import { ItemBar } from '@/components/game/combat/ItemBar';
+import { useItemSync } from '@/lib/stores/useItemStore';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -31,6 +33,7 @@ export function BattlePhase({
   const { levelUp } = useProgression();
   useAbilitySync(); // Wire ability server events
   useComboSync(); // Wire combo server events
+  useItemSync(); // Wire item server events
 
   // Don't render if no boss is available
   if (!boss) {
@@ -91,6 +94,13 @@ export function BattlePhase({
       <div className="fixed bottom-20 right-4 z-40">
         <AbilityBar />
       </div>
+
+      {/* Item Bar - Bottom left, above XP bar, only for non-spectators in battle */}
+      {currentPlayer && currentPlayer.team !== 'spectators' && (
+        <div className="fixed bottom-20 left-4 z-40">
+          <ItemBar />
+        </div>
+      )}
 
       {/* Level-up celebration - Fullscreen overlay */}
       {levelUp?.active && currentPlayer && (
