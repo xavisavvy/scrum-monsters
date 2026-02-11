@@ -540,6 +540,27 @@ export interface ServerToClientEvents {
     timestamp: number;
   }) => void;
 
+  // Combo events
+  'combo:triggered': (data: {
+    comboId: string;
+    comboName: string;
+    triggeringPlayerId: string;
+    participantPlayerIds: string[];
+    damage: number;
+    damageMultiplier: number;
+    visualEffect: string;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'combo:consensus_ultimate': (data: {
+    damage: number;
+    damageMultiplier: number;
+    votingDurationMs: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
   'system:missed_events': (data: { events: Array<{ event: string; data: any }> }) => void;

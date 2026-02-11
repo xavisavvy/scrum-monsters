@@ -1728,6 +1728,53 @@ export class CombatManager {
   }
 
   /**
+   * Apply combo damage to boss and check for phase transitions
+   * @param lobbyId Lobby identifier
+   * @param comboId Combo identifier (for XP tracking with 'combo:' prefix)
+   * @param damage Combo damage amount
+   */
+  public applyComboMultiplier(lobbyId: string, comboId: string, damage: number): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState?.boss) return;
+
+    // Apply combo damage to boss
+    combatState.boss.hp = Math.max(0, combatState.boss.hp - damage);
+
+    // Emit boss damaged event for XP tracking
+    this.eventBus.emit('combat:boss_damaged', {
+      lobbyId,
+      playerId: 'combo:' + comboId, // Special prefix for combo damage source
+      damage,
+      bossHealth: combatState.boss.hp,
+    });
+
+    // Check boss phase transitions via BossAI
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI) {
+      const phaseResult = bossAI.checkPhaseTransition(combatState.boss.hp, combatState.boss.maxHp);
+      if (phaseResult.transitioned) {
+        combatState.boss.currentPhase = phaseResult.newPhase;
+        if (phaseResult.newPhase >= 2) combatState.boss.isEnraged = true;
+        this.eventBus.emit('combat:boss_phase_transition', {
+          lobbyId,
+          newPhase: phaseResult.newPhase,
+          previousPhase: phaseResult.newPhase - 1,
+          message: phaseResult.message ?? 'The boss grows more powerful!',
+          bossType: combatState.boss.bossType,
+        });
+      }
+    }
+
+    // Check if boss defeated
+    if (combatState.boss.hp <= 0) {
+      this.eventBus.emit('combat:boss_defeated', {
+        lobbyId,
+        bossId: combatState.boss.bossId,
+      });
+    }
+  }
+
+  /**
    * Handle when spectator switches to voting team
    * Kills their minion immediately with no respawn
    */

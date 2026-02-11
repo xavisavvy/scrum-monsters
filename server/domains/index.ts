@@ -13,6 +13,7 @@ import { CombatManager } from './CombatManager';
 import { ProgressionManager } from './ProgressionManager';
 import { ClassMasteryManager } from './ClassMasteryManager';
 import { AbilityManager } from './AbilityManager';
+import { ComboManager } from './ComboManager';
 import { Server } from 'socket.io';
 import { storage } from '../storage';
 
@@ -161,6 +162,29 @@ const abilityManager = new AbilityManager({
   },
 });
 
+const comboManager = new ComboManager({
+  eventBus,
+  combatManager: {
+    applyComboMultiplier: (lobbyId: string, comboId: string, damage: number) =>
+      combatManager.applyComboMultiplier(lobbyId, comboId, damage),
+  },
+  getPlayerClass: (lobbyId: string, playerId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    return player?.avatar ?? null;
+  },
+  getVotingStartTime: (lobbyId: string) => {
+    const estimation = estimationManager.getEstimation(lobbyId);
+    if (!estimation) return null;
+    // Get earliest team timer start as voting start time
+    const devStart = estimation.teams.developers?.timerStartedAt;
+    const qaStart = estimation.teams.qa?.timerStartedAt;
+    if (devStart && qaStart) return Math.min(devStart, qaStart);
+    return devStart ?? qaStart ?? null;
+  },
+});
+
 // Reset ability cooldowns when combat is initialized (new ticket)
 eventBus.on('combat:battle_initialized', (payload) => {
   abilityManager.resetCooldowns(payload.lobbyId);
@@ -169,6 +193,16 @@ eventBus.on('combat:battle_initialized', (payload) => {
 // Cleanup ability state when lobby is destroyed
 eventBus.on('session:lobby_destroyed', (payload) => {
   abilityManager.cleanupLobby(payload.lobbyId);
+});
+
+// Reset combo state when combat is initialized (new ticket)
+eventBus.on('combat:battle_initialized', (payload) => {
+  comboManager.resetCombos(payload.lobbyId);
+});
+
+// Cleanup combo state when lobby is destroyed
+eventBus.on('session:lobby_destroyed', (payload) => {
+  comboManager.cleanupLobby(payload.lobbyId);
 });
 
 // Apply damage effects from abilities to boss HP
@@ -212,7 +246,7 @@ eventBus.on('ability:effect_applied', (payload) => {
 });
 
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager, comboManager };
 
 // Export player-user ID mapping helpers
 export function registerPlayerUserId(playerId: string, userId: number): void {
@@ -233,6 +267,7 @@ export type { CombatManager, CombatManagerDeps } from './CombatManager';
 export type { ProgressionManager, ProgressionManagerDeps } from './ProgressionManager';
 export type { ClassMasteryManager, ClassMasteryManagerDeps } from './ClassMasteryManager';
 export type { AbilityManager, AbilityManagerDeps } from './AbilityManager';
+export type { ComboManager, ComboManagerDeps } from './ComboManager';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
