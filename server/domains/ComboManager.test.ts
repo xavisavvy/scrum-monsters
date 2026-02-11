@@ -159,20 +159,12 @@ describe('ComboManager', () => {
       const lobbyId = 'test-lobby';
 
       // Override class mapping to non-matching classes
+      // Just update the mock, don't recreate ComboManager to avoid double event handlers
       (mockGetPlayerClass as any).mockImplementation((lobbyId: string, playerId: string) => {
         if (playerId === 'player1') return 'ranger';
         if (playerId === 'player2') return 'monk';
         return null;
       });
-
-      // Recreate manager with new mock
-      const deps: ComboManagerDeps = {
-        eventBus,
-        combatManager: mockCombatManager,
-        getPlayerClass: mockGetPlayerClass,
-        getVotingStartTime: mockGetVotingStartTime,
-      };
-      comboManager = new ComboManager(deps);
 
       // Player1 (ranger) uses ability
       eventBus.emit('ability:used', {
@@ -389,6 +381,7 @@ describe('ComboManager', () => {
       const lobbyId = 'test-lobby';
 
       // Setup: player3 is sorcerer, player4 is wizard
+      // Just update the mock, don't recreate ComboManager to avoid double event handlers
       (mockGetPlayerClass as any).mockImplementation((lobbyId: string, playerId: string) => {
         if (playerId === 'player1') return 'warrior';
         if (playerId === 'player2') return 'cleric';
@@ -396,14 +389,6 @@ describe('ComboManager', () => {
         if (playerId === 'player4') return 'wizard';
         return null;
       });
-
-      const deps: ComboManagerDeps = {
-        eventBus,
-        combatManager: mockCombatManager,
-        getPlayerClass: mockGetPlayerClass,
-        getVotingStartTime: mockGetVotingStartTime,
-      };
-      comboManager = new ComboManager(deps);
 
       // Trigger shield_wall (warrior + cleric)
       eventBus.emit('ability:used', {
@@ -430,8 +415,8 @@ describe('ComboManager', () => {
       expect(comboEvents.length).toBe(1);
       expect(comboEvents[0].comboId).toBe('shield_wall');
 
-      // Immediately trigger elemental_fury (sorcerer + wizard) - different combo
-      vi.advanceTimersByTime(1000);
+      // Wait for warrior/cleric to leave the window, then trigger elemental_fury
+      vi.advanceTimersByTime(3500); // Advance past 3s window
 
       eventBus.emit('ability:used', {
         lobbyId,
@@ -717,19 +702,12 @@ describe('ComboManager', () => {
       const lobbyId = 'test-lobby';
 
       // Setup for elemental_fury: baseDamage 140, multiplier 1.7
+      // Just update the mock, don't recreate ComboManager to avoid double event handlers
       (mockGetPlayerClass as any).mockImplementation((lobbyId: string, playerId: string) => {
         if (playerId === 'player3') return 'sorcerer';
         if (playerId === 'player4') return 'wizard';
         return null;
       });
-
-      const deps: ComboManagerDeps = {
-        eventBus,
-        combatManager: mockCombatManager,
-        getPlayerClass: mockGetPlayerClass,
-        getVotingStartTime: mockGetVotingStartTime,
-      };
-      comboManager = new ComboManager(deps);
 
       eventBus.emit('ability:used', {
         lobbyId,
