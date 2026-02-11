@@ -8,6 +8,7 @@ import { XPBar } from '@/components/game/XPBar';
 import { FloatingXPManager } from '@/components/game/FloatingXPManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
 import { TierUpToast } from '@/components/game/TierUpToast';
+import { BossTelegraph } from '@/components/game/BossTelegraph';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useGameState } from '@/lib/stores/useGameState';
 
@@ -65,6 +66,9 @@ export function BattlePhase({
         onToggleSidebar={onToggleSidebar}
         className={isTransitioning ? 'transitioning' : ''}
       />
+
+      {/* Boss telegraph warning - Top center */}
+      <BossTelegraph />
 
       {/* XP System UI - Floating numbers in 3D scene */}
       <FloatingXPManager />
