@@ -75,7 +75,13 @@ Plans:
   2. Player sees their mastery tier for each class (Novice/Expert/Master)
   3. Player's class stats improve as they gain mastery tiers
   4. Player unlocks class-specific abilities at higher mastery tiers
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 16-01-PLAN.md — TDD: Mastery types, XP curve, and ClassMasteryManager domain
+- [ ] 16-02-PLAN.md — Server wiring: instance creation, event forwarding, persistence
+- [ ] 16-03-PLAN.md — Stat bonuses and ability gating in CombatManager
+- [ ] 16-04-PLAN.md — Client store and mastery display UI components
+- [ ] 16-05-PLAN.md — Tier-up celebration and avatar selection mastery display
 
 ### Phase 17: Boss AI Patterns
 
@@ -177,7 +183,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
 | 15. XP/Progression | v1.3 | 8/8 | Complete | 2026-02-10 |
-| 16. Class Mastery | v1.3 | 0/TBD | Not started | - |
+| 16. Class Mastery | v1.3 | 0/5 | Not started | - |
 | 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
 | 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
 | 19. Team Combos | v1.3 | 0/TBD | Not started | - |
