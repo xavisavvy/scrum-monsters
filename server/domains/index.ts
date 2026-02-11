@@ -12,6 +12,7 @@ import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
 import { ProgressionManager } from './ProgressionManager';
 import { ClassMasteryManager } from './ClassMasteryManager';
+import { AbilityManager } from './AbilityManager';
 import { Server } from 'socket.io';
 import { storage } from '../storage';
 
@@ -145,8 +146,33 @@ const progressionManager = new ProgressionManager({
   },
 });
 
+const abilityManager = new AbilityManager({
+  eventBus,
+  combatManager: {
+    getCombatState: (lobbyId: string) => combatManager.getCombatState(lobbyId),
+    canUseClassAbility: (lobbyId: string, playerId: string, abilityId: string) =>
+      combatManager.canUseClassAbility(lobbyId, playerId, abilityId),
+  },
+  getPlayerClass: (lobbyId: string, playerId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    return player?.avatar ?? null;
+  },
+});
+
+// Reset ability cooldowns when combat is initialized (new ticket)
+eventBus.on('combat:battle_initialized', (payload) => {
+  abilityManager.resetCooldowns(payload.lobbyId);
+});
+
+// Cleanup ability state when lobby is destroyed
+eventBus.on('session:lobby_destroyed', (payload) => {
+  abilityManager.cleanupLobby(payload.lobbyId);
+});
+
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager };
 
 // Export player-user ID mapping helpers
 export function registerPlayerUserId(playerId: string, userId: number): void {
@@ -166,6 +192,7 @@ export type { EstimationManager, EstimationManagerDeps } from './EstimationManag
 export type { CombatManager, CombatManagerDeps } from './CombatManager';
 export type { ProgressionManager, ProgressionManagerDeps } from './ProgressionManager';
 export type { ClassMasteryManager, ClassMasteryManagerDeps } from './ClassMasteryManager';
+export type { AbilityManager, AbilityManagerDeps } from './AbilityManager';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
