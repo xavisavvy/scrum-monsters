@@ -7,6 +7,7 @@ import { MinionDisplay } from '@/components/game/MinionDisplay';
 import { XPBar } from '@/components/game/XPBar';
 import { FloatingXPManager } from '@/components/game/FloatingXPManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
+import { TierUpToast } from '@/components/game/TierUpToast';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useGameState } from '@/lib/stores/useGameState';
 
@@ -77,6 +78,9 @@ export function BattlePhase({
       {levelUp?.active && currentPlayer && (
         <LevelUpCelebration playerClass={currentPlayer.avatar} />
       )}
+
+      {/* Tier-up toast - Bottom-right corner, defers to level-up celebration */}
+      <TierUpToast />
 
       <CountdownOverlay />
     </>
