@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 19 of 20 (Team Combos) — COMPLETE
-Plan: 3/3 complete, verified
-Status: Phase 19 verified (3/3 must-haves passed), ROADMAP updated
-Last activity: 2026-02-11 - Phase 19 execution complete with verification
+Phase: 20 of 20 (Combat Items & Lifetime Stats) — IN PROGRESS
+Plan: 1/3 complete
+Status: Plan 20-01 complete (ItemManager domain with TDD)
+Last activity: 2026-02-11 - Plan 20-01 execution complete
 
-Progress: [██████████████████░░] 90% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [██████████████████░░] 91% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 **Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 75 (v1.0: 30, v1.2: 21, v1.3: 24 incl. phase 19)
+- Total plans completed: 76 (v1.0: 30, v1.2: 21, v1.3: 25 incl. phase 20-01)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -38,6 +38,7 @@ Progress: [██████████████████░░] 90% (mi
 - Trend: Stable
 
 *Updated after each plan completion*
+| Phase 20 P01 | 231 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,10 @@ Recent decisions affecting current work:
 - [19-03]: Purple gradient for consensus ultimate vs gold for regular combos (visual distinction)
 - [19-03]: Fixed top-1/3 positioning for combo notifications (visible, no overlap with other UI)
 - [19-03]: Nested timeout pattern for auto-dismiss (2.5s visible, 500ms fade-out, then clear)
+- [Phase 20-01]: Session-scoped items (exist only during game session, cleared on lobby cleanup)
+- [Phase 20-01]: MAX_ITEMS_PER_TYPE = 5 for stack limit enforcement
+- [Phase 20-01]: Event-driven item effect application (item:effect_applied, no direct CombatManager calls)
+- [Phase 20-01]: All items currently target self (extensible for future party/boss targeting)
 
 ### Pending Todos
 
@@ -138,5 +143,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 19 complete and verified (3/3 must-haves). Ready for Phase 20.
+Stopped at: Completed 20-01-PLAN.md (ItemManager domain with TDD)
 Resume file: None
