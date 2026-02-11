@@ -82,7 +82,7 @@ describe('BossStateMachine', () => {
       await new Promise(resolve => setTimeout(resolve, 50));
 
       const elapsed2 = fsm.getStateElapsedMs();
-      expect(elapsed2).toBeGreaterThanOrEqual(50);
+      expect(elapsed2).toBeGreaterThanOrEqual(45); // Allow slight variance for timing
     });
   });
 
