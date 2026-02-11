@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 15 of 20 (XP/Progression Foundation)
-Plan: 7 of 8 (gap closure in progress)
-Status: In Progress - Gap closure plans 15-07 and 15-08
-Last activity: 2026-02-10 - Plan 15-07 complete (consensus XP + XP persistence)
+Plan: 8 of 8 (complete)
+Status: Complete - All gap closure plans finished
+Last activity: 2026-02-11 - Plan 15-08 complete (level display in lobby)
 
 Progress: [███████████████░░░░░] 75% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 75% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 57 (v1.0: 30, v1.2: 21, v1.3: 6)
+- Total plans completed: 58 (v1.0: 30, v1.2: 21, v1.3: 7)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -63,6 +63,9 @@ Recent decisions affecting current work:
 - [15-07]: Fire-and-forget XP persistence to avoid blocking gameplay
 - [15-07]: Player-user ID registry for progression storage mapping
 - [15-07]: Async IIFE pattern for non-blocking socket handlers
+- [15-08]: Level badge displayed only for players above level 1 (progressive disclosure)
+- [15-08]: JRPG gold aesthetic (amber-400) for level display consistency with XP bar
+- [15-08]: Compact "LvN" format matches JRPG conventions
 
 ### Pending Todos
 
@@ -76,6 +79,6 @@ Open items from v1.2:
 
 ## Session Continuity
 
-Last session: 2026-02-10
-Stopped at: Completed Phase 15 Plan 07 (15-07-PLAN.md - Consensus XP + XP Persistence)
+Last session: 2026-02-11
+Stopped at: Completed Phase 15 Plan 08 (15-08-PLAN.md - Level Display in Lobby) - Phase 15 complete
 Resume file: None
