@@ -31,7 +31,7 @@ See `.planning/milestones/v1.2-ROADMAP.md`
 **Milestone Goal:** Make the game more engaging with progression systems, varied boss battles, and deeper combat mechanics.
 
 - [x] **Phase 15: XP/Progression Foundation** - Account-level XP tracking with visual feedback
-- [ ] **Phase 16: Class Mastery System** - Class-specific progression with tier unlocks
+- [x] **Phase 16: Class Mastery System** - Class-specific progression with tier unlocks (COMPLETE 2026-02-11)
 - [ ] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling
 - [ ] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system
 - [ ] **Phase 19: Team Combos** - Coordinated attacks and consensus ultimates
@@ -65,23 +65,23 @@ Plans:
 - [x] 15-07-PLAN.md — Gap closure: consensus XP + XP persistence
 - [x] 15-08-PLAN.md — Gap closure: level display in lobby
 
-### Phase 16: Class Mastery System
+### Phase 16: Class Mastery System ✅ COMPLETE (2026-02-11)
 
 **Goal**: Players develop expertise in specific avatar classes with tier-based rewards
 **Depends on**: Phase 15 (requires XP infrastructure)
 **Requirements**: MSTR-01, MSTR-02, MSTR-03, MSTR-04
 **Success Criteria** (what must be TRUE):
-  1. Player earns class-specific XP when playing as that class
-  2. Player sees their mastery tier for each class (Novice/Expert/Master)
-  3. Player's class stats improve as they gain mastery tiers
-  4. Player unlocks class-specific abilities at higher mastery tiers
-**Plans**: 5 plans
+  1. ✅ Player earns class-specific XP when playing as that class
+  2. ✅ Player sees their mastery tier for each class (Novice/Expert/Master)
+  3. ✅ Player's class stats improve as they gain mastery tiers
+  4. ✅ Player unlocks class-specific abilities at higher mastery tiers
+**Plans**: 5 plans (all complete)
 Plans:
-- [ ] 16-01-PLAN.md — TDD: Mastery types, XP curve, and ClassMasteryManager domain
-- [ ] 16-02-PLAN.md — Server wiring: instance creation, event forwarding, persistence
-- [ ] 16-03-PLAN.md — Stat bonuses and ability gating in CombatManager
-- [ ] 16-04-PLAN.md — Client store and mastery display UI components
-- [ ] 16-05-PLAN.md — Tier-up celebration and avatar selection mastery display
+- [x] 16-01-PLAN.md — TDD: Mastery types, XP curve, and ClassMasteryManager domain
+- [x] 16-02-PLAN.md — Server wiring: instance creation, event forwarding, persistence
+- [x] 16-03-PLAN.md — Stat bonuses and ability gating in CombatManager
+- [x] 16-04-PLAN.md — Client store and mastery display UI components
+- [x] 16-05-PLAN.md — Tier-up celebration and avatar selection mastery display
 
 ### Phase 17: Boss AI Patterns
 
