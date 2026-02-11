@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 16 of 20 (Class Mastery System) — IN PROGRESS
-Plan: 2/5 complete
-Status: Plan 16-02 complete (Class Mastery Infrastructure Wiring)
-Last activity: 2026-02-11 - Plan 16-02 execution complete
+Plan: 4/5 complete
+Status: Plan 16-04 complete (Client Class Mastery State & UI)
+Last activity: 2026-02-11 - Plan 16-04 execution complete
 
 Progress: [███████████████░░░░░] 75% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 75% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 61 (v1.0: 30, v1.2: 21, v1.3: 10)
+- Total plans completed: 62 (v1.0: 30, v1.2: 21, v1.3: 11)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -73,6 +73,9 @@ Recent decisions affecting current work:
 - [16-02]: Fire-and-forget async IIFE pattern for class mastery sync (consistent with progression)
 - [16-02]: Emit class_mastery:sync only when masteryData has entries (avoid empty payloads)
 - [16-02]: Class mastery events follow progression:* naming pattern for consistency
+- [16-04]: Client-side tier calculation using ClassMasteryXPCurve for instant UI updates
+- [16-04]: Progressive disclosure for MasteryProgressBar (only render if class has data)
+- [16-04]: JRPG gold gradient aesthetic for mastery UI matching global XP bar
 
 ### Pending Todos
 
@@ -87,5 +90,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Plan 16-02 complete (Class Mastery Infrastructure Wiring). Ready for Plan 16-03 (Combat integration).
+Stopped at: Plan 16-04 complete (Client Class Mastery State & UI). Ready for Plan 16-05 (Avatar Selection Mastery UI).
 Resume file: None
