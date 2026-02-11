@@ -39,6 +39,7 @@ Progress: [██████████████████░░] 91% (mi
 
 *Updated after each plan completion*
 | Phase 20 P01 | 231s | 2 tasks | 5 files |
+| Phase 20 P02 | 360s | 2 tasks | 7 files |
 | Phase 20 P03 | 396s | 2 tasks | 9 files |
 
 ## Accumulated Context
@@ -130,6 +131,11 @@ Recent decisions affecting current work:
 - [Phase 20-01]: MAX_ITEMS_PER_TYPE = 5 for stack limit enforcement
 - [Phase 20-01]: Event-driven item effect application (item:effect_applied, no direct CombatManager calls)
 - [Phase 20-01]: All items currently target self (extensible for future party/boss targeting)
+- [Phase 20-02]: Track voters per lobby to support consensus events without external dependencies
+- [Phase 20-02]: Voting start time tracking for accurate voting speed calculation
+- [Phase 20-02]: Compute consensusRate and averageVotingSpeedMs at session end (not incrementally)
+- [Phase 20-02]: Fire-and-forget persistence for individual stats, batch update for computed stats
+- [Phase 20-02]: Session summaries are ephemeral (cleared on lobby destruction)
 - [Phase 20-03]: ItemBar positioned bottom-left for spatial balance with AbilityBar
 - [Phase 20-03]: Buff tracking uses module-level Map with setTimeout for automatic expiry
 - [Phase 20-03]: Shield absorption wraps applyDamageToPlayer to intercept before HP reduction
