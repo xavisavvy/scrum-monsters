@@ -49,6 +49,7 @@ export interface ComboTriggeredPayload {
   participantPlayerIds: string[];  // All players whose abilities contributed
   damage: number;                  // Total combo damage dealt
   damageMultiplier: number;
+  visualEffect: string;            // Visual effect identifier for client rendering
 }
 
 /**

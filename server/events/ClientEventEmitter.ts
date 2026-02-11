@@ -442,6 +442,30 @@ export class ClientEventEmitter {
         value: payload.value,
       });
     });
+
+    // =============================================================================
+    // Combo Events
+    // =============================================================================
+
+    this.eventBus.on('combo:triggered', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combo:triggered', {
+        comboId: payload.comboId,
+        comboName: payload.comboName,
+        triggeringPlayerId: payload.triggeringPlayerId,
+        participantPlayerIds: payload.participantPlayerIds,
+        damage: payload.damage,
+        damageMultiplier: payload.damageMultiplier,
+        visualEffect: payload.visualEffect,
+      });
+    });
+
+    this.eventBus.on('combo:consensus_ultimate', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combo:consensus_ultimate', {
+        damage: payload.damage,
+        damageMultiplier: payload.damageMultiplier,
+        votingDurationMs: payload.votingDurationMs,
+      });
+    });
   }
 
   /**
