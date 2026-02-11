@@ -25,6 +25,7 @@ export interface Player {
   isHost: boolean;
   currentScore?: number | "?";
   hasSubmittedScore: boolean;
+  level: number; // Player level from XP progression (default 1)
 }
 
 export interface TeamStats {
