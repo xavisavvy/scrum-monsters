@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 20 of 20 (Combat Items & Lifetime Stats) — IN PROGRESS
-Plan: 1/3 complete
-Status: Plan 20-01 complete (ItemManager domain with TDD)
-Last activity: 2026-02-11 - Plan 20-01 execution complete
+Plan: 3/3 complete
+Status: Plan 20-03 complete (Item system integration with ItemBar UI)
+Last activity: 2026-02-11 - Plan 20-03 execution complete
 
 Progress: [██████████████████░░] 91% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -38,7 +38,8 @@ Progress: [██████████████████░░] 91% (mi
 - Trend: Stable
 
 *Updated after each plan completion*
-| Phase 20 P01 | 231 | 2 tasks | 5 files |
+| Phase 20 P01 | 231s | 2 tasks | 5 files |
+| Phase 20 P03 | 396s | 2 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,11 @@ Recent decisions affecting current work:
 - [Phase 20-01]: MAX_ITEMS_PER_TYPE = 5 for stack limit enforcement
 - [Phase 20-01]: Event-driven item effect application (item:effect_applied, no direct CombatManager calls)
 - [Phase 20-01]: All items currently target self (extensible for future party/boss targeting)
+- [Phase 20-03]: ItemBar positioned bottom-left for spatial balance with AbilityBar
+- [Phase 20-03]: Buff tracking uses module-level Map with setTimeout for automatic expiry
+- [Phase 20-03]: Shield absorption wraps applyDamageToPlayer to intercept before HP reduction
+- [Phase 20-03]: Damage boost applied as bonus damage on boss_damaged event
+- [Phase 20-03]: Optimistic UI with pendingItem state prevents item spam clicks
 
 ### Pending Todos
 
@@ -143,5 +149,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 20-01-PLAN.md (ItemManager domain with TDD)
+Stopped at: Completed 20-03-PLAN.md (Item system integration with ItemBar UI)
 Resume file: None
