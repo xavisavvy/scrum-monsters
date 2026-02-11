@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Focused estimation that doesn't bore people - voting distraction-free, waiting fun
-**Current focus:** Phase 17 complete, ready for Phase 18
+**Current focus:** Phase 18 in progress - Class Abilities
 
 ## Current Position
 
-Phase: 17 of 20 (Boss AI Patterns) — COMPLETE
-Plan: 5/5 complete, verified
-Status: Phase 17 verified (6/6 must-haves passed), ROADMAP updated
-Last activity: 2026-02-11 - Phase 17 execution complete with verification
+Phase: 18 of 20 (Class Abilities) — IN PROGRESS
+Plan: 1/3 complete
+Status: 18-01 complete (ability types + AbilityManager domain)
+Last activity: 2026-02-11 - Phase 18 Plan 01 execution complete
 
 Progress: [████████████████░░░░] 80% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [████████████████░░░░] 80% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 69 (v1.0: 30, v1.2: 21, v1.3: 18)
+- Total plans completed: 70 (v1.0: 30, v1.2: 21, v1.3: 19)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -97,6 +97,12 @@ Recent decisions affecting current work:
 - [17-04]: Visual effects mapped to Tailwind classes (charge/glow/shake/particles)
 - [17-05]: ProgressionManager wired as adapter providing getPlayerLevel to CombatManager
 - [17-05]: Boss sprite flows from gameState.createBossFromTickets through socket handlers to BossAI
+- [18-01]: Server-authoritative cooldown tracking (Map<lobbyId, Map<playerId, Map<abilityId, CooldownState>>>)
+- [18-01]: Ability IDs match CLASS_ABILITIES from classMasteryTypes.ts exactly
+- [18-01]: Event-driven effect application (ability:effect_applied events, not direct CombatManager calls)
+- [18-01]: Independent cooldowns per ability (no global cooldown)
+- [18-01]: Heal targeting selects lowest HP fighting player for single-target heals
+- [18-01]: Role distribution: 3 tank, 2 healer, 5 DPS classes
 
 ### Pending Todos
 
@@ -111,5 +117,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 17 complete and verified (6/6 must-haves). Ready for Phase 18.
+Stopped at: Phase 18 Plan 01 complete (ability types + AbilityManager). Next: 18-02 (socket handlers)
 Resume file: None
