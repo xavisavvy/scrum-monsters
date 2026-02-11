@@ -285,4 +285,33 @@ export default [
       "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
+
+  // k6 load test files
+  {
+    files: ["tests/load/**/*.js"],
+    languageOptions: {
+      globals: {
+        __ENV: "readonly",
+        __VU: "readonly",
+        __ITER: "readonly",
+        console: "readonly",
+        open: "readonly",
+      },
+    },
+    rules: {
+      "no-unused-vars": "off",
+      "@typescript-eslint/no-unused-vars": "off",
+    },
+  },
+
+  // Node.js scripts
+  {
+    files: ["scripts/**/*.js"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly",
+      },
+    },
+  },
 ];
