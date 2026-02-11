@@ -30,6 +30,11 @@ import type {
   ComboTriggeredPayload as ComboTriggeredPayloadImport,
   ConsensusUltimatePayload as ConsensusUltimatePayloadImport,
 } from '../../shared/comboTypes';
+import type {
+  ItemAwardedPayload as ItemAwardedPayloadImport,
+  ItemUsedPayload as ItemUsedPayloadImport,
+  ItemEffectAppliedPayload as ItemEffectAppliedPayloadImport,
+} from '../../shared/itemTypes';
 
 // Re-export ability types for server event usage
 export type AbilityUsedPayload = AbilityUsedPayloadImport;
@@ -39,6 +44,11 @@ export type AbilityEffectAppliedPayload = AbilityEffectAppliedPayloadImport;
 // Re-export combo types for server event usage
 export type ComboTriggeredPayload = ComboTriggeredPayloadImport;
 export type ConsensusUltimatePayload = ConsensusUltimatePayloadImport;
+
+// Re-export item types for server event usage
+export type ItemAwardedPayload = ItemAwardedPayloadImport;
+export type ItemUsedPayload = ItemUsedPayloadImport;
+export type ItemEffectAppliedPayload = ItemEffectAppliedPayloadImport;
 
 // =============================================================================
 // Session Domain Events
@@ -537,6 +547,11 @@ export interface DomainEventMap {
   // Combo events
   'combo:triggered': ComboTriggeredPayload;
   'combo:consensus_ultimate': ConsensusUltimatePayload;
+
+  // Item events
+  'item:awarded': ItemAwardedPayload;
+  'item:used': ItemUsedPayload;
+  'item:effect_applied': ItemEffectAppliedPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
