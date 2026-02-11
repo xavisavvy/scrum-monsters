@@ -26,11 +26,19 @@ import type {
   AbilityCooldownStartedPayload as AbilityCooldownStartedPayloadImport,
   AbilityEffectAppliedPayload as AbilityEffectAppliedPayloadImport,
 } from '../../shared/abilityTypes';
+import type {
+  ComboTriggeredPayload as ComboTriggeredPayloadImport,
+  ConsensusUltimatePayload as ConsensusUltimatePayloadImport,
+} from '../../shared/comboTypes';
 
 // Re-export ability types for server event usage
 export type AbilityUsedPayload = AbilityUsedPayloadImport;
 export type AbilityCooldownStartedPayload = AbilityCooldownStartedPayloadImport;
 export type AbilityEffectAppliedPayload = AbilityEffectAppliedPayloadImport;
+
+// Re-export combo types for server event usage
+export type ComboTriggeredPayload = ComboTriggeredPayloadImport;
+export type ConsensusUltimatePayload = ConsensusUltimatePayloadImport;
 
 // =============================================================================
 // Session Domain Events
@@ -525,6 +533,10 @@ export interface DomainEventMap {
   'ability:used': AbilityUsedPayload;
   'ability:cooldown_started': AbilityCooldownStartedPayload;
   'ability:effect_applied': AbilityEffectAppliedPayload;
+
+  // Combo events
+  'combo:triggered': ComboTriggeredPayload;
+  'combo:consensus_ultimate': ConsensusUltimatePayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;

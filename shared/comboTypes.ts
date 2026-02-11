@@ -135,18 +135,10 @@ export const CLASS_COMBOS: ComboDefinition[] = [
     name: 'Perfect Synergy',
     description: 'Three different roles combine for ultimate coordination',
     triggers: [
-      // Tank + Healer
-      { classA: 'warrior', classB: 'cleric', requireBothClasses: true },
-      // Tank + DPS
-      { classA: 'warrior', classB: 'sorcerer', requireBothClasses: true },
-      // Paladin + Healer
-      { classA: 'paladin', classB: 'bard', requireBothClasses: true },
-      // Paladin + DPS
-      { classA: 'paladin', classB: 'ranger', requireBothClasses: true },
-      // Oathbreaker + Healer
-      { classA: 'oathbreaker', classB: 'cleric', requireBothClasses: true },
-      // Oathbreaker + DPS
-      { classA: 'oathbreaker', classB: 'wizard', requireBothClasses: true },
+      // Use unique class pairs that don't overlap with other combos
+      // Tank + DPS combinations
+      { classA: 'paladin', classB: 'wizard', requireBothClasses: true },
+      { classA: 'oathbreaker', classB: 'ranger', requireBothClasses: true },
     ],
     damageMultiplier: 2.0,
     cooldownMs: 45000, // 45 seconds

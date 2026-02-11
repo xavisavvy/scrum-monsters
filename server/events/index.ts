@@ -70,6 +70,9 @@ export type {
   AbilityUsedPayload,
   AbilityCooldownStartedPayload,
   AbilityEffectAppliedPayload,
+  // Combo events
+  ComboTriggeredPayload,
+  ConsensusUltimatePayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';
