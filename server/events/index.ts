@@ -66,6 +66,10 @@ export type {
   CombatMinionSpawnedPayload,
   CombatMinionAttackPayload,
   CombatMinionHealBossPayload,
+  // Ability events
+  AbilityUsedPayload,
+  AbilityCooldownStartedPayload,
+  AbilityEffectAppliedPayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';
