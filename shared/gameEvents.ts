@@ -295,6 +295,8 @@ export interface ClientToServerEvents {
   update_estimation_settings: (data: { estimationSettings: EstimationSettings }) => void;
   // Class abilities
   use_ability: (data: { abilityId: string }) => void;
+  // Items
+  use_item: (data: { itemType: string }) => void;
 }
 
 export interface TeamScores {
@@ -557,6 +559,34 @@ export interface ServerToClientEvents {
     damage: number;
     damageMultiplier: number;
     votingDurationMs: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Item events
+  'item:awarded': (data: {
+    playerId: string;
+    itemType: string;
+    newCount: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'item:used': (data: {
+    playerId: string;
+    itemType: string;
+    remainingCount: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'item:effect_applied': (data: {
+    playerId: string;
+    itemType: string;
+    effectType: string;
+    value: number;
+    durationMs: number | null;
+    targetIds: string[];
     seq: number;
     timestamp: number;
   }) => void;

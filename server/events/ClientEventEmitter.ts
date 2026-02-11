@@ -466,6 +466,37 @@ export class ClientEventEmitter {
         votingDurationMs: payload.votingDurationMs,
       });
     });
+
+    // =============================================================================
+    // Item Events
+    // =============================================================================
+
+    this.eventBus.on('item:awarded', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'item:awarded', {
+        playerId: payload.playerId,
+        itemType: payload.itemType,
+        newCount: payload.newCount,
+      });
+    });
+
+    this.eventBus.on('item:used', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'item:used', {
+        playerId: payload.playerId,
+        itemType: payload.itemType,
+        remainingCount: payload.remainingCount,
+      });
+    });
+
+    this.eventBus.on('item:effect_applied', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'item:effect_applied', {
+        playerId: payload.playerId,
+        itemType: payload.itemType,
+        effectType: payload.effectType,
+        value: payload.value,
+        durationMs: payload.durationMs,
+        targetIds: payload.targetIds,
+      });
+    });
   }
 
   /**

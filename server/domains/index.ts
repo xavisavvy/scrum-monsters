@@ -14,6 +14,7 @@ import { ProgressionManager } from './ProgressionManager';
 import { ClassMasteryManager } from './ClassMasteryManager';
 import { AbilityManager } from './AbilityManager';
 import { ComboManager } from './ComboManager';
+import { ItemManager } from './ItemManager';
 import { Server } from 'socket.io';
 import { storage } from '../storage';
 
@@ -185,6 +186,101 @@ const comboManager = new ComboManager({
   },
 });
 
+const itemManager = new ItemManager({
+  eventBus,
+  combatManager: {
+    getCombatState: (lobbyId: string) => combatManager.getCombatState(lobbyId),
+  },
+  getPlayerClass: (lobbyId: string, playerId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    return player?.avatar ?? null;
+  },
+});
+
+// =============================================================================
+// Active Buff Tracking (damage_boost, shield)
+// =============================================================================
+
+interface ActiveBuff {
+  playerId: string;
+  lobbyId: string;
+  buffType: 'damage_boost' | 'shield';
+  value: number; // damage_boost: 1.5 multiplier, shield: remaining absorption HP
+  expiresAt: number; // Date.now() + durationMs
+  timeoutHandle: NodeJS.Timeout;
+}
+
+// Module-level state
+const activeBuffs = new Map<string, ActiveBuff[]>(); // key: `${lobbyId}:${playerId}`
+
+function getBuffKey(lobbyId: string, playerId: string) {
+  return `${lobbyId}:${playerId}`;
+}
+
+function addBuff(lobbyId: string, playerId: string, buff: Omit<ActiveBuff, 'timeoutHandle'>) {
+  const key = getBuffKey(lobbyId, playerId);
+  const buffs = activeBuffs.get(key) ?? [];
+  // Remove existing buff of same type (refresh, don't stack)
+  const filtered = buffs.filter(b => b.buffType !== buff.buffType);
+  const handle = setTimeout(() => removeBuff(lobbyId, playerId, buff.buffType), buff.expiresAt - Date.now());
+  filtered.push({ ...buff, timeoutHandle: handle });
+  activeBuffs.set(key, filtered);
+}
+
+function removeBuff(lobbyId: string, playerId: string, buffType: string) {
+  const key = getBuffKey(lobbyId, playerId);
+  const buffs = activeBuffs.get(key);
+  if (!buffs) return;
+  const remaining = buffs.filter(b => {
+    if (b.buffType === buffType) {
+      clearTimeout(b.timeoutHandle);
+      return false;
+    }
+    return true;
+  });
+  if (remaining.length === 0) activeBuffs.delete(key);
+  else activeBuffs.set(key, remaining);
+}
+
+function getDamageMultiplier(lobbyId: string, playerId: string): number {
+  const key = getBuffKey(lobbyId, playerId);
+  const buffs = activeBuffs.get(key);
+  if (!buffs) return 1.0;
+  const boost = buffs.find(b => b.buffType === 'damage_boost' && b.expiresAt > Date.now());
+  return boost ? boost.value : 1.0;
+}
+
+function getShieldAbsorption(lobbyId: string, playerId: string): number {
+  const key = getBuffKey(lobbyId, playerId);
+  const buffs = activeBuffs.get(key);
+  if (!buffs) return 0;
+  const shield = buffs.find(b => b.buffType === 'shield' && b.expiresAt > Date.now());
+  return shield ? shield.value : 0;
+}
+
+function reduceShield(lobbyId: string, playerId: string, damage: number): number {
+  const key = getBuffKey(lobbyId, playerId);
+  const buffs = activeBuffs.get(key);
+  if (!buffs) return damage;
+  const shield = buffs.find(b => b.buffType === 'shield' && b.expiresAt > Date.now());
+  if (!shield) return damage;
+  const absorbed = Math.min(shield.value, damage);
+  shield.value -= absorbed;
+  if (shield.value <= 0) removeBuff(lobbyId, playerId, 'shield');
+  return damage - absorbed; // remaining damage after absorption
+}
+
+function cleanupBuffs(lobbyId: string) {
+  for (const [key, buffs] of activeBuffs) {
+    if (key.startsWith(lobbyId + ':')) {
+      for (const b of buffs) clearTimeout(b.timeoutHandle);
+      activeBuffs.delete(key);
+    }
+  }
+}
+
 // Reset ability cooldowns when combat is initialized (new ticket)
 eventBus.on('combat:battle_initialized', (payload) => {
   abilityManager.resetCooldowns(payload.lobbyId);
@@ -204,6 +300,106 @@ eventBus.on('combat:battle_initialized', (payload) => {
 eventBus.on('session:lobby_destroyed', (payload) => {
   comboManager.cleanupLobby(payload.lobbyId);
 });
+
+// Cleanup item state when lobby is destroyed
+eventBus.on('session:lobby_destroyed', (payload) => {
+  itemManager.cleanupLobby(payload.lobbyId);
+  cleanupBuffs(payload.lobbyId);
+});
+
+// Award items on ticket completion (discussion_ended = ticket done)
+eventBus.on('estimation:discussion_ended', (payload) => {
+  const lobby = sessionManager.getLobby(payload.lobbyId);
+  if (!lobby) return;
+  // Award 1 random item to each player in the lobby
+  for (const player of lobby.players) {
+    if (player.team === 'spectators') continue; // Spectators don't get items
+    itemManager.awardItem(payload.lobbyId, player.id);
+  }
+});
+
+// Apply item effects (mirrors ability:effect_applied pattern)
+eventBus.on('item:effect_applied', (payload) => {
+  if (payload.effectType === 'heal') {
+    // Heal the player who used the item
+    for (const targetId of payload.targetIds) {
+      const combatState = combatManager.getCombatState(payload.lobbyId);
+      if (!combatState) break;
+      const targetState = combatState.players.get(targetId);
+      if (targetState && targetState.combatState === 'fighting') {
+        const oldHp = targetState.hp;
+        targetState.hp = Math.min(targetState.maxHp, targetState.hp + payload.value);
+        const actualHeal = targetState.hp - oldHp;
+        if (actualHeal > 0) {
+          eventBus.emit('combat:player_healed', {
+            lobbyId: payload.lobbyId,
+            playerId: targetId,
+            healerId: payload.playerId,
+            healAmount: actualHeal,
+            newHealth: targetState.hp,
+          });
+        }
+      }
+    }
+  } else if (payload.effectType === 'buff') {
+    // damage_boost: timed damage multiplier
+    addBuff(payload.lobbyId, payload.playerId, {
+      playerId: payload.playerId,
+      lobbyId: payload.lobbyId,
+      buffType: 'damage_boost',
+      value: payload.value, // 1.5x multiplier
+      expiresAt: Date.now() + (payload.durationMs ?? 10000),
+    });
+  } else if (payload.effectType === 'shield') {
+    // shield: timed damage absorption buffer
+    addBuff(payload.lobbyId, payload.playerId, {
+      playerId: payload.playerId,
+      lobbyId: payload.lobbyId,
+      buffType: 'shield',
+      value: payload.value, // 50 HP absorption
+      expiresAt: Date.now() + (payload.durationMs ?? 15000),
+    });
+  }
+});
+
+// Hook damage_boost into boss damage (apply bonus damage on hit)
+eventBus.on('combat:boss_damaged', (payload) => {
+  // Skip combo damage (prefixed with 'combo:')
+  if (payload.playerId.startsWith('combo:')) return;
+  const multiplier = getDamageMultiplier(payload.lobbyId, payload.playerId);
+  if (multiplier > 1.0) {
+    const bonusDamage = Math.floor(payload.damage * (multiplier - 1.0));
+    if (bonusDamage > 0) {
+      combatManager.applyAbilityDamageToBoss(payload.lobbyId, payload.playerId, bonusDamage);
+    }
+  }
+});
+
+// Wrap CombatManager.applyDamageToPlayer to apply shield absorption
+const originalApplyDamage = combatManager.applyDamageToPlayer.bind(combatManager);
+combatManager.applyDamageToPlayer = (lobbyId: string, playerId: string, damage: number) => {
+  const remainingDamage = reduceShield(lobbyId, playerId, damage);
+  if (remainingDamage <= 0) {
+    // Shield fully absorbed the damage - emit event but with 0 damage
+    eventBus.emit('combat:shield_absorbed', {
+      lobbyId,
+      playerId,
+      absorbed: damage,
+      shieldRemaining: getShieldAbsorption(lobbyId, playerId),
+    });
+    return;
+  }
+  if (remainingDamage < damage) {
+    // Partial absorption
+    eventBus.emit('combat:shield_absorbed', {
+      lobbyId,
+      playerId,
+      absorbed: damage - remainingDamage,
+      shieldRemaining: getShieldAbsorption(lobbyId, playerId),
+    });
+  }
+  originalApplyDamage(lobbyId, playerId, remainingDamage);
+};
 
 // Apply damage effects from abilities to boss HP
 eventBus.on('ability:effect_applied', (payload) => {
@@ -246,7 +442,7 @@ eventBus.on('ability:effect_applied', (payload) => {
 });
 
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager, comboManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager, comboManager, itemManager };
 
 // Export player-user ID mapping helpers
 export function registerPlayerUserId(playerId: string, userId: number): void {
@@ -268,6 +464,7 @@ export type { ProgressionManager, ProgressionManagerDeps } from './ProgressionMa
 export type { ClassMasteryManager, ClassMasteryManagerDeps } from './ClassMasteryManager';
 export type { AbilityManager, AbilityManagerDeps } from './AbilityManager';
 export type { ComboManager, ComboManagerDeps } from './ComboManager';
+export type { ItemManager, ItemManagerDeps } from './ItemManager';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
