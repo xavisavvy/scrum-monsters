@@ -28,6 +28,8 @@ import {
   RevivalNotAllowedError,
   NotHealerClassError,
 } from '../errors/CombatErrors';
+import { BossAI, getBossTypeFromSprite } from './boss-ai';
+import type { BossType, BossPhaseNumber } from './boss-ai';
 
 /**
  * Dependencies required by CombatManager
@@ -39,6 +41,9 @@ export interface CombatManagerDeps {
   classMasteryManager?: {
     getMasteryMultiplier: (lobbyId: string, playerId: string, avatarClass: AvatarClass | null) => number;
     getUnlockedAbilities: (lobbyId: string, playerId: string, avatarClass: AvatarClass | null) => string[];
+  };
+  progressionManager?: {
+    getPlayerLevel: (lobbyId: string, playerId: string) => number;
   };
 }
 
@@ -80,9 +85,11 @@ interface PlayerCombat {
 interface BossCombat {
   bossId: string;
   bossName: string;
+  bossType: BossType;        // NEW: the boss type identifier
   hp: number;
   maxHp: number;
-  isEnraged: boolean;
+  isEnraged: boolean;        // KEEP for backward compat, but phase tracked by BossAI
+  currentPhase: BossPhaseNumber;  // NEW: current HP phase (1, 2, 3)
   attackTimerHandle?: NodeJS.Timeout;
   lastAttackAt: number;
   threatTable: Map<string, ThreatEntry>;
@@ -129,6 +136,7 @@ export class CombatManager {
   // State Maps
   private combatStates = new Map<string, LobbyCombatState>();
   private revivalSessions = new Map<string, RevivalSession>();
+  private bossAIs = new Map<string, BossAI>();
 
   // HP and damage tuning
   private readonly BASE_HP_PER_PLAYER = 1000;
@@ -152,6 +160,11 @@ export class CombatManager {
   private readonly BOSS_ATTACK_VARIANCE = 0.3;      // ±30%
   private readonly BOSS_INITIAL_ATTACK_DELAY_MS = 3000;
 
+  // Level-based difficulty scaling
+  private readonly LEVEL_HP_SCALING = 0.08;      // +8% HP per average level
+  private readonly LEVEL_DAMAGE_SCALING = 0.05;   // +5% damage per average level
+  private readonly PHASE_3_ATTACK_INTERVAL_MS = 2000; // Faster attacks in phase 3 (enrage)
+
   // Healer classes that can revive
   private readonly HEALER_CLASSES: AvatarClass[] = ['cleric', 'paladin', 'bard'];
 
@@ -174,12 +187,14 @@ export class CombatManager {
   private readonly getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   private readonly getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
   private readonly classMasteryManager: CombatManagerDeps['classMasteryManager'];
+  private readonly progressionManager: CombatManagerDeps['progressionManager'];
 
   constructor(deps: CombatManagerDeps) {
     this.eventBus = deps.eventBus;
     this.getPlayerTeam = deps.getPlayerTeam;
     this.getPlayerClass = deps.getPlayerClass;
     this.classMasteryManager = deps.classMasteryManager;
+    this.progressionManager = deps.progressionManager;
 
     // Subscribe to cross-domain events
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));

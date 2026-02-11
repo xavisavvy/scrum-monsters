@@ -281,9 +281,11 @@ export interface CombatBossEnragedPayload {
 export interface CombatBossTelegraphPayload {
   lobbyId: string;
   targetId?: string; // Optional - not specified for AoE attacks
-  attackType?: 'light' | 'heavy' | 'special'; // Optional - inferred from message
+  attackType?: 'light' | 'heavy' | 'special' | 'aoe'; // Optional - inferred from message
   message: string;
   delayMs: number;
+  visualEffect?: 'charge' | 'glow' | 'shake' | 'particles' | 'none';
+  bossType?: string;  // For boss-specific visual theming
 }
 
 /** Emitted when revival channeling starts */
@@ -413,6 +415,15 @@ export interface CombatBattleCompletePayload {
   lobbyId: string;
 }
 
+/** Emitted when boss crosses HP phase threshold */
+export interface CombatBossPhaseTransitionPayload {
+  lobbyId: string;
+  newPhase: number;       // 1, 2, or 3
+  previousPhase: number;
+  message: string;        // Boss-specific transition message
+  bossType: string;       // e.g., 'bug-hydra'
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -490,6 +501,7 @@ export interface DomainEventMap {
   'combat:minion_damaged': CombatMinionDamagedPayload;
   'combat:minion_killed': CombatMinionKilledPayload;
   'combat:battle_complete': CombatBattleCompletePayload;
+  'combat:boss_phase_transition': CombatBossPhaseTransitionPayload;
 
   // Progression events
   'progression:xp_awarded': ProgressionXPAwardedPayload;
