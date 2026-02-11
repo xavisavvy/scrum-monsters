@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, real, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -75,6 +75,18 @@ export const sessions = pgTable("sessions", {
   expire: timestamp("expire").notNull(),
 });
 
+// Class mastery progress - per-class XP tracking
+export const classMasteryProgress = pgTable("class_mastery_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  avatarClass: text("avatar_class").notNull(),
+  classXP: integer("class_xp").default(0).notNull(),
+  currentTier: text("current_tier").default('Novice').notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserClass: unique().on(table.userId, table.avatarClass),
+}));
+
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
@@ -126,6 +138,13 @@ export const insertEstimationHistorySchema = createInsertSchema(estimationHistor
   wasInConsensus: true,
 });
 
+export const insertClassMasteryProgressSchema = createInsertSchema(classMasteryProgress).pick({
+  userId: true,
+  avatarClass: true,
+  classXP: true,
+  currentTier: true,
+});
+
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
@@ -141,3 +160,6 @@ export type UserStats = typeof userStats.$inferSelect;
 
 export type InsertEstimationHistory = z.infer<typeof insertEstimationHistorySchema>;
 export type EstimationHistory = typeof estimationHistory.$inferSelect;
+
+export type InsertClassMasteryProgress = z.infer<typeof insertClassMasteryProgressSchema>;
+export type ClassMasteryProgress = typeof classMasteryProgress.$inferSelect;

@@ -17,6 +17,10 @@ import type {
   ProgressionXPAwardedPayload,
   ProgressionLevelUpPayload,
 } from '../../shared/progressionTypes';
+import type {
+  ClassMasteryXPAwardedPayload,
+  ClassMasteryTierUpPayload,
+} from '../../shared/classMasteryTypes';
 
 // =============================================================================
 // Session Domain Events
@@ -490,6 +494,10 @@ export interface DomainEventMap {
   // Progression events
   'progression:xp_awarded': ProgressionXPAwardedPayload;
   'progression:level_up': ProgressionLevelUpPayload;
+
+  // Class Mastery events
+  'class_mastery:xp_awarded': ClassMasteryXPAwardedPayload;
+  'class_mastery:tier_up': ClassMasteryTierUpPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
