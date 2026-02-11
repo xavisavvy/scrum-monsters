@@ -11,6 +11,7 @@ import { SessionManager } from './SessionManager';
 import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
 import { ProgressionManager } from './ProgressionManager';
+import { ClassMasteryManager } from './ClassMasteryManager';
 import { Server } from 'socket.io';
 import { storage } from '../storage';
 
@@ -99,9 +100,36 @@ const progressionManager = new ProgressionManager({
     return playerUserIdMap.get(playerId);
   },
 });
+const classMasteryManager = new ClassMasteryManager({
+  eventBus,
+  getPlayerClass: (lobbyId: string, playerId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    return player?.avatar ?? null;
+  },
+  getVoters: (lobbyId: string) => {
+    const estimation = estimationManager.getEstimation(lobbyId);
+    if (!estimation) return [];
+    const voters: string[] = [];
+    for (const team of ['developers', 'qa'] as const) {
+      const teamState = estimation.teams[team];
+      if (teamState) {
+        for (const [playerId] of teamState.votes) {
+          voters.push(playerId);
+        }
+      }
+    }
+    return voters;
+  },
+  storage,
+  getUserId: (lobbyId: string, playerId: string) => {
+    return playerUserIdMap.get(playerId);
+  },
+});
 
 // Export instances
-export { eventBus, sessionManager, estimationManager, combatManager, progressionManager };
+export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager };
 
 // Export player-user ID mapping helpers
 export function registerPlayerUserId(playerId: string, userId: number): void {
@@ -120,6 +148,7 @@ export type { SessionManager, SessionManagerDeps, CreateLobbyOptions } from './S
 export type { EstimationManager, EstimationManagerDeps } from './EstimationManager';
 export type { CombatManager, CombatManagerDeps } from './CombatManager';
 export type { ProgressionManager, ProgressionManagerDeps } from './ProgressionManager';
+export type { ClassMasteryManager, ClassMasteryManagerDeps } from './ClassMasteryManager';
 
 // Re-export errors
 export * from '../errors/SessionErrors';
