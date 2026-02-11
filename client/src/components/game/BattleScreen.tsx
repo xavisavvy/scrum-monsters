@@ -663,11 +663,13 @@ export function BattleScreen() {
 
       case 'game_over':
         return (
-          <GameOverPhase 
+          <GameOverPhase
             key={phaseKey}
-            lobby={currentLobby} 
+            lobby={currentLobby}
             currentPlayer={currentPlayer}
             emit={emit}
+            sidebarCollapsed={false}
+            onToggleSidebar={() => {}}
           />
         );
 
