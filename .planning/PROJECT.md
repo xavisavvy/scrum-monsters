@@ -64,12 +64,29 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(None — awaiting next milestone definition)
+- [ ] JRPG-themed visual redesign across all game phases (post-lobby)
+- [ ] Responsive web — full sessions playable on phone browsers
+- [ ] Information architecture overhaul — progressive disclosure, reduce visual noise
+- [ ] Clear phase transitions — easy to follow game flow between states
+- [ ] Website/game module separation — proper routes for SEO, game as self-contained module
+- [ ] Lobby magic/emote system (formalize Phase 21 backlog)
+- [ ] Visual polish — professional product quality
+
+## Current Milestone: v2.0 UI Redesign & Mobile
+
+**Goal:** Redesign the entire game experience with JRPG theming, responsive layout, simplified information architecture, and proper routing/SEO — making ScrumQuest look and feel like a polished product on any device.
+
+**Target features:**
+- Full JRPG-themed visual redesign (all post-lobby phases)
+- Responsive web layout (phone-friendly without a native app)
+- Information architecture overhaul (simplify, progressive disclosure)
+- Clear phase transitions and game flow
+- Website/game module separation (SEO-friendly routes + Three.js game module)
+- Lobby magic/emote system
+- Professional visual polish
 
 ### Out of Scope
 
-- UI redesign — deferred to future milestone
-- Mobile responsiveness — deferred to future milestone
 - Persistent inventory — items deliberately session-scoped
 - Multi-class combo chains — 2-class combos sufficient
 - XP penalties for "wrong" votes — undermines collaboration
@@ -79,7 +96,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ## Context
 
-**Current State (v1.3 shipped):**
+**Current State (v2.0 in progress):**
 - ~100k lines of TypeScript/YAML across client/server/shared/k8s
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager, ProgressionManager, ClassMasteryManager, AbilityManager, ComboManager, ItemManager, StatsTracker
 - EventBus-based coordination with scoped subscriptions
@@ -149,4 +166,4 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Event-driven stats tracking | StatsTracker subscribes to EventBus, zero coupling | ✓ Good |
 
 ---
-*Last updated: 2026-02-11 after v1.3 milestone*
+*Last updated: 2026-02-11 after v2.0 milestone start*
