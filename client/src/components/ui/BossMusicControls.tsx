@@ -42,7 +42,7 @@ export function BossMusicControls() {
   const handleStopYoutube = () => {
     if (socket) {
       // Send WebSocket event to sync with all players
-      socket.emit('youtube_stop', {});
+      socket.emit('youtube_stop');
     }
   };
 

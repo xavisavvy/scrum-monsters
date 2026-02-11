@@ -625,7 +625,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     
     // CLERIC: Heal entire party 50% HP
     if (avatarClass === 'cleric') {
-      emit('heal_party', undefined as any);
+      emit('heal_party');
       console.log(`💫 Cleric heals entire party!`);
       if (playHit) playHit();
       return;

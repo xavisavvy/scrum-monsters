@@ -95,13 +95,15 @@ export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelPr
   const getClassIcon = (avatarClass: AvatarClass): string => {
     const icons: Record<AvatarClass, string> = {
       ranger: '🏹',
-      rogue: '🗡️', 
+      rogue: '🗡️',
       bard: '🎵',
       sorcerer: '🔥',
       wizard: '🧙',
       warrior: '⚔️',
       paladin: '🛡️',
-      cleric: '✨'
+      cleric: '✨',
+      oathbreaker: '💀',
+      monk: '🥋'
     };
     return icons[avatarClass];
   };
