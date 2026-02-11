@@ -11,6 +11,7 @@ import {
   estimationManager,
   combatManager,
   progressionManager,
+  classMasteryManager,
   registerPlayerUserId,
   eventBus,
   initializeClientEventEmitter,
@@ -284,6 +285,25 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
               console.error('Failed to sync progression for host:', err);
             }
           })();
+
+          // Load class mastery (fire-and-forget, non-blocking)
+          (async () => {
+            try {
+              await classMasteryManager.loadAllClassMastery(lobby.id, lobby.hostId, socket.data.userId!);
+              // Build mastery data from loaded state
+              const masteryData = classMasteryManager.getAllMasteryData(lobby.id, lobby.hostId);
+              if (Object.keys(masteryData).length > 0) {
+                socket.emit('class_mastery:sync', {
+                  playerId: lobby.hostId,
+                  masteryData,
+                  seq: 0,
+                  timestamp: Date.now(),
+                });
+              }
+            } catch (err) {
+              console.error('Failed to sync class mastery:', err);
+            }
+          })();
         }
 
         console.log(`Lobby created: ${lobby.id} by ${hostName}`);
@@ -366,6 +386,25 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
               });
             } catch (err) {
               console.error('Failed to sync progression for player:', err);
+            }
+          })();
+
+          // Load class mastery (fire-and-forget, non-blocking)
+          (async () => {
+            try {
+              await classMasteryManager.loadAllClassMastery(lobby.id, player.id, socket.data.userId!);
+              // Build mastery data from loaded state
+              const masteryData = classMasteryManager.getAllMasteryData(lobby.id, player.id);
+              if (Object.keys(masteryData).length > 0) {
+                socket.emit('class_mastery:sync', {
+                  playerId: player.id,
+                  masteryData,
+                  seq: 0,
+                  timestamp: Date.now(),
+                });
+              }
+            } catch (err) {
+              console.error('Failed to sync class mastery:', err);
             }
           })();
         }
@@ -1371,6 +1410,25 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 });
               } catch (err) {
                 console.error('Failed to sync progression on reconnect:', err);
+              }
+            })();
+
+            // Load class mastery (fire-and-forget, non-blocking)
+            (async () => {
+              try {
+                await classMasteryManager.loadAllClassMastery(lobbyId, playerId, socket.data.userId!);
+                // Build mastery data from loaded state
+                const masteryData = classMasteryManager.getAllMasteryData(lobbyId, playerId);
+                if (Object.keys(masteryData).length > 0) {
+                  socket.emit('class_mastery:sync', {
+                    playerId,
+                    masteryData,
+                    seq: 0,
+                    timestamp: Date.now(),
+                  });
+                }
+              } catch (err) {
+                console.error('Failed to sync class mastery:', err);
               }
             })();
           }

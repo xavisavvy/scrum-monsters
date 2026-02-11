@@ -375,6 +375,29 @@ export class ClientEventEmitter {
         newLevel: payload.newLevel,
       });
     });
+
+    // =============================================================================
+    // Class Mastery Events
+    // =============================================================================
+
+    this.eventBus.on('class_mastery:xp_awarded', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'class_mastery:xp_awarded', {
+        playerId: payload.playerId,
+        avatarClass: payload.avatarClass,
+        amount: payload.amount,
+        source: payload.source,
+        newTotal: payload.newTotal,
+      });
+    });
+
+    this.eventBus.on('class_mastery:tier_up', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'class_mastery:tier_up', {
+        playerId: payload.playerId,
+        avatarClass: payload.avatarClass,
+        oldTier: payload.oldTier,
+        newTier: payload.newTier,
+      });
+    });
   }
 
   /**
