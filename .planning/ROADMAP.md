@@ -54,14 +54,16 @@ See `.planning/milestones/v1.2-ROADMAP.md`
   6. Player sees their current level based on accumulated XP
   7. Player sees XP bar showing progress toward next level
   8. Player sees level-up celebration when crossing level threshold
-**Plans**: 6 plans
+**Plans**: 8 plans
 Plans:
-- [ ] 15-01-PLAN.md — TDD: XP curve, types, and ProgressionManager domain
-- [ ] 15-02-PLAN.md — Client progression store and Socket.IO events
-- [ ] 15-03-PLAN.md — XP bar UI component with JRPG styling
-- [ ] 15-04-PLAN.md — Floating XP numbers with animations
-- [ ] 15-05-PLAN.md — Level-up celebration with class effects
-- [ ] 15-06-PLAN.md — Full integration and end-to-end wiring
+- [x] 15-01-PLAN.md — TDD: XP curve, types, and ProgressionManager domain
+- [x] 15-02-PLAN.md — Client progression store and Socket.IO events
+- [x] 15-03-PLAN.md — XP bar UI component with JRPG styling
+- [x] 15-04-PLAN.md — Floating XP numbers with animations
+- [x] 15-05-PLAN.md — Level-up celebration with class effects
+- [x] 15-06-PLAN.md — Full integration and end-to-end wiring
+- [ ] 15-07-PLAN.md — Gap closure: consensus XP + XP persistence
+- [ ] 15-08-PLAN.md — Gap closure: level display in lobby
 
 ### Phase 16: Class Mastery System
 
