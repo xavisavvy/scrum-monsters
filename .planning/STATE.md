@@ -9,10 +9,10 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 15 of 20 (XP/Progression Foundation) — COMPLETE
-Plan: 8/8 complete, verified
-Status: Phase 15 verified (8/8 must-haves passed), ROADMAP updated
-Last activity: 2026-02-10 - Phase 15 execution complete with verification
+Phase: 16 of 20 (Class Mastery System) — IN PROGRESS
+Plan: 1/5 complete
+Status: Plan 16-01 complete (ClassMasteryManager foundation with TDD)
+Last activity: 2026-02-11 - Plan 16-01 execution complete
 
 Progress: [███████████████░░░░░] 75% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 75% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 59 (v1.0: 30, v1.2: 21, v1.3: 8)
+- Total plans completed: 60 (v1.0: 30, v1.2: 21, v1.3: 9)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -66,6 +66,10 @@ Recent decisions affecting current work:
 - [15-08]: Level badge displayed only for players above level 1 (progressive disclosure)
 - [15-08]: JRPG gold aesthetic (amber-400) for level display consistency with XP bar
 - [15-08]: Compact "LvN" format matches JRPG conventions
+- [16-01]: 1:1 XP parity between class mastery and global progression
+- [16-01]: Three-tier mastery system (Novice/Expert/Master) with stat multipliers (1.0/1.1/1.2)
+- [16-01]: Award class XP to player's CURRENT class (encourages class experimentation)
+- [16-01]: Fire-and-forget persistence for class mastery data
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ Open items from v1.2:
 
 ## Session Continuity
 
-Last session: 2026-02-10
-Stopped at: Phase 15 complete and verified (8/8 must-haves). Ready for Phase 16.
+Last session: 2026-02-11
+Stopped at: Plan 16-01 complete (ClassMasteryManager with TDD). Ready for Plan 16-02 (storage integration).
 Resume file: None
