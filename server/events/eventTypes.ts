@@ -21,6 +21,16 @@ import type {
   ClassMasteryXPAwardedPayload,
   ClassMasteryTierUpPayload,
 } from '../../shared/classMasteryTypes';
+import type {
+  AbilityUsedPayload as AbilityUsedPayloadImport,
+  AbilityCooldownStartedPayload as AbilityCooldownStartedPayloadImport,
+  AbilityEffectAppliedPayload as AbilityEffectAppliedPayloadImport,
+} from '../../shared/abilityTypes';
+
+// Re-export ability types for server event usage
+export type AbilityUsedPayload = AbilityUsedPayloadImport;
+export type AbilityCooldownStartedPayload = AbilityCooldownStartedPayloadImport;
+export type AbilityEffectAppliedPayload = AbilityEffectAppliedPayloadImport;
 
 // =============================================================================
 // Session Domain Events
@@ -510,6 +520,11 @@ export interface DomainEventMap {
   // Class Mastery events
   'class_mastery:xp_awarded': ClassMasteryXPAwardedPayload;
   'class_mastery:tier_up': ClassMasteryTierUpPayload;
+
+  // Ability events
+  'ability:used': AbilityUsedPayload;
+  'ability:cooldown_started': AbilityCooldownStartedPayload;
+  'ability:effect_applied': AbilityEffectAppliedPayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;
