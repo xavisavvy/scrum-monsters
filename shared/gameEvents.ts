@@ -480,6 +480,33 @@ export interface ServerToClientEvents {
     timestamp: number;
   }) => void;
 
+  // Class mastery events
+  'class_mastery:xp_awarded': (data: {
+    playerId: string;
+    avatarClass: string;
+    amount: number;
+    source: string;
+    newTotal: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'class_mastery:tier_up': (data: {
+    playerId: string;
+    avatarClass: string;
+    oldTier: string;
+    newTier: string;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'class_mastery:sync': (data: {
+    playerId: string;
+    masteryData: Record<string, { classXP: number; currentTier: string }>;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
   'system:missed_events': (data: { events: Array<{ event: string; data: any }> }) => void;

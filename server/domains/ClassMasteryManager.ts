@@ -289,6 +289,28 @@ export class ClassMasteryManager {
   }
 
   /**
+   * Get all class mastery data for a player
+   * Returns a map of avatarClass -> { classXP, currentTier }
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @returns Record of class mastery data
+   */
+  getAllMasteryData(lobbyId: string, playerId: string): Record<string, { classXP: number; currentTier: string }> {
+    const lobbyMap = this.lobbyClassXP.get(lobbyId);
+    if (!lobbyMap) return {};
+
+    const playerMap = lobbyMap.get(playerId);
+    if (!playerMap) return {};
+
+    const result: Record<string, { classXP: number; currentTier: string }> = {};
+    for (const [avatarClass, classXP] of playerMap.entries()) {
+      const currentTier = this.curve.calculateTier(classXP);
+      result[avatarClass] = { classXP, currentTier };
+    }
+    return result;
+  }
+
+  /**
    * Clean up lobby from tracking (when lobby is destroyed)
    * @param lobbyId Lobby identifier
    */
