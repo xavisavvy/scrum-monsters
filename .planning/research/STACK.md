@@ -1,673 +1,360 @@
-# Stack Research: Game Progression, Boss AI, and Combat Systems
+# Technology Stack
 
-**Project:** ScrumQuest v1.3 Game Progression Milestone
-**Researched:** 2026-02-03
-**Confidence:** HIGH
-
-## Executive Summary
-
-Adding XP/leveling, boss attack patterns, class abilities, and combat items to an existing real-time multiplayer game requires minimal stack additions. The existing architecture (EventBus coordination, domain managers, Socket.IO, Zustand, Drizzle ORM) handles these features natively with proper schema extensions.
-
-**Key Recommendation:** No new runtime dependencies required. Use formula-based XP calculations (not lookup tables), state machine patterns for boss AI (without XState), TypeScript discriminated unions for type-safe ability/item systems, and Drizzle schema extensions for persistence.
-
----
+**Project:** ScrumQuest UI Redesign & Mobile Responsiveness
+**Researched:** 2026-02-11
 
 ## Recommended Stack Additions
 
-### No New Runtime Dependencies
+This document covers ONLY the new libraries needed for responsive JRPG-themed UI, mobile-friendly interfaces, proper routing, and SEO optimization. Existing stack (React, Three.js, Zustand, Tailwind) remains unchanged.
 
-The existing stack fully supports v1.3 requirements:
+### Routing & Navigation
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| React Router | ^6.26.0 (current) → ^7.x (upgrade recommended) | Client-side routing, URL management | Already installed (v6.26.0). **Upgrade to v7 recommended** for type safety (automatic route typing with typegen), React 19 compatibility, 15% smaller bundle, and improved SSR support. V6→V7 is non-breaking if future flags enabled. V7 simplifies package structure (single `react-router` import) and adds automatic loader/action typing. |
 
-| Existing Tech | v1.3 Usage | Rationale |
-|---------------|------------|-----------|
-| **EventBus** | XP award events, ability triggers, item consumption | Already handles cross-domain coordination |
-| **CombatManager** | Boss attack patterns, difficulty scaling | Already manages HP, threats, attack loops |
-| **Drizzle ORM** | XP/level persistence, class mastery tables | Already has user schema, supports generated columns |
-| **Zustand** | Client-side progression UI state | Already manages game state reactively |
-| **Zod** | Validate XP formulas, ability definitions | Already in stack (v3.23.8) |
-| **Socket.IO** | Real-time XP notifications, ability broadcasts | Already handles all real-time events |
+**Note:** React Router v6.26.0 is already in package.json but NOT currently used (no Routes/Route components found in codebase). Current routing uses manual state management (`appState` variable in App.tsx with query params). Migration needed.
 
-**Why No New Dependencies:**
-- XState (state machine library) adds 15KB+ and learning curve for patterns CombatManager already implements
-- Game progression math is pure TypeScript - no specialized library needed
-- Existing EventBus pattern handles all new event types
+### SEO & Meta Tags
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| react-helmet-async | ^2.0.5 (current) | Dynamic meta tags, document head management | **Already installed and working.** Thread-safe, prevents performance issues vs original react-helmet. Essential for SPA SEO (title, description, Open Graph tags per route). Context-based, no hydration mismatches. |
+| vite-react-ssg | ^0.5.0+ | Static site generation for marketing pages | **NEW - RECOMMENDED.** Pre-renders landing, about, features, pricing, support pages to static HTML for SEO. Wraps React Helmet for SSR. Enables hybrid approach: static marketing + dynamic game. Vite-native, works with existing build setup. |
 
----
+**Alternative considered:** vite-plugin-prerender (more manual). vite-react-ssg chosen for better React Helmet integration and cleaner API.
 
-## XP/Leveling System Stack
+### Responsive Design Utilities
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| @tailwindcss/container-queries | Latest (built-in v4) | Component-level responsive design | **NEW - OPTIONAL.** Enables `@sm:`, `@md:` prefixes for container-based breakpoints vs viewport. Perfect for sidebar/panel layouts that resize independently. Now built into Tailwind v4 (no plugin needed). Use for micro-layouts; keep media queries for page-level. |
+| react-responsive | ^10.0.0 | JavaScript-based media query hooks | **NEW - RECOMMENDED.** SSR-safe `useMediaQuery` hook for conditional rendering/logic. Needed for mobile vs desktop behavior in Three.js scenes (adjust quality, controls). Complements Tailwind CSS breakpoints with runtime detection. |
 
-### Recommendation: Formula-Based Calculation
+**Note:** Tailwind v3.4.14 already installed with mobile-first breakpoints (sm/md/lg/xl/2xl). Additional utilities only needed for JS-driven responsiveness.
 
-**Use TypeScript pure functions, not database lookup tables.**
+### Animation & Transitions (JRPG Feel)
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| framer-motion | ^11.13.1 (current) | Page transitions, UI animations, gestures | **Already installed.** Perfect for JRPG menu transitions (slide, fade), hover effects, dialog animations. React-native API (`motion.div`), gesture support (`whileHover`, `whileTap`), AnimatePresence for exit animations. 32KB gzipped, optimized for React. **Keep using.** |
+| gsap | ^3.12.5 (current) | Complex timeline animations, scroll effects | **Already installed.** Use for cinematic cutscenes, boss intro sequences, complex multi-step animations. Timeline control superior to Framer Motion for scripted sequences. Performance-optimized (bypasses React diffing). **Keep using.** |
 
-```typescript
-// server/domains/progression/xpFormulas.ts
+**Decision:** Use BOTH. Framer Motion for 90% of UI (menus, buttons, cards). GSAP for 10% cinematic moments (battle intros, victory screens, scrolling parallax). Already integrated, no new dependencies.
 
-/**
- * XP required for a level (quadratic scaling)
- * Level 1: 100 XP, Level 10: ~1000 XP, Level 50: ~12,500 XP
- */
-export function getXPForLevel(level: number): number {
-  return Math.floor(50 * level * (level + 1));
-}
+### Three.js Performance (Mobile Optimization)
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| @react-three/drei | ^9.122.0 (current) | Adaptive performance components | **Already installed.** Use `<AdaptivePixelRatio />` to cap devicePixelRatio on mobile (prevent 4x rendering on high-DPI phones). Use `<PerformanceMonitor>` to dynamically adjust quality based on FPS. Use `<AdaptiveDpr />` for idle vs interaction quality regression. Essential for mobile Three.js. |
+| r3f-perf | ^7.2.3 (current) | Performance monitoring overlay | **Already installed.** Debug tool for mobile performance testing. Shows FPS, drawcalls, memory. Keep for development, disable in production. |
 
-/**
- * Derive level from total XP (inverse formula)
- */
-export function getLevelFromXP(totalXP: number): number {
-  // Solve: 50 * level * (level + 1) = totalXP
-  // Using quadratic formula approximation
-  const discriminant = 1 + (4 * totalXP) / 50;
-  return Math.floor((-1 + Math.sqrt(discriminant)) / 2);
-}
-
-/**
- * XP progress within current level (0-1)
- */
-export function getLevelProgress(totalXP: number): number {
-  const currentLevel = getLevelFromXP(totalXP);
-  const currentLevelXP = getXPForLevel(currentLevel);
-  const nextLevelXP = getXPForLevel(currentLevel + 1);
-  return (totalXP - currentLevelXP) / (nextLevelXP - currentLevelXP);
-}
+**Mobile-specific settings:**
+```tsx
+// Recommended Canvas props for mobile
+<Canvas
+  dpr={[1, 2]} // Min 1, max 2 (caps at 2x even on 3x/4x devices)
+  performance={{ min: 0.5 }} // Allow 50% quality drop during interaction
+  gl={{
+    antialias: true, // Enable for visual quality
+    powerPreference: "high-performance" // Use GPU on mobile
+  }}
+>
+  <AdaptivePixelRatio /> {/* From @react-three/drei */}
+  <PerformanceMonitor> {/* Auto-adjust on FPS drops */}
+</Canvas>
 ```
 
-**Why Formula-Based:**
-- No database queries for XP calculations (instant)
-- Easy to tune difficulty curve by adjusting coefficients
-- Deterministic - same XP always yields same level
-- No data migration when adjusting progression
-- Industry standard per [DEV Community XP system guide](https://dev.to/pedr0fontoura/creating-a-proper-experience-system-for-your-game-31p7)
+### Utility & Class Management
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| clsx | ^2.1.1 (current) | Conditional class names | **Already installed and used** (in `lib/utils.ts` as `cn()` helper). Tiny (240 bytes), faster than classnames. Essential for dynamic Tailwind classes. Keep using. |
+| tailwind-merge | ^2.5.4 (current) | Tailwind class conflict resolution | **Already installed and used** (combined with clsx in `cn()` utility). Prevents conflicts like `text-blue-500 text-red-500` by intelligently merging. Industry standard 2026. Keep using. |
 
-**Confidence:** HIGH - Core game math pattern, verified via research.
+## Installation Commands
 
-### Database Schema Extension (Drizzle)
+### Required New Packages
+```bash
+# Static site generation for SEO
+npm install -D vite-react-ssg@^0.5.0
 
-```typescript
-// shared/schema.ts additions
+# Responsive utilities
+npm install react-responsive@^10.0.0
 
-export const playerProgression = pgTable("player_progression", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }).unique(),
-
-  // Account-level XP (persists across sessions)
-  totalXP: integer("total_xp").default(0).notNull(),
-
-  // Computed level (PostgreSQL generated column for query efficiency)
-  accountLevel: integer("account_level")
-    .generatedAlwaysAs(sql`FLOOR((-1 + SQRT(1 + 4 * total_xp / 50)) / 2)`)
-    .notNull(),
-
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-export const classMastery = pgTable("class_mastery", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  avatarClass: text("avatar_class").notNull(), // 'warrior' | 'cleric' | etc.
-
-  // Class-specific XP
-  classXP: integer("class_xp").default(0).notNull(),
-
-  // Mastery tier (0-5: Novice, Apprentice, Journeyman, Expert, Master, Grandmaster)
-  masteryTier: integer("mastery_tier").default(0).notNull(),
-
-  // Unique constraint: one mastery record per user per class
-  createdAt: timestamp("created_at").defaultNow().notNull(),
-  updatedAt: timestamp("updated_at").defaultNow().notNull(),
-}, (table) => ({
-  userClassUnique: unique().on(table.userId, table.avatarClass),
-}));
+# Optional: Container queries (if Tailwind v4 upgrade planned)
+# npm install -D @tailwindcss/container-queries@^0.1.0
 ```
 
-**Why Drizzle Generated Columns:**
-- Level calculated at query time, no sync issues
-- Indexable for leaderboards
-- [Drizzle supports PostgreSQL generated columns](https://orm.drizzle.team/docs/generated-columns) natively
+### Optional Upgrades
+```bash
+# React Router v6 → v7 (recommended for type safety)
+npm install react-router@^7.0.0
 
-**Confidence:** HIGH - Verified via Drizzle official documentation.
-
----
-
-## Boss AI Attack Patterns Stack
-
-### Recommendation: Extend Existing CombatManager Pattern
-
-**Do NOT add XState.** The existing CombatManager already implements state machine patterns with TypeScript.
-
-```typescript
-// server/domains/combat/bossPatterns.ts
-
-export type BossAttackType =
-  | 'light'      // Quick, low damage
-  | 'heavy'      // Telegraphed, high damage
-  | 'special'    // Boss-specific signature
-  | 'phase'      // Transition attack
-  | 'enrage';    // Rage mechanic
-
-export type BossPhase = 'normal' | 'enraged' | 'desperation' | 'defeated';
-
-export interface AttackPattern {
-  attackType: BossAttackType;
-  damage: number;
-  cooldownMs: number;
-  telegraphMs: number;  // Warning time before hit
-  isAoE: boolean;
-  targetSelection: 'highest_threat' | 'random' | 'lowest_hp';
-}
-
-export interface BossDefinition {
-  bossType: string;  // 'bug-hydra' | 'sprint-demon' | etc.
-  displayName: string;
-  baseHealthMultiplier: number;
-
-  // Phase-specific attack weights
-  phases: {
-    normal: AttackPattern[];
-    enraged: AttackPattern[];
-    desperation: AttackPattern[];
-  };
-
-  // Phase transition thresholds
-  enrageThreshold: number;      // HP% to enter enraged
-  desperationThreshold: number;  // HP% to enter desperation
-
-  // Difficulty scaling coefficients
-  healthScalePerTicket: number;  // Additional HP per ticket in queue
-  damageScalePerMinute: number;  // Damage increase over battle time
-}
-
-// Existing CombatManager extension point
-export const BOSS_DEFINITIONS: Record<string, BossDefinition> = {
-  'bug-hydra': {
-    bossType: 'bug-hydra',
-    displayName: 'Bug Hydra',
-    baseHealthMultiplier: 1.0,
-    phases: {
-      normal: [
-        { attackType: 'light', damage: 15, cooldownMs: 3000, telegraphMs: 0, isAoE: false, targetSelection: 'highest_threat' },
-        { attackType: 'heavy', damage: 35, cooldownMs: 8000, telegraphMs: 1500, isAoE: false, targetSelection: 'random' },
-      ],
-      enraged: [
-        { attackType: 'light', damage: 20, cooldownMs: 2000, telegraphMs: 0, isAoE: false, targetSelection: 'highest_threat' },
-        { attackType: 'special', damage: 45, cooldownMs: 10000, telegraphMs: 2000, isAoE: true, targetSelection: 'random' },
-      ],
-      desperation: [
-        { attackType: 'enrage', damage: 30, cooldownMs: 1500, telegraphMs: 500, isAoE: true, targetSelection: 'random' },
-      ],
-    },
-    enrageThreshold: 0.5,
-    desperationThreshold: 0.2,
-    healthScalePerTicket: 0.15,
-    damageScalePerMinute: 0.05,
-  },
-  // ... other bosses
-};
+# Note: Remove react-router-dom after upgrade (consolidated into react-router in v7)
 ```
-
-**Why Not XState:**
-- CombatManager already has phase transitions, attack loops, timers
-- Boss phases are simpler than XState's full statechart model
-- No learning curve for team
-- Per [Game Programming Patterns](https://gameprogrammingpatterns.com/state.html): "For something as simple as boss attack patterns, a simple state enum and switch statement works well"
-
-**Confidence:** HIGH - Extends existing proven patterns.
-
-### Difficulty Scaling Formula
-
-```typescript
-// server/domains/combat/difficultyScaling.ts
-
-export interface DifficultyParams {
-  ticketIndex: number;      // 0-based index of current ticket
-  activePlayerCount: number; // Non-spectator players
-  battleElapsedMs: number;   // Time since battle started
-  bossType: string;          // Boss definition key
-}
-
-export function calculateBossHealth(params: DifficultyParams): number {
-  const definition = BOSS_DEFINITIONS[params.bossType];
-  const baseHealth = 1000;
-
-  // Player scaling: sqrt for diminishing returns
-  const playerScale = Math.sqrt(Math.max(1, params.activePlayerCount));
-
-  // Ticket scaling: linear increase
-  const ticketScale = 1 + (params.ticketIndex * definition.healthScalePerTicket);
-
-  // Boss type multiplier
-  const typeScale = definition.baseHealthMultiplier;
-
-  return Math.floor(baseHealth * playerScale * ticketScale * typeScale);
-}
-
-export function calculateBossDamage(baseDamage: number, params: DifficultyParams): number {
-  const definition = BOSS_DEFINITIONS[params.bossType];
-
-  // Time-based scaling: gradual increase to encourage voting
-  const minutesElapsed = params.battleElapsedMs / 60000;
-  const timeScale = 1 + (minutesElapsed * definition.damageScalePerMinute);
-
-  return Math.floor(baseDamage * timeScale);
-}
-```
-
-**Confidence:** HIGH - Standard game balancing formulas.
-
----
-
-## Class Abilities and Team Combos Stack
-
-### Recommendation: Discriminated Union Pattern
-
-**Type-safe ability definitions without runtime library.**
-
-```typescript
-// shared/abilities.ts
-
-export type AbilityTarget =
-  | 'self'
-  | 'ally'
-  | 'enemy'
-  | 'all_allies'
-  | 'all_enemies';
-
-export type AbilityEffect =
-  | { type: 'damage'; amount: number }
-  | { type: 'heal'; amount: number }
-  | { type: 'buff'; stat: 'damage' | 'defense' | 'speed'; multiplier: number; durationMs: number }
-  | { type: 'debuff'; stat: 'damage' | 'defense' | 'speed'; multiplier: number; durationMs: number }
-  | { type: 'revive'; healthPercent: number };
-
-export interface ClassAbility {
-  id: string;
-  name: string;
-  description: string;
-  avatarClass: AvatarClass;
-  requiredMasteryTier: number;  // 0-5, unlocked at this tier
-  cooldownMs: number;
-  target: AbilityTarget;
-  effects: AbilityEffect[];
-}
-
-// Type-safe ability registry
-export const CLASS_ABILITIES: Record<AvatarClass, ClassAbility[]> = {
-  warrior: [
-    {
-      id: 'warrior_taunt',
-      name: 'Taunt',
-      description: 'Force boss to target you for 5 seconds',
-      avatarClass: 'warrior',
-      requiredMasteryTier: 0,
-      cooldownMs: 15000,
-      target: 'self',
-      effects: [{ type: 'buff', stat: 'defense', multiplier: 1.5, durationMs: 5000 }],
-    },
-    {
-      id: 'warrior_rally',
-      name: 'Battle Rally',
-      description: 'Boost team damage by 25% for 10 seconds',
-      avatarClass: 'warrior',
-      requiredMasteryTier: 3,
-      cooldownMs: 45000,
-      target: 'all_allies',
-      effects: [{ type: 'buff', stat: 'damage', multiplier: 1.25, durationMs: 10000 }],
-    },
-  ],
-  cleric: [
-    {
-      id: 'cleric_heal',
-      name: 'Healing Light',
-      description: 'Heal an ally for 40 HP',
-      avatarClass: 'cleric',
-      requiredMasteryTier: 0,
-      cooldownMs: 8000,
-      target: 'ally',
-      effects: [{ type: 'heal', amount: 40 }],
-    },
-    {
-      id: 'cleric_mass_heal',
-      name: 'Divine Grace',
-      description: 'Heal all allies for 25 HP',
-      avatarClass: 'cleric',
-      requiredMasteryTier: 4,
-      cooldownMs: 30000,
-      target: 'all_allies',
-      effects: [{ type: 'heal', amount: 25 }],
-    },
-  ],
-  // ... other classes
-};
-```
-
-**Why Discriminated Unions:**
-- Compile-time type safety for effect types
-- Exhaustive switch checking
-- No runtime overhead
-- Native TypeScript pattern (no library)
-
-**Confidence:** HIGH - Standard TypeScript pattern.
-
-### Team Combo System
-
-```typescript
-// shared/combos.ts
-
-export interface TeamCombo {
-  id: string;
-  name: string;
-  description: string;
-  requiredClasses: AvatarClass[];  // All must be present
-  minParticipants: number;         // How many must use ability simultaneously
-  windowMs: number;                // Time window for coordination
-  bonusEffects: AbilityEffect[];
-}
-
-export const TEAM_COMBOS: TeamCombo[] = [
-  {
-    id: 'divine_storm',
-    name: 'Divine Storm',
-    description: 'Cleric + Warrior: Massive team-wide heal and damage boost',
-    requiredClasses: ['cleric', 'warrior'],
-    minParticipants: 2,
-    windowMs: 3000,
-    bonusEffects: [
-      { type: 'heal', amount: 50 },
-      { type: 'buff', stat: 'damage', multiplier: 1.5, durationMs: 10000 },
-    ],
-  },
-  {
-    id: 'arcane_barrage',
-    name: 'Arcane Barrage',
-    description: 'Wizard + Sorcerer: Triple damage to boss',
-    requiredClasses: ['wizard', 'sorcerer'],
-    minParticipants: 2,
-    windowMs: 2000,
-    bonusEffects: [
-      { type: 'damage', amount: 150 },
-    ],
-  },
-];
-```
-
-**Confidence:** HIGH - Data-driven approach, easy to balance.
-
----
-
-## Combat Items/Consumables Stack
-
-### Recommendation: Inventory as In-Memory Map (Session-Scoped)
-
-**Items exist only during battle session. No persistence needed for MVP.**
-
-```typescript
-// server/domains/combat/inventory.ts
-
-export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic';
-
-export type ItemEffect =
-  | { type: 'instant_heal'; amount: number }
-  | { type: 'damage_boost'; multiplier: number; durationMs: number }
-  | { type: 'defense_boost'; multiplier: number; durationMs: number }
-  | { type: 'revive_self' }
-  | { type: 'cleanse_debuff' };
-
-export interface CombatItem {
-  id: string;
-  name: string;
-  description: string;
-  rarity: ItemRarity;
-  maxStack: number;
-  effects: ItemEffect[];
-}
-
-export const COMBAT_ITEMS: Record<string, CombatItem> = {
-  'health_potion': {
-    id: 'health_potion',
-    name: 'Health Potion',
-    description: 'Restore 30 HP instantly',
-    rarity: 'common',
-    maxStack: 3,
-    effects: [{ type: 'instant_heal', amount: 30 }],
-  },
-  'phoenix_feather': {
-    id: 'phoenix_feather',
-    name: 'Phoenix Feather',
-    description: 'Revive yourself with 50% HP (one-time use)',
-    rarity: 'epic',
-    maxStack: 1,
-    effects: [{ type: 'revive_self' }],
-  },
-};
-
-// Session-scoped player inventory (in CombatManager state)
-export interface PlayerInventory {
-  items: Map<string, number>;  // itemId -> count
-}
-```
-
-**Why In-Memory:**
-- Items are granted at battle start, consumed during battle
-- No persistence complexity for MVP
-- Can add persistence later via Drizzle if needed
-- Follows [Heroic Labs inventory pattern](https://heroiclabs.com/docs/hiro/concepts/inventory/)
-
-**Confidence:** HIGH - MVP-appropriate simplification.
-
----
-
-## Integration Points with Existing Architecture
-
-### EventBus Events for New Systems
-
-```typescript
-// server/events/eventTypes.ts additions
-
-// Progression events
-export interface ProgressionXPAwardedPayload {
-  lobbyId: string;
-  playerId: string;
-  xpAmount: number;
-  reason: 'voting' | 'consensus' | 'boss_damage' | 'revive' | 'combo';
-  newTotalXP: number;
-  levelUp?: { oldLevel: number; newLevel: number };
-}
-
-export interface ProgressionClassMasteryPayload {
-  lobbyId: string;
-  playerId: string;
-  avatarClass: AvatarClass;
-  xpAmount: number;
-  newClassXP: number;
-  tierUp?: { oldTier: number; newTier: number; unlockedAbilities: string[] };
-}
-
-// Combat events (extend existing)
-export interface CombatAbilityUsedPayload {
-  lobbyId: string;
-  playerId: string;
-  abilityId: string;
-  targets: string[];
-  effects: AbilityEffect[];
-  comboTriggered?: string;  // Combo ID if this triggered a combo
-}
-
-export interface CombatItemUsedPayload {
-  lobbyId: string;
-  playerId: string;
-  itemId: string;
-  effects: ItemEffect[];
-  remainingCount: number;
-}
-```
-
-### New Domain Manager: ProgressionManager
-
-```typescript
-// server/domains/progression/ProgressionManager.ts
-
-export class ProgressionManager {
-  constructor(
-    private eventBus: ScopedEventBus,
-    private db: DatabaseConnection
-  ) {
-    // Subscribe to XP-awarding events
-    this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
-    this.eventBus.on('estimation:full_consensus_reached', this.handleConsensus.bind(this));
-    this.eventBus.on('combat:boss_damaged', this.handleBossDamage.bind(this));
-    this.eventBus.on('combat:player_revived', this.handleRevive.bind(this));
-  }
-
-  private async awardXP(userId: number, amount: number, reason: string): Promise<void> {
-    // Update database
-    await this.db.update(playerProgression)
-      .set({ totalXP: sql`total_xp + ${amount}` })
-      .where(eq(playerProgression.userId, userId));
-
-    // Check for level up
-    const { totalXP } = await this.getPlayerProgression(userId);
-    const oldLevel = getLevelFromXP(totalXP - amount);
-    const newLevel = getLevelFromXP(totalXP);
-
-    // Emit event
-    this.eventBus.emit('progression:xp_awarded', {
-      userId,
-      xpAmount: amount,
-      reason,
-      newTotalXP: totalXP,
-      levelUp: newLevel > oldLevel ? { oldLevel, newLevel } : undefined,
-    });
-  }
-}
-```
-
-**Confidence:** HIGH - Follows established domain manager pattern.
-
----
 
 ## What NOT to Add
 
-### XState (State Machine Library)
+| Anti-Library | Why Avoid | What to Use Instead |
+|--------------|-----------|-------------------|
+| react-helmet (original) | Synchronous, performance issues, not maintained | **react-helmet-async** (already installed) |
+| Next.js / Remix | Full framework overkill, requires rewrite | vite-react-ssg for static pages + existing Vite setup |
+| Material-UI / Chakra UI | Heavy component libraries, conflicts with custom retro styling | Existing Radix UI primitives + Tailwind |
+| react-spring | Animation library overlap | Framer Motion (already installed, better DX) |
+| Preact | React replacement, breaks Three.js ecosystem | Stick with React 18 |
+| TanStack Router | Alternative router, ecosystem smaller than React Router | React Router v7 (battle-tested, type-safe) |
+| CSS-in-JS (styled-components, emotion) | Runtime overhead, conflicts with Tailwind | Tailwind + CSS custom properties (already using) |
 
-**Why NOT:**
-- CombatManager already implements state machine patterns
-- Boss phases are simpler than XState's full statechart model (guard conditions, parallel states, etc.)
-- Adds 15KB+ bundle size and learning curve
-- Per [Game Programming Patterns State chapter](https://gameprogrammingpatterns.com/state.html): Simple enum-based state machines work for most game AI
+## Configuration Updates Needed
 
-### Dedicated Game Progression Libraries
+### 1. Vite Config (vite.config.ts)
+```typescript
+import { defineConfig } from "vite";
+import react from "@vitejs/plugin-react";
+import glsl from "vite-plugin-glsl";
+import viteReactSSG from 'vite-react-ssg'; // NEW
 
-**Why NOT:**
-- XP formulas are ~20 lines of pure TypeScript
-- No standard library exists for this pattern
-- Custom formulas allow precise balancing control
-
-### Separate Inventory Database Table
-
-**Why NOT (for MVP):**
-- Items are session-scoped (granted at battle start)
-- In-memory storage in CombatManager is sufficient
-- Add persistence only if item permanence becomes a feature
-
-### CQRS/Event Sourcing for Progression
-
-**Why NOT:**
-- XP is simple increment operations
-- No audit trail needed for game XP
-- Adds unnecessary complexity
-- Existing Drizzle ORM handles persistence adequately
-
----
-
-## Version Compatibility
-
-| Technology | Current Version | Required For v1.3 | Status |
-|------------|-----------------|-------------------|--------|
-| TypeScript | 5.6.3 | 5.0+ (discriminated unions) | Compatible |
-| Drizzle ORM | 0.39.1 (installed), 0.45.1 (latest) | 0.30+ (generated columns) | Compatible |
-| Zod | 3.23.8 | 3.20+ | Compatible |
-| Zustand | 5.0.3 | 5.0+ | Compatible |
-| Socket.IO | 4.8.1 | 4.0+ | Compatible |
-| PostgreSQL | 14+ | 12+ (generated columns) | Compatible |
-
-**No upgrades required.**
-
----
-
-## Installation
-
-```bash
-# No new dependencies needed!
-
-# Verify existing versions
-npm list zustand drizzle-orm zod socket.io
-
-# Run Drizzle schema migration after adding new tables
-npm run db:push
+export default defineConfig({
+  plugins: [
+    react(),
+    glsl(),
+    viteReactSSG({
+      // Pre-render marketing pages for SEO
+      routes: ['/', '/about', '/features', '/pricing', '/support'],
+      // Don't pre-render game routes (dynamic)
+      exclude: ['/game', '/lobby', '/battle']
+    })
+  ],
+  // ... rest of config
+});
 ```
 
----
+### 2. Tailwind Config (tailwind.config.ts)
+```typescript
+export default {
+  darkMode: ["class"],
+  content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
+  theme: {
+    // Mobile-first breakpoints (already configured)
+    screens: {
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+      '2xl': '1536px',
+    },
+    extend: {
+      // JRPG color scheme (already configured in :root CSS vars)
+      // Add container queries if using @container syntax
+      containers: { // NEW (optional)
+        'xs': '20rem',
+        'sm': '24rem',
+        'md': '28rem',
+        'lg': '32rem',
+      }
+    }
+  },
+  plugins: [
+    require("tailwindcss-animate"), // Already installed
+    require("@tailwindcss/typography"), // Already installed
+    // require("@tailwindcss/container-queries"), // NEW (optional)
+  ]
+};
+```
 
-## Sources
+### 3. Router Integration Pattern
 
-### XP/Progression Systems
-- [Creating a proper experience system for your game - DEV Community](https://dev.to/pedr0fontoura/creating-a-proper-experience-system-for-your-game-31p7)
-- [Quantitative design - How to define XP thresholds - Gamedeveloper.com](https://www.gamedeveloper.com/design/quantitative-design---how-to-define-xp-thresholds-)
-- [Level systems and character growth in RPG games - Pav Creations](https://pavcreations.com/level-systems-and-character-growth-in-rpg-games/)
+**Current state:** No React Router usage. App.tsx manages routing with manual `appState` variable.
 
-### Boss AI and State Machines
-- [State Pattern - Game Programming Patterns](https://gameprogrammingpatterns.com/state.html)
-- [Designing a Boss: Using a State Machine - Medium](https://medium.com/@dcargile84/designing-a-boss-part-2-using-a-state-machine-3d04a4700890)
-- [Designing a simple game AI using Finite State Machines - Gamedeveloper.com](https://www.gamedeveloper.com/programming/designing-a-simple-game-ai-using-finite-state-machines)
+**Recommended migration:**
+```tsx
+// NEW: client/src/router.tsx
+import { createBrowserRouter, RouterProvider } from 'react-router';
 
-### Drizzle ORM
-- [Drizzle ORM - Generated Columns](https://orm.drizzle.team/docs/generated-columns)
-- [Drizzle ORM - PostgreSQL column types](https://orm.drizzle.team/docs/column-types/pg)
+const router = createBrowserRouter([
+  {
+    path: '/',
+    element: <LandingPage />,
+    meta: { title: 'ScrumQuest - JRPG Sprint Planning' }
+  },
+  {
+    path: '/about',
+    element: <AboutPage />,
+  },
+  {
+    path: '/game',
+    element: <GameContainer />,
+    children: [
+      { path: 'lobby/:lobbyId', element: <Lobby /> },
+      { path: 'battle/:lobbyId', element: <BattleScreen /> }
+    ]
+  }
+]);
 
-### Inventory/Item Systems
-- [Heroic Labs Inventory Documentation](https://heroiclabs.com/docs/hiro/concepts/inventory/)
-- [Doing Difficulty Right: Consumable Items - Gamedeveloper.com](https://www.gamedeveloper.com/design/doing-difficulty-right-consumable-items)
+// Replace App.tsx manual routing with RouterProvider
+```
 
-### XState (Why Not)
-- [XState Documentation](https://stately.ai/docs/xstate) - Reviewed to understand full feature set
-- [XState npm](https://www.npmjs.com/package/xstate) - Version 5.26.0, 15KB+ bundled
+**Integration with Zustand:** Navigation state can remain in Zustand. Router handles URL sync, Zustand handles game state. Use `useNavigate()` hook to trigger routing from Zustand actions.
 
----
+### 4. SEO Meta Tags Pattern
 
-## Confidence Assessment
+```tsx
+// Each route component
+import { Helmet } from 'react-helmet-async';
 
-| Area | Confidence | Rationale |
-|------|------------|-----------|
-| XP Formula Approach | HIGH | Industry standard, verified via multiple sources |
-| Boss Attack Patterns | HIGH | Extends existing CombatManager, proven patterns |
-| Drizzle Schema Extensions | HIGH | Official docs confirm generated column support |
-| Class Abilities Pattern | HIGH | Standard TypeScript discriminated unions |
-| Combat Items (In-Memory) | HIGH | MVP-appropriate, can extend later |
-| No XState Recommendation | MEDIUM | Team might prefer explicit library, but overhead isn't justified |
-| No New Dependencies | HIGH | Existing stack fully capable |
+function LandingPage() {
+  return (
+    <>
+      <Helmet>
+        <title>ScrumQuest - Turn Sprint Planning into Epic Boss Battles</title>
+        <meta name="description" content="JRPG-style scrum poker..." />
+        <meta property="og:title" content="ScrumQuest" />
+        <meta property="og:image" content="/og-image.png" />
+      </Helmet>
+      {/* page content */}
+    </>
+  );
+}
+```
 
----
+### 5. Mobile Three.js Settings
 
-## Roadmap Implications
+```tsx
+// client/src/components/game/BattleScreen.tsx
+import { useMediaQuery } from 'react-responsive';
 
-**Recommended Phase Structure:**
+function BattleScreen() {
+  const isMobile = useMediaQuery({ maxWidth: 768 });
 
-1. **XP/Progression Foundation** - Schema, formulas, ProgressionManager domain
-2. **Boss Pattern Variety** - BossDefinition system, difficulty scaling
-3. **Class Abilities** - Ability registry, cooldown management, UI
-4. **Team Combos** - Combo detection, coordination window
-5. **Combat Items** - Inventory, item effects, drop rates
+  return (
+    <Canvas
+      dpr={isMobile ? [1, 1.5] : [1, 2]} // Lower DPR on mobile
+      performance={{ min: isMobile ? 0.3 : 0.5 }} // More aggressive regression
+      gl={{
+        antialias: !isMobile, // Disable AA on mobile for performance
+        powerPreference: "high-performance"
+      }}
+    >
+      <AdaptivePixelRatio /> {/* Auto-adjust during lag */}
+      <PerformanceMonitor factor={1} onChange={({ fps }) => {
+        if (fps < 30 && isMobile) {
+          console.warn('Low FPS on mobile, reduce quality');
+        }
+      }} />
+      {/* scene content */}
+    </Canvas>
+  );
+}
+```
 
-**Phase Ordering Rationale:**
-- XP first (rewards existing actions, no gameplay change)
-- Boss patterns second (server-side, testable without client changes)
-- Abilities third (requires UI for activation)
-- Combos fourth (requires ability system)
-- Items last (nice-to-have, most complex UI)
+## Mobile Responsiveness Strategy
 
----
+### CSS Approach (Tailwind)
+- **Use mobile-first classes** (already following this pattern in retro.css)
+- **Breakpoint prefixes:** `sm:`, `md:`, `lg:` for progressive enhancement
+- **Example:** `<div className="text-sm md:text-base lg:text-lg">`
 
-*Stack research completed for: ScrumQuest v1.3 Game Progression Milestone*
-*Researched: 2026-02-03*
-*Confidence: HIGH*
+### Container Queries (NEW - Optional)
+- **Use for component-level responsiveness** (sidebar, panels)
+- **Syntax:** `@container` wrapper + `@sm:`, `@md:` classes on children
+- **Example:** Lobby sidebar that adapts to available space, not viewport
+
+### JavaScript Detection (NEW - react-responsive)
+- **Use for behavior changes** (not styling)
+- **Examples:**
+  - Disable particle effects on mobile
+  - Use touch controls vs mouse controls
+  - Adjust Three.js quality settings
+  - Conditional component rendering (swap heavy 3D for sprite on mobile)
+
+### Existing Responsive Patterns (retro.css)
+✅ **Already implemented:**
+- Avatar selection horizontal scroll on mobile (<699px)
+- Player chip size reduction on mobile (<640px)
+- Custom scrollbar styling for touch devices
+- `scroll-snap-type: x mandatory` for carousels
+
+## Performance Budget
+
+| Asset Type | Desktop | Mobile | Notes |
+|------------|---------|--------|-------|
+| Initial JS | <500KB | <350KB | Existing bundle ~480KB (within range) |
+| Three.js Bundle | <200KB | <150KB | Use dynamic imports for 3D scenes |
+| Images (per page) | <2MB | <1MB | Use WebP, lazy load bosses |
+| Animation FPS | 60 FPS | 30-60 FPS | Allow quality regression via PerformanceMonitor |
+
+## Integration Checklist
+
+- [x] Tailwind CSS already configured with mobile-first breakpoints
+- [x] clsx + tailwind-merge already integrated in `cn()` utility
+- [x] Framer Motion + GSAP already installed for animations
+- [x] @react-three/drei already installed for adaptive performance
+- [x] react-helmet-async already installed for meta tags
+- [ ] **Add vite-react-ssg** for static marketing page generation
+- [ ] **Add react-responsive** for JavaScript media queries
+- [ ] **Upgrade React Router v6 → v7** for type safety (optional but recommended)
+- [ ] **Configure vite-react-ssg routes** in vite.config.ts
+- [ ] **Migrate App.tsx routing** from manual state to React Router
+- [ ] **Add Helmet meta tags** to all marketing pages
+- [ ] **Implement mobile Canvas settings** with useMediaQuery in BattleScreen
+
+## Sources & Verification
+
+### High Confidence (Official Docs + Current Versions)
+- **Tailwind CSS responsive design:** [Tailwind Responsive Design](https://tailwindcss.com/docs/responsive-design), [Best Practices 2026](https://www.frontendtools.tech/blog/tailwind-css-best-practices-design-system-patterns)
+- **React Router v7:** [Official v7 Announcement](https://reactrouter.com/), [v7 vs v6 Comparison](https://medium.com/@ignatovich.dm/react-router-7-vs-6-whats-new-and-should-you-upgrade-93bba58576a8)
+- **react-helmet-async:** [NPM Package](https://www.npmjs.com/package/react-helmet-async), [SEO Guide](https://blog.sachinchaurasiya.dev/how-to-integrate-reactjs-and-react-helmet-async-manage-seo-and-meta-data)
+- **Container Queries:** [Tailwind Container Queries](https://tailkits.com/blog/tailwind-container-queries/), [LogRocket Guide](https://blog.logrocket.com/container-queries-2026/)
+- **clsx + tailwind-merge:** [Best Practices](https://medium.com/@naglaafouz4/enhancing-component-reusability-in-tailwind-css-with-clsx-and-tailwind-merge-986aa4e1fe76)
+
+### Medium Confidence (Community Sources + WebSearch)
+- **Framer Motion vs GSAP:** [2026 Comparison](https://blog.logrocket.com/best-react-animation-libraries/), [Performance Guide](https://semaphore.io/blog/react-framer-motion-gsap)
+- **React Three Fiber mobile performance:** [Scaling Performance Docs](https://r3f.docs.pmnd.rs/advanced/scaling-performance), [Adaptive Performance RFC](https://github.com/pmndrs/react-three-fiber/issues/1070)
+- **vite-react-ssg:** [GitHub Repo](https://github.com/Daydreamer-riri/vite-react-ssg), [Vite SSG Discussion](https://github.com/vitejs/vite/discussions/18130)
+- **react-responsive:** [NPM Package](https://www.npmjs.com/package/react-responsive), [SSR-safe useMediaQuery](https://medium.com/@dwinTech/managing-usemediaquery-hydration-errors-in-next-js-9ecc555542c7)
+
+### Low Confidence (Flagged for Validation)
+- **JRPG-specific color schemes:** No authoritative source found. Search returned generic game asset marketplaces. **Recommendation:** Design custom palette based on existing retro.css variables (already has JRPG aesthetic).
+- **React Router + Three.js integration:** Limited 2026-specific guidance. Found [2023 blog post](https://romain-legall.fr/posts/handle-react-router-v6-with-react-18-and-react-three-fiber) but couldn't verify current best practices. **Recommendation:** Standard React Router wrapping works fine (Canvas inside Route components).
+
+## Version Compatibility Matrix
+
+| Library | Current | Recommended | React Version | Breaking Changes |
+|---------|---------|-------------|---------------|------------------|
+| React | 18.3.1 | 18.3.1 (keep) | - | - |
+| React Router | 6.26.0 | 7.x (upgrade) | 18+ | None (with future flags) |
+| Tailwind CSS | 3.4.14 | 3.4.14 (keep) | - | - |
+| Framer Motion | 11.13.1 | 11.13.1 (keep) | 18+ | - |
+| react-helmet-async | 2.0.5 | 2.0.5 (keep) | 18+ | - |
+| @react-three/fiber | 8.18.0 | 8.18.0 (keep) | 18+ | - |
+| @react-three/drei | 9.122.0 | 9.122.0 (keep) | 18+ | - |
+
+**Note:** All existing versions are current as of 2026-02-11. Only additions needed, no upgrades required (except optional React Router v7).
+
+## Decision Rationale
+
+### Why React Router v7 over alternatives?
+- **Type safety:** Automatic loader/action typing eliminates manual type casting
+- **Bundle size:** 15% smaller than v6, matters for mobile
+- **Ecosystem:** Largest React routing ecosystem, better Three.js community examples
+- **Migration path:** Non-breaking upgrade from existing v6 installation
+- **React 19 ready:** Future-proof for React 19 adoption
+
+### Why vite-react-ssg over alternatives?
+- **Vite-native:** Works with existing build setup, no migration
+- **React Helmet integration:** Wraps helmet for SSR automatically
+- **Hybrid approach:** Static marketing + dynamic game (perfect for ScrumQuest)
+- **Lightweight:** Doesn't force full SSR framework (Next.js would be overkill)
+
+### Why react-responsive over custom hooks?
+- **SSR-safe:** Handles hydration mismatches correctly
+- **Tested:** Battle-tested library, fewer edge cases
+- **Features:** Device type detection, orientation, custom queries
+- **Bundle size:** 3KB gzipped, acceptable overhead
+
+### Why keep both Framer Motion AND GSAP?
+- **Different use cases:** Framer for declarative UI, GSAP for imperative timelines
+- **Already installed:** No new bundle impact
+- **Performance:** Both optimized, use right tool for job
+- **Examples:** Framer for menu transitions, GSAP for boss intro cinematics
+
+### Why NOT Next.js/Remix?
+- **Overkill:** Full framework for what's primarily a client-side game
+- **Migration cost:** Requires rewriting existing Vite setup, Socket.IO integration complex
+- **Bundle impact:** Larger runtime overhead for SSR features mostly unused
+- **Decision:** vite-react-ssg provides 80% benefit (static marketing pages) with 20% effort

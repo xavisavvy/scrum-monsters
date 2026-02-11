@@ -1,180 +1,266 @@
 # Project Research Summary
 
-**Project:** ScrumQuest v1.3 Game Progression
-**Domain:** XP/leveling systems, boss AI patterns, and team combat mechanics for real-time multiplayer JRPG-style game
-**Researched:** 2026-02-03
+**Project:** ScrumQuest v2.0 UI/UX Milestone
+**Domain:** JRPG-themed UI redesign, responsive mobile game UX, SPA routing with SEO
+**Researched:** 2026-02-11
 **Confidence:** HIGH
 
 ## Executive Summary
 
-ScrumQuest v1.3 transforms the existing combat system from a simple real-time multiplayer experience into a proper RPG progression system. The research confirms that the existing architecture (EventBus coordination, domain managers, Socket.IO, Zustand, Drizzle ORM) handles these features natively with minimal structural changes. The recommended approach adds two new domain managers (ProgressionManager, AbilityManager) and extends CombatManager with boss AI behavior patterns, all coordinated through the existing event bus. No new runtime dependencies are required.
+ScrumQuest v2.0 represents a frontend evolution milestone focused on four domains: JRPG-themed visual redesign, mobile-optimized game UX, proper routing with SEO support, and lobby interaction polish. The research reveals that this milestone leverages existing infrastructure exceptionally well. The real-time WebSocket reconnection system (validated in v1.0) already handles mobile network interruptions. Server-side events for emotes (`lobby_emote`, `battle_emote`) and charge system (`player_charge`) exist but need UI polish. The phase transition state machine (`GamePhase` type) is ready for animation hooks. This positions the project for a primarily frontend implementation with minimal server-side changes.
 
-The key insight from research is that XP formulas should be formula-based pure functions (not database lookup tables), boss AI should use explicit state machines (not boolean flags), and ability cooldowns must use server-authoritative timestamps (not client-predicted durations). These three architectural decisions prevent the most critical pitfalls: XP calculation race conditions, boss state explosion, and cooldown desynchronization. The existing codebase already demonstrates the patterns needed - the EventBus for cross-domain communication, CombatManager for state machine patterns, and Drizzle for schema extensions.
+The recommended approach centers on building a JRPG design system as the foundation, then layering mobile responsiveness, routing infrastructure, and lobby polish on top. Key stack additions include React Router v7 (upgrade from existing v6 for type safety), maintaining react-helmet-async for SEO meta tags, adding vite-react-ssg for static marketing page generation, and using react-responsive for JavaScript-based media queries. The architecture separates website routes (lightweight marketing pages without Three.js) from game routes (heavyweight real-time 3D experience), preventing Three.js bundle overhead on public pages. For mobile, CSS environment variables handle safe areas natively, with 44x44px minimum touch targets enforced across all phases.
 
-The most significant risk is the temptation to add XP logic directly into CombatManager rather than creating a separate ProgressionManager domain. This would create tight coupling that makes testing difficult and future changes risky. The research strongly recommends maintaining the domain-separated architecture that already exists. Combat emits events, Progression subscribes - never the reverse. Class ability power creep is a secondary risk that requires combination testing, not just individual ability testing.
+The primary risks center on Three.js lifecycle management during route changes (WebGL context leaks), dual input handling (touch/mouse conflicts causing double-fires), and state machine vs URL navigation conflicts (server-driven phases vs URL-driven routing). These are mitigated by keeping Canvas mounted across route changes, using pointer events instead of separate touch/mouse handlers, and maintaining server state as authoritative with URLs reflecting (not driving) game phases. The biggest complexity lies in dual-orientation support (landscape for battle, portrait for lobby) and ensuring JRPG theming doesn't sacrifice accessibility. Overall, this milestone is well-scoped with clear patterns and manageable risks.
 
 ## Key Findings
 
 ### Recommended Stack
 
-No new runtime dependencies are required. The existing stack fully supports v1.3 requirements.
+Stack research reveals minimal new dependencies needed. React Router is already installed (v6.26.0) but unused—upgrading to v7 recommended for automatic route typing and 15% smaller bundle. React-helmet-async already installed and working for meta tags. Major additions: vite-react-ssg for static marketing page pre-rendering (SEO without full SSR), react-responsive for JavaScript media queries (mobile behavior detection), and optionally container queries for component-level responsiveness.
 
-**Core technologies (existing):**
-- **TypeScript discriminated unions**: Type-safe ability and effect definitions - compile-time safety without runtime overhead
-- **Drizzle ORM generated columns**: PostgreSQL computed level from XP - query-efficient, no sync issues
-- **EventBus pattern**: Cross-domain coordination for XP awards, ability triggers, item consumption - already handles 75+ event types
-- **Zustand**: Client-side progression state - already manages game state reactively
-- **Socket.IO**: Real-time XP notifications, ability broadcasts - already handles all real-time events
+**Core technologies:**
+- **React Router v7** (upgrade from v6): Client-side routing with type safety — automatic loader/action typing eliminates manual casting, 15% smaller bundle than v6, non-breaking upgrade path
+- **vite-react-ssg**: Static site generation for marketing pages — pre-renders landing/about/features to static HTML for SEO, hybrid approach (static marketing + dynamic game), Vite-native integration
+- **react-responsive**: JavaScript media query hooks — SSR-safe useMediaQuery for conditional rendering, needed for mobile vs desktop behavior in Three.js scenes (quality settings, controls)
+- **Framer Motion + GSAP** (already installed): UI animations — Framer Motion for 90% of UI (menus, buttons, cards), GSAP for 10% cinematic moments (battle intros, victory screens)
+- **@react-three/drei** (already installed): Adaptive performance — AdaptivePixelRatio to cap devicePixelRatio on mobile, PerformanceMonitor for dynamic quality adjustment based on FPS
 
-**Not recommended:**
-- **XState**: CombatManager already implements state machine patterns; adds 15KB+ bundle and learning curve for patterns the team already knows
-- **Dedicated XP libraries**: XP formulas are ~20 lines of pure TypeScript; custom formulas allow precise balancing control
-- **Separate inventory database table (MVP)**: Items are session-scoped; in-memory storage sufficient for MVP
+**Performance-critical settings:**
+- Canvas dpr capped at [1, 2] on mobile (prevents 3x/4x rendering on high-DPI phones)
+- Tailwind mobile-first breakpoints already configured (sm/md/lg/xl/2xl)
+- clsx + tailwind-merge already integrated via cn() utility
 
 ### Expected Features
 
+Feature research separates table stakes (expected behaviors) from differentiators (competitive advantages). Most table stakes leverage existing infrastructure: WebSocket reconnection handles mobile network interruptions, emote events already exist, phase transitions are ready for animation hooks.
+
 **Must have (table stakes):**
-- XP gain on vote submission and boss damage dealt - core gamification of scrum poker activity
-- Persistent XP storage per account with level progression - progress must survive logout/reconnect
-- Visual XP bar with level-up notifications - players need immediate feedback
-- Phase-based boss attack patterns with telegraphing - bosses should feel dangerous but fair
-- Unique attack pools per boss type - 5 existing bosses should feel different to fight
-- HP-based difficulty scaling and enrage mechanics - progression through battle session
+- JRPG UI theming: Ornamental frames on panels/modals, readable busy menus with WCAG AA contrast, phase-consistent visual language, UI sound effects (button clicks, phase transitions), smooth state transitions (100-500ms)
+- Mobile UX: Touch-friendly 44x44px minimum tap targets, safe area handling for notches/rounded corners, landscape + portrait support, network interruption UX with visible reconnection status, lightweight asset optimization
+- Routing/SEO: Unique meta tags per route via React Helmet, Open Graph tags for social sharing, clean URL structure (no hash routing), server-side rendering for social crawlers ONLY (not full SSR—avoids Google cloaking penalty)
+- Lobby interactions: Enhanced emote system visibility, player readiness indicators, idle character animations during waiting
 
 **Should have (differentiators):**
-- Class mastery tracking with tier-based ability unlocks - long-term progression hook
-- Voting accuracy XP bonuses - encourages thoughtful estimation
-- Class-specific abilities with cooldown system (1-2 per class) - gives each of 10 classes identity
-- Team combos triggered by class cooperation - encourages class diversity
-- Combat items/consumables (session-scoped) - tactical depth layer
+- Class-specific UI flourishes: UI accents reflect player's chosen class (color, icons, borders) for Persona-style personalization
+- Charge/magic system polish: Visual effects for hold-to-charge mechanic (server events already exist via `player_charge`)
+- Adaptive UI density: Switch between compact (mobile) and spacious (desktop) layouts based on viewport
+- Haptic feedback: Vibration on button press, attack hit (Navigator Vibration API, user-controlled)
 
 **Defer (v2+):**
-- Prestige/rebirth system - end-game content for dedicated users
-- Adaptive boss AI that learns player patterns - significant complexity
-- Memory between sessions for bosses - persistence complexity
-- Weekly/sprint leaderboards - social feature, not core progression
-- Complex multi-class combo chains - requires extensive balancing
+- Pixel-perfect animations (sprite sheets, high complexity)
+- Gesture controls (swipe, pinch, long-press)
+- Dynamic lobby OG images (server-side image generation)
+- Lobby mini-games (scope creep risk, only if wait times become problematic)
+- Player collision physics (fun but non-essential)
 
 ### Architecture Approach
 
-The architecture extends the existing domain-separated pattern with two new managers and enhanced boss AI. ProgressionManager owns all XP state and subscribes to combat events (never the reverse). AbilityManager handles ability execution, cooldowns, effects, and combo detection. CombatManager's existing boss attack logic is extended with a PatternSequencer and BossBehavior interface for type-specific behaviors. All cross-domain communication flows through the EventBus.
+Architecture research recommends routing layer separation: website routes (SEO-optimized marketing pages without Three.js) vs game module routes (Three.js-enabled real-time experience). This prevents Three.js bundle overhead on public pages. React Router defines routes, Zustand stores remain router-agnostic, Socket.IO connection persists across route changes with route-specific event handler subscriptions.
 
 **Major components:**
-1. **ProgressionManager (new)** - Player progression outside sessions: account XP, class mastery, level calculations, persistence checkpoints
-2. **AbilityManager (new)** - Ability execution, cooldown tracking (server-authoritative timestamps), effect application, team combo detection
-3. **CombatManager (extended)** - Boss AI with PatternSequencer, phase-based attack selection, difficulty scaling formulas, threat evaluation
-4. **Database schema extensions** - `player_progression` table with generated level column, `class_mastery` table with user-class unique constraint
-5. **Client stores (extended)** - useProgression.tsx for persistent state, useAbilities.tsx for session combat state
+1. **Router Shell**: BrowserRouter wrapper with route definitions and meta tag management via React Helmet. Website Layout wraps marketing pages (no Three.js dependency). Game Layout wraps game session (persistent UI like audio controls, connection status).
+2. **Domain-Separated Managers** (server-side): SessionManager (player/lobby lifecycle), EstimationManager (voting/consensus), CombatManager (battle mechanics). Communicate via internal EventBus rather than direct method calls. This avoids monolithic GameState coupling.
+3. **Phase Components** (client-side): Phase-specific UI (BattleScreen, RevealPhase, etc.) mounted based on `gamePhase` from server state machine. Three.js Canvas lifecycle managed carefully—mounted only when needed, explicit cleanup to prevent WebGL context leaks.
+4. **JRPG Design System**: Reusable themed components (GamePanel, GameButton, StatBar) with CSS custom property tokens for colors, spacing, borders. Prevents inconsistent theming across 20+ phase components.
+5. **Responsive Strategy**: Mobile-first Tailwind classes for styling, react-responsive hooks for behavior changes (disable particle effects, adjust Three.js quality), container queries (optional) for component-level responsiveness.
+
+**Critical patterns:**
+- Route-based code splitting: Lazy load Three.js-heavy components only when game routes accessed
+- Fine-grained events: Replace coarse `lobby_updated` with specific events (`player_voted`, `boss_damaged`, `phase_changed`) to reduce bandwidth
+- Three.js state mutations in `useFrame`, NOT via React state updates (avoids re-render overhead)
+- Server state as authoritative for game phases; URLs reflect state, don't drive it (prevents URL vs state machine conflicts)
 
 ### Critical Pitfalls
 
-1. **XP Calculation Race Conditions** - Multiple events can trigger XP awards simultaneously. **Prevention:** Single-entry-point `awardXP()` method in ProgressionManager, queue XP awards, emit events AFTER state mutation completes.
+Top pitfalls from research focus on Three.js lifecycle management, mobile input handling, and architecture conflicts.
 
-2. **Boss State Machine Explosion** - Adding attack patterns as booleans (`isEnraged`, `isCharging`, `isCasting`) creates untestable combinatorial states. **Prevention:** Explicit FSM with enum states (`idle | telegraphing | attacking | recovering`), valid transitions defined, no boolean flags.
+1. **Canvas Context Loss on Route Changes (CRITICAL)** — WebGL renderer leaks GPU memory when Canvas unmounts. Browsers limit contexts (8-16), causing black screens. Prevention: Keep Canvas mounted across routes using CSS visibility, not unmounting. If unmounting necessary, explicitly dispose renderer, geometries, materials, textures. Detection: Monitor `renderer.info.memory` for climbing counts.
 
-3. **Ability Cooldown Desynchronization** - Client predicts cooldown locally, server has different timing. **Prevention:** Server-authoritative `cooldownEndsAt` timestamps, client accepts server corrections, never store durations.
+2. **Dual Input Handling - Touch/Mouse Conflicts (CRITICAL)** — Mobile browsers fire both touch and synthesized mouse events. Without handling, game actions fire twice (double votes, double ability activations). Prevention: Use pointer events (pointerdown/up/move), set `touch-action: none` on canvas, minimum 44x44px touch targets, `preventDefault()` on touch events. Detection: Test all interactive elements with touch.
 
-4. **XP Persistence Without Session Boundaries** - Reconnection loses in-progress XP or allows duplication. **Prevention:** Define "confirmed XP" (persisted) vs "pending XP" (session), persist only at checkpoints (ticket completion, phase transitions).
+3. **State Machine vs URL Navigation Conflicts (CRITICAL)** — Game phases are server-driven state machine (lobby → avatar → battle → ...). Adding URL routing creates dual sources of truth. Prevention: Server state machine remains authoritative, URLs reflect (don't drive) game state, only non-game pages use URL-driven routing, game module gets single route `/game/:lobbyId` with phases managed internally.
 
-5. **Tight Coupling Between Combat and Progression** - Adding XP logic directly in CombatManager creates bidirectional dependencies. **Prevention:** Combat emits domain events, ProgressionManager subscribes, XP formulas live in ProgressionManager only.
+4. **JRPG Theming Prioritizes Aesthetics Over Usability (MODERATE)** — Ornate borders obscure content, pixel fonts hard to read at small sizes, dark themes reduce contrast. Prevention: WCAG AA contrast ratios minimum (4.5:1 text, 3:1 large), use JRPG theming for decorations but keep text readable, test with axe-core (already integrated), progressive disclosure without information overload.
+
+5. **Desktop Graphics Overwhelm Mobile GPUs (MODERATE)** — Three.js effects (shadows, particles, post-processing) designed for desktop cause mobile thermal throttling, battery drain, frame drops. Prevention: Cap devicePixelRatio to 2 on mobile, disable shadows/reduce particles, use PerformanceMonitor for auto-downgrade, provide quality presets (High/Medium/Low). Detection: Monitor FPS on mid-range phone, check battery drain during 30-min session.
 
 ## Implications for Roadmap
 
 Based on research, suggested phase structure:
 
-### Phase 1: XP/Progression Foundation
-**Rationale:** Foundation for all other progression. Without XP tracking, nothing else makes sense. Low-risk server changes with high-value reward feedback.
-**Delivers:** ProgressionManager domain, player_progression schema with generated level column, XP formulas, event wiring for vote/damage/consensus
-**Addresses:** XP gain on actions, persistent storage, level progression, visual XP bar
-**Avoids:** Race conditions (single entry point), persistence issues (checkpoint-based), tight coupling (event-based communication)
+### Phase 1: JRPG Theme Foundation
+**Rationale:** Building a design system first prevents rework. All subsequent UI work inherits theme tokens, reusable components, and animation patterns. Research shows JRPG theming affects every phase component (20+ components), making upfront standardization critical to avoid inconsistency (Pitfall PIT-10).
 
-### Phase 2: Class Mastery System
-**Rationale:** Builds on XP foundation. Extends progression schema with class-specific tracking. Lower complexity than boss AI changes.
-**Delivers:** class_mastery schema, class XP tracking on ability use, mastery tier definitions, unlock progression
-**Addresses:** Account-level + class-specific XP split, long-term progression hook
-**Uses:** ProgressionManager from Phase 1, existing AvatarClass definitions
+**Delivers:**
+- JRPG design system with reusable themed components (GamePanel, GameButton, StatBar, HealthBar)
+- CSS custom property tokens (colors, spacing, borders, shadows, fonts)
+- UI sound effects library integrated with Howler.js or Web Audio API
+- Smooth state transition animations (100-500ms using Framer Motion)
+- Phase-consistent visual language applied to lobby, avatar selection, battle
 
-### Phase 3: Boss AI Patterns
-**Rationale:** Server-side changes that can be tested without client changes. Extends existing CombatManager. High value - 5 existing bosses gain distinct personalities.
-**Delivers:** BossDefinition system, PatternSequencer, phase-based attack pools, difficulty scaling formulas, threat-based targeting
-**Addresses:** Phase-based attacks, unique attacks per boss type, telegraphing, enrage mechanics
-**Avoids:** State machine explosion (explicit FSM), predictability (weighted randomization with memory)
+**Addresses:**
+- Table stakes: Ornamental frames/borders, readable busy menus, phase-consistent theming, UI sound effects, smooth state transitions
+- Architecture: Component library with theme tokens, reusable JRPG-styled components
 
-### Phase 4: Class Abilities
-**Rationale:** Requires UI for activation and cooldown display. Benefits from stable boss patterns to test against. High complexity but high value.
-**Delivers:** AbilityManager domain, ability definitions (1-2 per class), cooldown tracking, visual UI, effect application
-**Addresses:** Class-specific abilities, cooldown system, visual feedback
-**Avoids:** Cooldown desync (server timestamps), power creep (combination testing matrix)
+**Avoids:**
+- PIT-10 (Theme inconsistency across phase components) — design system establishes standards upfront
+- PIT-06 (Aesthetics over usability) — build accessibility testing into design system creation
 
-### Phase 5: Team Combos
-**Rationale:** Requires ability system to be complete. Adds coordination layer on top of individual abilities.
-**Delivers:** Combo definitions, coordination window detection, bonus effect application, consensus-powered ultimates
-**Addresses:** Class synergy, team cooperation rewards, scrum theme integration
-**Uses:** AbilityManager from Phase 4, EstimationManager consensus events
+**Duration:** Medium (component refactoring, asset sourcing)
+**Dependencies:** None — foundational work
 
-### Phase 6: Combat Items
-**Rationale:** Nice-to-have layer. Most complex UI (inventory, item selection). Can be cut or deferred without affecting core progression.
-**Delivers:** Item definitions, session-scoped inventory, item effect application, drop/grant system
-**Addresses:** Tactical depth, consumable strategy
-**Avoids:** Too-awesome-to-use syndrome (make items common enough to use freely), inventory persistence complexity (session-scoped only for MVP)
+---
+
+### Phase 2: Mobile UX Critical Path
+**Rationale:** Mobile represents majority of web game traffic. Ensuring core UX works on primary device type before polish work prevents mobile-specific issues discovered late. Research emphasizes 44px minimum touch targets (Pitfall PIT-04) and safe area handling as non-negotiable for mobile games.
+
+**Delivers:**
+- Touch-friendly tap targets (44px minimum enforced across all phases)
+- Safe area handling for notches, rounded corners, home gesture zones (CSS env() variables)
+- Dual orientation support (landscape for battle, portrait for lobby/menus)
+- Mobile Canvas settings with adaptive performance (capped DPR, quality regression)
+- Network interruption UX enhancements (visible connection status using existing reconnection system)
+
+**Addresses:**
+- Table stakes: Touch targets, safe areas, orientation support, network interruption UX, lightweight assets
+- Differentiators: Adaptive UI density (compact mobile vs spacious desktop)
+- Critical pitfalls: PIT-02 (Camera aspect ratio on orientation change), PIT-04 (Touch/mouse conflicts), PIT-08 (Desktop graphics overwhelm mobile)
+
+**Avoids:**
+- Desktop-only UX that breaks on mobile
+- Accidental taps from insufficient spacing
+- WebGL performance issues on mobile GPUs
+
+**Duration:** Medium (UI audit, responsive refactor, mobile testing)
+**Dependencies:** Phase 1 (reusable themed components make responsive refactor easier)
+
+---
+
+### Phase 3: Routing & SEO Infrastructure
+**Rationale:** Can be developed in parallel with UI work since routing layer has minimal overlap with theming/mobile. React Router already installed (unused), making integration straightforward. Social crawler middleware is moderate complexity but isolated from game logic.
+
+**Delivers:**
+- React Router v7 integration (upgrade from existing v6.26.0)
+- Clean URL structure without hash fragments (`/lobby/abc123` not `/#/lobby?id=abc123`)
+- React Helmet Async for dynamic meta tags per route
+- Open Graph + Twitter card tags for rich social sharing previews
+- vite-react-ssg for static marketing page pre-rendering
+- Express middleware for social crawler detection (meta tags in initial HTML)
+
+**Addresses:**
+- Table stakes: Unique meta tags per route, Open Graph tags, clean URLs, server-side rendering for crawlers
+- Architecture: Route-based code splitting (lazy load Three.js only for game routes)
+
+**Avoids:**
+- PIT-07 (SEO effort wasted on authenticated/game routes) — SEO only on public pages, game routes get `noindex` meta
+- PIT-05 (State machine vs URL conflicts) — URLs reflect server state, don't drive it
+- Hash routing that breaks SEO
+
+**Duration:** Low-Medium (routing straightforward, middleware moderate)
+**Dependencies:** None — parallel to Phase 1/2
+
+---
+
+### Phase 4: Lobby Polish & Animations
+**Rationale:** Builds on theme foundation and mobile UX. Adds differentiators after table stakes established. Server events for emotes and charge system already exist, making this primarily UI polish work rather than backend complexity.
+
+**Delivers:**
+- Enhanced emote UI (make existing `lobby_emote`/`battle_emote` events more visible)
+- Player readiness indicators (visual cue showing who's ready to start)
+- Idle character animations during waiting periods
+- Charge/magic system visual polish (effects for existing `player_charge` events)
+- Smooth phase transition animations (hooks on existing `GamePhase` state machine)
+
+**Addresses:**
+- Table stakes: Enhanced emote system, readiness indicators, idle animations
+- Differentiators: Charge/magic system polish, emote wheel/quick chat, haptic feedback
+
+**Avoids:**
+- Static lobby that feels dead
+- Jarring phase transitions without visual continuity
+
+**Duration:** Low-Medium (UI polish, animation timing, playtesting)
+**Dependencies:** Phase 1 (theme foundation for consistent animations), Phase 2 (touch-friendly emote interactions)
+
+---
 
 ### Phase Ordering Rationale
 
-- **Dependencies:** XP system (Phase 1) is foundation for class mastery (Phase 2). Abilities (Phase 4) required for combos (Phase 5). Items (Phase 6) reuse ability effect system.
-- **Risk management:** Server-side changes before client-side. XP system (low risk, high value) before boss AI (medium risk). Abilities before combos to reduce integration surface.
-- **Testing efficiency:** Boss patterns (Phase 3) testable without client changes. Abilities (Phase 4) require UI but can be unit tested. Combos (Phase 5) require multi-player testing.
-- **Cut points:** Phase 6 (items) can be deferred entirely. Phase 5 (combos) can be simplified to single combo type.
+- **Theme first:** Prevents rework. All UI work in subsequent phases inherits design system. Research shows 20+ phase components need consistent theming—upfront standardization is critical.
+- **Mobile second:** Ensures core UX works on primary device type (mobile web games see 85% mobile traffic per research). Building on themed components makes responsive refactor easier.
+- **Routing parallel:** Minimal overlap with UI work. Can be developed alongside Phases 1-2. Integration happens at App.tsx level without touching individual components.
+- **Lobby polish last:** Builds on theme + mobile foundation. Adds differentiators after table stakes met. Server events already exist, making this straightforward UI work.
+
+**Dependency flow:**
+```
+Phase 1 (Theme Foundation) → Phase 2 (Mobile UX) → Phase 4 (Lobby Polish)
+                    ↓
+Phase 3 (Routing/SEO) [parallel, integrates at end]
+```
 
 ### Research Flags
 
-Phases likely needing deeper research during planning:
-- **Phase 3 (Boss AI):** Explicit FSM implementation patterns for TypeScript. May benefit from evaluating simple state machine utilities (not full XState).
-- **Phase 4 (Class Abilities):** Client prediction patterns for cooldown display. Socket.IO latency compensation strategies.
+**Phases likely needing deeper research during planning:**
+- **Phase 1 (Theme):** Asset sourcing for audio library (research found design principles but not specific royalty-free sources). Need to explore freesound.org, OpenGameArt.org, itch.io for UI sound effects.
+- **Phase 3 (Routing):** Social crawler middleware implementation. User-agent detection needs careful implementation to avoid false positives (blocking real users) or false negatives (missing crawlers). May need deeper research on Vite/Express integration patterns.
 
-Phases with standard patterns (skip research-phase):
-- **Phase 1 (XP Foundation):** Formula-based XP calculations well-documented. Drizzle generated columns documented in official docs.
-- **Phase 2 (Class Mastery):** Extension of Phase 1 patterns. Standard schema design.
-- **Phase 5 (Team Combos):** Data-driven approach, straightforward event coordination.
-- **Phase 6 (Combat Items):** Session-scoped inventory is simpler than persistent. Effect system reuses ability patterns.
+**Phases with standard patterns (skip research-phase):**
+- **Phase 2 (Mobile):** Safe area handling well-documented. CSS env() variables are standard. Touch targets have established minimums (44px Apple HIG, 48dp Material Design).
+- **Phase 4 (Lobby):** Straightforward polish work. Animation timing may need playtesting but no research needed.
+
+### Technical Unknowns Requiring Validation
+
+- **Performance impact of JRPG frames:** Will ornamental CSS borders or canvas-based pixel art frames affect frame rate on mobile? Test during Phase 1.
+- **Social crawler reliability:** How to test that crawlers receive correct meta tags without manual verification on each platform? May need test tooling during Phase 3.
+- **Dual-orientation UX flow:** Should app hint/enforce orientation change, or adapt silently? User testing needed during Phase 2.
+- **View Transitions API browser support:** Modern API for phase transitions. Need fallback for older browsers (Framer Motion already installed as fallback).
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | No new dependencies needed. All recommended tools already in codebase. Verified against package.json and existing architecture. |
-| Features | MEDIUM | Industry patterns well-documented. ScrumQuest-specific integration (scrum poker + RPG combat) needs validation during implementation. |
-| Architecture | HIGH | Based on detailed codebase analysis. Extends existing domain manager patterns. EventBus already supports 75+ event types. |
-| Pitfalls | HIGH | Verified against existing eventBus patterns, CombatManager state handling, and established game development patterns. |
+| Stack | HIGH | Existing dependencies cover most needs. React Router, react-helmet-async already installed. vite-react-ssg and react-responsive are well-documented additions. Version compatibility verified. |
+| Features | HIGH | Table stakes clearly defined from mobile game UX research. Existing server events (emotes, charge) validated in codebase. Feature dependencies mapped. |
+| Architecture | HIGH | Routing layer separation pattern verified across multiple React + Three.js projects. Component boundaries align with existing codebase structure. Socket.IO persistence pattern already implemented. |
+| Pitfalls | HIGH | Critical pitfalls (Canvas context loss, dual input, state machine conflicts) sourced from React Three Fiber official docs and mobile web game best practices. Mitigation strategies proven. |
 
 **Overall confidence:** HIGH
 
-The recommendations extend proven patterns already in the codebase. No architectural experiments required. Main uncertainty is balance tuning (XP amounts, ability damage values, boss difficulty) which requires playtesting.
+Research synthesizes patterns from authoritative sources (React Router docs, Three.js migration guides, WCAG 2.1 guidelines, mobile web game best practices) with analysis of existing ScrumQuest codebase. All recommended technologies have official documentation and current version verification (2026-02-11). Architecture patterns align with existing implementation (Zustand, Socket.IO, phase-based state machine).
 
 ### Gaps to Address
 
-- **XP curve tuning:** Formula coefficients need playtesting. Start with conservative values, adjust based on session data.
-- **Ability balance:** 20 abilities across 10 classes. Combination testing matrix needed during Phase 4.
-- **Boss pattern variety:** How many patterns per boss? Research suggests 3-5, but needs validation against session length.
-- **Item economy:** How do players obtain items? Research defers to session-only grants, but may need persistent unlocks for engagement.
-- **Mastery tier bonuses:** Specific stat bonuses per tier not defined. Needs design decision during Phase 2 planning.
+**Areas where research was inconclusive:**
+- **Audio asset sourcing:** Found design principles (UI sound effects need pitch/volume variation to prevent fatigue) and integration patterns (Howler.js vs Web Audio API), but not specific asset libraries or creation workflows. Gap: Need to research royalty-free game sound effect sources during Phase 1 planning.
+- **Social crawler user-agent detection:** General approach documented (check user-agent header, inject meta tags for crawlers), but specific implementation for Vite/Express needs validation. Risk of false positives or false negatives. Gap: Test with actual social platform crawlers during Phase 3.
+- **View Transitions API browser support:** Modern API available in Chrome 111+, Safari 17.4+, but support across target devices needs verification. Fallback strategy (Framer Motion) already exists. Gap: Test on target mobile browsers during Phase 1.
+
+**Topics needing phase-specific research later:**
+- **Phase 1 (Theme):** Audio integration patterns for React apps. Pixel art asset creation or sourcing workflow. Animation timing for JRPG feel (100ms vs 250ms vs 500ms transitions).
+- **Phase 2 (Mobile):** Testing methodology for safe areas across devices. Emulator vs real device testing requirements. Dual-orientation testing strategy.
+- **Phase 3 (Routing):** Social crawler detection implementation details. Meta tag validation for different platforms (Twitter, Discord, Slack, LinkedIn). vite-react-ssg configuration for hybrid static/dynamic approach.
+- **Phase 4 (Lobby):** Idle animation loops (sprite sheets vs CSS animations). Emote UI patterns (toast vs bubble vs overhead display).
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- ScrumQuest codebase analysis - server/domains/*.ts, server/events/eventTypes.ts, shared/gameEvents.ts
-- Drizzle ORM documentation - Generated columns, PostgreSQL schema patterns
-- Game Programming Patterns (gameprogrammingpatterns.com) - State machine patterns for boss AI
-- DEV Community XP System Guide - Formula-based progression calculations
+- **Stack:** React Router v7 official docs, react-helmet-async GitHub, Tailwind CSS responsive design guide, @react-three/drei scaling performance docs
+- **Features:** Game UI Database (gameuidatabase.com), mobile game UX best practices (genieee.com, pixune.com), WCAG 2.1 guidelines
+- **Architecture:** React Three Fiber official docs, React Router v6 guide, Socket.IO with React integration guide, domain-driven design patterns (DDD Academy, HackerNoon)
+- **Pitfalls:** Three.js migration guides, React Three Fiber discussions (GitHub), mobile web game development (gamedeveloper.com), WCAG accessibility guidelines
 
 ### Secondary (MEDIUM confidence)
-- Unreal Engine Gameplay Ability System (GAS) documentation - Cooldown and effect architecture patterns
-- Game Developer articles - Boss design patterns, progression system design
-- University XP progression research - Horizontal vs vertical progression taxonomy
+- Framer Motion vs GSAP comparison (blog.logrocket.com 2026), React Router + Three.js integration (2023 blog post - patterns still valid), vite-react-ssg GitHub repo, react-responsive NPM package
 
-### Tertiary (LOW confidence)
-- Community blog posts on multiplayer cooldown synchronization - Patterns need validation for Socket.IO specifically
-- RPG combo system examples (Game Rant, Campaign Mastery) - Design inspiration, not technical patterns
+### Tertiary (LOW confidence - flagged for validation)
+- JRPG color schemes (generic game asset marketplaces - need custom design), social crawler middleware patterns (community discussions - need testing)
+
+### Additional Context Files
+- `.planning/research/UI_ROUTING_ARCHITECTURE.md` — Detailed routing patterns and component boundaries
+- `.planning/research/STACK-ui-mobile-routing.md` — Howler.js audio library, safe area CSS, asset optimization
+- `.planning/research/SUMMARY-ui-mobile-routing.md` — Early synthesis focusing on UI/routing domain
 
 ---
-*Research completed: 2026-02-03*
-*Ready for roadmap: yes*
+*Research completed: 2026-02-11*
+*Ready for roadmap: YES*
