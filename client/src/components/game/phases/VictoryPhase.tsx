@@ -1,11 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PhaseContainer } from './PhaseContainer';
 import { PhaseComponentProps } from './index';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { TeamScoreboard } from '@/components/game/TeamScoreboard';
+import { SessionStatsCard } from '../SessionStatsCard';
+import { useWebSocket } from '@/lib/stores/useWebSocket';
 
 interface VictoryPhaseProps extends PhaseComponentProps {}
+
+interface SessionSummary {
+  totalVotes: number;
+  consensusCount: number;
+  averageVotingSpeedMs: number;
+  totalDamageDealt: number;
+  bossesDefeated: number;
+  revives: number;
+  deaths: number;
+  itemsUsed: number;
+}
 
 export function VictoryPhase({
   lobby,
@@ -14,6 +27,8 @@ export function VictoryPhase({
   isTransitioning = false
 }: VictoryPhaseProps) {
   const [resultsCopied, setResultsCopied] = useState(false);
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
+  const socket = useWebSocket(state => state.socket);
   
   const completedTickets = Array.isArray(lobby.completedTickets) ? lobby.completedTickets : [];
   const totalStoryPoints = completedTickets.reduce((sum, ticket) => sum + ticket.storyPoints, 0);
@@ -27,6 +42,22 @@ export function VictoryPhase({
   );
 
   const victoryImage = '/images/victory.png';
+
+  // Listen for session stats
+  useEffect(() => {
+    if (!socket || !currentPlayer) return;
+
+    const handler = (data: { summaries: Record<string, SessionSummary>; seq: number; timestamp: number }) => {
+      if (data.summaries[currentPlayer.id]) {
+        setSessionSummary(data.summaries[currentPlayer.id]);
+      }
+    };
+
+    socket.on('stats:session_summary', handler);
+    return () => {
+      socket.off('stats:session_summary', handler);
+    };
+  }, [socket, currentPlayer]);
 
   const copyResults = async () => {
     try {
@@ -89,6 +120,11 @@ export function VictoryPhase({
           </div>
         </RetroCard>
       </div>
+
+      {/* Session Summary */}
+      {sessionSummary && (
+        <SessionStatsCard summary={sessionSummary} title="Battle Report" />
+      )}
 
       {/* Battle Summary */}
       <RetroCard title="Battle Summary" className="max-w-4xl mx-auto">

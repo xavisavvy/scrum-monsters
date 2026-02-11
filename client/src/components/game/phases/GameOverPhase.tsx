@@ -1,11 +1,24 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PhaseContainer } from './PhaseContainer';
 import { PhaseComponentProps } from './index';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { ScoreSubmission } from '../ScoreSubmission';
+import { SessionStatsCard } from '../SessionStatsCard';
+import { useWebSocket } from '@/lib/stores/useWebSocket';
 
 interface GameOverPhaseProps extends PhaseComponentProps {}
+
+interface SessionSummary {
+  totalVotes: number;
+  consensusCount: number;
+  averageVotingSpeedMs: number;
+  totalDamageDealt: number;
+  bossesDefeated: number;
+  revives: number;
+  deaths: number;
+  itemsUsed: number;
+}
 
 export function GameOverPhase({
   lobby,
@@ -13,9 +26,27 @@ export function GameOverPhase({
   emit,
   isTransitioning = false
 }: GameOverPhaseProps) {
-  
+  const [sessionSummary, setSessionSummary] = useState<SessionSummary | null>(null);
+  const socket = useWebSocket(state => state.socket);
+
   const currentTicket = lobby.currentTicket;
   const currentTicketIndex = lobby.tickets.findIndex(t => t.id === currentTicket?.id);
+
+  // Listen for session stats
+  useEffect(() => {
+    if (!socket || !currentPlayer) return;
+
+    const handler = (data: { summaries: Record<string, SessionSummary>; seq: number; timestamp: number }) => {
+      if (data.summaries[currentPlayer.id]) {
+        setSessionSummary(data.summaries[currentPlayer.id]);
+      }
+    };
+
+    socket.on('stats:session_summary', handler);
+    return () => {
+      socket.off('stats:session_summary', handler);
+    };
+  }, [socket, currentPlayer]);
   
   // Boss images mapping
   const BOSS_IMAGE_MAP: Record<string, string> = {
@@ -87,6 +118,11 @@ export function GameOverPhase({
           </div>
         </RetroCard>
       </div>
+
+      {/* Session Summary */}
+      {sessionSummary && (
+        <SessionStatsCard summary={sessionSummary} title="Session Stats" />
+      )}
 
       {/* Current Ticket Information */}
       {currentTicket && (
