@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 16 of 20 (Class Mastery System) — COMPLETE
-Plan: 5/5 complete, verified
-Status: Phase 16 verified (4/4 must-haves passed), ROADMAP updated
-Last activity: 2026-02-11 - Phase 16 execution complete with verification
+Phase: 17 of 20 (Boss AI Patterns) — IN PROGRESS
+Plan: 1/5 complete
+Status: Core boss AI primitives implemented with TDD
+Last activity: 2026-02-11 - Phase 17-01 complete (BossStateMachine, PatternSequencer, ThreatEvaluator)
 
-Progress: [███████████████░░░░░] 75% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [███████████████░░░░░] 76% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 **Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 64 (v1.0: 30, v1.2: 21, v1.3: 13)
+- Total plans completed: 65 (v1.0: 30, v1.2: 21, v1.3: 14)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -80,6 +80,11 @@ Recent decisions affecting current work:
 - [16-05]: Priority handling pattern: tier-up defers to level-up celebration when both trigger
 - [16-05]: 3-second auto-dismiss for tier-up toast (vs 2.5s for level-up)
 - [16-05]: Progressive disclosure for mastery badges (Expert/Master only, no Novice badge)
+- [17-01]: Explicit FSM replaces boolean isEnraged flag for maintainability
+- [17-01]: HP-based phases: Phase 1 (>66%), Phase 2 (34-66%), Phase 3 (<=33%)
+- [17-01]: Phase transitions are one-way only (prevents oscillation bugs)
+- [17-01]: Weighted pattern selection with anti-repeat logic
+- [17-01]: Action-specific threat weights (damage 1.0x, healing 0.8x, revival 150)
 
 ### Pending Todos
 
@@ -94,5 +99,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 16 complete and verified (4/4 must-haves). Ready for Phase 17.
+Stopped at: Completed 17-01-PLAN.md (Boss AI core primitives with TDD)
 Resume file: None
