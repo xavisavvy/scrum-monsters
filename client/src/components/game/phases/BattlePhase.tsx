@@ -9,8 +9,10 @@ import { FloatingXPManager } from '@/components/game/FloatingXPManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
 import { TierUpToast } from '@/components/game/TierUpToast';
 import { BossTelegraph } from '@/components/game/BossTelegraph';
+import { AbilityBar } from '@/components/game/AbilityBar';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useAbilitySync } from '@/lib/stores/useAbilities';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -25,6 +27,7 @@ export function BattlePhase({
 }: BattlePhaseProps) {
   const { currentPlayer } = useGameState();
   const { levelUp } = useProgression();
+  useAbilitySync(); // Wire ability server events
 
   // Don't render if no boss is available
   if (!boss) {
@@ -76,6 +79,11 @@ export function BattlePhase({
       {/* XP Bar - Bottom of screen */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
         <XPBar />
+      </div>
+
+      {/* Ability Bar - Bottom right, above XP bar */}
+      <div className="fixed bottom-20 right-4 z-40">
+        <AbilityBar />
       </div>
 
       {/* Level-up celebration - Fullscreen overlay */}
