@@ -183,7 +183,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
 | 15. XP/Progression | v1.3 | 8/8 | Complete | 2026-02-10 |
-| 16. Class Mastery | v1.3 | 0/5 | Not started | - |
+| 16. Class Mastery | v1.3 | 5/5 | Complete | 2026-02-11 |
 | 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
 | 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
 | 19. Team Combos | v1.3 | 0/TBD | Not started | - |
