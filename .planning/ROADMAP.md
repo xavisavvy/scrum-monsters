@@ -35,7 +35,7 @@ See `.planning/milestones/v1.2-ROADMAP.md`
 - [x] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling (COMPLETE 2026-02-11)
 - [x] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system (COMPLETE 2026-02-11)
 - [x] **Phase 19: Team Combos** - Coordinated attacks and consensus ultimates (COMPLETE 2026-02-11)
-- [ ] **Phase 20: Combat Items & Lifetime Stats** - Session consumables and persistent statistics
+- [x] **Phase 20: Combat Items & Lifetime Stats** - Session consumables and persistent statistics (COMPLETE 2026-02-11)
 - [x] **Phase 21: Lobby Magic & Emote System** ⚡ - Magic spells in lobby (PARTIALLY COMPLETE)
 
 ## Phase Details
@@ -134,26 +134,26 @@ Plans:
 - [x] 19-02-PLAN.md -- Server wiring: Socket.IO events, CombatManager integration, ClientEventEmitter forwarding
 - [x] 19-03-PLAN.md -- Client UI: useComboState store, ComboNotification component, BattlePhase integration
 
-### Phase 20: Combat Items & Lifetime Stats
+### Phase 20: Combat Items & Lifetime Stats ✅ COMPLETE (2026-02-11)
 
 **Goal**: Players have tactical consumables and can track their lifetime achievements
 **Depends on**: Phase 18 (items reuse ability effect system)
 **Requirements**: ITEM-01, ITEM-02, ITEM-03, ITEM-04, STAT-01, STAT-02, STAT-03, STAT-04
 **Success Criteria** (what must be TRUE):
-  1. Items exist only within a game session (not persisted between games)
-  2. Items provide effects: healing, damage boost, or shield
-  3. Player receives items when tickets are completed
-  4. Player can use items during combat phase via UI
-  5. Player's lifetime estimation stats are tracked (total votes, consensus rate, voting speed)
-  6. Player's lifetime combat stats are tracked (damage dealt, bosses defeated, revives, deaths)
-  7. Player can view lifetime stats on their profile page
-  8. Player sees session stats summary at game over
-**Plans**: 4 plans
+  1. ✅ Items exist only within a game session (not persisted between games)
+  2. ✅ Items provide effects: healing, damage boost, or shield
+  3. ✅ Player receives items when tickets are completed
+  4. ✅ Player can use items during combat phase via UI
+  5. ✅ Player's lifetime estimation stats are tracked (total votes, consensus rate, voting speed)
+  6. ✅ Player's lifetime combat stats are tracked (damage dealt, bosses defeated, revives, deaths)
+  7. ✅ Player can view lifetime stats on their profile page
+  8. ✅ Player sees session stats summary at game over
+**Plans**: 4 plans (all complete)
 Plans:
-- [ ] 20-01-PLAN.md -- TDD: Shared item types and ItemManager domain (inventory, validation, effects)
-- [ ] 20-02-PLAN.md -- TDD: Shared stats types, schema extension, and StatsTracker domain (event-driven tracking)
-- [ ] 20-03-PLAN.md -- Item server wiring (Socket.IO, domain integration, awards) and client UI (ItemBar, BattlePhase)
-- [ ] 20-04-PLAN.md -- Stats server wiring (StatsTracker instantiation, event forwarding) and client UI (session summary, profile)
+- [x] 20-01-PLAN.md -- TDD: Shared item types and ItemManager domain (inventory, validation, effects)
+- [x] 20-02-PLAN.md -- TDD: Shared stats types, schema extension, and StatsTracker domain (event-driven tracking)
+- [x] 20-03-PLAN.md -- Item server wiring (Socket.IO, domain integration, awards) and client UI (ItemBar, BattlePhase)
+- [x] 20-04-PLAN.md -- Stats server wiring (StatsTracker instantiation, event forwarding) and client UI (session summary, profile)
 
 ### Phase 21: Lobby Magic & Emote System ⚡ PARTIALLY COMPLETE
 
@@ -206,5 +206,5 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 | 17. Boss AI Patterns | v1.3 | 5/5 | Complete | 2026-02-11 |
 | 18. Class Abilities | v1.3 | 3/3 | Complete | 2026-02-11 |
 | 19. Team Combos | v1.3 | 3/3 | Complete | 2026-02-11 |
-| 20. Items & Stats | v1.3 | 0/TBD | Not started | - |
+| 20. Items & Stats | v1.3 | 4/4 | Complete | 2026-02-11 |
 | 21. Lobby Magic | v1.3 | N/A | ⚡ Partial | Ad-hoc |
