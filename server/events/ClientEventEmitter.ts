@@ -210,12 +210,23 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('combat:boss_phase_transition', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:boss_phase_transition', {
+        newPhase: payload.newPhase,
+        previousPhase: payload.previousPhase,
+        message: payload.message,
+        bossType: payload.bossType,
+      });
+    });
+
     this.eventBus.on('combat:boss_telegraph', (payload) => {
       this.emitToLobby(payload.lobbyId, 'combat:boss_telegraph', {
         targetId: payload.targetId,
         attackType: payload.attackType,
         message: payload.message,
         delayMs: payload.delayMs,
+        visualEffect: payload.visualEffect,
+        bossType: payload.bossType,
       });
     });
 
