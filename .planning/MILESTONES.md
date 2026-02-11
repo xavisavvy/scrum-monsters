@@ -90,3 +90,30 @@
 **What's next:** Polish, XP/leveling system, or production deployment
 
 ---
+
+## v1.3 Game Progression (Shipped: 2026-02-11)
+
+**Delivered:** Full RPG progression system with XP/leveling, class mastery, boss AI variety, class abilities, team combos, combat items, and lifetime statistics.
+
+**Phases completed:** 15-20 (6 phases, 28 plans)
+
+**Key accomplishments:**
+- Account-level XP system with persistent progression, exponential leveling curve, and JRPG-styled UI (XP bar, floating numbers, level-up celebration)
+- Class mastery with three-tier progression (Novice/Expert/Master), stat bonuses, and class-specific ability gating
+- 5 unique boss AIs with explicit state machines, HP-phase transitions, weighted pattern selection, threat targeting, and telegraph system
+- 20 class-specific abilities across 10 classes with server-authoritative cooldowns and role-based effects (tank/healer/DPS)
+- Team combo system with class-pair detection, consensus ultimates with voting-speed damage scaling, and coordinated attack visuals
+- Session-scoped combat items (heal/shield/damage boost) and persistent lifetime statistics with session summaries
+
+**Stats:**
+- 170 files created/modified
+- +32,415 lines of TypeScript
+- 6 phases, 28 plans
+- ~8 days from start to ship (2026-02-03 → 2026-02-11)
+
+**Git range:** `feat(15-01)` → `docs(phase-20)`
+
+**What's next:** Phase 21 (Lobby Magic polish), or new milestone (UI redesign, mobile, leaderboards)
+
+---
+
