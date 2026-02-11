@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 17 of 20 (Boss AI Patterns) — IN PROGRESS
+Phase: 17 of 20 (Boss AI Patterns) — COMPLETE
 Plan: 5/5 complete
-Status: Phase 17 complete - Boss AI fully wired and production-ready
-Last activity: 2026-02-11 - Phase 17-05 complete (Production wiring complete)
+Status: Phase 17 complete - Boss AI fully wired with client-side telegraph UI
+Last activity: 2026-02-11 - Phase 17-04 complete (Client-side boss telegraph and phase transition UI)
 
-Progress: [███████████████░░░░░] 77% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [███████████████░░░░░] 78% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 **Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
 
@@ -91,6 +91,10 @@ Recent decisions affecting current work:
 - [17-03]: BossAI.recordThreat API replaces manual threat table updates for consistency
 - [17-03]: Emit both boss_phase_transition and boss_enraged for backward compatibility
 - [17-03]: Level scaling applies to HP (+8%/level) and damage (+5%/level) for difficulty scaling
+- [17-04]: Auto-dismiss telegraph after attack lands (delayMs + 500ms buffer for animation)
+- [17-04]: Auto-dismiss phase messages after 2 seconds (matches level-up pattern)
+- [17-04]: Telegraph positioned top-center with z-50 (visible, no overlap with XP/combat UI)
+- [17-04]: Visual effects mapped to Tailwind classes (charge/glow/shake/particles)
 - [17-05]: ProgressionManager wired as adapter providing getPlayerLevel to CombatManager
 - [17-05]: Boss sprite flows from gameState.createBossFromTickets through socket handlers to BossAI
 
@@ -107,5 +111,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 17-05-PLAN.md (Production wiring complete)
+Stopped at: Completed 17-04-PLAN.md (Client-side boss telegraph and phase transition UI)
 Resume file: None
