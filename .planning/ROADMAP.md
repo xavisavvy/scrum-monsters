@@ -30,7 +30,7 @@ See `.planning/milestones/v1.2-ROADMAP.md`
 
 **Milestone Goal:** Make the game more engaging with progression systems, varied boss battles, and deeper combat mechanics.
 
-- [ ] **Phase 15: XP/Progression Foundation** - Account-level XP tracking with visual feedback
+- [x] **Phase 15: XP/Progression Foundation** - Account-level XP tracking with visual feedback
 - [ ] **Phase 16: Class Mastery System** - Class-specific progression with tier unlocks
 - [ ] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling
 - [ ] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system
@@ -62,8 +62,8 @@ Plans:
 - [x] 15-04-PLAN.md — Floating XP numbers with animations
 - [x] 15-05-PLAN.md — Level-up celebration with class effects
 - [x] 15-06-PLAN.md — Full integration and end-to-end wiring
-- [ ] 15-07-PLAN.md — Gap closure: consensus XP + XP persistence
-- [ ] 15-08-PLAN.md — Gap closure: level display in lobby
+- [x] 15-07-PLAN.md — Gap closure: consensus XP + XP persistence
+- [x] 15-08-PLAN.md — Gap closure: level display in lobby
 
 ### Phase 16: Class Mastery System
 
@@ -176,7 +176,7 @@ Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
-| 15. XP/Progression | v1.3 | 5/6 | In Progress | - |
+| 15. XP/Progression | v1.3 | 8/8 | Complete | 2026-02-10 |
 | 16. Class Mastery | v1.3 | 0/TBD | Not started | - |
 | 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
 | 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
