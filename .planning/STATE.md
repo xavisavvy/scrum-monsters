@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 of 20 (Boss AI Patterns) — IN PROGRESS
-Plan: 1/5 complete
-Status: Core boss AI primitives implemented with TDD
-Last activity: 2026-02-11 - Phase 17-01 complete (BossStateMachine, PatternSequencer, ThreatEvaluator)
+Plan: 2/5 complete
+Status: Boss behavior definitions and BossAI coordinator complete
+Last activity: 2026-02-11 - Phase 17-02 complete (5 boss behaviors + BossAI coordinator)
 
 Progress: [███████████████░░░░░] 76% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 76% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 65 (v1.0: 30, v1.2: 21, v1.3: 14)
+- Total plans completed: 66 (v1.0: 30, v1.2: 21, v1.3: 15)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -85,6 +85,9 @@ Recent decisions affecting current work:
 - [17-01]: Phase transitions are one-way only (prevents oscillation bugs)
 - [17-01]: Weighted pattern selection with anti-repeat logic
 - [17-01]: Action-specific threat weights (damage 1.0x, healing 0.8x, revival 150)
+- [17-02]: Data-driven boss behavior definitions with 9+ patterns per boss
+- [17-02]: BossAI coordinator owns all subsystems for simple CombatManager API
+- [17-02]: Pattern IDs include boss type prefix for collision prevention
 
 ### Pending Todos
 
@@ -99,5 +102,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 17-01-PLAN.md (Boss AI core primitives with TDD)
+Stopped at: Completed 17-02-PLAN.md (Boss behavior definitions and BossAI coordinator)
 Resume file: None
