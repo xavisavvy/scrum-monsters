@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 18 of 20 (Class Abilities) — IN PROGRESS
-Plan: 2/3 complete
-Status: 18-02 complete (AbilityManager server integration)
-Last activity: 2026-02-11 - Phase 18 Plan 02 execution complete
+Plan: 3/3 complete
+Status: 18-03 complete (Client ability UI with cooldown tracking)
+Last activity: 2026-02-11 - Phase 18 Plan 03 execution complete
 
 Progress: [████████████████░░░░] 80% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [████████████████░░░░] 80% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 71 (v1.0: 30, v1.2: 21, v1.3: 20)
+- Total plans completed: 72 (v1.0: 30, v1.2: 21, v1.3: 21)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -107,6 +107,11 @@ Recent decisions affecting current work:
 - [18-02]: Damage effects applied via CombatManager.applyAbilityDamageToBoss for threat tracking
 - [18-02]: Taunt effects use recordThreat with 'damage' type (500 threat value)
 - [18-02]: ClientEventEmitter adds seq/timestamp to all ability:* events
+- [18-03]: Ref-based requestAnimationFrame loops for smooth cooldown animations (avoid per-tick re-renders)
+- [18-03]: CSS conic-gradient for cooldown overlay (performant, no canvas needed)
+- [18-03]: 100ms client buffer on isOnCooldown to prevent client/server race conditions
+- [18-03]: Border color based on ability role: amber (tank), green (healer), blue (DPS)
+- [18-03]: Optimistic UI with pendingAbility state to prevent spam clicks
 
 ### Pending Todos
 
@@ -121,5 +126,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 18 Plan 02 complete (AbilityManager server integration). Next: 18-03 (client UI)
+Stopped at: Phase 18 Plan 03 complete (Client ability UI). Phase 18 complete.
 Resume file: None
