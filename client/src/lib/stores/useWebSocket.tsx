@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { LobbySnapshot, ReconnectResponse, LobbySync, ClientToServerEvents, ServerToClientEvents } from '@shared/gameEvents';
 import { useProgression } from './useProgression';
+import { useClassMastery } from './useClassMastery';
 import { useGameState } from './useGameState';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -296,6 +297,28 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
           currentLevel: data.currentLevel,
           timestamp: data.timestamp || Date.now(),
         });
+      }
+    });
+
+    // Class mastery event handlers
+    socket.on('class_mastery:xp_awarded', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (currentPlayer && data.playerId === currentPlayer.id) {
+        useClassMastery.getState().handleXPAwarded(data);
+      }
+    });
+
+    socket.on('class_mastery:tier_up', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (currentPlayer && data.playerId === currentPlayer.id) {
+        useClassMastery.getState().handleTierUp(data);
+      }
+    });
+
+    socket.on('class_mastery:sync', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (currentPlayer && data.playerId === currentPlayer.id) {
+        useClassMastery.getState().handleSync(data);
       }
     });
 
