@@ -73,6 +73,10 @@ export type {
   // Combo events
   ComboTriggeredPayload,
   ConsensusUltimatePayload,
+  // Item events
+  ItemAwardedPayload,
+  ItemUsedPayload,
+  ItemEffectAppliedPayload,
   // System events
   TransitionRejectedPayload,
 } from './eventTypes';
