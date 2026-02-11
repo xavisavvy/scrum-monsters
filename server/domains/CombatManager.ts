@@ -29,7 +29,7 @@ import {
   NotHealerClassError,
 } from '../errors/CombatErrors';
 import { BossAI, getBossTypeFromSprite } from './boss-ai';
-import type { BossType, BossPhaseNumber } from './boss-ai';
+import type { BossType, BossPhaseNumber, ThreatEntry as BossAIThreatEntry } from './boss-ai';
 
 /**
  * Dependencies required by CombatManager
@@ -58,11 +58,9 @@ type PlayerCombatState = 'fighting' | 'downed' | 'ghost';
 
 /**
  * Threat table entry for boss targeting
+ * Using BossAI ThreatEntry type for consistency
  */
-interface ThreatEntry {
-  playerId: string;
-  threat: number;
-}
+type ThreatEntry = BossAIThreatEntry;
 
 /**
  * Player combat state tracking
@@ -376,7 +374,12 @@ export class CombatManager {
       }
 
       // Remove from threat table
-      combatState.boss?.threatTable.delete(playerId);
+      if (combatState.boss) {
+        const bossAI = this.bossAIs.get(lobbyId);
+        if (bossAI) {
+          bossAI.cleanupPlayer(combatState.boss.threatTable, playerId);
+        }
+      }
 
       // Remove from players map
       combatState.players.delete(playerId);
@@ -398,23 +401,47 @@ export class CombatManager {
   /**
    * Initialize combat state for a lobby
    */
-  initializeCombat(lobbyId: string, players: Array<{id: string; team: TeamType}>, ticketIndex: number = 0): void {
+  initializeCombat(lobbyId: string, players: Array<{id: string; team: TeamType}>, ticketIndex: number = 0, bossSprite?: string): void {
     // Filter out spectators for HP calculation
     const activePlayers = players.filter(p => p.team !== 'spectators');
     const activePlayerCount = activePlayers.length;
 
-    // Calculate boss HP with ticket scaling
-    const difficultyMultiplier = 1 + (ticketIndex * 0.2);
-    const bossMaxHp = Math.floor(this.BASE_HP_PER_PLAYER * activePlayerCount * difficultyMultiplier);
+    // Determine boss type from sprite or use default
+    let bossType: BossType = 'bug-hydra'; // Default
+    if (bossSprite) {
+      const typeFromSprite = getBossTypeFromSprite(bossSprite);
+      if (typeFromSprite) {
+        bossType = typeFromSprite;
+      }
+    }
+
+    // Create BossAI instance
+    const bossAI = new BossAI(bossType);
+    this.bossAIs.set(lobbyId, bossAI);
+
+    // Calculate average team level for difficulty scaling
+    let averageLevel = 1;
+    if (this.progressionManager) {
+      const levels = activePlayers.map(p => this.progressionManager!.getPlayerLevel(lobbyId, p.id));
+      const totalLevels = levels.reduce((a, b) => a + b, 0);
+      averageLevel = Math.max(1, Math.floor(totalLevels / levels.length));
+    }
+    const levelMultiplier = 1 + ((averageLevel - 1) * this.LEVEL_HP_SCALING);
+
+    // Calculate boss HP with ticket scaling and level scaling
+    const ticketMultiplier = 1 + (ticketIndex * 0.2);
+    const bossMaxHp = Math.floor(this.BASE_HP_PER_PLAYER * activePlayerCount * ticketMultiplier * levelMultiplier);
 
     // Create boss combat state
     const bossId = `boss-${lobbyId}-${Date.now()}`;
     const boss: BossCombat = {
       bossId,
       bossName: 'Boss',
+      bossType,
       hp: bossMaxHp,
       maxHp: bossMaxHp,
       isEnraged: false,
+      currentPhase: 1,
       lastAttackAt: 0,
       threatTable: new Map(),
     };
@@ -500,7 +527,7 @@ export class CombatManager {
     }
 
     // Get player class and mastery multiplier
-    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId) ?? null;
     const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, playerId, playerClass) ?? 1.0;
     const baseDamage = this.getClassBaseDamage(playerClass, masteryMultiplier);
     const damage = Math.floor(baseDamage * combatState.battleModifier);
@@ -508,17 +535,6 @@ export class CombatManager {
     // Reduce boss HP
     const boss = combatState.boss;
     boss.hp = Math.max(0, boss.hp - damage);
-
-    // Update threat table
-    const existingThreat = boss.threatTable.get(playerId);
-    if (existingThreat) {
-      existingThreat.threat += damage;
-    } else {
-      boss.threatTable.set(playerId, {
-        playerId,
-        threat: damage,
-      });
-    }
 
     // Emit boss damaged event
     this.eventBus.emit('combat:boss_damaged', {
@@ -528,18 +544,43 @@ export class CombatManager {
       bossHealth: boss.hp,
     });
 
-    // Check for enrage (50% HP threshold)
-    if (!boss.isEnraged && boss.hp <= boss.maxHp * 0.5 && boss.hp > 0) {
-      boss.isEnraged = true;
-      this.eventBus.emit('combat:boss_enraged', {
-        lobbyId,
-        message: 'The boss has become enraged!',
-      });
+    // Check for HP phase transition and record threat via BossAI
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI) {
+      // Record threat via BossAI
+      bossAI.recordThreat(boss.threatTable, playerId, 'damage', damage);
+
+      // Check for phase transition
+      const phaseResult = bossAI.checkPhaseTransition(boss.hp, boss.maxHp);
+      if (phaseResult.transitioned) {
+        boss.currentPhase = phaseResult.newPhase;
+
+        // Still set isEnraged for backward compat at phase 2+
+        if (phaseResult.newPhase >= 2) {
+          boss.isEnraged = true;
+        }
+
+        this.eventBus.emit('combat:boss_phase_transition', {
+          lobbyId,
+          newPhase: phaseResult.newPhase,
+          previousPhase: phaseResult.newPhase - 1,
+          message: phaseResult.message ?? 'The boss grows more powerful!',
+          bossType: boss.bossType,
+        });
+
+        // Also emit enraged for backward compat
+        if (phaseResult.newPhase === 2) {
+          this.eventBus.emit('combat:boss_enraged', {
+            lobbyId,
+            message: phaseResult.message ?? 'The boss has become enraged!',
+          });
+        }
+      }
     }
 
     // Check for boss defeat
     if (boss.hp <= 0) {
-      // Clear attack timer if running (placeholder for Plan 04-03)
+      // Clear attack timer if running
       if (boss.attackTimerHandle) {
         clearTimeout(boss.attackTimerHandle);
         boss.attackTimerHandle = undefined;
@@ -608,7 +649,7 @@ export class CombatManager {
     let baseDamage = 0;
     for (const player of combatState.players.values()) {
       if (player.combatState === 'fighting') {
-        const playerClass = this.getPlayerClass?.(lobbyId, player.playerId);
+        const playerClass = this.getPlayerClass?.(lobbyId, player.playerId) ?? null;
         const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, player.playerId, playerClass) ?? 1.0;
         baseDamage += this.getClassBaseDamage(playerClass, masteryMultiplier);
       }
@@ -851,7 +892,7 @@ export class CombatManager {
     }
 
     // Calculate damage (use player's base damage with mastery multiplier)
-    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId) ?? null;
     const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, playerId, playerClass) ?? 1.0;
     const baseDamage = this.getClassBaseDamage(playerClass, masteryMultiplier);
     const damage = Math.floor(baseDamage * combatState.battleModifier);
@@ -942,8 +983,9 @@ export class CombatManager {
    */
   private performBossAttack(lobbyId: string): void {
     const combatState = this.combatStates.get(lobbyId);
-    if (!combatState || !combatState.boss) {
-      return; // Combat ended
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (!combatState || !combatState.boss || !bossAI) {
+      return; // Combat ended or not initialized
     }
 
     const boss = combatState.boss;
@@ -953,19 +995,68 @@ export class CombatManager {
       return;
     }
 
-    // Select attack type
-    const attackType = this.selectAttackType(boss.isEnraged);
+    // Build battle context
+    const context = {
+      bossHp: boss.hp,
+      bossMaxHp: boss.maxHp,
+      currentPhase: boss.currentPhase,
+      playerCount: combatState.players.size,
+      fightingPlayerCount: Array.from(combatState.players.values())
+        .filter(p => p.combatState === 'fighting').length,
+      timeSinceBattleStart: combatState.battleStartTime
+        ? Date.now() - combatState.battleStartTime : 0,
+    };
 
-    // Check if AoE
-    const isAoE = this.isAoEAttack(boss.isEnraged);
+    // Get alive fighting player IDs
+    const alivePlayers = Array.from(combatState.players.values())
+      .filter(p => p.combatState === 'fighting')
+      .map(p => p.playerId);
 
-    if (isAoE) {
-      this.performAoEAttack(lobbyId, attackType);
+    if (alivePlayers.length === 0) {
+      return; // No targets available
+    }
+
+    // Select action from BossAI
+    const action = bossAI.selectNextAction(context, boss.threatTable, alivePlayers);
+    if (!action) {
+      return; // No action selected
+    }
+
+    const { pattern, targetPlayerIds } = action;
+
+    // Calculate damage with level scaling
+    let averageLevel = 1;
+    if (this.progressionManager) {
+      const levels = alivePlayers.map(id => this.progressionManager!.getPlayerLevel(lobbyId, id));
+      const totalLevels = levels.reduce((a, b) => a + b, 0);
+      averageLevel = Math.max(1, Math.floor(totalLevels / levels.length));
+    }
+    const levelDamageMultiplier = 1 + ((averageLevel - 1) * this.LEVEL_DAMAGE_SCALING);
+    const scaledDamage = Math.floor(pattern.baseDamage * levelDamageMultiplier);
+
+    // Handle telegraphing
+    if (pattern.telegraphDurationMs > 0) {
+      // Emit telegraph event
+      this.eventBus.emit('combat:boss_telegraph', {
+        lobbyId,
+        targetId: targetPlayerIds.length === 1 ? targetPlayerIds[0] : undefined,
+        attackType: pattern.attackType,
+        message: pattern.telegraphMessage,
+        delayMs: pattern.telegraphDurationMs,
+        visualEffect: pattern.visualEffect,
+        bossType: boss.bossType,
+      });
+
+      // Apply damage after telegraph delay
+      setTimeout(() => {
+        for (const targetId of targetPlayerIds) {
+          this.applyDamageToPlayer(lobbyId, targetId, scaledDamage);
+        }
+      }, pattern.telegraphDurationMs);
     } else {
-      // Select single target via threat
-      const targetId = this.selectThreatTarget(boss.threatTable, combatState.players);
-      if (targetId) {
-        this.attackSingleTarget(lobbyId, targetId, attackType);
+      // Instant attack (no telegraph)
+      for (const targetId of targetPlayerIds) {
+        this.applyDamageToPlayer(lobbyId, targetId, scaledDamage);
       }
     }
 
@@ -1157,10 +1248,20 @@ export class CombatManager {
       return;
     }
 
-    // Calculate variable interval
-    const baseInterval = boss.isEnraged
-      ? this.BOSS_ATTACK_ENRAGED_INTERVAL_MS
-      : this.BOSS_ATTACK_BASE_INTERVAL_MS;
+    // Phase-based attack intervals:
+    // Phase 1: base (5000ms), Phase 2: enraged (3000ms), Phase 3: frantic (2000ms)
+    let baseInterval: number;
+    switch (boss.currentPhase) {
+      case 3:
+        baseInterval = this.PHASE_3_ATTACK_INTERVAL_MS;
+        break;
+      case 2:
+        baseInterval = this.BOSS_ATTACK_ENRAGED_INTERVAL_MS;
+        break;
+      default:
+        baseInterval = this.BOSS_ATTACK_BASE_INTERVAL_MS;
+        break;
+    }
 
     // Apply variance: ±30%
     const variance = (Math.random() * 2 - 1) * this.BOSS_ATTACK_VARIANCE; // Range: -0.3 to +0.3
@@ -1341,6 +1442,12 @@ export class CombatManager {
       healAmount: actualHealAmount,
       newHealth: targetState.hp,
     });
+
+    // Record healing threat
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI && combatState.boss) {
+      bossAI.recordThreat(combatState.boss.threatTable, healerId, 'healing', actualHealAmount);
+    }
   }
 
   /**
@@ -1506,6 +1613,12 @@ export class CombatManager {
       playerId: session.targetId,
       reviverId: session.reviverId,
     });
+
+    // Record revival threat
+    const bossAI = this.bossAIs.get(session.lobbyId);
+    if (bossAI && combatState.boss) {
+      bossAI.recordThreat(combatState.boss.threatTable, session.reviverId, 'revival', 1);
+    }
   }
 
   /**
@@ -1641,6 +1754,7 @@ export class CombatManager {
     }
 
     this.combatStates.delete(lobbyId);
+    this.bossAIs.delete(lobbyId);
 
     // Emit cleanup complete event
     this.eventBus.emit('combat:cleanup_complete', { lobbyId });
