@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 16 of 20 (Class Mastery System) — IN PROGRESS
-Plan: 1/5 complete
-Status: Plan 16-01 complete (ClassMasteryManager foundation with TDD)
-Last activity: 2026-02-11 - Plan 16-01 execution complete
+Plan: 3/5 complete
+Status: Plan 16-03 complete (Combat mastery integration with damage scaling)
+Last activity: 2026-02-11 - Plan 16-03 execution complete
 
 Progress: [███████████████░░░░░] 75% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 75% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 60 (v1.0: 30, v1.2: 21, v1.3: 9)
+- Total plans completed: 62 (v1.0: 30, v1.2: 21, v1.3: 11)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -70,6 +70,9 @@ Recent decisions affecting current work:
 - [16-01]: Three-tier mastery system (Novice/Expert/Master) with stat multipliers (1.0/1.1/1.2)
 - [16-01]: Award class XP to player's CURRENT class (encourages class experimentation)
 - [16-01]: Fire-and-forget persistence for class mastery data
+- [16-03]: Apply mastery multiplier at base damage calculation level (single point of modification)
+- [16-03]: Optional ClassMasteryManager dependency with null-safe operators (backward compatible)
+- [16-03]: Adapter pattern for ClassMasteryManager wiring (loose coupling)
 
 ### Pending Todos
 
@@ -84,5 +87,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Plan 16-01 complete (ClassMasteryManager with TDD). Ready for Plan 16-02 (storage integration).
+Stopped at: Plan 16-03 complete (Combat mastery integration). Ready for Plan 16-04 (UI integration).
 Resume file: None
