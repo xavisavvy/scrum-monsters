@@ -1680,6 +1680,54 @@ export class CombatManager {
   }
 
   /**
+   * Get BossAI instance for a lobby
+   * @param lobbyId Lobby identifier
+   * @returns BossAI instance or undefined
+   */
+  public getBossAI(lobbyId: string): BossAI | undefined {
+    return this.bossAIs.get(lobbyId);
+  }
+
+  /**
+   * Apply damage from class ability to boss
+   * Handles threat tracking, phase transitions, and defeat checks
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @param damage Damage amount
+   */
+  public applyAbilityDamageToBoss(lobbyId: string, playerId: string, damage: number): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState?.boss) return;
+
+    combatState.boss.hp = Math.max(0, combatState.boss.hp - damage);
+
+    this.eventBus.emit('combat:boss_damaged', {
+      lobbyId,
+      playerId,
+      damage,
+      bossHealth: combatState.boss.hp,
+    });
+
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI) {
+      bossAI.recordThreat(combatState.boss.threatTable, playerId, 'damage', damage);
+      // Check phase transition
+      const phaseResult = bossAI.checkPhaseTransition(combatState.boss.hp, combatState.boss.maxHp);
+      if (phaseResult.transitioned) {
+        combatState.boss.currentPhase = phaseResult.newPhase;
+        if (phaseResult.newPhase >= 2) combatState.boss.isEnraged = true;
+        this.eventBus.emit('combat:boss_phase_transition', {
+          lobbyId,
+          newPhase: phaseResult.newPhase,
+          previousPhase: phaseResult.newPhase - 1,
+          message: phaseResult.message ?? 'The boss grows more powerful!',
+          bossType: combatState.boss.bossType,
+        });
+      }
+    }
+  }
+
+  /**
    * Handle when spectator switches to voting team
    * Kills their minion immediately with no respawn
    */

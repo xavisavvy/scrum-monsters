@@ -409,6 +409,39 @@ export class ClientEventEmitter {
         newTier: payload.newTier,
       });
     });
+
+    // =============================================================================
+    // Ability Events
+    // =============================================================================
+
+    this.eventBus.on('ability:used', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'ability:used', {
+        playerId: payload.playerId,
+        abilityId: payload.abilityId,
+        abilityName: payload.abilityName,
+        effectType: payload.effectType,
+        targetType: payload.targetType,
+      });
+    });
+
+    this.eventBus.on('ability:cooldown_started', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'ability:cooldown_started', {
+        playerId: payload.playerId,
+        abilityId: payload.abilityId,
+        durationMs: payload.durationMs,
+        expiresAt: payload.expiresAt,
+      });
+    });
+
+    this.eventBus.on('ability:effect_applied', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'ability:effect_applied', {
+        playerId: payload.playerId,
+        abilityId: payload.abilityId,
+        effectType: payload.effectType,
+        targetIds: payload.targetIds,
+        value: payload.value,
+      });
+    });
   }
 
   /**

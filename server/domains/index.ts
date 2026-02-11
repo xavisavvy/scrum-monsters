@@ -171,6 +171,46 @@ eventBus.on('session:lobby_destroyed', (payload) => {
   abilityManager.cleanupLobby(payload.lobbyId);
 });
 
+// Apply damage effects from abilities to boss HP
+eventBus.on('ability:effect_applied', (payload) => {
+  if (payload.effectType === 'damage') {
+    // Apply damage to boss via CombatManager
+    combatManager.applyAbilityDamageToBoss(payload.lobbyId, payload.playerId, payload.value);
+  }
+
+  if (payload.effectType === 'heal') {
+    // Apply healing through CombatManager for each target
+    for (const targetId of payload.targetIds) {
+      const combatState = combatManager.getCombatState(payload.lobbyId);
+      if (!combatState) break;
+      const targetState = combatState.players.get(targetId);
+      if (targetState && targetState.combatState === 'fighting') {
+        const oldHp = targetState.hp;
+        targetState.hp = Math.min(targetState.maxHp, targetState.hp + payload.value);
+        const actualHeal = targetState.hp - oldHp;
+        if (actualHeal > 0) {
+          eventBus.emit('combat:player_healed', {
+            lobbyId: payload.lobbyId,
+            playerId: targetId,
+            healerId: payload.playerId,
+            healAmount: actualHeal,
+            newHealth: targetState.hp,
+          });
+        }
+      }
+    }
+  }
+
+  if (payload.effectType === 'taunt') {
+    // Massive threat boost (use 'damage' type for threat calculation)
+    const bossAI = combatManager.getBossAI(payload.lobbyId);
+    const combatState = combatManager.getCombatState(payload.lobbyId);
+    if (bossAI && combatState?.boss?.threatTable) {
+      bossAI.recordThreat(combatState.boss.threatTable, payload.playerId, 'damage', 500);
+    }
+  }
+});
+
 // Export instances
 export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager };
 

@@ -12,6 +12,7 @@ import {
   combatManager,
   progressionManager,
   classMasteryManager,
+  abilityManager,
   registerPlayerUserId,
   eventBus,
   initializeClientEventEmitter,
@@ -1889,6 +1890,36 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           throw error;
         }
       }
+    });
+
+    // Player uses class ability
+    socket.on('use_ability', ({ abilityId }: { abilityId: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      // Get lobby for phase validation
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) {
+        socket.emit('game_error', { message: 'Not in a lobby' });
+        return;
+      }
+
+      // Validate combat phase
+      if (lobby.gamePhase !== 'battle') {
+        socket.emit('game_error', { message: 'Abilities only usable in battle phase' });
+        return;
+      }
+
+      // Attempt ability use (AbilityManager validates cooldown, mastery, combat state)
+      const result = abilityManager.useAbility(lobby.id, playerId, abilityId);
+
+      if (!result.success) {
+        socket.emit('game_error', { message: result.error || 'Ability use failed' });
+        return;
+      }
+
+      // Success - events emitted by AbilityManager and effect handlers in domains/index.ts
+      console.log(`Player ${playerId} used ability ${abilityId}`);
     });
 
     // Start revival
