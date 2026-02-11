@@ -62,25 +62,14 @@ const estimationManager = new EstimationManager({
     return player?.team ?? null;
   }
 });
-const combatManager = new CombatManager({
+const classMasteryManager = new ClassMasteryManager({
   eventBus,
-  // Provide team lookup callback
-  getPlayerTeam: (lobbyId: string, playerId: string) => {
-    const lobby = sessionManager.getLobby(lobbyId);
-    if (!lobby) return null;
-    const player = lobby.players.find(p => p.id === playerId);
-    return player?.team ?? null;
-  },
-  // Provide class lookup callback
   getPlayerClass: (lobbyId: string, playerId: string) => {
     const lobby = sessionManager.getLobby(lobbyId);
     if (!lobby) return null;
     const player = lobby.players.find(p => p.id === playerId);
     return player?.avatar ?? null;
-  }
-});
-const progressionManager = new ProgressionManager({
-  eventBus,
+  },
   getVoters: (lobbyId: string) => {
     const estimation = estimationManager.getEstimation(lobbyId);
     if (!estimation) return [];
@@ -100,14 +89,36 @@ const progressionManager = new ProgressionManager({
     return playerUserIdMap.get(playerId);
   },
 });
-const classMasteryManager = new ClassMasteryManager({
+const combatManager = new CombatManager({
   eventBus,
+  // Provide team lookup callback
+  getPlayerTeam: (lobbyId: string, playerId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    const player = lobby.players.find(p => p.id === playerId);
+    return player?.team ?? null;
+  },
+  // Provide class lookup callback
   getPlayerClass: (lobbyId: string, playerId: string) => {
     const lobby = sessionManager.getLobby(lobbyId);
     if (!lobby) return null;
     const player = lobby.players.find(p => p.id === playerId);
     return player?.avatar ?? null;
   },
+  // Provide class mastery manager dependency
+  classMasteryManager: {
+    getMasteryMultiplier: (lobbyId: string, playerId: string, avatarClass) => {
+      if (!avatarClass) return 1.0;
+      return classMasteryManager.getMasteryMultiplier(lobbyId, playerId, avatarClass);
+    },
+    getUnlockedAbilities: (lobbyId: string, playerId: string, avatarClass) => {
+      if (!avatarClass) return [];
+      return classMasteryManager.getUnlockedAbilities(lobbyId, playerId, avatarClass);
+    },
+  },
+});
+const progressionManager = new ProgressionManager({
+  eventBus,
   getVoters: (lobbyId: string) => {
     const estimation = estimationManager.getEstimation(lobbyId);
     if (!estimation) return [];
