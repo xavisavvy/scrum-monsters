@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 18 of 20 (Class Abilities) — COMPLETE
-Plan: 3/3 complete, verified
-Status: Phase 18 verified (4/4 must-haves passed), ROADMAP updated
-Last activity: 2026-02-11 - Phase 18 execution complete with verification
+Phase: 19 of 20 (Team Combos) — IN PROGRESS
+Plan: 1/1 complete
+Status: 19-01 complete (ComboManager domain with TDD)
+Last activity: 2026-02-11 - Phase 19-01 execution complete
 
-Progress: [█████████████████░░░] 85% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [█████████████████░░░] 87% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 **Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 72 (v1.0: 30, v1.2: 21, v1.3: 21 incl. phase 18)
+- Total plans completed: 73 (v1.0: 30, v1.2: 21, v1.3: 22 incl. phase 19-01)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -112,6 +112,12 @@ Recent decisions affecting current work:
 - [18-03]: 100ms client buffer on isOnCooldown to prevent client/server race conditions
 - [18-03]: Border color based on ability role: amber (tank), green (healer), blue (DPS)
 - [18-03]: Optimistic UI with pendingAbility state to prevent spam clicks
+- [19-01]: 3-second ability window for combo detection (balances coordination vs network latency)
+- [19-01]: Per-combo independent cooldowns (allows tactical variety, not locked after one combo)
+- [19-01]: First-match wins for overlapping combos (prevents conflicts, deterministic behavior)
+- [19-01]: Consensus ultimate one-per-ticket with guard set (prevents re-trigger on discussion phase)
+- [19-01]: Voting speed scales damage 1.5x to 3.0x (10s fast to 60s slow, rewards quick agreement)
+- [19-01]: CLASS_COMBOS defined with non-overlapping class pairs (prevents cooldown conflicts)
 
 ### Pending Todos
 
@@ -126,5 +132,12 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 18 complete and verified (4/4 must-haves). Ready for Phase 19.
+Stopped at: Completed 19-01-PLAN.md (ComboManager domain with TDD)
 Resume file: None
+
+**Recent execution:**
+- Phase: 19-team-combos, Plan: 01
+- Duration: 9 minutes
+- Tasks: 2 (TDD: RED + GREEN)
+- Files: 3 created, 2 modified
+- Commits: a36fb23 (feat), 8775805 (test), 792c7f9 (feat)
