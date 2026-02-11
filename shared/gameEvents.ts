@@ -591,6 +591,22 @@ export interface ServerToClientEvents {
     timestamp: number;
   }) => void;
 
+  // Stats events
+  'stats:session_summary': (data: {
+    summaries: Record<string, {
+      totalVotes: number;
+      consensusCount: number;
+      averageVotingSpeedMs: number;
+      totalDamageDealt: number;
+      bossesDefeated: number;
+      revives: number;
+      deaths: number;
+      itemsUsed: number;
+    }>;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
   'system:missed_events': (data: { events: Array<{ event: string; data: any }> }) => void;

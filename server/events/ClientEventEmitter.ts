@@ -497,6 +497,16 @@ export class ClientEventEmitter {
         targetIds: payload.targetIds,
       });
     });
+
+    // =============================================================================
+    // Stats Events
+    // =============================================================================
+
+    this.eventBus.on('stats:session_complete', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'stats:session_summary', {
+        summaries: payload.summaries,
+      });
+    });
   }
 
   /**
