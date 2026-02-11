@@ -95,7 +95,13 @@ Plans:
   4. Higher average team level results in more challenging boss encounters
   5. Boss becomes more aggressive at low HP (faster attacks, more damage)
   6. Boss prioritizes targeting players who deal more damage or healing
-**Plans**: TBD
+**Plans**: 5 plans
+Plans:
+- [ ] 17-01-PLAN.md — TDD: BossStateMachine, PatternSequencer, ThreatEvaluator core
+- [ ] 17-02-PLAN.md — 5 boss behavior definitions + BossAI coordinator
+- [ ] 17-03-PLAN.md — CombatManager integration with BossAI, phase transitions, level scaling
+- [ ] 17-04-PLAN.md — Client telegraph UI, phase transition visuals, event wiring
+- [ ] 17-05-PLAN.md — Production wiring: progressionManager dep, boss sprite passthrough
 
 ### Phase 18: Class Abilities
 
