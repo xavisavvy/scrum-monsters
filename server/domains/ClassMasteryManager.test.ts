@@ -6,7 +6,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { ClassMasteryManager } from './ClassMasteryManager';
-import { EventBus, ScopedEventBus } from '../events';
+import { ScopedEventBus } from '../events';
 import { ClassMasteryXPCurve } from '../../shared/classMasteryTypes';
 import type { AvatarClass } from '../../shared/gameEvents';
 import type {
@@ -113,20 +113,18 @@ describe('ClassMasteryXPCurve', () => {
 });
 
 describe('ClassMasteryManager', () => {
-  let eventBus: EventBus;
-  let scopedBus: ScopedEventBus;
+  let eventBus: ScopedEventBus;
   let manager: ClassMasteryManager;
   let getPlayerClassMock: ReturnType<typeof vi.fn>;
   let getVotersMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
-    eventBus = new EventBus();
-    scopedBus = eventBus.createScope('test-lobby');
+    eventBus = new ScopedEventBus();
     getPlayerClassMock = vi.fn();
     getVotersMock = vi.fn();
 
     manager = new ClassMasteryManager({
-      eventBus: scopedBus,
+      eventBus: eventBus,
       getPlayerClass: getPlayerClassMock,
       getVoters: getVotersMock,
     });
@@ -147,7 +145,7 @@ describe('ClassMasteryManager', () => {
 
     it('emits class_mastery:xp_awarded event with correct payload', () => {
       const spy = vi.fn();
-      scopedBus.on('class_mastery:xp_awarded', spy);
+      eventBus.on('class_mastery:xp_awarded', spy);
 
       manager.awardClassXP('lobby1', 'player1', 'ranger', 50, 'consensus');
 
@@ -163,7 +161,7 @@ describe('ClassMasteryManager', () => {
 
     it('does NOT emit tier_up when XP stays in same tier', () => {
       const spy = vi.fn();
-      scopedBus.on('class_mastery:tier_up', spy);
+      eventBus.on('class_mastery:tier_up', spy);
 
       manager.awardClassXP('lobby1', 'player1', 'rogue', 100, 'vote');
       manager.awardClassXP('lobby1', 'player1', 'rogue', 100, 'vote');
@@ -173,7 +171,7 @@ describe('ClassMasteryManager', () => {
 
     it('emits class_mastery:tier_up when XP crosses Expert threshold', () => {
       const spy = vi.fn();
-      scopedBus.on('class_mastery:tier_up', spy);
+      eventBus.on('class_mastery:tier_up', spy);
 
       manager.awardClassXP('lobby1', 'player1', 'bard', 900, 'vote');
       manager.awardClassXP('lobby1', 'player1', 'bard', 200, 'vote'); // 1100 total, crosses 1000
@@ -189,7 +187,7 @@ describe('ClassMasteryManager', () => {
 
     it('emits class_mastery:tier_up when XP crosses Master threshold', () => {
       const spy = vi.fn();
-      scopedBus.on('class_mastery:tier_up', spy);
+      eventBus.on('class_mastery:tier_up', spy);
 
       manager.initializeClassMastery('lobby1', 'player1', 'sorcerer', 4900);
       manager.awardClassXP('lobby1', 'player1', 'sorcerer', 200, 'vote'); // 5100 total, crosses 5000
@@ -268,7 +266,7 @@ describe('ClassMasteryManager', () => {
       it('awards XP to player\'s CURRENT class', () => {
         getPlayerClassMock.mockReturnValue('monk');
 
-        scopedBus.emit('estimation:vote_cast', {
+        eventBus.emit('estimation:vote_cast', {
           lobbyId: 'lobby1',
           playerId: 'player1',
           vote: 5,
@@ -281,7 +279,7 @@ describe('ClassMasteryManager', () => {
       it('does not award XP if player class is unknown', () => {
         getPlayerClassMock.mockReturnValue(null);
 
-        scopedBus.emit('estimation:vote_cast', {
+        eventBus.emit('estimation:vote_cast', {
           lobbyId: 'lobby1',
           playerId: 'player1',
           vote: 5,
@@ -297,7 +295,7 @@ describe('ClassMasteryManager', () => {
       it('awards class XP proportional to damage', () => {
         getPlayerClassMock.mockReturnValue('warrior');
 
-        scopedBus.emit('combat:boss_damaged', {
+        eventBus.emit('combat:boss_damaged', {
           lobbyId: 'lobby1',
           playerId: 'player1',
           damage: 50,
@@ -318,7 +316,7 @@ describe('ClassMasteryManager', () => {
           return null;
         });
 
-        scopedBus.emit('estimation:full_consensus_reached', {
+        eventBus.emit('estimation:full_consensus_reached', {
           lobbyId: 'lobby1',
           ticketId: 'ticket1',
         } as EstimationFullConsensusReachedPayload);
@@ -332,7 +330,7 @@ describe('ClassMasteryManager', () => {
       it('awards class XP to reviver', () => {
         getPlayerClassMock.mockReturnValue('cleric');
 
-        scopedBus.emit('combat:player_revived', {
+        eventBus.emit('combat:player_revived', {
           lobbyId: 'lobby1',
           playerId: 'player2',
           reviverId: 'player1',
@@ -361,8 +359,8 @@ describe('ClassMasteryManager', () => {
     it('sets initial XP without emitting events', () => {
       const xpSpy = vi.fn();
       const tierSpy = vi.fn();
-      scopedBus.on('class_mastery:xp_awarded', xpSpy);
-      scopedBus.on('class_mastery:tier_up', tierSpy);
+      eventBus.on('class_mastery:xp_awarded', xpSpy);
+      eventBus.on('class_mastery:tier_up', tierSpy);
 
       manager.initializeClassMastery('lobby1', 'player1', 'paladin', 2000);
 
@@ -382,7 +380,7 @@ describe('ClassMasteryManager', () => {
       };
 
       const managerWithStorage = new ClassMasteryManager({
-        eventBus: scopedBus,
+        eventBus: eventBus,
         getPlayerClass: getPlayerClassMock,
         getVoters: getVotersMock,
         storage: mockStorage as any,
