@@ -9,19 +9,19 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 ## Current Position
 
-Phase: 20 of 20 (Combat Items & Lifetime Stats) — IN PROGRESS
-Plan: 3/3 complete
-Status: Plan 20-03 complete (Item system integration with ItemBar UI)
-Last activity: 2026-02-11 - Plan 20-03 execution complete
+Phase: 20 of 20 (Combat Items & Lifetime Stats) — COMPLETE
+Plan: 4/4 complete
+Status: Phase 20 complete (Stats wiring and session summary display)
+Last activity: 2026-02-11 - Plan 20-04 execution complete
 
-Progress: [██████████████████░░] 91% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [████████████████████] 100% (milestones 1.0+1.2+1.3 complete)
 
 **Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 76 (v1.0: 30, v1.2: 21, v1.3: 25 incl. phase 20-01)
+- Total plans completed: 79 (v1.0: 30, v1.2: 21, v1.3: 28)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -41,6 +41,7 @@ Progress: [██████████████████░░] 91% (mi
 | Phase 20 P01 | 231s | 2 tasks | 5 files |
 | Phase 20 P02 | 360s | 2 tasks | 7 files |
 | Phase 20 P03 | 396s | 2 tasks | 9 files |
+| Phase 20 P04 | 281s | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -141,6 +142,10 @@ Recent decisions affecting current work:
 - [Phase 20-03]: Shield absorption wraps applyDamageToPlayer to intercept before HP reduction
 - [Phase 20-03]: Damage boost applied as bonus damage on boss_damaged event
 - [Phase 20-03]: Optimistic UI with pendingItem state prevents item spam clicks
+- [Phase 20-04]: SessionStatsCard shared component for both GameOver and Victory phases
+- [Phase 20-04]: 2-column stat layout (estimation left, combat right)
+- [Phase 20-04]: Socket event listener with cleanup pattern in useEffect
+- [Phase 20-04]: Progressive disclosure for session stats (only show if available)
 
 ### Pending Todos
 
@@ -155,5 +160,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 20-03-PLAN.md (Item system integration with ItemBar UI)
+Stopped at: Completed 20-04-PLAN.md (Stats wiring and session summary display)
 Resume file: None
