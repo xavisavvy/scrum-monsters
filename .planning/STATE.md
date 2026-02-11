@@ -5,23 +5,23 @@
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Focused estimation that doesn't bore people - voting distraction-free, waiting fun
-**Current focus:** Phase 18 in progress - Class Abilities
+**Current focus:** Phase 18 complete, ready for Phase 19
 
 ## Current Position
 
-Phase: 18 of 20 (Class Abilities) — IN PROGRESS
-Plan: 3/3 complete
-Status: 18-03 complete (Client ability UI with cooldown tracking)
-Last activity: 2026-02-11 - Phase 18 Plan 03 execution complete
+Phase: 18 of 20 (Class Abilities) — COMPLETE
+Plan: 3/3 complete, verified
+Status: Phase 18 verified (4/4 must-haves passed), ROADMAP updated
+Last activity: 2026-02-11 - Phase 18 execution complete with verification
 
-Progress: [████████████████░░░░] 80% (milestones 1.0+1.2 complete, 1.3 in progress)
+Progress: [█████████████████░░░] 85% (milestones 1.0+1.2 complete, 1.3 in progress)
 
 **Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 72 (v1.0: 30, v1.2: 21, v1.3: 21)
+- Total plans completed: 72 (v1.0: 30, v1.2: 21, v1.3: 21 incl. phase 18)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -126,5 +126,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 18 Plan 03 complete (Client ability UI). Phase 18 complete.
+Stopped at: Phase 18 complete and verified (4/4 must-haves). Ready for Phase 19.
 Resume file: None
