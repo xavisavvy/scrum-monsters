@@ -293,6 +293,8 @@ export interface ClientToServerEvents {
   return_to_lobby: () => void;
   // Settings update
   update_estimation_settings: (data: { estimationSettings: EstimationSettings }) => void;
+  // Class abilities
+  use_ability: (data: { abilityId: string }) => void;
 }
 
 export interface TeamScores {
@@ -504,6 +506,36 @@ export interface ServerToClientEvents {
   'class_mastery:sync': (data: {
     playerId: string;
     masteryData: Record<string, { classXP: number; currentTier: string }>;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Ability events
+  'ability:used': (data: {
+    playerId: string;
+    abilityId: string;
+    abilityName: string;
+    effectType: string;
+    targetType: string;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'ability:cooldown_started': (data: {
+    playerId: string;
+    abilityId: string;
+    durationMs: number;
+    expiresAt: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'ability:effect_applied': (data: {
+    playerId: string;
+    abilityId: string;
+    effectType: string;
+    targetIds: string[];
+    value: number;
     seq: number;
     timestamp: number;
   }) => void;
