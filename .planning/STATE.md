@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 18 of 20 (Class Abilities) — IN PROGRESS
-Plan: 1/3 complete
-Status: 18-01 complete (ability types + AbilityManager domain)
-Last activity: 2026-02-11 - Phase 18 Plan 01 execution complete
+Plan: 2/3 complete
+Status: 18-02 complete (AbilityManager server integration)
+Last activity: 2026-02-11 - Phase 18 Plan 02 execution complete
 
 Progress: [████████████████░░░░] 80% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [████████████████░░░░] 80% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 70 (v1.0: 30, v1.2: 21, v1.3: 19)
+- Total plans completed: 71 (v1.0: 30, v1.2: 21, v1.3: 20)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -103,6 +103,10 @@ Recent decisions affecting current work:
 - [18-01]: Independent cooldowns per ability (no global cooldown)
 - [18-01]: Heal targeting selects lowest HP fighting player for single-target heals
 - [18-01]: Role distribution: 3 tank, 2 healer, 5 DPS classes
+- [18-02]: use_ability handler validates battle phase before calling AbilityManager
+- [18-02]: Damage effects applied via CombatManager.applyAbilityDamageToBoss for threat tracking
+- [18-02]: Taunt effects use recordThreat with 'damage' type (500 threat value)
+- [18-02]: ClientEventEmitter adds seq/timestamp to all ability:* events
 
 ### Pending Todos
 
@@ -117,5 +121,5 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Phase 18 Plan 01 complete (ability types + AbilityManager). Next: 18-02 (socket handlers)
+Stopped at: Phase 18 Plan 02 complete (AbilityManager server integration). Next: 18-03 (client UI)
 Resume file: None
