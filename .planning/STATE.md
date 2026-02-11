@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-03)
 
 **Core value:** Focused estimation that doesn't bore people - voting distraction-free, waiting fun
-**Current focus:** Phase 18 complete, ready for Phase 19
+**Current focus:** Phase 19 complete, ready for Phase 20
 
 ## Current Position
 
-Phase: 19 of 20 (Team Combos) — IN PROGRESS
-Plan: 2/3 complete
-Status: 19-02 complete (ComboManager infrastructure wiring)
-Last activity: 2026-02-11 - Phase 19-02 execution complete
+Phase: 19 of 20 (Team Combos) — COMPLETE
+Plan: 3/3 complete
+Status: 19-03 complete (Combo UI client integration)
+Last activity: 2026-02-11 - Phase 19-03 execution complete
 
 Progress: [█████████████████░░░] 87% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [█████████████████░░░] 87% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 74 (v1.0: 30, v1.2: 21, v1.3: 23 incl. phase 19-02)
+- Total plans completed: 75 (v1.0: 30, v1.2: 21, v1.3: 24 incl. phase 19-03)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -120,6 +120,10 @@ Recent decisions affecting current work:
 - [19-01]: CLASS_COMBOS defined with non-overlapping class pairs (prevents cooldown conflicts)
 - [19-02]: visualEffect added to ComboTriggeredPayload for client rendering flexibility
 - [19-02]: combo:comboId playerId prefix for XP tracking distinction from player damage
+- [19-03]: 2.5s auto-dismiss for combo notifications (balances impact vs. disruption)
+- [19-03]: Purple gradient for consensus ultimate vs gold for regular combos (visual distinction)
+- [19-03]: Fixed top-1/3 positioning for combo notifications (visible, no overlap with other UI)
+- [19-03]: Nested timeout pattern for auto-dismiss (2.5s visible, 500ms fade-out, then clear)
 
 ### Pending Todos
 
@@ -134,12 +138,12 @@ Open items from v1.2:
 ## Session Continuity
 
 Last session: 2026-02-11
-Stopped at: Completed 19-02-PLAN.md (ComboManager infrastructure wiring)
+Stopped at: Completed 19-03-PLAN.md (Combo UI client integration)
 Resume file: None
 
 **Recent execution:**
-- Phase: 19-team-combos, Plan: 02
-- Duration: 4 minutes
+- Phase: 19-team-combos, Plan: 03
+- Duration: 2 minutes
 - Tasks: 2
-- Files: 6 modified
-- Commits: 98087d0 (feat), b6c6dca (feat)
+- Files: 3 (2 created, 1 modified)
+- Commits: f8311b0 (feat), 121f6a6 (feat)
