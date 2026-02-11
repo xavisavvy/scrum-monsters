@@ -27,7 +27,8 @@ export function setupEventHandlers(socket: Socket): void {
           avatar: data.avatar,
           avatarClass: data.avatar,
           isHost: false,
-          hasSubmittedScore: false
+          hasSubmittedScore: false,
+          level: 1
         };
         const updatedLobby = {
           ...currentLobby,
