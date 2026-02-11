@@ -12,12 +12,16 @@ import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
 import { ProgressionManager } from './ProgressionManager';
 import { Server } from 'socket.io';
+import { storage } from '../storage';
 
 // Create shared event bus instance
 const eventBus = new ScopedEventBus();
 
 // Create sequencer for event ordering
 const lobbyEventSequencer = new LobbyEventSequencer();
+
+// Player-to-User ID mapping for XP persistence
+const playerUserIdMap = new Map<string, number>();
 
 // ClientEventEmitter will be initialized when io is available
 let clientEventEmitter: ClientEventEmitter | null = null;
@@ -74,10 +78,39 @@ const combatManager = new CombatManager({
     return player?.avatar ?? null;
   }
 });
-const progressionManager = new ProgressionManager({ eventBus });
+const progressionManager = new ProgressionManager({
+  eventBus,
+  getVoters: (lobbyId: string) => {
+    const estimation = estimationManager.getEstimation(lobbyId);
+    if (!estimation) return [];
+    const voters: string[] = [];
+    for (const team of ['developers', 'qa'] as const) {
+      const teamState = estimation.teams[team];
+      if (teamState) {
+        for (const [playerId] of teamState.votes) {
+          voters.push(playerId);
+        }
+      }
+    }
+    return voters;
+  },
+  storage,
+  getUserId: (lobbyId: string, playerId: string) => {
+    return playerUserIdMap.get(playerId);
+  },
+});
 
 // Export instances
 export { eventBus, sessionManager, estimationManager, combatManager, progressionManager };
+
+// Export player-user ID mapping helpers
+export function registerPlayerUserId(playerId: string, userId: number): void {
+  playerUserIdMap.set(playerId, userId);
+}
+
+export function getPlayerUserId(playerId: string): number | undefined {
+  return playerUserIdMap.get(playerId);
+}
 
 // Export sequencer for testing if needed
 export { lobbyEventSequencer };

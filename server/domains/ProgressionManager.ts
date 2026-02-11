@@ -25,6 +25,9 @@ import type {
  */
 export interface ProgressionManagerDeps {
   eventBus: ScopedEventBus;
+  getVoters: (lobbyId: string) => string[];
+  storage?: import('../storage').IStorage;
+  getUserId?: (lobbyId: string, playerId: string) => number | undefined;
 }
 
 // =============================================================================
@@ -153,6 +156,9 @@ export class ProgressionManager {
   // Dependencies
   private readonly eventBus: ScopedEventBus;
   private readonly curve: XPCurve;
+  private readonly getVoters: (lobbyId: string) => string[];
+  private readonly storage: import('../storage').IStorage | null;
+  private readonly getUserId: ((lobbyId: string, playerId: string) => number | undefined) | null;
 
   // State: Map<lobbyId, Map<playerId, totalXP>>
   private lobbyXP = new Map<string, Map<string, number>>();
@@ -160,6 +166,9 @@ export class ProgressionManager {
   constructor(deps: ProgressionManagerDeps) {
     this.eventBus = deps.eventBus;
     this.curve = new XPCurve(DEFAULT_CURVE_CONFIG);
+    this.getVoters = deps.getVoters;
+    this.storage = deps.storage ?? null;
+    this.getUserId = deps.getUserId ?? null;
 
     // Subscribe to XP-awarding events
     this.setupEventSubscriptions();
@@ -201,10 +210,10 @@ export class ProgressionManager {
    * Handle consensus reached event - award 50 XP to all voters
    */
   private handleConsensus(payload: EstimationFullConsensusReachedPayload): void {
-    // Note: We need access to the list of players who voted
-    // For now, this is a placeholder - will need lobby player access
-    // TODO: Add getActivePlayers callback to ProgressionManagerDeps
-    console.warn('Consensus XP award requires player list - not yet implemented');
+    const voters = this.getVoters(payload.lobbyId);
+    for (const playerId of voters) {
+      this.awardXP(payload.lobbyId, playerId, XP_RATE_VALUES.consensus, 'consensus');
+    }
   }
 
   /**
@@ -273,6 +282,13 @@ export class ProgressionManager {
         });
       }
     }
+
+    // Persist XP to storage (fire-and-forget, best-effort)
+    if (this.storage && this.getUserId) {
+      this.persistXP(lobbyId, playerId, newXP).catch(() => {
+        // Error already logged in persistXP
+      });
+    }
   }
 
   /**
@@ -320,6 +336,43 @@ export class ProgressionManager {
       this.lobbyXP.set(lobbyId, lobbyMap);
     }
     lobbyMap.set(playerId, xp);
+  }
+
+  /**
+   * Persist player XP to storage (best-effort, non-blocking)
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @param totalXP Total XP to persist
+   */
+  private async persistXP(lobbyId: string, playerId: string, totalXP: number): Promise<void> {
+    try {
+      if (!this.storage || !this.getUserId) return;
+      const userId = this.getUserId(lobbyId, playerId);
+      if (!userId) return; // Guest player, no persistence
+      const level = this.curve.calculateLevel(totalXP);
+      await this.storage.updateUserProfile(userId, { totalXP, currentLevel: level });
+    } catch (err) {
+      // Log but don't fail — persistence is best-effort
+      console.error(`Failed to persist XP for player ${playerId}:`, err);
+    }
+  }
+
+  /**
+   * Load player XP from storage on join
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @param userId Authenticated user ID
+   */
+  async loadPlayerXP(lobbyId: string, playerId: string, userId: number): Promise<void> {
+    if (!this.storage) return;
+    try {
+      const profile = await this.storage.getUserProfile(userId);
+      if (profile && profile.totalXP > 0) {
+        this.initializePlayer(lobbyId, playerId, profile.totalXP);
+      }
+    } catch (err) {
+      console.error(`Failed to load XP for player ${playerId}:`, err);
+    }
   }
 
   /**
