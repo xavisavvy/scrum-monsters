@@ -13,6 +13,8 @@ import { AbilityBar } from '@/components/game/AbilityBar';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAbilitySync } from '@/lib/stores/useAbilities';
+import { ComboNotification } from '@/components/game/ComboNotification';
+import { useComboSync } from '@/lib/stores/useComboState';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -28,6 +30,7 @@ export function BattlePhase({
   const { currentPlayer } = useGameState();
   const { levelUp } = useProgression();
   useAbilitySync(); // Wire ability server events
+  useComboSync(); // Wire combo server events
 
   // Don't render if no boss is available
   if (!boss) {
@@ -72,6 +75,9 @@ export function BattlePhase({
 
       {/* Boss telegraph warning - Top center */}
       <BossTelegraph />
+
+      {/* Combo notifications - Upper center */}
+      <ComboNotification />
 
       {/* XP System UI - Floating numbers in 3D scene */}
       <FloatingXPManager />
