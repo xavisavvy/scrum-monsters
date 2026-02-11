@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 ## Current Position
 
 Phase: 17 of 20 (Boss AI Patterns) — IN PROGRESS
-Plan: 2/5 complete
-Status: Boss behavior definitions and BossAI coordinator complete
-Last activity: 2026-02-11 - Phase 17-02 complete (5 boss behaviors + BossAI coordinator)
+Plan: 3/5 complete
+Status: CombatManager integrated with BossAI system
+Last activity: 2026-02-11 - Phase 17-03 complete (BossAI integration with phase transitions and level scaling)
 
 Progress: [███████████████░░░░░] 76% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -21,7 +21,7 @@ Progress: [███████████████░░░░░] 76% (mi
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 66 (v1.0: 30, v1.2: 21, v1.3: 15)
+- Total plans completed: 67 (v1.0: 30, v1.2: 21, v1.3: 16)
 - Average duration: varies by phase complexity
 - Total execution time: see milestone archives
 
@@ -88,6 +88,9 @@ Recent decisions affecting current work:
 - [17-02]: Data-driven boss behavior definitions with 9+ patterns per boss
 - [17-02]: BossAI coordinator owns all subsystems for simple CombatManager API
 - [17-02]: Pattern IDs include boss type prefix for collision prevention
+- [17-03]: BossAI.recordThreat API replaces manual threat table updates for consistency
+- [17-03]: Emit both boss_phase_transition and boss_enraged for backward compatibility
+- [17-03]: Level scaling applies to HP (+8%/level) and damage (+5%/level) for difficulty scaling
 
 ### Pending Todos
 
