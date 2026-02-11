@@ -116,6 +116,12 @@ const combatManager = new CombatManager({
       return classMasteryManager.getUnlockedAbilities(lobbyId, playerId, avatarClass);
     },
   },
+  // Provide progression manager dependency for level-based difficulty scaling
+  progressionManager: {
+    getPlayerLevel: (lobbyId: string, playerId: string) => {
+      return progressionManager.getPlayerLevel(lobbyId, playerId);
+    },
+  },
 });
 const progressionManager = new ProgressionManager({
   eventBus,
@@ -165,3 +171,7 @@ export type { ClassMasteryManager, ClassMasteryManagerDeps } from './ClassMaster
 export * from '../errors/SessionErrors';
 export * from '../errors/EstimationErrors';
 export * from '../errors/CombatErrors';
+
+// Re-export boss-ai module
+export { BossAI, getBossTypeFromSprite, getBossBehavior, BOSS_BEHAVIORS } from './boss-ai';
+export type { BossType, BossPhaseNumber, AttackPattern, BossBehavior, BattleContext } from './boss-ai';

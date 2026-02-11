@@ -1021,7 +1021,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         combatManager.cleanupLobby(lobbyId);
         const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
         const ticketIndex = (lobby.completedTickets?.length ?? 0);
-        combatManager.initializeCombat(lobbyId, players, ticketIndex);
+        combatManager.initializeCombat(lobbyId, players, ticketIndex, lobby.boss?.sprite);
 
         // Reset player scores
         for (const player of lobby.players) {
@@ -1851,7 +1851,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Initialize combat with active players
       const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
-      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0);
+      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0, lobby.boss?.sprite);
 
       console.log(`Combat initialized for lobby ${data.lobbyId}`);
     });
