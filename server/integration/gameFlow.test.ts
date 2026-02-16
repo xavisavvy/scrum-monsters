@@ -35,11 +35,11 @@ describe('Game Flow Integration', () => {
 
       // Track events
       const events: string[] = [];
-      eventBus.on('estimation:full_consensus_reached', () => events.push('consensus'));
-      eventBus.on('combat:countdown_started', () => events.push('countdown_started'));
-      eventBus.on('combat:countdown_complete', () => events.push('countdown_complete'));
-      eventBus.on('combat:battle_complete', () => events.push('battle_complete'));
-      eventBus.on('estimation:discussion_timer_started', () => events.push('discussion_started'));
+      eventBus.on('estimation:full_consensus_reached', () => { events.push('consensus'); });
+      eventBus.on('combat:countdown_started', () => { events.push('countdown_started'); });
+      eventBus.on('combat:countdown_complete', () => { events.push('countdown_complete'); });
+      eventBus.on('combat:battle_complete', () => { events.push('battle_complete'); });
+      eventBus.on('estimation:discussion_timer_started', () => { events.push('discussion_started'); });
 
       // Both teams vote same value - need consensus from both teams
       estimationManager.castVote(lobbyId, 'player1', 'developers', 5);
@@ -70,7 +70,7 @@ describe('Game Flow Integration', () => {
 
       // Track events
       const events: any[] = [];
-      eventBus.on('estimation:discussion_timer_started', (data) => events.push(data));
+      eventBus.on('estimation:discussion_timer_started', (data) => { events.push(data); });
 
       // Emit battle_complete directly
       eventBus.emit('combat:battle_complete', { lobbyId });
@@ -92,7 +92,7 @@ describe('Game Flow Integration', () => {
       ];
 
       const spawnEvents: any[] = [];
-      eventBus.on('combat:minion_spawned', (data) => spawnEvents.push(data));
+      eventBus.on('combat:minion_spawned', (data) => { spawnEvents.push(data); });
 
       combatManager.initializeCombat(lobbyId, players, 0);
 
@@ -110,7 +110,7 @@ describe('Game Flow Integration', () => {
       ];
 
       const killEvents: any[] = [];
-      eventBus.on('combat:minion_killed', (data) => killEvents.push(data));
+      eventBus.on('combat:minion_killed', (data) => { killEvents.push(data); });
 
       combatManager.initializeCombat(lobbyId, players, 0);
 
@@ -159,7 +159,7 @@ describe('Game Flow Integration', () => {
       estimationManager.addEligibleVoter(lobbyId, 'player2', 'qa');
 
       const countdownEvents: any[] = [];
-      eventBus.on('combat:countdown_started', (data) => countdownEvents.push(data));
+      eventBus.on('combat:countdown_started', (data) => { countdownEvents.push(data); });
 
       // Both teams need to vote for full consensus
       estimationManager.castVote(lobbyId, 'player1', 'developers', 5);
@@ -185,7 +185,7 @@ describe('Game Flow Integration', () => {
       estimationManager.addEligibleVoter(lobbyId, 'player2', 'qa');
 
       const tickEvents: any[] = [];
-      eventBus.on('combat:countdown_tick', (data) => tickEvents.push(data));
+      eventBus.on('combat:countdown_tick', (data) => { tickEvents.push(data); });
 
       // Both teams vote for full consensus
       estimationManager.castVote(lobbyId, 'player1', 'developers', 5);

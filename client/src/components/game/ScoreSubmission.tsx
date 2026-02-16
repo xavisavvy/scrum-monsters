@@ -51,7 +51,7 @@ export function ScoreSubmission() {
   const handleScoreSubmit = () => {
     if (selectedScore === null) return;
     
-    emit('submit_score', { score: selectedScore });
+    emit('submit_score', { score: selectedScore as number | '?' });
     setHasSubmitted(true);
   };
 
@@ -237,7 +237,7 @@ export function ScoreSubmission() {
           {currentPlayer?.isHost && submittedCount > 0 && currentLobby?.gamePhase === 'battle' && (
             <div className="text-center mt-4 pt-4 border-t border-gray-600">
               <RetroButton
-                onClick={() => emit('force_reveal', {})}
+                onClick={() => emit('force_reveal')}
                 variant="secondary"
                 size="sm"
                 className="bg-red-600 hover:bg-red-700"

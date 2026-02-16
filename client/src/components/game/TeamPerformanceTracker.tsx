@@ -5,7 +5,7 @@ import { TeamType } from '@/lib/gameTypes';
 
 interface PerformanceMetrics {
   estimationStartTime: number | null;
-  teamSubmissions: Record<string, { time: number; score: number }>;
+  teamSubmissions: Record<string, { time: number; score: number | '?' }>;
   consensusTime: number | null;
 }
 
@@ -47,14 +47,16 @@ export function TeamPerformanceTracker() {
         }
       }));
 
-      // Emit performance data to server
-      emit('player_performance', {
-        playerId: currentPlayer.id,
-        team: currentPlayer.team,
-        estimationTime,
-        score: currentPlayer.currentScore,
-        ticketId: currentLobby?.currentTicket?.id
-      });
+      // Emit performance data to server (only for numeric scores)
+      if (typeof currentPlayer.currentScore === 'number') {
+        emit('player_performance', {
+          playerId: currentPlayer.id,
+          team: currentPlayer.team,
+          estimationTime,
+          score: currentPlayer.currentScore,
+          ticketId: currentLobby?.currentTicket?.id
+        });
+      }
     }
   }, [currentPlayer?.hasSubmittedScore, currentPlayer?.currentScore, metrics.estimationStartTime, emit, currentPlayer?.id, currentPlayer?.team, currentLobby?.currentTicket?.id]);
 

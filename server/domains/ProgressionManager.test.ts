@@ -125,7 +125,7 @@ describe('ProgressionManager', () => {
 
     // Spy on event emissions
     const originalEmit = eventBus.emit.bind(eventBus);
-    eventBus.emit = ((event: string, payload: any) => {
+    eventBus.emit = ((event: any, payload: any) => {
       if (!emittedEvents[event]) {
         emittedEvents[event] = [];
       }

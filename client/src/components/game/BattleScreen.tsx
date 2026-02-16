@@ -7,6 +7,7 @@ import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
 import { EmoteModal } from './EmoteModal';
 import { GameOverPhase } from './phases/GameOverPhase';
+import type { PhaseComponentProps } from './phases';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
@@ -663,11 +664,13 @@ export function BattleScreen() {
 
       case 'game_over':
         return (
-          <GameOverPhase 
+          <GameOverPhase
             key={phaseKey}
-            lobby={currentLobby} 
+            lobby={currentLobby}
             currentPlayer={currentPlayer}
-            emit={emit}
+            emit={emit as PhaseComponentProps['emit']}
+            sidebarCollapsed={false}
+            onToggleSidebar={() => {}}
           />
         );
 

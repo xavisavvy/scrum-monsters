@@ -25,7 +25,7 @@ interface WebSocketState {
   // Core connection methods
   connect: () => void;
   disconnect: () => void;
-  emit: <K extends keyof ClientToServerEvents>(event: K, data: Parameters<ClientToServerEvents[K]>[0]) => void;
+  emit: <K extends keyof ClientToServerEvents>(event: K, ...args: Parameters<ClientToServerEvents[K]>) => void;
 
   // Reconnection methods
   attemptReconnection: () => void;
@@ -435,11 +435,11 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     }
   },
 
-  emit: (event, data) => {
+  emit: (event, ...args) => {
     const { socket } = get();
     if (socket && socket.connected) {
-      console.log(`📤 Emitting ${String(event)}:`, data);
-      (socket as any).emit(event, data);
+      console.log(`📤 Emitting ${String(event)}:`, args[0]);
+      (socket as any).emit(event, ...args);
     } else {
       console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
     }

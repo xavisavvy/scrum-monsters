@@ -2,10 +2,10 @@
 // This handles the new player_performance event
 
 import { Socket } from 'socket.io';
-import type { ClientEvents, ServerEvents } from '../shared/gameEvents.js';
+import type { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
 
 export function setupTeamCompetitionHandlers(
-  socket: Socket<ClientEvents, ServerEvents>,
+  socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   gameStateManager: any // Replace with proper type
 ) {
   socket.on('player_performance', (data) => {
