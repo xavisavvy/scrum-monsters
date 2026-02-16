@@ -49,10 +49,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         ? ['https://scrummonsters.com', 'https://www.scrummonsters.com']
         : '*');
 
-  // Replit-specific: More aggressive timeouts due to proxy layer
-  const pingTimeout = isReplitDeployment ? 90000 : 60000; // 90s for Replit production
-  const pingInterval = isReplitDeployment ? 30000 : 25000; // 30s for Replit production
-  const connectTimeout = isReplitDeployment ? 60000 : 45000; // 60s for Replit production
+  // Office network compatible: More frequent pings to keep connections alive through corporate proxies
+  const pingTimeout = isReplitDeployment ? 60000 : 45000; // 60s/45s - faster detection of dead connections
+  const pingInterval = isReplitDeployment ? 20000 : 20000; // 20s - under most proxy idle timeouts (30-60s)
+  const connectTimeout = isReplitDeployment ? 45000 : 30000; // 45s/30s for initial connection
 
   const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {
@@ -158,6 +158,22 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   let totalConnections = 0;
   let activeConnections = 0;
   let disconnectReasons = new Map<string, number>();
+
+  // Position batching for performance - aggregate updates and broadcast every 100ms
+  const pendingPositionUpdates = new Map<string, boolean>(); // lobbyId -> hasPendingUpdates
+  
+  setInterval(() => {
+    // Broadcast batched position updates for each lobby with pending changes
+    pendingPositionUpdates.forEach((hasPending, lobbyId) => {
+      if (hasPending) {
+        const lobby = gameState.getLobby(lobbyId);
+        if (lobby && lobby.playerPositions) {
+          io.to(lobbyId).emit('players_pos', { positions: lobby.playerPositions });
+        }
+        pendingPositionUpdates.set(lobbyId, false);
+      }
+    });
+  }, 100); // Batch broadcast every 100ms
 
   // Log connection stats every 5 minutes
   setInterval(() => {
@@ -304,10 +320,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('lobby_joined', { lobby, player });
 
           // Then immediately emit the phase-specific event to advance them
-          if (currentPhase === 'battle' || currentPhase === 'voting' || currentPhase === 'discussion' || currentPhase === 'reveal') {
+          if (currentPhase === 'battle' || currentPhase === 'scoring' || currentPhase === 'discussion' || currentPhase === 'reveal') {
             // Emit battle_started to transition client to battle screen
-            socket.emit('battle_started', { lobby, boss: lobby.boss });
-            console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+            if (lobby.boss) {
+              socket.emit('battle_started', { lobby, boss: lobby.boss });
+              console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+            }
           }
         }
 
@@ -513,7 +531,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Notify remaining players
       if (updatedLobby) {
-        io.to(lobbyId).emit('player_left', { playerId });
+        const leavingPlayer = updatedLobby.players.find(p => p.id === playerId);
+        io.to(lobbyId).emit('player_left', { playerId, playerName: leavingPlayer?.name || 'Unknown' });
         io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
       }
     });
@@ -1127,15 +1146,15 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    // Position sync for combat
+    // Position sync for combat - batched for performance
     socket.on('player_pos', ({ x, y }: { x: number; y: number }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
       const lobby = gameState.updatePlayerPosition(playerId, { x, y });
       if (lobby) {
-        // Broadcast position updates to room (throttled)
-        socket.to(lobby.id).emit('players_pos', { positions: lobby.playerPositions });
+        // Mark lobby as having pending position updates (will be broadcast in batch)
+        pendingPositionUpdates.set(lobby.id, true);
       }
     });
 
