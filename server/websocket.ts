@@ -536,7 +536,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Notify remaining players
       if (updatedLobby) {
-        io.to(lobbyId).emit('player_left', { playerId, playerName });
+        const leavingPlayer = updatedLobby.players.find(p => p.id === playerId);
+        io.to(lobbyId).emit('player_left', { playerId, playerName: leavingPlayer?.name || 'Unknown' });
         io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
       }
     });
