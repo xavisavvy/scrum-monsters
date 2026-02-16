@@ -138,6 +138,12 @@ app.use((req, res, next) => {
   // Graceful shutdown handling
   const gracefulShutdown = async (signal: string) => {
     console.log(`\n${signal} received, shutting down gracefully...`);
+    
+    // Clean up WebSocket intervals
+    if ((server as any).cleanupWebSocket) {
+      (server as any).cleanupWebSocket();
+    }
+    
     await shutdownRedis();
     server.close(() => {
       console.log('Server closed');
