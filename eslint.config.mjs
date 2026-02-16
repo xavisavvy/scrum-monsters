@@ -287,6 +287,7 @@ export default [
   },
 
   // k6 load test files - add k6-specific globals
+  // k6 load test files
   {
     files: ["tests/load/**/*.js"],
     languageOptions: {
