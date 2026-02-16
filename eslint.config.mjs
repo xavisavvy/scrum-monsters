@@ -286,32 +286,59 @@ export default [
     },
   },
 
+  // k6 load test files - add k6-specific globals
   // k6 load test files
   {
     files: ["tests/load/**/*.js"],
     languageOptions: {
       globals: {
+        // k6-specific globals
         __ENV: "readonly",
         __VU: "readonly",
         __ITER: "readonly",
+        // Standard globals
         console: "readonly",
-        open: "readonly",
+        // k6 modules are imported, not globals
       },
     },
     rules: {
-      "no-unused-vars": "off",
-      "@typescript-eslint/no-unused-vars": "off",
+      "no-undef": "error",
+      "no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
     },
   },
 
-  // Node.js scripts
+  // Node.js scripts - add Node globals
   {
     files: ["scripts/**/*.js"],
     languageOptions: {
       globals: {
+        // Node.js globals
         console: "readonly",
         process: "readonly",
+        Buffer: "readonly",
+        __dirname: "readonly",
+        __filename: "readonly",
+        module: "readonly",
+        require: "readonly",
+        exports: "readonly",
+        global: "readonly",
+        setTimeout: "readonly",
+        setInterval: "readonly",
+        clearTimeout: "readonly",
+        clearInterval: "readonly",
+        setImmediate: "readonly",
       },
+    },
+    rules: {
+      "no-undef": "error",
+      "no-unused-vars": "warn",
     },
   },
 ];

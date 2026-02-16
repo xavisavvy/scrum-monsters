@@ -53,7 +53,7 @@ export default function () {
       }, 25000);
     });
 
-    socket.on('message', function (msg) {
+    socket.on('message', function (_msg) {
       // Minimal processing - just keep alive
       // Log pong responses if needed for debugging
     });
