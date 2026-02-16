@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { io, Socket } from 'socket.io-client';
 import { LobbySnapshot, ReconnectResponse, LobbySync, ClientToServerEvents, ServerToClientEvents } from '@shared/gameEvents';
 import { useProgression } from './useProgression';
+import { useClassMastery } from './useClassMastery';
 import { useGameState } from './useGameState';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
@@ -25,7 +26,7 @@ interface WebSocketState {
   // Core connection methods
   connect: () => void;
   disconnect: () => void;
-  emit: <K extends keyof ClientToServerEvents>(event: K, data: Parameters<ClientToServerEvents[K]>[0]) => void;
+  emit: (event: string, data?: any) => void;
 
   // Reconnection methods
   attemptReconnection: () => void;
@@ -304,6 +305,28 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       }
     });
 
+    // Class mastery event handlers
+    socket.on('class_mastery:xp_awarded', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (currentPlayer && data.playerId === currentPlayer.id) {
+        useClassMastery.getState().handleXPAwarded(data);
+      }
+    });
+
+    socket.on('class_mastery:tier_up', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (currentPlayer && data.playerId === currentPlayer.id) {
+        useClassMastery.getState().handleTierUp(data);
+      }
+    });
+
+    socket.on('class_mastery:sync', (data: any) => {
+      const { currentPlayer } = useGameState.getState();
+      if (currentPlayer && data.playerId === currentPlayer.id) {
+        useClassMastery.getState().handleSync(data);
+      }
+    });
+
     set({ socket });
   },
 
@@ -435,11 +458,15 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     }
   },
 
-  emit: (event, data) => {
+  emit: (event, data?) => {
     const { socket } = get();
     if (socket && socket.connected) {
-      console.log(`📤 Emitting ${String(event)}:`, data);
-      (socket as any).emit(event, data);
+      console.log(`📤 Emitting ${String(event)}:`, data !== undefined ? data : '(no data)');
+      if (data !== undefined) {
+        socket.emit(event as any, data);
+      } else {
+        socket.emit(event as any);
+      }
     } else {
       console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
     }

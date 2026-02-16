@@ -628,7 +628,7 @@ export function Lobby() {
   useEffect(() => {
     if (!socket || currentLobby?.gamePhase !== 'lobby') return;
 
-    const handleLobbyPlayerPos = ({ playerId, x, direction }: { playerId: string; x: number; direction?: SpriteDirection }) => {
+    const handleLobbyPlayerPos = ({ playerId, x, y, direction }: { playerId: string; x: number; y: number; direction?: string }) => {
       if (playerId === currentPlayer?.id) return; // Skip own updates
 
       setPlayerPositions(prev => {
@@ -660,7 +660,7 @@ export function Lobby() {
           [playerId]: {
             ...currentPlayer,
             x: Math.max(0, Math.min(maxX, (x / 100) * maxX)),
-            direction: direction || 'right',
+            direction: (direction as SpriteDirection) || 'right',
             isMoving: true,
             lastUpdate: Date.now(),
             timeoutId
@@ -1167,7 +1167,7 @@ export function Lobby() {
   const startBattle = () => {
     const lobbyTickets = currentLobby?.tickets || [];
     if (lobbyTickets.length === 0) return;
-    emit('start_battle', {});
+    emit('start_battle');
   };
 
   const changeTeam = (team: TeamType) => {
@@ -2001,6 +2001,11 @@ export function Lobby() {
                                 {renderPlayerSprite(player.avatar)}
                               </div>
                               <span className="truncate max-w-[80px]">{player.name}</span>
+                              {player.level > 1 && (
+                                <span className="text-amber-400 opacity-75 text-[10px] font-bold ml-0.5">
+                                  Lv{player.level}
+                                </span>
+                              )}
                               {player.isHost && <span className="text-yellow-400">*</span>}
                             </div>
                           ))}

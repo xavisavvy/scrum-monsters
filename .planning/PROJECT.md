@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time multiplayer scrum poker estimation game with JRPG-style boss battles. Teams (Dev and QA) estimate story points while battling monsters — voting happens first in a focused estimation phase, then voters enter battle while waiting for others. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
+A real-time multiplayer scrum poker estimation game with JRPG-style boss battles and RPG progression. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
 
 ## Core Value
 
@@ -50,33 +50,59 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Load testing with k6 (HTTP + WebSocket) — v1.2
 - ✓ Accessibility testing with axe-core — v1.2
 - ✓ ArgoCD rollback automation with audit trail — v1.2
+- ✓ Account-level XP with persistent progression and leveling curve — v1.3
+- ✓ JRPG-styled XP UI (bar, floating numbers, level-up celebration) — v1.3
+- ✓ Class mastery with three-tier progression and stat bonuses — v1.3
+- ✓ 5 unique boss AIs with state machines and HP-phase transitions — v1.3
+- ✓ Boss threat targeting and telegraph system — v1.3
+- ✓ Boss difficulty scaling based on team level — v1.3
+- ✓ 20 class-specific abilities with server-authoritative cooldowns — v1.3
+- ✓ Team combo system with class-pair detection — v1.3
+- ✓ Consensus ultimates with voting-speed damage scaling — v1.3
+- ✓ Session-scoped combat items (heal/shield/damage boost) — v1.3
+- ✓ Persistent lifetime statistics with session summaries — v1.3
 
 ### Active
 
-- [ ] XP system with voting and combat triggers
-- [ ] Account-level progression with global unlocks
-- [ ] Class mastery system with class-specific rewards
-- [ ] Unique boss attack patterns per boss type
-- [ ] Boss difficulty scaling based on team level
-- [ ] Class-specific combat abilities
-- [ ] Team combo attacks for coordinated play
-- [ ] Combat items and consumables
+- [ ] JRPG-themed visual redesign across all game phases (post-lobby)
+- [ ] Responsive web — full sessions playable on phone browsers
+- [ ] Information architecture overhaul — progressive disclosure, reduce visual noise
+- [ ] Clear phase transitions — easy to follow game flow between states
+- [ ] Website/game module separation — proper routes for SEO, game as self-contained module
+- [ ] Lobby magic/emote system (formalize Phase 21 backlog)
+- [ ] Visual polish — professional product quality
+
+## Current Milestone: v2.0 UI Redesign & Mobile
+
+**Goal:** Redesign the entire game experience with JRPG theming, responsive layout, simplified information architecture, and proper routing/SEO — making ScrumQuest look and feel like a polished product on any device.
+
+**Target features:**
+- Full JRPG-themed visual redesign (all post-lobby phases)
+- Responsive web layout (phone-friendly without a native app)
+- Information architecture overhaul (simplify, progressive disclosure)
+- Clear phase transitions and game flow
+- Website/game module separation (SEO-friendly routes + Three.js game module)
+- Lobby magic/emote system
+- Professional visual polish
 
 ### Out of Scope
 
-- UI redesign — deferred to v1.4
-- Mobile responsiveness — deferred to v1.4
-- Database schema changes — in-memory state focus
+- Persistent inventory — items deliberately session-scoped
+- Multi-class combo chains — 2-class combos sufficient
+- XP penalties for "wrong" votes — undermines collaboration
+- Pay-to-win progression — violates core value
 - Microservices architecture — network latency kills real-time performance
 - Full removal of lobby_updated fallback — intentionally retained for edge cases
 
 ## Context
 
-**Current State (v1.2 shipped):**
-- ~70k lines of TypeScript/YAML across client/server/shared/k8s
-- Domain-separated architecture: SessionManager, EstimationManager, CombatManager
+**Current State (v2.0 in progress):**
+- ~100k lines of TypeScript/YAML across client/server/shared/k8s
+- Domain-separated architecture: SessionManager, EstimationManager, CombatManager, ProgressionManager, ClassMasteryManager, AbilityManager, ComboManager, ItemManager, StatsTracker
 - EventBus-based coordination with scoped subscriptions
 - Fine-grained events with 80-95% bandwidth reduction
+- RPG progression: XP/leveling, class mastery tiers, 20 class abilities, team combos, combat items, lifetime stats
+- Boss AI: 5 unique bosses with state machines, HP phases, threat targeting, telegraphing, level scaling
 - Comprehensive CI/CD: ESLint, Playwright E2E/visual/a11y, Vitest coverage
 - Security scanning: CodeQL SAST, gitleaks secrets, audit-ci, license-checker
 - Database migrations: Drizzle versioned, CI validation, ArgoCD PreSync
@@ -84,32 +110,14 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Load testing: k6 HTTP/WebSocket with nightly runs
 - Deployment safety: ArgoCD rollback with environment protection and audit trail
 - Observability: Prometheus metrics, Grafana dashboards, Loki logs
+- Ad-hoc lobby magic/emote system (partially complete, needs formal planning)
 
 ## Shipped Milestones
 
-- **v1.0 Domain Separation** (2025-12-15): Extracted domain managers, EventBus coordination, fine-grained events
-- **v1.1 CI/CD Infrastructure** (2026-02-01): ESLint, Playwright E2E, Kubernetes/Kustomize, ArgoCD GitOps, observability
+- **v1.0 Domain Separation** (2026-02-02): Extracted domain managers, EventBus coordination, fine-grained events
+- **v1.1 CI/CD Infrastructure** (2026-02-02): ESLint, Playwright E2E, Kubernetes/Kustomize, ArgoCD GitOps, observability
 - **v1.2 SDLC Best Practices** (2026-02-03): PR gates, security scanning, migrations, contracts, load testing, rollback
-
-## Current Milestone: v1.3 Feature Work
-
-**Goal:** Make the game more engaging with progression systems, varied boss battles, and deeper combat mechanics.
-
-**Target features:**
-- XP/leveling system (account-wide + class mastery hybrid)
-- Boss attack pattern variety and difficulty scaling
-- Class abilities, team combos, and combat items
-
-**Tech stack:** TypeScript, Socket.IO, React, Zustand, React Three Fiber, Drizzle ORM, Pino, Prometheus
-
-**Codebase map:** `.planning/codebase/` (created during v1.0)
-
-**Key files:**
-- `server/domains/SessionManager.ts` — lobby lifecycle, players, teams, reconnection
-- `server/domains/EstimationManager.ts` — voting, consensus, timers, discussion
-- `server/domains/CombatManager.ts` — boss, player HP, damage, revival, minions
-- `server/events/ScopedEventBus.ts` — cross-domain event coordination
-- `server/events/ClientEventEmitter.ts` — EventBus to Socket.IO bridge
+- **v1.3 Game Progression** (2026-02-11): XP/leveling, class mastery, boss AI, abilities, combos, items, lifetime stats
 
 ## Constraints
 
@@ -142,6 +150,20 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Load tests never block PRs | Informational only, nightly runs track trends | ✓ Good |
 | Auto-rollback disabled for production | Manual intervention ensures proper investigation | ✓ Good |
 | JSONL audit trail for rollbacks | Simple append-only format, git history provides immutability | ✓ Good |
+| Exponential XP curve (base=100, exp=1.5) | Balanced early progression with meaningful later grind | ✓ Good |
+| Per-lobby ProgressionManager isolation | Each lobby manages its own XP state independently | ✓ Good |
+| Fire-and-forget XP persistence | Non-blocking gameplay, async storage writes | ✓ Good |
+| Three-tier mastery (Novice/Expert/Master) | Simple to understand, meaningful stat differences (1.0/1.1/1.2x) | ✓ Good |
+| Award class XP to current class only | Encourages experimentation across classes | ✓ Good |
+| Explicit FSM for boss state | Replaces boolean flags, prevents oscillation bugs | ✓ Good |
+| HP-based boss phases (66%/33%) | Clear phase boundaries, one-way transitions only | ✓ Good |
+| Data-driven boss behavior definitions | 9+ patterns per boss, easy to add new bosses | ✓ Good |
+| Server-authoritative ability cooldowns | Prevents client-side cheating on cooldown timers | ✓ Good |
+| Event-driven ability effects | Decoupled from CombatManager, clean architecture | ✓ Good |
+| 3s ability window for combo detection | Balances coordination requirement vs network latency | ✓ Good |
+| Consensus ultimate one-per-ticket | Prevents re-trigger on discussion phase return | ✓ Good |
+| Session-scoped items (no persistence) | Simplicity, avoids inventory management complexity | ✓ Good |
+| Event-driven stats tracking | StatsTracker subscribes to EventBus, zero coupling | ✓ Good |
 
 ---
-*Last updated: 2026-02-03 after v1.3 milestone start*
+*Last updated: 2026-02-11 after v2.0 milestone start*

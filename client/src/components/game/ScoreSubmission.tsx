@@ -50,8 +50,18 @@ export function ScoreSubmission() {
 
   const handleScoreSubmit = () => {
     if (selectedScore === null) return;
-    
-    emit('submit_score', { score: selectedScore });
+
+    // Convert T-shirt sizes to numeric values
+    let scoreToSubmit: number | '?';
+    if (typeof selectedScore === 'string' && selectedScore !== '?') {
+      // T-shirt size - convert to points
+      const mapping = currentLobby?.estimationSettings?.customTshirtMapping || ESTIMATION_SCALES.tshirt.pointMapping!;
+      scoreToSubmit = mapping[selectedScore] || 0;
+    } else {
+      scoreToSubmit = selectedScore as number | '?';
+    }
+
+    emit('submit_score', { score: scoreToSubmit });
     setHasSubmitted(true);
   };
 
@@ -237,7 +247,7 @@ export function ScoreSubmission() {
           {currentPlayer?.isHost && submittedCount > 0 && currentLobby?.gamePhase === 'battle' && (
             <div className="text-center mt-4 pt-4 border-t border-gray-600">
               <RetroButton
-                onClick={() => emit('force_reveal', {})}
+                onClick={() => emit('force_reveal')}
                 variant="secondary"
                 size="sm"
                 className="bg-red-600 hover:bg-red-700"

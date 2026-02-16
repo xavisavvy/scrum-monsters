@@ -7,6 +7,7 @@ import {
   userProfiles,
   userStats,
   estimationHistory,
+  classMasteryProgress,
   type User,
   type InsertUser,
   type OAuthAccount,
@@ -17,6 +18,7 @@ import {
   type InsertUserStats,
   type EstimationHistory,
   type InsertEstimationHistory,
+  type ClassMasteryProgress,
 } from "@shared/schema";
 
 // Extended interface with auth CRUD methods
@@ -56,6 +58,11 @@ export interface IStorage {
   // Estimation history methods
   getEstimationHistory(userId: number, limit?: number): Promise<EstimationHistory[]>;
   recordEstimation(entry: InsertEstimationHistory): Promise<EstimationHistory>;
+
+  // Class mastery methods
+  getClassMastery(userId: number, avatarClass: string): Promise<ClassMasteryProgress | undefined>;
+  updateClassMastery(userId: number, avatarClass: string, classXP: number, currentTier: string): Promise<ClassMasteryProgress>;
+  getAllClassMastery(userId: number): Promise<ClassMasteryProgress[]>;
 }
 
 // In-memory storage implementation (default when no DATABASE_URL)
@@ -65,11 +72,13 @@ export class MemStorage implements IStorage {
   private userProfiles: Map<number, UserProfile>;
   private userStatsMap: Map<number, UserStats>;
   private estimationHistoryList: EstimationHistory[];
+  private classMasteryMap: Map<number, ClassMasteryProgress>;
   private currentUserId: number;
   private currentOAuthId: number;
   private currentProfileId: number;
   private currentStatsId: number;
   private currentHistoryId: number;
+  private currentMasteryId: number;
 
   constructor() {
     this.users = new Map();
@@ -77,11 +86,13 @@ export class MemStorage implements IStorage {
     this.userProfiles = new Map();
     this.userStatsMap = new Map();
     this.estimationHistoryList = [];
+    this.classMasteryMap = new Map();
     this.currentUserId = 1;
     this.currentOAuthId = 1;
     this.currentProfileId = 1;
     this.currentStatsId = 1;
     this.currentHistoryId = 1;
+    this.currentMasteryId = 1;
   }
 
   // User methods
@@ -264,6 +275,10 @@ export class MemStorage implements IStorage {
       totalDamageDealt: stats.totalDamageDealt ?? 0,
       totalHealing: stats.totalHealing ?? 0,
       revivesPerformed: stats.revivesPerformed ?? 0,
+      totalVotes: stats.totalVotes ?? 0,
+      consensusRate: stats.consensusRate ?? 0,
+      averageVotingSpeedMs: stats.averageVotingSpeedMs ?? 0,
+      totalDeaths: stats.totalDeaths ?? 0,
       updatedAt: new Date(),
     };
     this.userStatsMap.set(id, userStatsEntry);
@@ -312,6 +327,45 @@ export class MemStorage implements IStorage {
     };
     this.estimationHistoryList.push(historyEntry);
     return historyEntry;
+  }
+
+  // Class mastery methods
+  async getClassMastery(userId: number, avatarClass: string): Promise<ClassMasteryProgress | undefined> {
+    return Array.from(this.classMasteryMap.values()).find(
+      (mastery) => mastery.userId === userId && mastery.avatarClass === avatarClass
+    );
+  }
+
+  async updateClassMastery(userId: number, avatarClass: string, classXP: number, currentTier: string): Promise<ClassMasteryProgress> {
+    const existing = await this.getClassMastery(userId, avatarClass);
+    if (existing) {
+      const updated: ClassMasteryProgress = {
+        ...existing,
+        classXP,
+        currentTier,
+        updatedAt: new Date(),
+      };
+      this.classMasteryMap.set(existing.id, updated);
+      return updated;
+    } else {
+      const id = this.currentMasteryId++;
+      const newMastery: ClassMasteryProgress = {
+        id,
+        userId,
+        avatarClass,
+        classXP,
+        currentTier,
+        updatedAt: new Date(),
+      };
+      this.classMasteryMap.set(id, newMastery);
+      return newMastery;
+    }
+  }
+
+  async getAllClassMastery(userId: number): Promise<ClassMasteryProgress[]> {
+    return Array.from(this.classMasteryMap.values()).filter(
+      (mastery) => mastery.userId === userId
+    );
   }
 }
 
@@ -477,6 +531,10 @@ export class PgStorage implements IStorage {
       totalDamageDealt: stats.totalDamageDealt ?? 0,
       totalHealing: stats.totalHealing ?? 0,
       revivesPerformed: stats.revivesPerformed ?? 0,
+      totalVotes: stats.totalVotes ?? 0,
+      consensusRate: stats.consensusRate ?? 0,
+      averageVotingSpeedMs: stats.averageVotingSpeedMs ?? 0,
+      totalDeaths: stats.totalDeaths ?? 0,
     }).returning();
     return result[0];
   }
@@ -516,6 +574,44 @@ export class PgStorage implements IStorage {
       wasInConsensus: entry.wasInConsensus ?? null,
     }).returning();
     return result[0];
+  }
+
+  // Class mastery methods
+  async getClassMastery(userId: number, avatarClass: string): Promise<ClassMasteryProgress | undefined> {
+    const result = await this.db.select()
+      .from(classMasteryProgress)
+      .where(and(
+        eq(classMasteryProgress.userId, userId),
+        eq(classMasteryProgress.avatarClass, avatarClass)
+      ))
+      .limit(1);
+    return result[0];
+  }
+
+  async updateClassMastery(userId: number, avatarClass: string, classXP: number, currentTier: string): Promise<ClassMasteryProgress> {
+    const result = await this.db.insert(classMasteryProgress)
+      .values({
+        userId,
+        avatarClass,
+        classXP,
+        currentTier,
+      })
+      .onConflictDoUpdate({
+        target: [classMasteryProgress.userId, classMasteryProgress.avatarClass],
+        set: {
+          classXP,
+          currentTier,
+          updatedAt: new Date(),
+        },
+      })
+      .returning();
+    return result[0];
+  }
+
+  async getAllClassMastery(userId: number): Promise<ClassMasteryProgress[]> {
+    return await this.db.select()
+      .from(classMasteryProgress)
+      .where(eq(classMasteryProgress.userId, userId));
   }
 }
 

@@ -1,289 +1,249 @@
-# Feature Research: Game Server Domain Separation
+# Feature Landscape
 
-**Domain:** Real-time multiplayer game server architecture
-**Researched:** 2026-02-01
-**Confidence:** HIGH
+**Domain:** JRPG-themed UI redesign, mobile game UX, routing/SEO, and lobby magic systems for real-time multiplayer
+**Researched:** 2026-02-11
 
-## Feature Landscape
+## Table Stakes
 
-### Table Stakes (Users Expect These)
-
-Features that proper domain separation must provide. Missing these = broken architecture.
+Features users expect. Missing = product feels incomplete.
 
 | Feature | Why Expected | Complexity | Notes |
 |---------|--------------|------------|-------|
-| **Clear Bounded Contexts** | Each domain owns its state and logic completely | MEDIUM | Session manages players/lobby, Estimation manages voting, Combat manages battle |
-| **Single Source of Truth** | Server is authoritative for all state | LOW | Already exists - maintain this pattern |
-| **Domain Events** | Each domain emits its own events, not generic "state updated" | MEDIUM | Replace `lobby_updated` with `session_updated`, `estimation_updated`, `combat_updated` |
-| **State Isolation** | Domains cannot directly access each other's internals | MEDIUM | Use interfaces/facades for cross-domain communication |
-| **Independent State Updates** | Changing combat state doesn't require copying entire session state | MEDIUM | Critical for performance in real-time games |
-| **Validation at Boundaries** | Each domain validates inputs against its own invariants | LOW | Session validates player actions, Estimation validates votes, Combat validates attacks |
-| **Lifecycle Management** | Each domain manages its own initialization/cleanup | MEDIUM | Session lifecycle independent from Combat lifecycle |
-| **Type Safety** | Strong typing for domain state and events | LOW | TypeScript already supports this - use it properly |
+| **JRPG UI Theming** |
+| Stylized ornamental frames | JRPGs have distinctive menu borders - players expect frames around panels, modals, and cards | Medium | Pixel art borders, art deco patterns. CSS-based first, canvas for pixel-perfect |
+| Readable busy menus | JRPG menus balance visual flash with readability - information density + style | Medium | Modern JRPGs (Persona series) show menus can be "busy" but still readable |
+| Phase-consistent theming | All game phases should share visual language - inconsistent UI breaks immersion | Low | Reusable component library with theme tokens |
+| UI sound effects | Every button click, menu transition, action confirmation needs audio feedback | Medium | Prevents fatigue through variation (pitch, volume). User must control volume levels |
+| Smooth state transitions | UI elements animate between states (100-500ms ideal) - not instant swaps | Medium | Micro-interactions confirm actions, guide next steps |
+| **Mobile Game UX** |
+| Touch-friendly tap targets | Buttons must be large enough to prevent accidental taps - minimum 44x44px | Low | CRITICAL: Test on smallest phones, not just tablets |
+| Safe area handling | UI must respect notches, rounded corners, home gesture zones | Medium | Portrait: top/bottom insets. Landscape: left/right + bottom insets |
+| Landscape + Portrait support | Real-time games typically landscape, but lobby/menus work portrait | High | Different safe areas per orientation. Anchor points for responsive layout |
+| No accidental taps | Proper spacing between interactive elements - prevent mis-taps | Low | Part of touch zone sizing |
+| Lightweight UI assets | Mobile bandwidth limited - minimize heavy graphics, complex animations | Medium | Cache frequently-used assets locally. Use clean, simple designs |
+| Network interruption UX | WebSocket disconnects common on mobile - must notify + reconnect gracefully | High | Exponential backoff, heartbeat, message queue, visible connection status |
+| **SPA Routing & SEO** |
+| Unique meta tags per route | Each "page" needs distinct title, description for social sharing | Medium | React Helmet Async for dynamic meta tags |
+| Open Graph tags | Social platforms expect og: tags for rich previews (image, title, description) | Low | Twitter cards + OG tags for LinkedIn, Slack, Discord |
+| Clean URL structure | `/lobby/abc123` not `/#/lobby?id=abc123` - hash routing breaks SEO | Medium | React Router with BrowserRouter, not HashRouter |
+| Server-side rendering OR prerendering | Social crawlers don't execute JS - meta tags must be in initial HTML | High | CRITICAL: Not for Google in 2026 (avoid cloaking). For social crawlers only |
+| **Lobby Interactions** |
+| Emote system | Players expect way to express emotion in waiting periods - keeps engagement up | Low | Already exists (`lobby_emote` event). Enhance visibility/UI |
+| Player readiness indicator | Visual cue showing who's ready to start - prevents "waiting on who?" | Low | Checkmark, color change, animation on ready state |
+| Idle animations | Characters should animate while waiting - static sprites feel dead | Medium | Idle loops, breathing animations. Don't overwhelm with constant motion |
 
-### Differentiators (Competitive Advantage)
+## Differentiators
 
-Features that make domain separation excellent, not just functional.
+Features that set product apart. Not expected, but valued.
 
 | Feature | Value Proposition | Complexity | Notes |
 |---------|-------------------|------------|-------|
-| **Event Sourcing** | Track state changes as event stream for debugging/replay | HIGH | Useful for troubleshooting "what happened?" questions |
-| **Domain-Specific Timers** | Each domain manages its own timeouts/intervals independently | MEDIUM | Combat timer separate from voting timer |
-| **Graceful Degradation** | One domain failing doesn't crash entire game | HIGH | Combat bug shouldn't kill session |
-| **Hot State Migration** | Transition between domains without data loss | MEDIUM | Move from estimation → battle preserves player positions |
-| **Cross-Domain Sagas** | Coordinate multi-domain workflows without coupling | HIGH | "All voted → battle ends → discussion starts" |
-| **Domain-Specific Reconnection** | Restore domain state independently on reconnect | MEDIUM | Restore combat state without reloading session |
-| **Telemetry per Domain** | Separate metrics for Session, Estimation, Combat performance | LOW | Debug "estimation is slow" vs "combat is laggy" |
-| **Snapshot/Restore** | Save/load domain state independently | HIGH | Save combat state for replay or testing |
-| **Command/Query Separation (CQRS)** | Write operations separate from read operations | HIGH | Estimation commands vs reading current votes |
-| **Domain Event Bus** | Centralized event routing with subscription model | MEDIUM | Combat subscribes to "vote_completed" from Estimation |
+| **JRPG UI Theming** |
+| Class-specific UI flourishes | UI accents reflect player's chosen class (color, icons, borders) | Medium | Persona-style personalization. Visual identity reinforcement |
+| Pixel-perfect animations | Subtle pixel art animations in UI (sparkles, shimmer, transitions) | High | Requires sprite sheets, careful timing. High polish payoff |
+| HP/status bars styled as JRPG | Party status display like classic JRPGs (Final Fantasy, Persona) | Medium | Health bars, status effects, turn indicators during battle |
+| Battle UI phase transitions | Unique transition animations between game phases (whoosh, fade, slide) | Medium | View Transitions API in modern browsers. Fallback for older |
+| **Mobile Game UX** |
+| Gesture controls | Swipe to switch views, pinch to zoom, long-press for context menu | High | Not expected for real-time multiplayer, but elevates mobile feel |
+| Adaptive UI density | Switch between compact (mobile) and spacious (desktop) layouts | Medium | Different component variants based on viewport size |
+| Haptic feedback | Vibration on button press, attack hit, level up (mobile browsers support) | Low | Navigator Vibration API. Optional, user-controlled |
+| Orientation lock hints | Suggest landscape for battle, portrait OK for lobby | Low | Inform users of optimal orientation without forcing |
+| **SPA Routing & SEO** |
+| Dynamic lobby OG images | Generate unique preview images per lobby (lobby name, player count, boss) | High | Server-side image generation or prerender with canvas |
+| Lobby shareable cards | Beautiful, game-themed invite previews when shared on social media | Medium | High engagement - people share what looks good |
+| Route-based analytics | Track page views per route (lobby, battle, victory) for insights | Low | React Router + analytics integration |
+| **Lobby Interactions** |
+| Charge/magic system | Hold key to charge power, release for special effects (fireworks, sparkles) | Medium | Already exists (`player_charge` event). Add visual polish |
+| Emote wheel/quick chat | Radial menu or shortcuts for common emotes (thumbs up, laugh, celebrate) | Medium | Faster than typing, works during time pressure |
+| Player collision/physics | Characters bounce off each other in lobby, not walk through | High | Physics engine or collision detection. Fun but non-essential |
+| Spectator mode enhancements | Spectators can react, cheer, but not interfere with game | Low | Minion system exists. Add emote-only mode for spectators |
+| Lobby mini-games | Optional waiting room activities (rock-paper-scissors, quick vote) | Very High | HIGH RISK: Scope creep. Only if lobby wait times are problematic |
 
-### Anti-Features (Commonly Requested, Often Problematic)
+## Anti-Features
 
-Features that seem good but create problems in domain separation.
+Features to explicitly NOT build.
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| **Shared Mutable State** | "Just reference the object" seems simple | Breaks encapsulation, creates hidden dependencies, makes testing impossible | Use immutable data + events for cross-domain communication |
-| **God Domain** | "One domain can coordinate everything" | Becomes new monolith, defeats separation purpose | Use event-driven sagas for coordination |
-| **Synchronous Cross-Domain Calls** | "Just call the other domain" is direct | Creates tight coupling, circular dependencies, hard to reason about | Use async events or command pattern |
-| **Domain-Spanning Types** | "Lobby type works for everything" | Changes ripple across all domains, can't evolve independently | Split into SessionState, EstimationState, CombatState |
-| **Centralized Event Handler** | "One handler for all domains" | Handler becomes monolithic, hard to test domains in isolation | Each domain has its own event handlers |
-| **Database-Per-Domain** | "Microservices best practice" | Overkill for monolithic game server, adds complexity without benefit | Single database with domain-specific tables/namespaces |
-| **Over-Normalization** | "Eliminate all duplication" | Some duplication is healthy for independence, extreme normalization creates coupling | Allow domains to cache what they need |
-| **Premature Extraction** | "Each domain in separate service" | Adds network latency, deployment complexity for no gain in monolithic app | Keep domains in same process, separate logically |
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Flash/Unity-style intros | Users want to play, not watch 10-second splash screens | Quick fade-in logo (1-2s max) or skip entirely |
+| Forced tutorial on first visit | Interrupts flow, annoys returning users | Contextual help, optional tutorial link in menu |
+| Auto-play music | Startles users, often inappropriate (meetings, public) | Let user initiate music. Default muted. |
+| PWA install prompts | Intrusive, low conversion, users know how to install if they want | Passive "Add to Home Screen" in menu |
+| Separate mobile app | Maintenance burden, fragmented user base, unnecessary for web game | Responsive design covers all devices |
+| Multiple login methods | Social login increases complexity, privacy concerns, dependency on 3rd party | Anonymous join by name (current system) is perfect |
+| Pixel-perfect mobile scaling | Impossible across all devices, wastes time | Fluid layouts, safe areas, tested on 3-4 representative devices |
+| Complex onboarding flow | Multi-step wizards for simple multiplayer game confuse | Direct join/create lobby. Settings optional. |
+| Loot boxes / IAP | Changes product nature, legal complexity, user trust issues | Keep game free, no monetization in MVP |
 
 ## Feature Dependencies
 
 ```
-[Session Domain]
-    ├──emits──> player_joined
-    ├──emits──> player_left
-    ├──emits──> host_changed
-    └──provides──> Player roster (read-only)
+JRPG UI Theming
+├─ Sound effects → Requires asset library, audio system
+├─ State transitions → Requires animation framework (Framer Motion exists)
+└─ Phase-consistent theming → Requires design system, component library
 
-[Estimation Domain]
-    ├──requires──> Session.Players (who can vote)
-    ├──emits──> vote_submitted
-    ├──emits──> voting_complete
-    └──emits──> consensus_reached
+Mobile UX
+├─ Safe areas → Requires viewport detection, CSS custom properties
+├─ Touch targets → Requires button size audit across all phases
+├─ Network interruption UX → Depends on WebSocket reconnection (EXISTS in shared/gameEvents.ts)
+└─ Lightweight assets → Requires asset optimization, lazy loading
 
-[Combat Domain]
-    ├──requires──> Session.Players (who can fight)
-    ├──listens──> Estimation.vote_submitted (trigger battle entry)
-    ├──listens──> Estimation.voting_complete (end battle phase)
-    ├──emits──> combat_started
-    ├──emits──> player_damaged
-    ├──emits──> boss_damaged
-    └──emits──> combat_ended
+SPA Routing & SEO
+├─ Meta tags → Requires React Helmet Async
+├─ Server-side rendering → MAJOR: Requires SSR setup (Vite SSR or framework switch)
+│   └─ Alternative: Middleware for social crawlers only (Vercel Edge)
+└─ Clean URLs → Requires React Router update (if using hash routing)
 
-[Discussion Domain]
-    ├──requires──> Estimation.votes (what to discuss)
-    ├──emits──> vote_changed
-    ├──emits──> discussion_complete
-    └──triggers──> Estimation.consensus_check
-
-Dependencies flow downward: Session → Estimation → Combat → Discussion
+Lobby Interactions
+├─ Charge/magic system → Server events EXIST, need UI polish
+├─ Emote system → Server events EXIST (`lobby_emote`, `battle_emote`)
+└─ Idle animations → Requires sprite sheets or CSS animations
 ```
 
-### Dependency Notes
+## MVP Recommendation
 
-- **Session → Estimation:** Estimation needs player roster but doesn't modify session state
-- **Session → Combat:** Combat needs player list but operates independently
-- **Estimation → Combat:** First vote triggers combat entry; all votes trigger combat end
-- **Combat → Discussion:** Combat ending triggers discussion phase
-- **Discussion → Estimation:** Discussion allows vote updates, feeds back to Estimation
-- **No circular dependencies:** Each domain only depends on events from upstream domains
+Prioritize **Table Stakes** first. These are expected behaviors that will make or break the user experience.
 
-## MVP Definition (Domain Separation Features)
+### Phase 1: JRPG UI Foundation (table stakes only)
+1. Ornamental frames/borders on all panels
+2. UI sound effects (button clicks, phase transitions)
+3. Smooth state transitions (100-500ms animations)
+4. Phase-consistent theming (design tokens, component library)
+5. JRPG-styled health/status bars
 
-### Launch With (v1) - Table Stakes Only
+### Phase 2: Mobile UX Critical Path (table stakes only)
+1. Touch-friendly tap targets (44px minimum, test on small phones)
+2. Safe area handling (notches, rounded corners, home gesture)
+3. Landscape + Portrait support with responsive anchors
+4. Network interruption UX (reconnection already built, add visible status)
+5. Lightweight asset optimization
 
-Minimum viable domain separation — what's essential to fix the architecture.
+### Phase 3: Routing & SEO Essentials (table stakes only)
+1. React Router with clean URLs (BrowserRouter)
+2. React Helmet Async for dynamic meta tags
+3. Open Graph + Twitter cards
+4. Social crawler middleware (NOT full SSR - avoid cloaking penalty)
 
-- [x] **Split GameStateManager** — Three classes: SessionManager, EstimationManager, CombatManager
-- [x] **Split Lobby type** — SessionState, EstimationState, CombatState interfaces
-- [x] **Fine-grained events** — Domain-specific events instead of lobby_updated
-- [x] **Validation boundaries** — Each domain validates its own operations
-- [x] **Independent lifecycles** — Domains init/cleanup independently
-- [x] **State isolation** — No direct cross-domain field access
-- [x] **Event-driven coordination** — Domains communicate via events only
-- [x] **Type safety** — Strong types for all domain boundaries
+### Phase 4: Lobby Polish (table stakes + one differentiator)
+1. Enhanced emote UI (already built, make more visible)
+2. Player readiness indicators
+3. Idle animations
+4. **Differentiator:** Charge/magic system polish (events exist, add visuals)
 
-### Add After Validation (v1.x) - Early Differentiators
+### Defer to Post-MVP
+- Class-specific UI flourishes (differentiator, not critical)
+- Gesture controls (differentiator, complex)
+- Dynamic OG images (differentiator, requires server-side image gen)
+- Lobby mini-games (very high complexity, scope creep risk)
+- Player collision physics (fun but non-essential)
 
-Features to add once core separation is working and tested.
+## Complexity Assessment
 
-- [ ] **Domain-specific timers** — Each domain manages own intervals (trigger: timer conflicts)
-- [ ] **Telemetry per domain** — Separate performance metrics (trigger: need to debug "which domain is slow")
-- [ ] **Domain event bus** — Centralized subscription model (trigger: managing event listeners gets messy)
-- [ ] **Hot state migration** — Seamless domain transitions (trigger: state loss during phase changes)
-- [ ] **Domain-specific reconnection** — Granular state restore (trigger: reconnect restoring too much/too little)
+| Category | Overall Complexity | Notes |
+|----------|-------------------|-------|
+| JRPG UI Theming | **Medium** | CSS + existing animation framework. Sound effects need sourcing/integration |
+| Mobile UX | **Medium-High** | Safe areas straightforward. Network UX already built. Dual orientation tricky |
+| SPA Routing & SEO | **High** | Social crawler middleware requires server-side logic. Full SSR is VERY HIGH |
+| Lobby Interactions | **Low-Medium** | Server events already exist. UI polish is primary work |
 
-### Future Consideration (v2+) - Advanced Patterns
+## Integration with Existing Features
 
-Features to defer until product-market fit and architecture is proven stable.
+### Already Built (Leverage These)
+- **WebSocket reconnection system** (`reconnect_with_token`, `LobbySync`) - Mobile network interruption UX already handled
+- **Emote events** (`lobby_emote`, `battle_emote`) - Just need better UI
+- **Charge system** (`player_charge`) - Server events ready, add visual polish
+- **Phase transitions** (GamePhase type) - Hook into existing phase changes for animations
+- **Real-time sync** (`lobby_updated`) - All state changes broadcast, UI just needs to react smoothly
+- **Spectator system** (minions) - Foundation for spectator-mode enhancements
 
-- [ ] **Event sourcing** — Full event stream replay (trigger: need production debugging/analytics)
-- [ ] **CQRS pattern** — Command/query separation (trigger: read scaling issues)
-- [ ] **Snapshot/restore** — Save domain state for testing (trigger: QA needs reproducible scenarios)
-- [ ] **Graceful degradation** — Domain fault isolation (trigger: production stability issues)
-- [ ] **Cross-domain sagas** — Complex workflow orchestration (trigger: flow becomes too complex for simple events)
+### Gaps to Fill
+- **No routing** - Currently single-page, entire app in one route
+- **No meta tags** - No React Helmet, no social sharing previews
+- **No mobile-specific layout** - Likely responsive, but not optimized for touch/safe areas
+- **No JRPG UI theming** - Functional UI, not game-themed
+- **No UI sound effects** - Silent interactions
+- **No idle animations** - Static lobby experience
 
-## Feature Prioritization Matrix
+## Success Criteria
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Split GameStateManager | HIGH (maintainability) | HIGH (large refactor) | P1 |
-| Split Lobby type | HIGH (clarity) | HIGH (type changes ripple) | P1 |
-| Fine-grained events | HIGH (performance) | MEDIUM (event definitions) | P1 |
-| State isolation | HIGH (testability) | MEDIUM (refactor access patterns) | P1 |
-| Validation boundaries | HIGH (correctness) | LOW (add checks) | P1 |
-| Domain-specific timers | MEDIUM (independence) | MEDIUM (refactor timers) | P2 |
-| Domain event bus | MEDIUM (scalability) | MEDIUM (build infrastructure) | P2 |
-| Hot state migration | MEDIUM (UX) | MEDIUM (data transformation) | P2 |
-| Telemetry per domain | MEDIUM (observability) | LOW (add logging) | P2 |
-| Domain reconnection | LOW (nice UX) | HIGH (complex logic) | P3 |
-| Event sourcing | LOW (debugging) | HIGH (storage + replay) | P3 |
-| CQRS pattern | LOW (performance at scale) | HIGH (architecture change) | P3 |
-| Graceful degradation | LOW (rare edge cases) | HIGH (error handling everywhere) | P3 |
-| Snapshot/restore | LOW (testing convenience) | MEDIUM (serialization) | P3 |
-| Cross-domain sagas | LOW (complex workflows) | HIGH (orchestration framework) | P3 |
+### JRPG UI Theming
+- [ ] All major panels/modals have ornamental frames
+- [ ] Sound effects on all button interactions (with volume control)
+- [ ] Phase transitions animate smoothly (100-500ms duration)
+- [ ] Visual consistency across all phases (lobby → battle → victory)
+- [ ] Health bars styled like classic JRPG party status
 
-**Priority key:**
-- P1: Must have for launch (table stakes)
-- P2: Should have, add when possible (early differentiators)
-- P3: Nice to have, future consideration (advanced patterns)
+### Mobile UX
+- [ ] All buttons meet 44x44px minimum (tested on iPhone SE sized screens)
+- [ ] UI respects safe areas in both portrait and landscape
+- [ ] Network disconnection shows visible status + reconnection progress
+- [ ] No heavy graphics causing bandwidth issues on mobile networks
+- [ ] Game playable in landscape (battle) and portrait (lobby/menus)
 
-## Architecture Patterns Analysis
+### SPA Routing & SEO
+- [ ] Clean URLs without hash fragments (`/lobby/abc123`)
+- [ ] Unique title and description per route
+- [ ] Open Graph tags generate rich previews on Twitter, Discord, Slack
+- [ ] Social crawler middleware serves meta tags in initial HTML (not full SSR)
 
-### Server-Authoritative State Management
-
-**What:** Server maintains single source of truth, validates all client actions.
-
-**Why it matters:** Prevents cheating, ensures consistency in multiplayer.
-
-**Implementation:** Each domain validates inputs against invariants before applying changes.
-
-**Complexity:** LOW - already established pattern in ScrumQuest.
-
-### Event-Driven Architecture
-
-**What:** Components communicate through events with well-defined schemas.
-
-**Why it matters:** Loose coupling, teams can work independently, easier to test.
-
-**Implementation:** Each domain emits typed events; other domains subscribe.
-
-**Complexity:** MEDIUM - requires event infrastructure and coordination logic.
-
-### Domain-Driven Design (Bounded Contexts)
-
-**What:** Divide system into bounded contexts with explicit boundaries.
-
-**Why it matters:** Each context has its own model rather than attempting a unified model.
-
-**Implementation:** Session, Estimation, Combat are bounded contexts with their own types.
-
-**Complexity:** MEDIUM - initial setup cost, but pays dividends in maintainability.
-
-### CQRS Pattern (Command Query Responsibility Segregation)
-
-**What:** Separate commands (state changes) from queries (state reads).
-
-**Why it matters:** Allows scaling write and read capacity independently.
-
-**Implementation:** Commands modify state, queries retrieve state through read-only views.
-
-**Complexity:** HIGH - architectural change, defer to v2+ unless scaling issues emerge.
-
-## Real-Time Game Server Best Practices
-
-### Network Protocol Separation
-
-**Pattern:** Gameplay state runs over UDP with selective reliability; chat/commerce over TCP.
-
-**Application to ScrumQuest:** Not directly applicable (Socket.IO handles protocol), but principle applies to event granularity.
-
-**Lesson:** Separate critical state updates (player votes) from non-critical (player positions).
-
-### Trust Boundaries
-
-**Pattern:** Server doesn't trust client device; validates all inputs against invariants.
-
-**Application to ScrumQuest:** Each domain validates actions (can player vote? can spectator attack?).
-
-**Lesson:** Validation at domain boundaries is table stakes, not optional.
-
-### Zoning Architecture
-
-**Pattern:** Virtual world divided into zones handled by different servers.
-
-**Application to ScrumQuest:** Domains are logical "zones" within single process.
-
-**Lesson:** Separation of concerns works at multiple scales (processes or modules).
-
-## Competitor Feature Analysis
-
-| Feature | Tencent Games (Real-Time Analytics) | Session-Based Games (Nakama) | Our Approach |
-|---------|-------------------------------------|------------------------------|--------------|
-| Domain Separation | Event-driven analytics pipeline | Session manager + match state | Session + Estimation + Combat |
-| State Sync | Real-time event stream | Authoritative server state | Server-authoritative with events |
-| Cross-Domain Communication | Event bus with subscribers | RPC calls between systems | Event-driven coordination |
-| Reconnection | State snapshot + delta sync | Session restore | Domain-specific state restore |
-
-## Complexity Analysis
-
-### Low Complexity (Quick Wins)
-- Validation boundaries
-- Type safety improvements
-- Basic telemetry
-- Domain-specific event definitions
-
-### Medium Complexity (Core Work)
-- Splitting GameStateManager class
-- Splitting Lobby type hierarchy
-- Event-driven coordination
-- Domain lifecycle management
-- Domain-specific timers
-- Event bus infrastructure
-
-### High Complexity (Long-Term)
-- Event sourcing with replay
-- CQRS implementation
-- Graceful degradation
-- Cross-domain sagas
-- Hot state migration without data loss
+### Lobby Interactions
+- [ ] Emotes clearly visible to all players in lobby
+- [ ] Readiness indicators show who's ready to start battle
+- [ ] Character idle animations during waiting periods
+- [ ] Charge/magic system has polished visual effects
 
 ## Sources
 
-**Game Server Architecture:**
-- [Server Architecture: A Noobs Guide](https://www.gamedeveloper.com/programming/server-architecture-a-noobs-guide)
-- [Client-Server Game Architecture - Gabriel Gambetta](https://www.gabrielgambetta.com/client-server-game-architecture.html)
-- [Game Server Architecture Basics - TechTide Solutions](https://techtidesolutions.com/blog/game-server-architecture-basics/)
-- [Building a Game Engine from Scratch (2026)](https://medium.com/@jasani.nisarg01/building-a-game-engine-from-scratch-a-systems-journey-f490448262df)
+**JRPG UI Design:**
+- [Let's talk about the importance of UI design in JRPG's | ResetEra](https://www.resetera.com/threads/lets-talk-about-the-importance-of-ui-design-in-jrpgs.59286/)
+- [Persona devs' new JPRG has got everyone hyped about its menus | GamesRadar+](https://www.gamesradar.com/games/jrpg/persona-devs-new-jprg-has-got-everyone-hyped-about-its-menus-this-is-why-you-invest-in-ui/)
+- [Game UI Database](https://www.gameuidatabase.com/)
+- [Game UI Database - Player Vitals](https://www.gameuidatabase.com/index.php?tag=83&scrn=133)
 
-**State Management & Domain Boundaries:**
-- [Mastering Multiplayer Game Architecture - Getgud.io](https://www.getgud.io/blog/mastering-multiplayer-game-architecture-choosing-the-right-approach/)
-- [Session-Based Multiplayer - Heroic Labs](https://heroiclabs.com/docs/nakama/concepts/multiplayer/session-based/)
-- [Authoritative Multiplayer - Heroic Labs](https://heroiclabs.com/docs/nakama/concepts/multiplayer/authoritative/)
+**Mobile Game UX:**
+- [Responsive UI design for games – Game Development Studio](https://genieee.com/responsive-ui-design-for-games/)
+- [Best Examples in Mobile Game UI Designs (2026 Review)](https://pixune.com/blog/best-examples-mobile-game-ui-design/)
+- [Best Practices for Game UI/UX Design – Game Development Studio](https://genieee.com/best-practices-for-game-ui-ux-design/)
+- [7 Crucial Mobile Game UI/UX Principles to Follow - Sunday](https://sunday.gg/7-crucial-mobile-game-ui-ux-principles-to-follow/)
+- [How do you make responsive mobile games that take safe areas into account - Unity Discussions](https://discussions.unity.com/t/how-do-you-make-responsive-mobile-games-that-take-safe-areas-into-account-and-scale-game-world-appropriately/1494290)
+- [Touch Control Design: Ways Of Playing On Mobile](https://mobilefreetoplay.com/control-mechanics/)
+- [Allow play in both landscape and portrait – Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/allow-play-in-both-landscape-and-portrait/)
 
-**Event-Driven Architecture:**
-- [Event-Driven Architecture: When to Use It (2026)](https://blog.stackademic.com/event-driven-architecture-when-to-use-it-and-when-to-avoid-it-2b6faa861334)
-- [Inside Tencent Games' Real-Time Event-Driven Analytics System](https://thenewstack.io/inside-tencent-games-real-time-event-driven-analytics-system/)
-- [Event-Driven Architecture - System Design](https://www.geeksforgeeks.org/system-design/event-driven-architecture-system-design/)
+**Real-time Latency & Network UX:**
+- [7 Mobile UX/UI Design Patterns Dominating 2026](https://www.sanjaydey.com/mobile-ux-ui-design-patterns-2026-data-backed/)
+- [Handling Latency and Performance Challenges in Real-Time Apps](https://erbis.com/blog/real-time-apps/)
+- [How to Implement Reconnection Logic for WebSockets](https://oneuptime.com/blog/post/2026-01-27-websocket-reconnection-logic/view)
+- [How to Handle WebSocket Reconnection Logic](https://oneuptime.com/blog/post/2026-01-24-websocket-reconnection-logic/view)
+- [Building Games that Run on Poor Mobile Connections](https://www.gamedeveloper.com/programming/building-games-that-run-on-poor-mobile-connections)
 
-**Domain-Driven Design:**
-- [Bounded Context - Martin Fowler](https://martinfowler.com/bliki/BoundedContext.html)
-- [Domain Events: Design and Implementation - Microsoft](https://learn.microsoft.com/en-us/dotnet/architecture/microservices/microservice-ddd-cqrs-patterns/domain-events-design-implementation)
-- [Domain Event Pattern - Microservices.io](https://microservices.io/patterns/data/domain-event.html)
+**UI Animation & Transitions:**
+- [Motion UI Trends 2026: Interactive Design & Examples](https://lomatechnology.com/blog/motion-ui-trends-2026/2911)
+- [The View Transitions API And Delightful UI Animations - Smashing Magazine](https://www.smashingmagazine.com/2023/12/view-transitions-api-ui-animations-part1/)
 
-**Anti-Patterns:**
-- [State Management Anti-Patterns](https://www.sourceallies.com/2020/11/state-management-anti-patterns/)
-- [Microservices Anti-Patterns - InfoQ](https://www.infoq.com/articles/seven-uservices-antipatterns/)
-- [The new wave of React state management](https://frontendmastery.com/posts/the-new-wave-of-react-state-management/)
+**Audio Feedback:**
+- [Ross Tregenza's 3 Essential Ingredients to Great Game UI Sound Design | A Sound Effect](https://www.asoundeffect.com/game-ui-sound-design/)
+- [Lessons learned in audio feedback for game and app design | Medium](https://medium.com/@fernando1lins/lessons-learned-in-audio-feedback-for-game-and-app-design-e4818c9b72fd)
 
----
-*Feature research for: Game Server Domain Separation (ScrumQuest refactoring)*
-*Researched: 2026-02-01*
-*Confidence: HIGH (verified with multiple authoritative sources + existing codebase analysis)*
+**React SPA Routing & SEO:**
+- [React SEO Guide: SSR, Performance & Rankings (2026)](https://www.linkgraph.com/blog/seo-for-react-applications/)
+- [How to Make a React Website SEO-Friendly in 2025 | Best Practices & Tools](https://www.creolestudios.com/how-to-make-react-website-seo-friendly/)
+- [Improving React App SEO with React Helmet](https://talent500.com/blog/improve-react-seo-with-react-helmet/)
+- [7 Common SPA SEO Challenges and Solutions](https://prerender.io/blog/spa-javascript-seo-challenges-and-solutions/)
+- [Dynamic OG Tags for React SPA on Vercel with Serverless and Vite - VibeIt Blog](https://blog.vibeit.hr/blog/dynamic-og-tags)
+
+**Responsive Canvas & Anchors:**
+- [Responsive HTML5 Canvas Game](https://blog.sklambert.com/responsive-html5-canvas-game/)
+- [Unity - Manage screen size and anchors](https://learn.unity.com/pathway/creative-core/unit/creative-core-ui/tutorial/manage-screen-size-and-anchors)
+- [Designing UI for Multiple Resolutions | Unity UI](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/HOWTO-UIMultiResolution.html)
+
+**Lobby & Waiting Room UX:**
+- [The Lobby as a Liminal Space: How Pre-Game UX Design Shapes Player Mindset](https://kidlantis.com/the-lobby-as-a-liminal-space-how-pre-game-ux-design-shapes-player-mindset-in-online-slot-2025/)
+- [Game UI Database - Pre-Game & Lobby](https://gameuidatabase.com/index.php?scrn=43)
+- [Game UI Database - Chat Shortcuts & Emotes](https://www.gameuidatabase.com/index.php?scrn=113)
+- [Multiplayer: Waiting Lobby | Medium](https://medium.com/@ahtashamali263/multiplayer-waiting-lobby-e652b82793b5)
+
+**Pixel Art UI Assets:**
+- [Pixel Art Game User UI Templates | GraphicRiver](https://graphicriver.net/graphics-with-pixel+art-in-game-assets/user-interfaces)
+- [Top game assets tagged Pixel Art and User Interface - itch.io](https://itch.io/game-assets/tag-pixel-art/tag-user-interface)
+- [User Interface (UI) Art Collection | OpenGameArt.org](https://opengameart.org/content/user-interface-ui-art-collection)
