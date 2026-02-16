@@ -111,8 +111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Setup WebSocket server and attach to httpServer for health checks
-  const io = setupWebSocket(httpServer, sessionMiddlewareRef);
+  const { io, cleanup } = setupWebSocket(httpServer, sessionMiddlewareRef);
   (httpServer as any).io = io; // Attach for health check access
+  (httpServer as any).cleanupWebSocket = cleanup; // Attach cleanup for graceful shutdown
 
   return httpServer;
 }
