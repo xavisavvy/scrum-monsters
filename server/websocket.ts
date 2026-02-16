@@ -519,6 +519,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       console.log(`🚪 Player ${playerId} explicitly leaving lobby ${lobbyId}`);
 
+      // Capture player info before removal
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      const leavingPlayer = lobby?.players.find(p => p.id === playerId);
+      const playerName = leavingPlayer?.name || 'Unknown';
+
       // Remove player from lobby
       const updatedLobby = sessionManager.removePlayer(playerId);
 
@@ -531,8 +536,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Notify remaining players
       if (updatedLobby) {
-        const leavingPlayer = updatedLobby.players.find(p => p.id === playerId);
-        io.to(lobbyId).emit('player_left', { playerId, playerName: leavingPlayer?.name || 'Unknown' });
+        io.to(lobbyId).emit('player_left', { playerId, playerName });
         io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
       }
     });
