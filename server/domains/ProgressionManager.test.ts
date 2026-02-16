@@ -125,13 +125,13 @@ describe('ProgressionManager', () => {
 
     // Spy on event emissions
     const originalEmit = eventBus.emit.bind(eventBus);
-    eventBus.emit = ((event: string, payload: any) => {
+    eventBus.emit = ((event: any, payload: any) => {
       if (!emittedEvents[event]) {
         emittedEvents[event] = [];
       }
       emittedEvents[event].push(payload);
       return originalEmit(event, payload);
-    }) as any;
+    }) as typeof eventBus.emit;
 
     manager = new ProgressionManager({
       eventBus,

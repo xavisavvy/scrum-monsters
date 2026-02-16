@@ -4,7 +4,7 @@
  * Tests for per-class XP tracking and mastery tier progression.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, vi, type Mock } from 'vitest';
 import { ClassMasteryManager } from './ClassMasteryManager';
 import { ScopedEventBus } from '../events';
 import { ClassMasteryXPCurve } from '../../shared/classMasteryTypes';
@@ -115,8 +115,8 @@ describe('ClassMasteryXPCurve', () => {
 describe('ClassMasteryManager', () => {
   let eventBus: ScopedEventBus;
   let manager: ClassMasteryManager;
-  let getPlayerClassMock: ReturnType<typeof vi.fn>;
-  let getVotersMock: ReturnType<typeof vi.fn>;
+  let getPlayerClassMock: Mock<(...args: any[]) => AvatarClass | null>;
+  let getVotersMock: Mock<(...args: any[]) => string[]>;
 
   beforeEach(() => {
     eventBus = new ScopedEventBus();
@@ -381,8 +381,8 @@ describe('ClassMasteryManager', () => {
 
       const managerWithStorage = new ClassMasteryManager({
         eventBus: eventBus,
-        getPlayerClass: getPlayerClassMock,
-        getVoters: getVotersMock,
+        getPlayerClass: vi.fn() as any,
+        getVoters: vi.fn() as any,
         storage: mockStorage as any,
         getUserId: () => 1,
       });
