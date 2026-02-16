@@ -285,4 +285,26 @@ export default [
       "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
+
+  // k6 load test files
+  {
+    files: ["tests/load/**/*.js"],
+    languageOptions: {
+      globals: {
+        __ENV: "readonly",
+        __VU: "readonly",
+        console: "readonly",
+      },
+    },
+    rules: {
+      "no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
+      ],
+    },
+  },
 ];

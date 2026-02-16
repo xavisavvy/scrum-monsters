@@ -17,6 +17,44 @@ import type {
   ProgressionXPAwardedPayload,
   ProgressionLevelUpPayload,
 } from '../../shared/progressionTypes';
+import type {
+  ClassMasteryXPAwardedPayload,
+  ClassMasteryTierUpPayload,
+} from '../../shared/classMasteryTypes';
+import type {
+  AbilityUsedPayload as AbilityUsedPayloadImport,
+  AbilityCooldownStartedPayload as AbilityCooldownStartedPayloadImport,
+  AbilityEffectAppliedPayload as AbilityEffectAppliedPayloadImport,
+} from '../../shared/abilityTypes';
+import type {
+  ComboTriggeredPayload as ComboTriggeredPayloadImport,
+  ConsensusUltimatePayload as ConsensusUltimatePayloadImport,
+} from '../../shared/comboTypes';
+import type {
+  ItemAwardedPayload as ItemAwardedPayloadImport,
+  ItemUsedPayload as ItemUsedPayloadImport,
+  ItemEffectAppliedPayload as ItemEffectAppliedPayloadImport,
+} from '../../shared/itemTypes';
+import type {
+  StatsSessionCompletePayload,
+} from '../../shared/statsTypes';
+
+// Re-export ability types for server event usage
+export type AbilityUsedPayload = AbilityUsedPayloadImport;
+export type AbilityCooldownStartedPayload = AbilityCooldownStartedPayloadImport;
+export type AbilityEffectAppliedPayload = AbilityEffectAppliedPayloadImport;
+
+// Re-export combo types for server event usage
+export type ComboTriggeredPayload = ComboTriggeredPayloadImport;
+export type ConsensusUltimatePayload = ConsensusUltimatePayloadImport;
+
+// Re-export item types for server event usage
+export type ItemAwardedPayload = ItemAwardedPayloadImport;
+export type ItemUsedPayload = ItemUsedPayloadImport;
+export type ItemEffectAppliedPayload = ItemEffectAppliedPayloadImport;
+
+// Re-export stats types for server event usage
+export type { StatsSessionCompletePayload } from '../../shared/statsTypes';
 
 // =============================================================================
 // Session Domain Events
@@ -277,9 +315,11 @@ export interface CombatBossEnragedPayload {
 export interface CombatBossTelegraphPayload {
   lobbyId: string;
   targetId?: string; // Optional - not specified for AoE attacks
-  attackType?: 'light' | 'heavy' | 'special'; // Optional - inferred from message
+  attackType?: 'light' | 'heavy' | 'special' | 'aoe'; // Optional - inferred from message
   message: string;
   delayMs: number;
+  visualEffect?: 'charge' | 'glow' | 'shake' | 'particles' | 'none';
+  bossType?: string;  // For boss-specific visual theming
 }
 
 /** Emitted when revival channeling starts */
@@ -409,6 +449,23 @@ export interface CombatBattleCompletePayload {
   lobbyId: string;
 }
 
+/** Emitted when boss crosses HP phase threshold */
+export interface CombatBossPhaseTransitionPayload {
+  lobbyId: string;
+  newPhase: number;       // 1, 2, or 3
+  previousPhase: number;
+  message: string;        // Boss-specific transition message
+  bossType: string;       // e.g., 'bug-hydra'
+}
+
+/** Emitted when shield absorbs damage */
+export interface CombatShieldAbsorbedPayload {
+  lobbyId: string;
+  playerId: string;
+  absorbed: number;
+  shieldRemaining: number;
+}
+
 // =============================================================================
 // System Events
 // =============================================================================
@@ -486,10 +543,33 @@ export interface DomainEventMap {
   'combat:minion_damaged': CombatMinionDamagedPayload;
   'combat:minion_killed': CombatMinionKilledPayload;
   'combat:battle_complete': CombatBattleCompletePayload;
+  'combat:boss_phase_transition': CombatBossPhaseTransitionPayload;
+  'combat:shield_absorbed': CombatShieldAbsorbedPayload;
 
   // Progression events
   'progression:xp_awarded': ProgressionXPAwardedPayload;
   'progression:level_up': ProgressionLevelUpPayload;
+
+  // Class Mastery events
+  'class_mastery:xp_awarded': ClassMasteryXPAwardedPayload;
+  'class_mastery:tier_up': ClassMasteryTierUpPayload;
+
+  // Ability events
+  'ability:used': AbilityUsedPayload;
+  'ability:cooldown_started': AbilityCooldownStartedPayload;
+  'ability:effect_applied': AbilityEffectAppliedPayload;
+
+  // Combo events
+  'combo:triggered': ComboTriggeredPayload;
+  'combo:consensus_ultimate': ConsensusUltimatePayload;
+
+  // Item events
+  'item:awarded': ItemAwardedPayload;
+  'item:used': ItemUsedPayload;
+  'item:effect_applied': ItemEffectAppliedPayload;
+
+  // Stats events
+  'stats:session_complete': StatsSessionCompletePayload;
 
   // System events
   'transition_rejected': TransitionRejectedPayload;

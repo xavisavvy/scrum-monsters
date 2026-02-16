@@ -12,7 +12,7 @@ export function PlayerHUD() {
   const [showAbandonModal, setShowAbandonModal] = useState(false);
 
   const handleProceedNext = () => {
-    emit('proceed_next_level', {});
+    emit('proceed_next_level');
   };
 
   const handleAbandonQuest = () => {
@@ -20,12 +20,12 @@ export function PlayerHUD() {
   };
 
   const handleConfirmAbandon = () => {
-    emit('abandon_quest', {});
+    emit('abandon_quest');
   };
 
   const handleReturnHome = () => {
     console.log('🏠 Return Home button clicked - emitting return_to_lobby event');
-    emit('return_to_lobby', {});
+    emit('return_to_lobby');
   };
 
   if (!currentLobby || !currentPlayer) return null;

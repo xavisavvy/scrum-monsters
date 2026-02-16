@@ -108,6 +108,7 @@ export class SessionManager {
       team: 'spectators',
       isHost: true,
       hasSubmittedScore: false,
+      level: 1,
     };
 
     // Initialize lobby
@@ -250,6 +251,7 @@ export class SessionManager {
       team: preservedTeam || 'developers',
       isHost: noActiveHost,
       hasSubmittedScore: false,
+      level: 1,
     };
 
     // If becoming host, update lobby.hostId and demote old host

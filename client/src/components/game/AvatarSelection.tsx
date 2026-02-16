@@ -3,14 +3,18 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useClassMastery } from '@/lib/stores/useClassMastery';
 import { AVATAR_CLASSES, AvatarClass } from '@/lib/gameTypes';
 import { CharacterDetailsPanel } from './CharacterDetailsPanel';
 import { getAvatarImage } from '@/lib/avatarImages';
+import { MasteryBadge } from './MasteryBadge';
+import { MasteryProgressBar } from './MasteryProgressBar';
 
 export function AvatarSelection() {
   const [selectedAvatar, setSelectedAvatar] = useState<AvatarClass>('warrior');
   const { emit } = useWebSocket();
   const { currentPlayer } = useGameState();
+  const { getMasteryForClass } = useClassMastery();
 
   const handleConfirmAvatar = () => {
     emit('select_avatar', { avatarClass: selectedAvatar });
@@ -66,7 +70,9 @@ export function AvatarSelection() {
                 {Object.entries(AVATAR_CLASSES).map(([key, info]) => {
                   const avatarClass = key as AvatarClass;
                   const isSelected = selectedAvatar === avatarClass;
-                  
+                  const masteryData = getMasteryForClass(avatarClass);
+                  const showBadge = masteryData && masteryData.currentTier !== 'Novice';
+
                   return (
                     <div
                       key={avatarClass}
@@ -76,6 +82,13 @@ export function AvatarSelection() {
                       {renderAvatarSprite(avatarClass)}
                       <h4 className="font-bold text-sm">{info.name}</h4>
                       <p className="text-xs text-gray-400 mt-1">{info.description}</p>
+
+                      {/* Progressive disclosure: Show mastery badge only for Expert/Master */}
+                      {showBadge && (
+                        <div className="mt-2">
+                          <MasteryBadge tier={masteryData.currentTier} size="sm" />
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -96,11 +109,15 @@ export function AvatarSelection() {
         {/* Right side - Character Details (Desktop) */}
         <div className="flex-shrink-0 lg:block hidden">
           <CharacterDetailsPanel selectedClass={selectedAvatar} />
+          {/* Mastery progress bar for selected class */}
+          <MasteryProgressBar avatarClass={selectedAvatar} className="mt-4" />
         </div>
-        
+
         {/* Character Details (Mobile - Stacked Below) */}
         <div className="lg:hidden w-full">
           <CharacterDetailsPanel selectedClass={selectedAvatar} />
+          {/* Mastery progress bar for selected class */}
+          <MasteryProgressBar avatarClass={selectedAvatar} className="mt-4" />
         </div>
       </div>
     </div>

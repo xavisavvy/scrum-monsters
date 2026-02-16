@@ -7,8 +7,16 @@ import { MinionDisplay } from '@/components/game/MinionDisplay';
 import { XPBar } from '@/components/game/XPBar';
 import { FloatingXPManager } from '@/components/game/FloatingXPManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
+import { TierUpToast } from '@/components/game/TierUpToast';
+import { BossTelegraph } from '@/components/game/BossTelegraph';
+import { AbilityBar } from '@/components/game/AbilityBar';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useAbilitySync } from '@/lib/stores/useAbilities';
+import { ComboNotification } from '@/components/game/ComboNotification';
+import { useComboSync } from '@/lib/stores/useComboState';
+import { ItemBar } from '@/components/game/combat/ItemBar';
+import { useItemSync } from '@/lib/stores/useItemStore';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -23,6 +31,9 @@ export function BattlePhase({
 }: BattlePhaseProps) {
   const { currentPlayer } = useGameState();
   const { levelUp } = useProgression();
+  useAbilitySync(); // Wire ability server events
+  useComboSync(); // Wire combo server events
+  useItemSync(); // Wire item server events
 
   // Don't render if no boss is available
   if (!boss) {
@@ -65,6 +76,12 @@ export function BattlePhase({
         className={isTransitioning ? 'transitioning' : ''}
       />
 
+      {/* Boss telegraph warning - Top center */}
+      <BossTelegraph />
+
+      {/* Combo notifications - Upper center */}
+      <ComboNotification />
+
       {/* XP System UI - Floating numbers in 3D scene */}
       <FloatingXPManager />
 
@@ -73,10 +90,25 @@ export function BattlePhase({
         <XPBar />
       </div>
 
+      {/* Ability Bar - Bottom right, above XP bar */}
+      <div className="fixed bottom-20 right-4 z-40">
+        <AbilityBar />
+      </div>
+
+      {/* Item Bar - Bottom left, above XP bar, only for non-spectators in battle */}
+      {currentPlayer && currentPlayer.team !== 'spectators' && (
+        <div className="fixed bottom-20 left-4 z-40">
+          <ItemBar />
+        </div>
+      )}
+
       {/* Level-up celebration - Fullscreen overlay */}
       {levelUp?.active && currentPlayer && (
         <LevelUpCelebration playerClass={currentPlayer.avatar} />
       )}
+
+      {/* Tier-up toast - Bottom-right corner, defers to level-up celebration */}
+      <TierUpToast />
 
       <CountdownOverlay />
     </>
