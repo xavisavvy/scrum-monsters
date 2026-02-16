@@ -27,6 +27,7 @@ export function ItemBar() {
         return (
           <button
             key={itemType}
+            // eslint-disable-next-line react-hooks/rules-of-hooks -- useItem is a Zustand store action, not a React hook
             onClick={() => !disabled && useItem(itemType)}
             disabled={disabled}
             className={`

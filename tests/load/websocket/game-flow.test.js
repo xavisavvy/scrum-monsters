@@ -36,8 +36,8 @@ export default function () {
   const playerName = `Player-${__VU}`;
 
   const res = ws.connect(url, function (socket) {
-    let lobbyCreated = false;
-    let battleStarted = false;
+    let _lobbyCreated = false;
+    let _battleStarted = false;
 
     socket.on('open', function () {
       performHandshake(socket);
@@ -55,7 +55,7 @@ export default function () {
 
       if (parsed.type === 'event') {
         if (parsed.eventName === 'lobby_created') {
-          lobbyCreated = true;
+          _lobbyCreated = true;
           check(parsed.data, {
             'lobby has id': (d) => d.lobby && d.lobby.id,
           });
@@ -65,7 +65,7 @@ export default function () {
         }
 
         if (parsed.eventName === 'battle_started') {
-          battleStarted = true;
+          _battleStarted = true;
           check(parsed.data, {
             'battle has boss': (d) => d.boss && d.boss.id,
           });

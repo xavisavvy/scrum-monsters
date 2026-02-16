@@ -52,7 +52,7 @@ export default function () {
       try {
         const body = JSON.parse(r.body);
         return body.websocket && typeof body.websocket.lobbies === 'number';
-      } catch (e) {
+      } catch (_e) {
         return false;
       }
     },
