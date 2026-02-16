@@ -162,7 +162,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // Position batching for performance - aggregate updates and broadcast every 100ms
   const pendingPositionUpdates = new Map<string, boolean>(); // lobbyId -> hasPendingUpdates
   
-  setInterval(() => {
+  const positionBatchInterval = setInterval(() => {
     // Broadcast batched position updates for each lobby with pending changes
     pendingPositionUpdates.forEach((hasPending, lobbyId) => {
       if (hasPending) {
@@ -174,8 +174,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
   }, 100); // Batch broadcast every 100ms
+  
+  // Clean up position updates map when lobbies are destroyed
+  eventBus.on('session:lobby_destroyed', ({ lobbyId }) => {
+    pendingPositionUpdates.delete(lobbyId);
+  });
 
-  // Log connection stats every 5 minutes
+  // Log connection stats every 5 minutes (unref so it doesn't keep process alive)
   setInterval(() => {
     const connectedSockets = Array.from(io.sockets.sockets.values());
     const hostConnections = connectedSockets.filter(s => {
@@ -195,7 +200,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         console.log(`     - ${reason}: ${count}`);
       });
     }
-  }, 5 * 60 * 1000);
+  }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
   setInterval(() => {
@@ -1896,5 +1901,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
   });
 
-  return io;
+  // Return both io and a cleanup function for graceful shutdown
+  return {
+    io,
+    cleanup: () => {
+      clearInterval(positionBatchInterval);
+      pendingPositionUpdates.clear();
+    }
+  };
 }
