@@ -39,8 +39,8 @@ Preferred communication style: Simple, everyday language.
 - **Attack Animations**: Visual feedback system for player interactions with boss battles
 - **Live Updates**: Real-time synchronization of player scores, game phases, and lobby state
 - **Connection Stability**: 
-  - 3-minute ping timeout (180s) to tolerate browser tab throttling
-  - Client-side heartbeat every 40 seconds to prevent infrastructure idle timeouts
+  - Server ping every 20 seconds with 60s timeout (optimized for corporate proxies)
+  - Client-side heartbeat every 25 seconds to prevent infrastructure idle timeouts
   - Connection state recovery buffers messages for 3 minutes during brief disconnects
   - Automatic reconnection with exponential backoff and token-based session restoration
   - Graceful handling of WebGL context loss during reconnection
@@ -94,3 +94,41 @@ The project uses a comprehensive dual-licensing approach to protect intellectual
 - `TRADEMARKS.md` - Trademark protection and usage guidelines
 - `NOTICES.md` - Third-party software attributions
 - `CONTRIBUTING.md` - Updated with DCO requirements for contributors
+
+# Roadmap
+
+## Priority 1: Connection Stability (High Impact)
+- [x] **Visibility change handling** - Proactively check/restore connection when browser tab returns from background
+- [x] **Visual reconnection indicators** - Show players a clear UI when connection is recovering (ReconnectionStatus component)
+- [x] **Office network optimization** - Heartbeat 25s client, 20s server ping, 60s timeout (tuned for corporate proxies)
+
+## Priority 2: Performance Optimization
+- [x] **Lazy load heavy components** - Split 3D assets, battle screens, and avatar selection into separate chunks (React.lazy + Suspense)
+- [x] **Batch WebSocket messages** - Server batches position updates every 100ms, client throttles to 100ms
+- [x] **Optimize React re-renders** - React.memo added to SpriteRenderer, PlayerCharacter components
+
+## Priority 3: Code Quality
+- [ ] **Add React error boundaries** - Prevent full app crashes from component errors
+- [ ] **Clean up unused variables** - Remove effectText and other dead code
+- [ ] **Improve TypeScript types** - Replace `any` casted socket events with proper typed interfaces
+- [ ] **Add structured logging** - Use log levels (debug/info/warn/error) for production debugging
+
+## Priority 4: User Experience
+- [ ] **Persist audio settings** - Save mute/volume preferences to localStorage
+- [ ] **Loading states** - Add spinners/skeletons for lobby creation and joining
+- [ ] **Mobile touch controls** - Improve battle controls for touchscreen devices
+- [ ] **Keyboard shortcuts guide** - Show available controls during battle
+
+## Priority 5: Reliability & Monitoring
+- [ ] **Health check endpoint** - Add /health route for deployment monitoring
+- [ ] **Production logging** - Structured logs for debugging connection issues
+- [ ] **Error tracking** - Consider Sentry or similar for production error monitoring
+- [ ] **Performance metrics** - Track WebSocket latency and reconnection rates
+
+## Completed
+- [x] WebSocket reconnection cleanup (fixed duplicate socket issue)
+- [x] Upstash Redis caching for lobbies and sessions
+- [x] Office network heartbeat optimization (25s client, 20s server)
+- [x] Removed verbose player movement console.logs
+- [x] Visibility change handling (auto-reconnect when tab returns from background)
+- [x] Visual reconnection indicators (ReconnectionStatus banner component)
