@@ -176,9 +176,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   }, 100); // Batch broadcast every 100ms
   
   // Clean up position updates map when lobbies are destroyed
-  eventBus.on('session:lobby_destroyed', ({ lobbyId }) => {
+  const lobbyDestroyedHandler = ({ lobbyId }: { lobbyId: string }) => {
     pendingPositionUpdates.delete(lobbyId);
-  });
+  };
+  eventBus.on('session:lobby_destroyed', lobbyDestroyedHandler);
 
   // Log connection stats every 5 minutes (unref so it doesn't keep process alive)
   setInterval(() => {
@@ -1907,6 +1908,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     cleanup: () => {
       clearInterval(positionBatchInterval);
       clearInterval(revivalWatchdogInterval);
+      eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);
       pendingPositionUpdates.clear();
     }
   };
