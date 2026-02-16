@@ -81,7 +81,7 @@ jobs:
           K6_ENV: ci
 
       - name: Upload HTTP test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: http-load-test-results
@@ -168,7 +168,7 @@ jobs:
           K6_ENV: ci
 
       - name: Upload WebSocket test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: websocket-load-test-results
@@ -246,7 +246,7 @@ jobs:
           K6_ENV: ci
 
       - name: Upload idle connection test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         if: always()
         with:
           name: idle-connection-test-results
