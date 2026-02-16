@@ -316,6 +316,7 @@ export interface ServerToClientEvents {
     direction?: string;
   }) => void;
   lobby_player_jump: (data: { playerId: string; isJumping: boolean }) => void;
+  lobby_player_charge: (data: { playerId: string; isCharging: boolean; chargePower: number }) => void;
   lobby_emote: (data: {
     playerId: string;
     message: string;

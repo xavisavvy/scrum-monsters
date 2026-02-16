@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { useSpriteAnimation, SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { useImageDimensions } from '@/hooks/useImageDimensions';
 import { AvatarClass } from '@/lib/gameTypes';
@@ -13,7 +13,7 @@ interface SpriteRendererProps {
   style?: React.CSSProperties;
 }
 
-export function SpriteRenderer({
+export const SpriteRenderer = memo(function SpriteRenderer({
   avatarClass,
   animation,
   direction = 'down',
@@ -124,4 +124,4 @@ export function SpriteRenderer({
     };
     return icons[avatarClass] || '⚔️';
   }
-}
+});
