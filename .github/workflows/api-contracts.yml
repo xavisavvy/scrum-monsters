@@ -134,7 +134,7 @@ jobs:
 
       - name: Publish test results
         if: always()
-        uses: mikepenz/action-junit-report@v4
+        uses: mikepenz/action-junit-report@v6
         with:
           report_paths: 'schemathesis-report.xml'
           check_name: 'Contract Test Results'
