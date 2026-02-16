@@ -578,7 +578,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   const handleSpecialAttack = useCallback((avatarClass: AvatarClass) => {
     // CLERIC: Heal entire party 50% HP
     if (avatarClass === 'cleric') {
-      emit('heal_party', undefined as any);
+      emit('heal_party');
       if (playHit) playHit();
       return;
     }

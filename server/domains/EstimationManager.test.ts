@@ -299,30 +299,32 @@ describe('EstimationManager', () => {
       );
     });
 
-    it('should emit estimation:full_consensus_reached when both teams reach consensus', (done) => {
-      const fullConsensusListener = vi.fn();
-      eventBus.on('estimation:full_consensus_reached', fullConsensusListener);
+    it('should emit estimation:full_consensus_reached when both teams reach consensus', () => {
+      return new Promise<void>((resolve) => {
+        const fullConsensusListener = vi.fn();
+        eventBus.on('estimation:full_consensus_reached', fullConsensusListener);
 
-      // Setup both teams
-      estimationManager.addEligibleVoter('lobby1', 'dev1', 'developers');
-      estimationManager.addEligibleVoter('lobby1', 'qa1', 'qa');
+        // Setup both teams
+        estimationManager.addEligibleVoter('lobby1', 'dev1', 'developers');
+        estimationManager.addEligibleVoter('lobby1', 'qa1', 'qa');
 
-      // Dev team votes
-      estimationManager.castVote('lobby1', 'dev1', 'developers', 5);
+        // Dev team votes
+        estimationManager.castVote('lobby1', 'dev1', 'developers', 5);
 
-      // QA team votes
-      estimationManager.castVote('lobby1', 'qa1', 'qa', 8);
+        // QA team votes
+        estimationManager.castVote('lobby1', 'qa1', 'qa', 8);
 
-      // Full consensus event should fire after 2.5s delay
-      setTimeout(() => {
-        expect(fullConsensusListener).toHaveBeenCalledWith(
-          expect.objectContaining({
-            lobbyId: 'lobby1',
-            ticketId: 'ticket1',
-          })
-        );
-        done();
-      }, 2600); // Wait a bit longer than the 2.5s delay
+        // Full consensus event should fire after 2.5s delay
+        setTimeout(() => {
+          expect(fullConsensusListener).toHaveBeenCalledWith(
+            expect.objectContaining({
+              lobbyId: 'lobby1',
+              ticketId: 'ticket1',
+            })
+          );
+          resolve();
+        }, 2600); // Wait a bit longer than the 2.5s delay
+      });
     }, 3000);
 
     it('should break consensus when vote changes to different value', () => {
@@ -681,33 +683,35 @@ describe('EstimationManager', () => {
       expect(result.consensusValue).toBe(5);
     });
 
-    it('should check full consensus after forcing estimate', (done) => {
-      const fullConsensusListener = vi.fn();
-      eventBus.on('estimation:full_consensus_reached', fullConsensusListener);
+    it('should check full consensus after forcing estimate', () => {
+      return new Promise<void>((resolve) => {
+        const fullConsensusListener = vi.fn();
+        eventBus.on('estimation:full_consensus_reached', fullConsensusListener);
 
-      // Setup both teams with votes
-      estimationManager.addEligibleVoter('lobby1', 'qa1', 'qa');
-      estimationManager.castVote('lobby1', 'player1', 'developers', 5);
-      estimationManager.castVote('lobby1', 'player2', 'developers', 5);
-      estimationManager.castVote('lobby1', 'qa1', 'qa', 8);
+        // Setup both teams with votes
+        estimationManager.addEligibleVoter('lobby1', 'qa1', 'qa');
+        estimationManager.castVote('lobby1', 'player1', 'developers', 5);
+        estimationManager.castVote('lobby1', 'player2', 'developers', 5);
+        estimationManager.castVote('lobby1', 'qa1', 'qa', 8);
 
-      // QA already has consensus (single voter)
-      const qaState = estimationManager.getEstimation('lobby1');
-      expect(qaState!.teams.qa.hasConsensus).toBe(true);
+        // QA already has consensus (single voter)
+        const qaState = estimationManager.getEstimation('lobby1');
+        expect(qaState!.teams.qa.hasConsensus).toBe(true);
 
-      // Force dev estimate
-      estimationManager.forceEstimate('lobby1', 'developers', 'host1');
+        // Force dev estimate
+        estimationManager.forceEstimate('lobby1', 'developers', 'host1');
 
-      // Full consensus event should fire after 2.5s delay
-      setTimeout(() => {
-        expect(fullConsensusListener).toHaveBeenCalledWith(
-          expect.objectContaining({
-            lobbyId: 'lobby1',
-            ticketId: 'ticket1'
-          })
-        );
-        done();
-      }, 2600);
+        // Full consensus event should fire after 2.5s delay
+        setTimeout(() => {
+          expect(fullConsensusListener).toHaveBeenCalledWith(
+            expect.objectContaining({
+              lobbyId: 'lobby1',
+              ticketId: 'ticket1'
+            })
+          );
+          resolve();
+        }, 2600);
+      });
     }, 3000);
 
     it('should throw EstimationNotActiveError when no estimation exists', () => {
