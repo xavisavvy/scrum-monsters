@@ -203,7 +203,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
-  setInterval(() => {
+  const revivalWatchdogInterval = setInterval(() => {
     const completedRevivals = (gameState as any).processRevivalSessions();
     for (const revival of completedRevivals) {
       io.to(revival.lobbyId).emit('revive_complete', {
@@ -1906,6 +1906,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     io,
     cleanup: () => {
       clearInterval(positionBatchInterval);
+      clearInterval(revivalWatchdogInterval);
       pendingPositionUpdates.clear();
     }
   };
