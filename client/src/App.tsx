@@ -1,17 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense, lazy } from 'react';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { LobbyCreation } from '@/components/game/LobbyCreation';
 import { LobbyJoin } from '@/components/game/LobbyJoin';
 import { RoomJoin } from '@/components/game/RoomJoin';
-import { Lobby } from '@/components/game/Lobby';
-import { AvatarSelection } from '@/components/game/AvatarSelection';
-import { BattleScreen } from '@/components/game/BattleScreen';
 import { LandingPage } from '@/components/marketing/LandingPage';
 import { AboutPage } from '@/components/marketing/AboutPage';
 import { FeaturesPage } from '@/components/marketing/FeaturesPage';
 import { PricingPage } from '@/components/marketing/PricingPage';
 import { SupportPage } from '@/components/marketing/SupportPage';
+
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
@@ -34,6 +32,22 @@ import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
 import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import '@/styles/retro.css';
+
+// Lazy load heavy game components for better initial load performance
+const Lobby = lazy(() => import('@/components/game/Lobby').then(m => ({ default: m.Lobby })));
+const AvatarSelection = lazy(() => import('@/components/game/AvatarSelection').then(m => ({ default: m.AvatarSelection })));
+const BattleScreen = lazy(() => import('@/components/game/BattleScreen').then(m => ({ default: m.BattleScreen })));
+
+function GameLoadingFallback() {
+  return (
+    <div className="fixed inset-0 flex items-center justify-center bg-gray-900">
+      <div className="text-center">
+        <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+        <p className="text-yellow-400 font-bold text-lg">Loading...</p>
+      </div>
+    </div>
+  );
+}
 
 type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'room_join' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
 
@@ -833,12 +847,16 @@ function App() {
 
       case 'avatar_selection':
         return (
-          <AvatarSelection />
+          <Suspense fallback={<GameLoadingFallback />}>
+            <AvatarSelection />
+          </Suspense>
         );
 
       case 'lobby':
         return (
-          <Lobby />
+          <Suspense fallback={<GameLoadingFallback />}>
+            <Lobby />
+          </Suspense>
         );
 
       case 'battle':
@@ -855,20 +873,22 @@ function App() {
         }
         
         return (
-          <ErrorBoundary
-            fallback={
-              <div className="retro-container bg-gray-900 flex items-center justify-center h-screen">
-                <div className="text-center">
-                  <div className="text-xl font-bold text-red-400 mb-4">⚡ Battle System Recovered</div>
-                  <div className="text-sm text-gray-400">Combat systems automatically restored</div>
+          <Suspense fallback={<GameLoadingFallback />}>
+            <ErrorBoundary
+              fallback={
+                <div className="retro-container bg-gray-900 flex items-center justify-center h-screen">
+                  <div className="text-center">
+                    <div className="text-xl font-bold text-red-400 mb-4">⚡ Battle System Recovered</div>
+                    <div className="text-sm text-gray-400">Combat systems automatically restored</div>
+                  </div>
                 </div>
-              </div>
-            }
-          >
-            <BattleScreen 
-              key={`battle-${battleRemountKey}-${currentLobby?.gamePhase}-${currentLobby?.currentTicket?.id || 'none'}`} 
-            />
-          </ErrorBoundary>
+              }
+            >
+              <BattleScreen 
+                key={`battle-${battleRemountKey}-${currentLobby?.gamePhase}-${currentLobby?.currentTicket?.id || 'none'}`} 
+              />
+            </ErrorBoundary>
+          </Suspense>
         );
 
       case 'character_tools':
