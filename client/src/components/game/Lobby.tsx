@@ -1167,7 +1167,7 @@ export function Lobby() {
   const startBattle = () => {
     const lobbyTickets = currentLobby?.tickets || [];
     if (lobbyTickets.length === 0) return;
-    emit('start_battle', {});
+    emit('start_battle');
   };
 
   const changeTeam = (team: TeamType) => {
