@@ -349,7 +349,7 @@ jobs:
           git push
 
       - name: Post comment on rolled-back commit
-        uses: peter-evans/commit-comment@v3
+        uses: peter-evans/commit-comment@v4
         with:
           sha: ${{ needs.rollback.outputs.from-revision }}
           body: |
