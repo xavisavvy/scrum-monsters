@@ -54,7 +54,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       
       if (isInitialSync) {
         setPlayerPosition({ x: screenPos.x, y: screenPos.y });
-        console.log(`🔄 Synced player position from server: (${serverPos.x}%, ${serverPos.y}%) -> (${screenPos.x}px, ${screenPos.y}px)`);
       }
     }
   }, [currentPlayer?.id, currentLobby?.id, viewport, characterSize]); // Only trigger on player/lobby change
@@ -62,15 +61,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   // Handle keyboard input
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      console.log('🎹 KeyDown detected:', event.code, 'target:', event.target);
-      
       // Prevent game controls when typing in input fields
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        console.log('🚫 Ignoring keyboard input (typing in input field)');
         return;
       }
       
-      console.log('✅ Processing keyboard input:', event.code);
       setKeys(prev => new Set(prev).add(event.code));
       
       // Handle jump
@@ -80,14 +75,12 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         
         // Send jumping state to server
         emit('player_jump', { isJumping: true });
-        console.log('🦘 Started jumping - invincible to damage!');
         
         setTimeout(() => {
           setIsJumping(false);
           setJumpHeight(0); // Reset jump height when landing
           // Send jumping state to server
           emit('player_jump', { isJumping: false });
-          console.log('🦘 Stopped jumping - vulnerable to damage again!');
         }, jumpDuration);
       }
       
@@ -110,7 +103,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer && !ctrlPressed) {
         setCtrlPressed(true); // Prevent multiple shots while held
         event.preventDefault();
-        console.log('⌨️ Ctrl key pressed for shooting!');
         
         let targetX, targetY, targetPlayerId = null;
         
@@ -121,13 +113,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             targetX = nearestPlayer.x;
             targetY = nearestPlayer.y;
             targetPlayerId = nearestPlayer.id;
-            console.log(`🎯 Spectator targeting nearest player: ${nearestPlayer.id} at (${targetX}, ${targetY})`);
           } else {
             // Fallback to center if no targets found - use world coordinates
             const centerWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
             targetX = centerWorld.x;
             targetY = centerWorld.y;
-            console.log('🎯 No target players found, shooting center');
           }
         } else {
           // Dev/QA players shoot toward boss - use world coordinates
@@ -140,8 +130,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         const characterCenterX = playerPosition.x + characterSize / 2;
         const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
         
-        console.log(`🎯 Keyboard shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
-        
         // Create projectile from character to target
         const projectileData = {
           startX: characterCenterX,
@@ -152,8 +140,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           targetPlayerId: targetPlayerId || undefined // For spectator attacks
         };
         
-        console.log('🚀 Keyboard projectile data:', projectileData);
-        
         // Create projectile directly
         const newProjectile = {
           ...projectileData,
@@ -161,12 +147,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           progress: 0
         };
         
-        console.log('✨ Creating keyboard projectile:', newProjectile);
-        setProjectiles(prev => {
-          const updated = [...prev, newProjectile];
-          console.log('📦 Updated projectiles from keyboard:', updated);
-          return updated;
-        });
+        setProjectiles(prev => [...prev, newProjectile]);
         
         // Convert screen coordinates to world coordinates, then to percentages
         const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
@@ -191,7 +172,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       if (event.code === 'KeyQ' && currentPlayer && !qPressed && specialAttackCooldown <= 0) {
         setQPressed(true); // Prevent multiple attacks while held
         event.preventDefault();
-        console.log('⌨️ Q key pressed for special attack!');
         
         // Trigger special attack based on character class
         handleSpecialAttack(currentPlayer.avatar);
@@ -213,15 +193,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
-      console.log('🎹 KeyUp detected:', event.code);
-      
       // Prevent game controls when typing in input fields
       if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) {
-        console.log('🚫 Ignoring keyboard release (typing in input field)');
         return;
       }
       
-      console.log('✅ Processing keyboard release:', event.code);
       setKeys(prev => {
         const newKeys = new Set(prev);
         newKeys.delete(event.code);
@@ -294,18 +270,14 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
 
     // Create handler functions that can be properly removed
     const handleBossRingAttack = ({ projectiles: ringProjectiles }: any) => {
-      console.log('💀 Boss ring attack received!', ringProjectiles.length, 'projectiles');
-      
       // Convert percentage coordinates to world coordinates, then to screen coordinates
       const convertedProjectiles = ringProjectiles.map((proj: any) => {
         const targetWorld = { x: (proj.targetX / 100) * viewport.worldWidth, y: (proj.targetY / 100) * viewport.worldHeight };
         const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
-        console.log(`🎯 Converting projectile target: (${proj.targetX}%, ${proj.targetY}%) -> (${targetScreen.x}px, ${targetScreen.y}px)`);
         
         // Use projectile's startX/startY as boss position (server sends boss center as 50%, 40%) 
         const bossWorld = { x: (proj.startX / 100) * viewport.worldWidth, y: (proj.startY / 100) * viewport.worldHeight };
         const bossScreen = viewport.worldToScreen(bossWorld.x, bossWorld.y);
-        console.log(`🎯 Converting boss position: (${proj.startX}%, ${proj.startY}%) -> (${bossScreen.x}px, ${bossScreen.y}px)`);
         
         return {
           id: proj.id,
@@ -339,7 +311,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       });
       
       setOtherPlayersPositions(otherPositions);
-      console.log('👥 Updated other players positions:', Object.keys(otherPositions).length, 'players');
       
       // Pass all positions (current player + other players) to parent component
       if (onPlayerPositionsUpdate && currentPlayer) {
@@ -372,7 +343,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       };
       
       setOtherPlayersProjectiles(prev => [...prev, newProjectile]);
-      console.log(`🚀 Received projectile from ${playerName}: ${emoji}`);
     };
 
     // Add listeners with specific handler references
@@ -400,7 +370,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
 
   // Throttled network updates - more responsive
   const lastNetworkUpdate = useRef({ x: 0, y: 0, time: 0 });
-  const networkUpdateThrottle = 50; // 20 updates per second for better responsiveness
+  const networkUpdateThrottle = 100; // 10 updates per second - balanced for performance
 
   useEffect(() => {
     const movePlayer = () => {
@@ -472,7 +442,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           
           // Update throttle tracking
           lastNetworkUpdate.current = { x: newX, y: newY, time: now };
-          console.log('🔄 Synced player position to server: (' + percentX.toFixed(1) + '%, ' + percentY.toFixed(1) + '%) -> (' + newX.toFixed(0) + 'px, ' + newY.toFixed(0) + 'px)');
         }
 
         return { x: newX, y: newY };
@@ -490,27 +459,19 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       progress: 0
     };
     
-    console.log('✨ Creating new projectile:', newProjectile);
-    setProjectiles(prev => {
-      const updated = [...prev, newProjectile];
-      console.log('📦 Updated projectiles array:', updated);
-      return updated;
-    });
+    setProjectiles(prev => [...prev, newProjectile]);
   }, []);
 
   // Handle screen clicks for shooting
   const handleScreenClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.stopPropagation();
-    console.log('🖱️ Click detected!', event.clientX, event.clientY, 'Target:', event.target);
     
     // Don't shoot if clicking on UI elements
     const target = event.target as HTMLElement;
-    console.log('🔍 Target element:', target.tagName, target.className, target);
     
     // Only ignore clicks on interactive UI elements marked with data-no-shoot
     if (target.closest('[data-no-shoot]')) {
-      console.log('⛔ Click on UI element, ignoring');
       return;
     }
     
@@ -519,7 +480,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
                          event.currentTarget.contains(target);
     
     if (!isValidTarget) {
-      console.log('⛔ Click outside controller container, ignoring');
       return;
     }
 
@@ -531,8 +491,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     const characterCenterX = playerPosition.x + characterSize / 2;
     const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
     
-    console.log(`🎯 Preparing to shoot from (${characterCenterX}, ${characterCenterY}) to (${targetX}, ${targetY})`);
-    
     // Create projectile from character to click position
     const projectileData = {
       startX: characterCenterX,
@@ -542,7 +500,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       emoji: currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'
     };
     
-    console.log('🚀 Projectile data:', projectileData);
     handleShoot(projectileData);
     
     // Convert screen coordinates to world coordinates, then to percentages before emitting
@@ -561,8 +518,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       targetY: percentTargetY,
       emoji: currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'
     });
-    
-    console.log(`🎯 Shot ${currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'} from character!`);
   }, [playerPosition, viewport.viewportHeight, characterSize, handleShoot, currentPlayer]);
 
   const getProjectileEmoji = (avatarClass: AvatarClass): string => {
@@ -621,12 +576,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
 
   // Special attack system with class-specific effects
   const handleSpecialAttack = useCallback((avatarClass: AvatarClass) => {
-    console.log(`🌟 Q key pressed for ${avatarClass}!`);
-    
     // CLERIC: Heal entire party 50% HP
     if (avatarClass === 'cleric') {
       emit('heal_party', undefined as any);
-      console.log(`💫 Cleric heals entire party!`);
       if (playHit) playHit();
       return;
     }
@@ -635,7 +587,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     const nearestDowned = findNearestDownedPlayer();
     if (nearestDowned) {
       emit('revive_start', { targetId: nearestDowned.id });
-      console.log(`✨ Starting revive on downed player ${nearestDowned.id} (distance: ${nearestDowned.distance.toFixed(1)})`);
       if (playHit) playHit();
       return;
     }
@@ -684,7 +635,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     }
     
     emit('attack_boss', { damage });
-    console.log(`🎯 ${effectText} deals ${damage} damage to boss!`);
     if (playHit) playHit();
   }, [currentLobby, currentPlayer, playerPosition, emit, playHit, findNearestDownedPlayer]);
 
@@ -735,15 +685,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     const playerPixelX = playerPosition.x + characterSize / 2;
     const playerPixelY = viewport.viewportHeight - (playerPosition.y + characterSize / 2); // Convert to top-based Y
     
-    console.log(`🎯 Boss projectile collision check: Player at (${playerPixelX.toFixed(1)}, ${playerPixelY.toFixed(1)}), Projectile target (${projectile.targetX}, ${projectile.targetY})`);
-    
     // Check collision with projectile target (both in pixel coordinates)
     const distance = Math.sqrt(
       Math.pow(playerPixelX - projectile.targetX, 2) + 
       Math.pow(playerPixelY - projectile.targetY, 2)
     );
-    
-    console.log(`🎯 Distance: ${distance.toFixed(1)} (threshold: 300)`);
     
     // If hit (within 300 pixels - much larger collision area for boss projectiles)
     if (distance < 300) {
@@ -764,10 +710,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       
       // Emit boss damage to server
       emit('boss_damage_player', { playerId: currentPlayer.id, damage });
-      
-      console.log(`💀 Boss ring attack hit ${currentPlayer.name} for ${damage} damage!`);
-    } else {
-      console.log(`💨 Boss projectile missed ${currentPlayer.name}`);
     }
   }, [currentPlayer, playerPosition, characterSize, viewport, playHit, addAttackAnimation, emit]);
 
@@ -796,8 +738,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       
       // Emit player attack to server
       emit('attack_player', { targetId: projectile.targetPlayerId, damage });
-      
-      console.log(`💥 Spectator ${currentPlayer.name} hit player ${projectile.targetPlayerId} for ${damage} damage with ${projectile.emoji}!`);
     } else {
       // Dev/QA attacking boss
       const bossAreaX = viewport.viewportWidth * 0.3; // Boss takes up center area
@@ -829,8 +769,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         
         // Emit attack to server
         emit('attack_boss', { damage });
-        
-        console.log(`💥 ${currentPlayer.name} hit boss for ${damage} damage with ${projectile.emoji}!`);
       }
     }
   }, [viewport, currentPlayer, currentLobby, playHit, addAttackAnimation, emit]);
@@ -842,20 +780,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       const safeX = viewport.viewportWidth / 2 - characterSize / 2;
       const safeY = 150; // 150px from bottom of screen
       setPlayerPosition({ x: safeX, y: safeY });
-      console.log(`🎮 Battle position reset: (${safeX}, ${safeY}) viewport=${viewport.viewportWidth}x${viewport.viewportHeight}`);
     }
   }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, viewport.viewportHeight, characterSize]);
 
   // Check if should be active (but always render container to prevent DOM reconciliation issues)
   const isActive = currentPlayer && currentLobby && currentLobby.gamePhase === 'battle';
-  
-  if (!isActive) {
-    console.log('❌ PlayerController inactive - missing player or not in battle', {
-      hasCurrentPlayer: !!currentPlayer,
-      hasCurrentLobby: !!currentLobby,
-      gamePhase: currentLobby?.gamePhase
-    });
-  }
 
   return (
     <div 
@@ -863,14 +792,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       onClick={isActive ? handleScreenClick : undefined}
       onMouseDown={isActive ? (e) => {
         e.currentTarget.focus();
-        console.log('🎯 Game focused via mouse click');
       } : undefined}
       tabIndex={isActive ? 0 : -1}
       onKeyDown={isActive ? (e) => {
-        console.log('🎹 Direct KeyDown on game area:', e.code);
         const event = e.nativeEvent;
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-        console.log('✅ Processing direct keyboard input:', event.code);
         setKeys(prev => new Set(prev).add(event.code));
         
         if (event.code === 'Space' && !isJumping) {
@@ -886,7 +812,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         // Handle emote key (E)
         if (event.code === 'KeyE') {
           e.preventDefault();
-          console.log('🎭 E key pressed - opening emote modal');
           window.dispatchEvent(new CustomEvent('openEmoteModal'));
         }
         
@@ -894,7 +819,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer && !ctrlPressed) {
           setCtrlPressed(true);
           e.preventDefault();
-          console.log('⌨️ Direct Ctrl key pressed for shooting!');
           
           let targetX, targetY, targetPlayerId = null;
           
@@ -955,10 +879,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         }
       } : undefined}
       onKeyUp={isActive ? (e) => {
-        console.log('🎹 Direct KeyUp on game area:', e.code);
         const event = e.nativeEvent;
         if (event.target instanceof HTMLInputElement || event.target instanceof HTMLTextAreaElement) return;
-        console.log('✅ Processing direct keyboard release:', event.code);
         setKeys(prev => {
           const newKeys = new Set(prev);
           newKeys.delete(event.code);
@@ -976,11 +898,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           // Don't steal focus if user is typing in an input field (like emote modal)
           const activeElement = document.activeElement;
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
-            console.log('🚫 Not auto-focusing game area (user is typing in input field)');
             return;
           }
           el.focus();
-          console.log('🎯 Auto-focusing game area');
         }
       } : undefined}
     >

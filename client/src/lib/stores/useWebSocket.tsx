@@ -40,6 +40,9 @@ interface WebSocketState {
 const RECONNECT_TOKEN_KEY = 'scrum-monsters-reconnect-token';
 const LOBBY_SNAPSHOT_KEY = 'scrum-monsters-lobby-snapshot';
 
+// Module-level visibility handler reference for cleanup
+let visibilityHandler: (() => void) | null = null;
+
 const storeReconnectToken = (token: string) => {
   try {
     localStorage.setItem(RECONNECT_TOKEN_KEY, token);
@@ -145,11 +148,13 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         clearInterval(heartbeatInterval);
       }
       const newHeartbeat = setInterval(() => {
-        console.log('💓 Sending heartbeat to keep connection alive');
+        if (document.visibilityState === 'visible') {
+          console.log('💓 Sending heartbeat to keep connection alive');
+        }
         socket.emit('client_heartbeat' as any);
-      }, 40000); // Every 40 seconds
+      }, 25000); // Every 25 seconds - office networks often have 30-60s proxy timeouts
       set({ heartbeatInterval: newHeartbeat });
-      console.log('💓 Heartbeat started - will ping every 40 seconds');
+      console.log('💓 Heartbeat started - will ping every 25 seconds');
 
       // Attempt auto-reconnection if we have stored data
       const storedToken = getStoredReconnectToken();
@@ -315,6 +320,12 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       clearInterval(heartbeatInterval);
     }
     
+    // Remove visibility handler
+    if (visibilityHandler) {
+      document.removeEventListener('visibilitychange', visibilityHandler);
+      visibilityHandler = null;
+    }
+    
     if (socket) {
       socket.disconnect();
       set({ 
@@ -428,7 +439,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     const { socket } = get();
     if (socket && socket.connected) {
       console.log(`📤 Emitting ${String(event)}:`, data);
-      socket.emit(event, data);
+      (socket as any).emit(event, data);
     } else {
       console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
     }
