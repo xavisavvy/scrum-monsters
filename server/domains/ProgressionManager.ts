@@ -25,6 +25,8 @@ import type {
  */
 export interface ProgressionManagerDeps {
   eventBus: ScopedEventBus;
+  /** Returns list of active player IDs in a lobby, or null if lobby not found */
+  getActivePlayers?: (lobbyId: string) => string[] | null;
 }
 
 // =============================================================================
@@ -153,6 +155,7 @@ export class ProgressionManager {
   // Dependencies
   private readonly eventBus: ScopedEventBus;
   private readonly curve: XPCurve;
+  private readonly getActivePlayers: (lobbyId: string) => string[] | null;
 
   // State: Map<lobbyId, Map<playerId, totalXP>>
   private lobbyXP = new Map<string, Map<string, number>>();
@@ -160,6 +163,7 @@ export class ProgressionManager {
   constructor(deps: ProgressionManagerDeps) {
     this.eventBus = deps.eventBus;
     this.curve = new XPCurve(DEFAULT_CURVE_CONFIG);
+    this.getActivePlayers = deps.getActivePlayers ?? (() => null);
 
     // Subscribe to XP-awarding events
     this.setupEventSubscriptions();
@@ -198,13 +202,16 @@ export class ProgressionManager {
   }
 
   /**
-   * Handle consensus reached event - award 50 XP to all voters
+   * Handle consensus reached event - award 50 XP to all active players
    */
   private handleConsensus(payload: EstimationFullConsensusReachedPayload): void {
-    // Note: We need access to the list of players who voted
-    // For now, this is a placeholder - will need lobby player access
-    // TODO: Add getActivePlayers callback to ProgressionManagerDeps
-    console.warn('Consensus XP award requires player list - not yet implemented');
+    const players = this.getActivePlayers(payload.lobbyId);
+    if (!players || players.length === 0) {
+      return;
+    }
+    players.forEach(playerId => {
+      this.awardXP(payload.lobbyId, playerId, XP_RATE_VALUES.consensus, 'consensus');
+    });
   }
 
   /**
