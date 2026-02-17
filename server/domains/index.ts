@@ -74,7 +74,15 @@ const combatManager = new CombatManager({
     return player?.avatar ?? null;
   }
 });
-const progressionManager = new ProgressionManager({ eventBus });
+const progressionManager = new ProgressionManager({
+  eventBus,
+  // Provide active players callback for consensus XP awards
+  getActivePlayers: (lobbyId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    return lobby.players.map(p => p.id);
+  },
+});
 
 // Export instances
 export { eventBus, sessionManager, estimationManager, combatManager, progressionManager };
