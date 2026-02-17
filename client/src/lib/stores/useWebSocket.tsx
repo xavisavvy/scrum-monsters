@@ -47,7 +47,9 @@ const storeReconnectToken = (token: string) => {
   try {
     localStorage.setItem(RECONNECT_TOKEN_KEY, token);
   } catch (error) {
-    console.warn('Failed to store reconnect token:', error);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.warn('Failed to store reconnect token:', error);
+    }
   }
 };
 
@@ -55,7 +57,9 @@ const getStoredReconnectToken = (): string | null => {
   try {
     return localStorage.getItem(RECONNECT_TOKEN_KEY);
   } catch (error) {
-    console.warn('Failed to get stored reconnect token:', error);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.warn('Failed to get stored reconnect token:', error);
+    }
     return null;
   }
 };
@@ -64,7 +68,9 @@ const clearStoredReconnectToken = () => {
   try {
     localStorage.removeItem(RECONNECT_TOKEN_KEY);
   } catch (error) {
-    console.warn('Failed to clear stored reconnect token:', error);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.warn('Failed to clear stored reconnect token:', error);
+    }
   }
 };
 
@@ -84,7 +90,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     // Clean up existing socket if any
     const existingSocket = get().socket;
     if (existingSocket) {
-      console.log('🔌 Cleaning up existing socket before reconnection');
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('🔌 Cleaning up existing socket before reconnection');
+      }
       existingSocket.removeAllListeners();
       existingSocket.disconnect();
     }
@@ -121,11 +129,15 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       } : undefined
     });
 
-    console.log(`🔌 Connecting to WebSocket (Replit: ${isReplitProduction ? 'Yes' : 'No'}, timeout: ${isReplitProduction ? 60000 : 45000}ms)`);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log(`🔌 Connecting to WebSocket (Replit: ${isReplitProduction ? 'Yes' : 'No'}, timeout: ${isReplitProduction ? 60000 : 45000}ms)`);
+    }
 
     socket.on('connect', () => {
-      console.log('✅ Connected to server');
-      console.log(`   - Transport: ${socket.io.engine.transport.name}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('✅ Connected to server');
+        console.log(`   - Transport: ${socket.io.engine.transport.name}`);
+      }
       set({
         isConnected: true,
         reconnection: {
@@ -149,26 +161,34 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       }
       const newHeartbeat = setInterval(() => {
         if (document.visibilityState === 'visible') {
-          console.log('💓 Sending heartbeat to keep connection alive');
+          if (import.meta.env.DEV && localStorage.getItem('debug')) {
+            console.log('💓 Sending heartbeat to keep connection alive');
+          }
         }
         socket.emit('client_heartbeat' as any);
       }, 25000); // Every 25 seconds - office networks often have 30-60s proxy timeouts
       set({ heartbeatInterval: newHeartbeat });
-      console.log('💓 Heartbeat started - will ping every 25 seconds');
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('💓 Heartbeat started - will ping every 25 seconds');
+      }
 
       // Attempt auto-reconnection if we have stored data
       const storedToken = getStoredReconnectToken();
       const { lastLobbySnapshot } = get();
       
       if (storedToken && lastLobbySnapshot) {
-        console.log('🔄 Attempting auto-reconnection with stored token');
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log('🔄 Attempting auto-reconnection with stored token');
+        }
         socket.emit('reconnect_with_token', { reconnectToken: storedToken });
       }
     });
 
     socket.on('disconnect', (reason) => {
-      console.log('❌ Disconnected from server:', reason);
-      console.log(`   - Transport was: ${socket.io.engine?.transport?.name || 'unknown'}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('❌ Disconnected from server:', reason);
+        console.log(`   - Transport was: ${socket.io.engine?.transport?.name || 'unknown'}`);
+      }
 
       // Clear heartbeat when disconnected
       const { heartbeatInterval } = get();
@@ -182,18 +202,24 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       // Only attempt reconnection for unexpected disconnects
       if (reason === 'io server disconnect') {
         // Server initiated disconnect - don't retry
-        console.log('⚠️  Server initiated disconnect - not retrying');
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log('⚠️  Server initiated disconnect - not retrying');
+        }
         set(state => ({
           reconnection: { ...state.reconnection, status: 'failed' }
         }));
       } else if (reason === 'transport close' || reason === 'transport error' || reason === 'ping timeout') {
         // Network issues common on Replit - always retry
-        console.log('🔄 Network issue detected - will attempt reconnection');
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log('🔄 Network issue detected - will attempt reconnection');
+        }
         const { attemptReconnection } = get();
         attemptReconnection();
       } else {
         // Other client issues - attempt reconnection
-        console.log('🔄 Client issue detected - will attempt reconnection');
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log('🔄 Client issue detected - will attempt reconnection');
+        }
         const { attemptReconnection } = get();
         attemptReconnection();
       }
@@ -209,7 +235,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
 
     // Reconnection event handlers
     socket.on('lobby_sync', (lobbySync: LobbySync) => {
-      console.log('📥 Received lobby sync:', lobbySync);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('📥 Received lobby sync:', lobbySync);
+      }
       
       // Store new reconnect token
       storeReconnectToken(lobbySync.reconnectToken);
@@ -230,7 +258,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     });
 
     socket.on('reconnect_response', (response: ReconnectResponse) => {
-      console.log('🔄 Reconnection response:', response);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('🔄 Reconnection response:', response);
+      }
       
       if (response.result === 'success') {
         set(state => ({
@@ -247,14 +277,18 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     });
 
     socket.on('connection_lost', () => {
-      console.log('🔌 Connection lost event received');
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('🔌 Connection lost event received');
+      }
       set(state => ({
         reconnection: { ...state.reconnection, status: 'reconnecting' }
       }));
     });
 
     socket.on('reconnect_attempt', ({ attempt, maxAttempts, nextRetryIn }) => {
-      console.log(`🔄 Reconnect attempt ${attempt}/${maxAttempts}, next retry in ${nextRetryIn}s`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`🔄 Reconnect attempt ${attempt}/${maxAttempts}, next retry in ${nextRetryIn}s`);
+      }
       set(state => ({
         reconnection: {
           ...state.reconnection,
@@ -357,7 +391,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     const delay = Math.min(2000 * Math.pow(1.5, attempt - 1), 30000); // Exponential backoff, max 30s
     const nextRetryIn = Math.floor(delay / 1000);
 
-    console.log(`🔄 Scheduling reconnection attempt ${attempt}/${reconnection.maxAttempts} in ${nextRetryIn}s`);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log(`🔄 Scheduling reconnection attempt ${attempt}/${reconnection.maxAttempts} in ${nextRetryIn}s`);
+    }
 
     set(state => ({
       reconnection: {
@@ -370,7 +406,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
 
     const retryTimeout = setTimeout(() => {
       const { connect } = get();
-      console.log(`🔄 Executing reconnection attempt ${attempt}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`🔄 Executing reconnection attempt ${attempt}`);
+      }
       connect();
     }, delay);
 
@@ -431,17 +469,23 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       localStorage.setItem(LOBBY_SNAPSHOT_KEY, JSON.stringify(snapshot));
       set({ lastLobbySnapshot: snapshot });
     } catch (error) {
-      console.warn('Failed to store lobby snapshot:', error);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.warn('Failed to store lobby snapshot:', error);
+      }
     }
   },
 
   emit: (event, ...args) => {
     const { socket } = get();
     if (socket && socket.connected) {
-      console.log(`📤 Emitting ${String(event)}:`, args[0]);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`📤 Emitting ${String(event)}:`, args[0]);
+      }
       (socket as any).emit(event, ...args);
     } else {
-      console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.warn(`Cannot emit ${String(event)}: socket not connected (socket: ${!!socket}, connected: ${socket?.connected})`);
+      }
     }
   },
 
@@ -457,7 +501,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       return false;
     }
 
-    console.log('🔄 Attempting reconnection with stored token');
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log('🔄 Attempting reconnection with stored token');
+    }
     socket.emit('reconnect_with_token', { reconnectToken: token });
     return true;
   }

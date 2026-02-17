@@ -25,12 +25,16 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { usePhaseVictoryImage } from '@/lib/victoryImages';
 import { useViewport } from '@/lib/hooks/useViewport';
+import { FloatingXPManager } from '@/components/game/FloatingXPManager';
+import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
+import { useProgression } from '@/lib/stores/useProgression';
 
 export function BattleScreen() {
   const { currentLobby, addAttackAnimation, currentPlayer } = useGameState();
   const { emit, socket } = useWebSocket();
   const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
+  const { levelUp } = useProgression();
   const viewport = useViewport();
   
   
@@ -236,13 +240,16 @@ export function BattleScreen() {
 
   // Handle boss music when entering/leaving battle
   useEffect(() => {
-    console.log('🎵 Boss music effect triggered. Phase:', currentLobby?.gamePhase, 'Has Boss:', !!currentLobby?.boss);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log('🎵 Boss music effect triggered. Phase:', currentLobby?.gamePhase, 'Has Boss:', !!currentLobby?.boss);
+    }
     if (currentLobby?.gamePhase === 'battle' && currentLobby?.boss) {
-      console.log('🎵 Starting boss music...');
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('🎵 Starting boss music...');
+      }
       // Fade in boss music when battle starts
       fadeInBossMusic();
     } else {
-      console.log('🎵 Stopping boss music...');
       // Stop boss music when leaving battle
       stopBossMusic();
     }
@@ -324,6 +331,16 @@ export function BattleScreen() {
             {/* Team Competition Components */}
             <TeamPerformanceTracker />
             <TeamCelebration />
+
+            {/* XP System UI - Floating numbers */}
+            <FloatingXPManager />
+
+            {/* XP Bar is rendered inside PlayerHUD */}
+
+            {/* Level-up celebration - Fullscreen overlay */}
+            {levelUp?.active && currentPlayer && (
+              <LevelUpCelebration playerClass={currentPlayer.avatar} />
+            )}
           </div>
         );
 

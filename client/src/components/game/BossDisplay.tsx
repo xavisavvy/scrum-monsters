@@ -134,7 +134,9 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       
       // Only trigger flicker for new attacks, not repeated renders
       if (latestAttack.id !== lastProcessedAttackId.current) {
-        console.log('🎨 Boss damage effect triggered for NEW attack:', latestAttack.id);
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log('🎨 Boss damage effect triggered for NEW attack:', latestAttack.id);
+        }
         lastProcessedAttackId.current = latestAttack.id;
         setIsDamaged(true);
         
@@ -157,16 +159,18 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
 
   const healthPercentage = (boss.currentHealth / boss.maxHealth) * 100;
 
+  const isBossDead = boss.defeated || boss.currentHealth <= 0;
+
   const handleBossClick = () => {
-    if (onAttack) {
+    if (onAttack && !isBossDead) {
       onAttack();
       setIsDamaged(true);
-      
+
       // Clear any existing timeout
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-      
+
       // Set new timeout and store reference
       timeoutRef.current = setTimeout(() => {
         setIsDamaged(false);
@@ -223,13 +227,15 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
                     : isDamaged ? 'scale(1.15)' : 'scale(1)',
                   filter: isDeathAnimationActive
                     ? 'brightness(1.8) contrast(1.5) saturate(2) hue-rotate(0deg) drop-shadow(0 0 20px #ff0000)'
+                    : isBossDead && !isDeathAnimationActive
+                    ? 'grayscale(0.8) brightness(0.6)'
                     : isDamaged ? 'brightness(2.5) contrast(2) saturate(1.5) hue-rotate(15deg)' : 'none',
-                  opacity: isDeathAnimationActive ? 0 : 1,
+                  opacity: isDeathAnimationActive ? 0 : isBossDead ? 0.6 : 1,
                   animation: isDeathAnimationActive 
                     ? 'boss-death-sequence 3s ease-out forwards, boss-death-flicker 0.2s linear infinite' 
                     : 'none',
-                  cursor: onAttack ? 'pointer' : 'default',
-                  pointerEvents: 'auto'
+                  cursor: onAttack && !isBossDead ? 'pointer' : 'default',
+                  pointerEvents: isBossDead ? 'none' : 'auto'
                 }}
                 onClick={handleBossClick}
                 onError={() => {
@@ -238,6 +244,13 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
                 }}
               />
               
+              {/* Defeated skull overlay — keyed on HP so it clears if boss is revived */}
+              {boss.currentHealth <= 0 && !isDeathAnimationActive && (
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <span style={{ fontSize: '6rem', filter: 'drop-shadow(0 0 12px rgba(0,0,0,0.8))' }}>💀</span>
+                </div>
+              )}
+
               {/* Fallback if boss image fails to load */}
               {imageError && (
                 <div 

@@ -1701,6 +1701,9 @@ class GameStateManager {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
 
+    // Boss is already dead — no more attacks
+    if (lobby.boss.defeated || lobby.boss.currentHealth <= 0) return null;
+
     const player = lobby.players.find(p => p.id === playerId);
     if (!player) return null;
 

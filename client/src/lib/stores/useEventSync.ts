@@ -37,13 +37,17 @@ export const useEventSync = create<EventSyncState>()(
 
       // Duplicate or old event - ignore but return true (no recovery needed)
       if (seq <= lastSeq) {
-        console.log(`[EventSync] Ignoring duplicate/old event ${event} seq=${seq}, lastSeq=${lastSeq}`);
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log(`[EventSync] Ignoring duplicate/old event ${event} seq=${seq}, lastSeq=${lastSeq}`);
+        }
         return true;
       }
 
       // Gap detected - store and trigger recovery
       if (seq > lastSeq + 1) {
-        console.warn(`[EventSync] Gap detected: expected ${lastSeq + 1}, got ${seq}. Storing event and triggering recovery.`);
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.warn(`[EventSync] Gap detected: expected ${lastSeq + 1}, got ${seq}. Storing event and triggering recovery.`);
+        }
 
         // Store out-of-order event
         const newPendingEvents = new Map(pendingEvents);
@@ -57,7 +61,9 @@ export const useEventSync = create<EventSyncState>()(
       }
 
       // Expected sequence - process immediately
-      console.log(`[EventSync] Processing event ${event} seq=${seq}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`[EventSync] Processing event ${event} seq=${seq}`);
+      }
       set({ lastSeq: seq });
 
       // Check if we can now process any queued events
@@ -76,7 +82,9 @@ export const useEventSync = create<EventSyncState>()(
         const nextEvent = newPendingEvents.get(currentSeq + 1);
         if (!nextEvent) break;
 
-        console.log(`[EventSync] Processing queued event ${nextEvent.event} seq=${currentSeq + 1}`);
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log(`[EventSync] Processing queued event ${nextEvent.event} seq=${currentSeq + 1}`);
+        }
 
         // Remove from pending
         newPendingEvents.delete(currentSeq + 1);
@@ -95,23 +103,31 @@ export const useEventSync = create<EventSyncState>()(
 
       // Skip if already recovering
       if (isRecovering) {
-        console.log('[EventSync] Already recovering, skipping redundant request');
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log('[EventSync] Already recovering, skipping redundant request');
+        }
         return;
       }
 
-      console.log(`[EventSync] Requesting missed events from seq=${lastSeq}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`[EventSync] Requesting missed events from seq=${lastSeq}`);
+      }
       set({ isRecovering: true });
       socket.emit('request_missed_events' as any, { lastSeq });
     },
 
     handleMissedEventsReplay: (events: Array<{ event: string; data: any }>) => {
-      console.log(`[EventSync] Replaying ${events.length} missed events`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`[EventSync] Replaying ${events.length} missed events`);
+      }
 
       // Process each event in order
       events.forEach((evt) => {
         const { seq, ...payload } = evt.data;
         if (seq) {
-          console.log(`[EventSync] Replaying event ${evt.event} seq=${seq}`);
+          if (import.meta.env.DEV && localStorage.getItem('debug')) {
+            console.log(`[EventSync] Replaying event ${evt.event} seq=${seq}`);
+          }
           set({ lastSeq: seq });
         }
       });
@@ -124,7 +140,9 @@ export const useEventSync = create<EventSyncState>()(
     },
 
     handleFullStateRefresh: (lobby: any, seq: number) => {
-      console.log(`[EventSync] Full state refresh at seq=${seq}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`[EventSync] Full state refresh at seq=${seq}`);
+      }
 
       set({
         lastSeq: seq,
@@ -158,14 +176,18 @@ export const useEventSync = create<EventSyncState>()(
 
       // Return server value (could add merge logic here if needed)
       if (optimisticValue !== undefined && optimisticValue !== serverValue) {
-        console.warn(`[EventSync] Reconciling ${key}: optimistic=${optimisticValue}, server=${serverValue}`);
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.warn(`[EventSync] Reconciling ${key}: optimistic=${optimisticValue}, server=${serverValue}`);
+        }
       }
 
       return serverValue;
     },
 
     reset: () => {
-      console.log('[EventSync] Resetting state');
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log('[EventSync] Resetting state');
+      }
       set({
         lastSeq: 0,
         pendingEvents: new Map(),

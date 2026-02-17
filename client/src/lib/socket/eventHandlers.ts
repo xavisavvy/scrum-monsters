@@ -310,7 +310,7 @@ export function setupEventHandlers(socket: Socket): void {
       if (currentBoss) {
         const updatedBoss: Boss = {
           ...currentBoss,
-          currentHealth: data.newHealth
+          currentHealth: data.newHp ?? data.newHealth ?? currentBoss.currentHealth
         };
         setBoss(updatedBoss);
       }
@@ -322,13 +322,12 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:boss_healed', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
       if (currentBoss) {
-        const updatedBoss: Boss = {
-          ...currentBoss,
-          currentHealth: data.newHealth
-        };
-        setBoss(updatedBoss);
+        setBoss({ ...currentBoss, currentHealth: data.newHealth });
+      }
+      if (currentLobby?.boss) {
+        setLobby({ ...currentLobby, boss: { ...currentLobby.boss, currentHealth: data.newHealth } });
       }
     }
   });
@@ -338,13 +337,12 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:boss_defeated', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
       if (currentBoss) {
-        const updatedBoss: Boss = {
-          ...currentBoss,
-          defeated: true
-        };
-        setBoss(updatedBoss);
+        setBoss({ ...currentBoss, defeated: true });
+      }
+      if (currentLobby?.boss) {
+        setLobby({ ...currentLobby, boss: { ...currentLobby.boss, defeated: true } });
       }
     }
   });
@@ -595,7 +593,9 @@ export function setupEventHandlers(socket: Socket): void {
   socket.on('system:missed_events', (data: any) => {
     const { handleMissedEventsReplay } = useEventSync.getState();
 
-    console.log(`[EventHandlers] Received ${data.events.length} missed events`);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log(`[EventHandlers] Received ${data.events.length} missed events`);
+    }
     handleMissedEventsReplay(data.events);
   });
 }
@@ -648,5 +648,7 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('system:full_state');
   socket.off('system:missed_events');
 
-  console.log('[EventHandlers] All event handlers removed');
+  if (import.meta.env.DEV && localStorage.getItem('debug')) {
+    console.log('[EventHandlers] All event handlers removed');
+  }
 }

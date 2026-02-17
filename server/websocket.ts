@@ -840,19 +840,25 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         } else {
           // Normal attack
           io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
+
+          // Emit EventBus event for ProgressionManager XP tracking
+          eventBus.emit('combat:boss_damaged', {
+            lobbyId: lobby.id,
+            playerId,
+            damage,
+            bossHealth,
+          });
         }
-        
+
         // Emit modifier update if it changed
         if (modifier !== undefined) {
           io.to(lobby.id).emit('modifier_updated', { modifier });
         }
-        
+
         // If boss performs ring attack, broadcast it
         if (ringAttack) {
           io.to(lobby.id).emit('boss_ring_attack', ringAttack);
         }
-
-        // Removed lobby_updated: combat:boss_damaged event emitted by combatManager
       }
     });
     
@@ -1749,31 +1755,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       console.log(`Combat initialized for lobby ${data.lobbyId}`);
     });
 
-    // Player attacks boss
-    socket.on('attack_boss' as any, (data: { lobbyId: string }) => {
-      try {
-        const playerId = socket.data.playerId;
-        if (!playerId) return;
-
-        const damage = combatManager.playerAttackBoss(data.lobbyId, playerId);
-        // Damage broadcast via eventBus (Phase 5), no need to emit here
-        console.log(`Player ${playerId} attacked boss for ${damage} damage`);
-      } catch (error) {
-        if (error instanceof CombatNotActiveError || error instanceof PlayerNotInCombatError) {
-          socket.emit('game_error', { code: (error as any).code, message: error.message });
-        } else {
-          throw error;
-        }
-      }
-    });
-
     // Player heals teammate
-    socket.on('heal_teammate' as any, (data: { lobbyId: string; targetId: string }) => {
+    socket.on('heal_teammate' as any, (data: { targetId: string }) => {
       try {
         const playerId = socket.data.playerId;
-        if (!playerId) return;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
 
-        combatManager.playerHealTeammate(data.lobbyId, playerId, data.targetId);
+        combatManager.playerHealTeammate(lobbyId, playerId, data.targetId);
         console.log(`Player ${playerId} healed ${data.targetId}`);
       } catch (error) {
         if (error instanceof CombatNotActiveError || error instanceof NotHealerClassError) {
@@ -1785,12 +1774,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Start revival
-    socket.on('start_revival' as any, (data: { lobbyId: string; targetId: string }) => {
+    socket.on('start_revival' as any, (data: { targetId: string }) => {
       try {
         const playerId = socket.data.playerId;
-        if (!playerId) return;
+        const lobbyId = socket.data.lobbyId;
+        if (!playerId || !lobbyId) return;
 
-        const started = combatManager.startRevival(data.lobbyId, playerId, data.targetId);
+        const started = combatManager.startRevival(lobbyId, playerId, data.targetId);
         if (!started) {
           socket.emit('game_error', { code: 'REVIVAL_CONDITIONS_NOT_MET', message: 'Cannot start revival' });
         } else {

@@ -74,6 +74,21 @@ body.battle-mode-no-scroll {
   overflow: hidden !important;
 }
 
+/* Floating XP number animation */
+@keyframes floatUp {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(-80px) scale(0.8);
+    opacity: 0;
+  }
+}
+
 /* Floating animation for icons */
 @keyframes floatUpDown {
   0%, 100% { 
