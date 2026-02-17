@@ -197,8 +197,8 @@ export class ProgressionManager {
    * Handle boss damaged event - award 2 XP per damage point
    */
   private handleBossDamaged(payload: CombatBossDamagedPayload): void {
-    const xp = payload.damage * XP_RATE_VALUES.boss_damage;
-    this.awardXP(payload.lobbyId, payload.playerId, xp, 'boss_damage');
+    // Pass raw damage — awardXP applies the boss_damage rate multiplier
+    this.awardXP(payload.lobbyId, payload.playerId, payload.damage, 'boss_damage');
   }
 
   /**

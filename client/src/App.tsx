@@ -493,7 +493,34 @@ function App() {
     });
 
     socket.on('boss_attacked', ({ playerId, damage, bossHealth }) => {
-      console.log(`Player ${playerId} dealt ${damage} damage. Boss health: ${bossHealth}`);
+      if (import.meta.env.DEV && localStorage.getItem('debug')) {
+        console.log(`Player ${playerId} dealt ${damage} damage. Boss health: ${bossHealth}`);
+      }
+      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
+      // Update standalone boss reference
+      if (currentBoss) {
+        setBoss({ ...currentBoss, currentHealth: bossHealth });
+      }
+      // Update lobby boss so BattleScreen UI re-renders
+      if (currentLobby?.boss) {
+        setLobby({
+          ...currentLobby,
+          boss: { ...currentLobby.boss, currentHealth: bossHealth },
+        });
+      }
+    });
+
+    socket.on('boss_healed', ({ bossHealth }: { bossHealth: number }) => {
+      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
+      if (currentBoss) {
+        setBoss({ ...currentBoss, currentHealth: bossHealth });
+      }
+      if (currentLobby?.boss) {
+        setLobby({
+          ...currentLobby,
+          boss: { ...currentLobby.boss, currentHealth: bossHealth },
+        });
+      }
     });
 
     socket.on('boss_defeated', ({ lobby }) => {
@@ -585,6 +612,7 @@ function App() {
       socket.off('battle_started');
       socket.off('scores_revealed');
       socket.off('boss_attacked');
+      socket.off('boss_healed');
       socket.off('boss_defeated');
       socket.off('quest_abandoned');
       socket.off('game_error');
