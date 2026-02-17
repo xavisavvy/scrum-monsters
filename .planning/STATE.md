@@ -11,8 +11,8 @@ See: .planning/PROJECT.md (updated 2026-02-03)
 
 Phase: 15 of 20 (XP/Progression Foundation)
 Plan: 6 of 6 in current phase (awaiting human verification)
-Status: In progress - Task 5 checkpoint pending
-Last activity: 2026-02-04 - Plan 15-06 tasks 1-4 complete, awaiting E2E verification
+Status: In progress - Task 5 checkpoint pending (human E2E verification required)
+Last activity: 2026-02-17 - Plan 15-06 tasks 1-4 verified complete, consensus XP bug fixed, SUMMARY.md created
 
 Progress: [███████████████░░░░░] 73% (milestones 1.0+1.2 complete, 1.3 in progress)
 
@@ -60,6 +60,9 @@ Recent decisions affecting current work:
 - [15-05]: 2.5s auto-dismiss for level-up celebration (balanced impact vs. disruption)
 - [15-05]: Class-specific particle colors for visual variety and class identity
 - [15-05]: Audio store extension pattern (dedicated sound handlers vs. generic playSound)
+- [15-06]: getActivePlayers callback pattern for cross-domain data access (matches CombatManager's getPlayerTeam pattern)
+- [15-06]: Client-side progression event filtering: only process events for current player (per CONTEXT.md)
+- [15-06]: XPBar placed as CSS fixed element; FloatingXPManager inside R3F scene group
 
 ### Pending Todos
 
@@ -73,6 +76,6 @@ Open items from v1.2:
 
 ## Session Continuity
 
-Last session: 2026-02-04 01:19 UTC
-Stopped at: Completed 15-05-PLAN.md (Level-Up Celebration)
+Last session: 2026-02-17 06:47 UTC
+Stopped at: 15-06-PLAN.md Task 5 checkpoint (human E2E verification required before plan complete)
 Resume file: None
