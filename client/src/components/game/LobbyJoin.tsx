@@ -41,7 +41,7 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: Readonly<L
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 pb-safe" style={{ minHeight: '100dvh' }}>
       <RetroCard title="Join Battle" className="w-full max-w-md">
         <div className="space-y-4">
           <div>

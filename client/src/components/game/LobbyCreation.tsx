@@ -50,7 +50,7 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen px-4 py-8">
+    <div className="flex items-center justify-center min-h-screen px-4 py-8 pb-safe" style={{ minHeight: '100dvh' }}>
       <RetroCard title="Create Battle Lobby" className="w-full max-w-md">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
