@@ -32,6 +32,9 @@ concurrency:
   group: rollback-${{ github.event.inputs.environment }}
   cancel-in-progress: false
 
+permissions:
+  contents: read   # Default: least privilege
+
 env:
   ARGOCD_SERVER: argocd.local
 
