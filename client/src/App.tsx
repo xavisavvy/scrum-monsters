@@ -34,6 +34,7 @@ import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import { fetchCsrfToken } from '@/lib/csrfToken';
 import '@/styles/retro.css';
 import '@/styles/tokens.css';
+import '@/styles/mobile.css';
 
 // Lazy load heavy game components for better initial load performance
 const Lobby = lazy(() => import('@/components/game/Lobby').then(m => ({ default: m.Lobby })));
