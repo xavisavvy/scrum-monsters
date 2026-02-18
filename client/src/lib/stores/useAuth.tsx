@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { subscribeWithSelector, persist } from "zustand/middleware";
+import { fetchCsrfToken, getCsrfHeaders } from '@/lib/csrfToken';
 
 export interface AuthUser {
   id: number;
@@ -104,7 +105,7 @@ export const useAuth = create<AuthState>()(
           try {
             const response = await fetch("/api/auth/login", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
               body: JSON.stringify({ email, password }),
               credentials: "include",
             });
@@ -116,6 +117,8 @@ export const useAuth = create<AuthState>()(
             }
 
             set({ user: data.user, isLoading: false });
+            // Re-fetch CSRF token as session may regenerate after login
+            await fetchCsrfToken();
             // Fetch profile and stats
             get().fetchProfile();
             get().fetchStats();
@@ -132,7 +135,7 @@ export const useAuth = create<AuthState>()(
           try {
             const response = await fetch("/api/auth/register", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
               body: JSON.stringify({ email, password, username, displayName }),
               credentials: "include",
             });
@@ -144,6 +147,8 @@ export const useAuth = create<AuthState>()(
             }
 
             set({ user: data.user, isLoading: false });
+            // Re-fetch CSRF token as session may regenerate after registration
+            await fetchCsrfToken();
             // Fetch profile and stats
             get().fetchProfile();
             get().fetchStats();
@@ -160,8 +165,11 @@ export const useAuth = create<AuthState>()(
           try {
             await fetch("/api/auth/logout", {
               method: "POST",
+              headers: { ...getCsrfHeaders() },
               credentials: "include",
             });
+            // Re-fetch CSRF token as session regenerates after logout
+            await fetchCsrfToken();
           } catch (err) {
             console.error("Logout error:", err);
           }
@@ -186,7 +194,7 @@ export const useAuth = create<AuthState>()(
           try {
             const response = await fetch("/api/user/profile", {
               method: "PUT",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", ...getCsrfHeaders() },
               body: JSON.stringify(updates),
               credentials: "include",
             });
