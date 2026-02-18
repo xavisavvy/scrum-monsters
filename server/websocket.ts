@@ -4,6 +4,7 @@
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import type { RequestHandler } from 'express';
+import { randomBytes } from 'crypto';
 import { ClientToServerEvents, ServerToClientEvents, TeamType } from '../shared/gameEvents.js';
 import { gameState, setGameStateIO } from './gameState.js';
 import {
@@ -1007,7 +1008,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         targetY,
         emoji,
         targetPlayerId,
-        projectileId: Math.random().toString(36).substring(2, 15)
+        projectileId: randomBytes(8).toString('hex').substring(0, 13)
       });
 
       console.log(`🚀 Broadcasting projectile from ${player.name}: ${emoji} to ${targetPlayerId ? 'player' : 'boss'}`);

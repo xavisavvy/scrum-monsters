@@ -1,4 +1,5 @@
 import pino, { Logger, LoggerOptions } from "pino";
+import { randomBytes } from "crypto";
 
 /**
  * Log levels in order of severity
@@ -116,7 +117,7 @@ export function createPlayerLogger(playerId: string, playerName?: string): Logge
 export function httpLoggerMiddleware() {
   return (req: any, res: any, next: any) => {
     const startTime = Date.now();
-    const requestId = req.headers["x-request-id"] || crypto.randomUUID?.() || Math.random().toString(36).slice(2);
+    const requestId = req.headers["x-request-id"] || crypto.randomUUID?.() || randomBytes(8).toString('hex');
 
     // Add request ID to response headers
     res.setHeader("X-Request-ID", requestId);
