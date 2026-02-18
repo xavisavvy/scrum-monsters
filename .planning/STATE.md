@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 22 of 25 (JRPG Theme Foundation)
-Plan: 3 of 5 in current phase
+Plan: 4 of 5 in current phase
 Status: In Progress
-Last activity: 2026-02-18 — Completed 22-03: StatBar/HealthBar progress bar components with JRPG token colors and ARIA accessibility
+Last activity: 2026-02-18 — Completed 22-04: AnimatePresence phase transitions + useGameSounds semantic sound hook
 
-Progress: [█████████████████████████████░░░░] 79% (95/119 total plans across all milestones)
+Progress: [█████████████████████████████░░░░] 80% (96/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,23 +30,22 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 8/23 | In progress (Phase 22 Plan 3 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 9/23 | In progress (Phase 22 Plan 4 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing 22-03 (StatBar/HealthBar progress bar components)*
+*Updated: 2026-02-18 after completing 22-04 (AnimatePresence transitions + useGameSounds hook)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 22 P04 | 1 | 2 tasks | 3 files |
 | Phase 22 P03 | 1 | 2 tasks | 2 files |
 | Phase 22 P02 | 1 | 2 tasks | 4 files |
 | Phase 22 P01 | 1 | 2 tasks | 3 files |
 | Phase 21 P05 | 1 | 2 tasks | 0 files |
 | Phase 21 P02 | 1 | 2 tasks | 5 files |
-| Phase 21 P04 | 1 | 1 tasks | 1 files |
-| Phase 21 P03 | 1 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -72,6 +71,9 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 22-02]: accent variant maps to danger in RetroButton->GameButton variantMap for backward compatibility
 - [Phase 22-03]: HealthBar is standalone (not a StatBar wrapper) — threshold-based dynamic color is fundamentally different from StatBar's static per-variant colors
 - [Phase 22-03]: Dynamic health color applied via inline style not Tailwind class — color is computed at runtime based on HP percentage
+- [Phase 22-04]: useGameSounds maps to existing useAudio functions — no new Audio objects created; temporary mappings documented in JSDoc for future SFX replacement
+- [Phase 22-04]: PhaseTransition uses key={toPhase} for AnimatePresence — phase string as key drives declarative enter/exit without isTransitioning prop
+- [Phase 22-04]: framer-motion import from 'framer-motion' package (not 'motion/react') — v11.x uses the framer-motion package name
 
 ### Pending Todos
 
@@ -93,11 +95,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 22-03-PLAN.md (StatBar/HealthBar progress bar components with JRPG token colors and ARIA accessibility)
+Stopped at: Completed 22-04-PLAN.md (AnimatePresence phase transitions + useGameSounds semantic sound hook)
 Resume file: None
 
-**Next action:** Continue Phase 22 (Theme Foundation) — execute Plan 04.
+**Next action:** Continue Phase 22 (Theme Foundation) — execute Plan 05.
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 22-03 (StatBar/HealthBar progress bar components)*
+*Last updated: 2026-02-18 after completing 22-04 (AnimatePresence transitions + useGameSounds hook)*
