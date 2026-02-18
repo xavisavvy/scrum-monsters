@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 ## Current Position
 
-Phase: 22 of 25 (JRPG Theme Foundation) — COMPLETE (verified)
-Plan: 6 of 6 in current phase — COMPLETE
-Status: Phase 22 verified (6/6 must-haves passed) — Moving to Phase 23
-Last activity: 2026-02-18 — Completed 22-06: StatBar/HealthBar gap closure + phase verification passed
+Phase: 23 of 25 (Mobile UX Critical Path) — IN PROGRESS
+Plan: 1 of 6 in current phase — COMPLETE
+Status: Phase 23 Plan 01 complete — mobile CSS foundation established
+Last activity: 2026-02-18 — Completed 23-01: viewport fix, mobile.css safe-area utilities, 44px touch targets
 
-Progress: [██████████████████████████████░░░] 82% (98/119 total plans across all milestones)
+Progress: [███████████████████████████████░░░] 83% (99/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 11/23 | In progress (Phase 22 verified) |
+| v2.0 UI Redesign & Mobile | 21-25 | 12/23 | In progress (Phase 23 P01 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing Phase 22 (JRPG Theme Foundation — all 6 plans verified)*
+*Updated: 2026-02-18 after completing Phase 23 Plan 01 (Mobile CSS Foundation — viewport fix, safe-area utilities, touch targets)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 23 P01 | 1 | 2 tasks | 6 files |
 | Phase 22 P06 | 1 | 2 tasks | 5 files |
 | Phase 22 P05 | 1 | 2 tasks | 3 files |
 | Phase 22 P04 | 1 | 2 tasks | 3 files |
@@ -81,6 +82,11 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 22-05]: e2e/accessibility.spec.ts uses direct AxeBuilder (not a11y-fixture) with color-contrast-only rule — focused JRPG theme regression test
 - [Phase 22-06]: StatBar color prop uses color ?? VARIANT_COLORS[variant] — caller overrides variant color without touching variant system
 - [Phase 22-06]: XPBar test updated to check role=progressbar ARIA attrs instead of .xp-bar-fill CSS class (implementation detail test tied to removed DOM node)
+- [Phase 23-01]: viewport-fit=cover replaces maximum-scale=1 — enables env() safe-area CSS while preserving WCAG 1.4.4 pinch-to-zoom
+- [Phase 23-01]: touch-action: manipulation in mobile.css @layer base replaces maximum-scale=1 for double-tap prevention
+- [Phase 23-01]: Global canvas touch-action: none removed — applied per-component for Three.js canvases only
+- [Phase 23-01]: fibonacci-button aspect-ratio: auto on mobile — rectangular buttons improve text readability on 4-col grid
+- [Phase 23-01]: 100dvh with 100vh fallback — fixes iOS Safari address bar collapsing visible viewport
 
 ### Pending Todos
 
@@ -99,11 +105,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 22-06-PLAN.md (StatBar/HealthBar gap closure — wired into BossDisplay, XPBar, CharacterDetailsPanel)
+Stopped at: Completed 23-01-PLAN.md (Mobile CSS Foundation — viewport fix, safe-area utilities, 44px touch targets)
 Resume file: None
 
-**Next action:** Begin Phase 23 (Social Meta Tags & OG Images).
+**Next action:** Continue Phase 23 — execute 23-02-PLAN.md (Battle HUD safe-area).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 22-06 (StatBar/HealthBar gap closure — Phase 22 fully complete)*
+*Last updated: 2026-02-18 after completing 23-01 (Mobile CSS Foundation — viewport-fit=cover, mobile.css, touch targets)*
