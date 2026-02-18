@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useProgression } from '@/lib/stores/useProgression';
+import { StatBar } from '@/components/ui/StatBar';
 import './XPBar.css';
 
 export function XPBar() {
@@ -44,12 +45,13 @@ export function XPBar() {
         {levelUpFlash ? 'UP!' : `Lv ${currentLevel}`}
       </div>
 
-      <div className="xp-bar-track">
-        <div
-          className="xp-bar-fill"
-          style={{ width: `${progress.percentage}%` }}
-        />
-      </div>
+      <StatBar
+        value={progress.current}
+        max={progress.needed}
+        variant="xp"
+        size="sm"
+        className="flex-1"
+      />
 
       {isExpanded && (
         <div className="xp-details">

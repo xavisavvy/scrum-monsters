@@ -39,9 +39,11 @@ describe('XPBar', () => {
     expect(screen.queryByText('100 XP')).not.toBeInTheDocument();
   });
 
-  it('sets fill width based on progress percentage', () => {
+  it('renders progress bar with correct values', () => {
     render(<XPBar />);
-    const fill = document.querySelector('.xp-bar-fill');
-    expect(fill).toHaveStyle({ width: '50%' });
+    const progressbar = document.querySelector('[role="progressbar"]');
+    expect(progressbar).toBeInTheDocument();
+    expect(progressbar).toHaveAttribute('aria-valuenow', '50');
+    expect(progressbar).toHaveAttribute('aria-valuemax', '100');
   });
 });

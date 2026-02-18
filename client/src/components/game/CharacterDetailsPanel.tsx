@@ -1,6 +1,7 @@
 import React from 'react';
 import { AVATAR_CLASSES, AvatarClass, CharacterStats } from '@/lib/gameTypes';
 import { getAvatarImage } from '@/lib/avatarImages';
+import { StatBar } from '@/components/ui/StatBar';
 
 interface CharacterDetailsPanelProps {
   selectedClass: AvatarClass;
@@ -9,26 +10,22 @@ interface CharacterDetailsPanelProps {
 export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelProps) {
   const classData = AVATAR_CLASSES[selectedClass];
   
-  const renderStatBar = (label: string, value: number, maxValue: number = 22) => {
-    const percentage = (value / maxValue) * 100;
-    return (
-      <div className="mb-3">
-        <div className="flex justify-between items-center mb-1">
-          <span className="text-sm font-bold text-gray-300">{label}</span>
-          <span className="text-sm font-bold text-white">{value}</span>
-        </div>
-        <div className="w-full bg-gray-700 rounded-full h-2">
-          <div 
-            className="h-2 rounded-full transition-all duration-300"
-            style={{ 
-              width: `${percentage}%`, 
-              backgroundColor: classData.color 
-            }}
-          />
-        </div>
+  const renderStat = (label: string, value: number) => (
+    <div className="mb-3">
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-bold text-gray-300">{label}</span>
+        <span className="text-sm font-bold text-white">{value}</span>
       </div>
-    );
-  };
+      <StatBar
+        value={value}
+        max={22}
+        variant="health"
+        color={classData.color}
+        size="sm"
+        label={`${label} stat for ${classData.name}`}
+      />
+    </div>
+  );
 
   const renderCharacterPortrait = () => {
     const avatarImage = getAvatarImage(selectedClass);
@@ -137,12 +134,12 @@ export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelPr
           Character Stats
         </h3>
         
-        {renderStatBar('STR', classData.stats.str)}
-        {renderStatBar('DEX', classData.stats.dex)}
-        {renderStatBar('CON', classData.stats.con)}
-        {renderStatBar('WIS', classData.stats.wis)}
-        {renderStatBar('INT', classData.stats.int)}
-        {renderStatBar('CHA', classData.stats.cha)}
+        {renderStat('STR', classData.stats.str)}
+        {renderStat('DEX', classData.stats.dex)}
+        {renderStat('CON', classData.stats.con)}
+        {renderStat('WIS', classData.stats.wis)}
+        {renderStat('INT', classData.stats.int)}
+        {renderStat('CHA', classData.stats.cha)}
       </div>
 
       {/* Specialties */}
