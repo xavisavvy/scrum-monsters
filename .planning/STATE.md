@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 21 (JRPG Theme Foundation)
+**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 21 (Production Security Hardening)
 
 ## Current Position
 
-Phase: 21 of 24 (JRPG Theme Foundation)
-Plan: 0 of 5 in current phase
-Status: Ready to plan
-Last activity: 2026-02-11 — v2.0 roadmap created with 4 phases, 24 requirements mapped
+Phase: 21 of 25 (Production Security Hardening)
+Plan: 4 of 5 in current phase
+Status: In progress
+Last activity: 2026-02-18 — Completed 21-04: GitHub Actions top-level permissions
 
-Progress: [████████████████████████████░░░░] 77% (88/114 total plans across all milestones)
+Progress: [████████████████████████████░░░░░] 74% (88/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,13 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-24 | 0/18 | In progress |
+| v2.0 UI Redesign & Mobile | 21-25 | 0/23 | In progress |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-11 after v2.0 roadmap creation*
+*Updated: 2026-02-18 after completing 21-04 (GitHub Actions permissions)*
+
+| Phase | Plans Completed | Tasks | Files |
+|-------|----------------|-------|-------|
+| Phase 21 P04 | 1 | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -49,6 +53,7 @@ Recent decisions affecting v2.0 milestone work:
 - **Mobile-first responsive:** Ensures core UX works on primary device type (mobile) before polish work.
 - **Routing parallel to UI work:** Minimal overlap, integrates at App.tsx level without touching individual components.
 - **Server state authoritative for phases:** URLs reflect game state, don't drive it. Prevents state machine vs URL navigation conflicts.
+- [Phase 21]: Top-level permissions: contents: read added to rollback.yml; job-level contents: write preserved for audit-and-notify job
 
 ### Pending Todos
 
@@ -70,11 +75,11 @@ Recent decisions affecting v2.0 milestone work:
 
 ## Session Continuity
 
-Last session: 2026-02-11
-Stopped at: v2.0 milestone roadmap creation complete
+Last session: 2026-02-18
+Stopped at: Completed 21-04-PLAN.md (GitHub Actions top-level permissions)
 Resume file: None
 
-**Next action:** Run `/gsd:plan-phase 21` to create execution plans for JRPG Theme Foundation.
+**Next action:** Execute plan 05 of phase 21 (if remaining) or start next phase.
 
 ---
 *State initialized: 2026-02-11*
