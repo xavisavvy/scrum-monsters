@@ -21,6 +21,15 @@ interface DiscussionTimerState {
   durationMs: number;
 }
 
+interface TelegraphState {
+  message: string;
+  delayMs: number;
+  targetId?: string;
+  attackType?: string;
+  visualEffect: string;
+  bossType?: string;
+}
+
 interface GameState {
   currentLobby: Lobby | null;
   currentPlayer: Player | null;
@@ -31,6 +40,11 @@ interface GameState {
   countdown: CountdownState | null;
   minions: Map<string, MinionClientState>;
   discussionTimer: DiscussionTimerState | null;
+  telegraph: TelegraphState | null;
+  bossPhase: number;
+  bossPhaseMessage: string | null;
+  bossEnraged: boolean;
+  bossEnrageMessage: string | null;
 
   // Actions
   setLobby: (lobby: Lobby) => void;
@@ -44,6 +58,10 @@ interface GameState {
   addMinion: (minion: MinionClientState) => void;
   removeMinion: (playerId: string) => void;
   setDiscussionTimer: (timer: DiscussionTimerState | null) => void;
+  setTelegraph: (telegraph: TelegraphState) => void;
+  clearTelegraph: () => void;
+  setBossPhase: (phase: number, message: string, bossType: string) => void;
+  setBossEnraged: (message: string) => void;
   clearAll: () => void;
 }
 
@@ -58,6 +76,11 @@ export const useGameState = create<GameState>()(
     countdown: null,
     minions: new Map(),
     discussionTimer: null,
+    telegraph: null,
+    bossPhase: 1,
+    bossPhaseMessage: null,
+    bossEnraged: false,
+    bossEnrageMessage: null,
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -102,6 +125,32 @@ export const useGameState = create<GameState>()(
 
     setDiscussionTimer: (timer) => set({ discussionTimer: timer }),
 
+    setTelegraph: (telegraph) => set({ telegraph }),
+
+    clearTelegraph: () => set({ telegraph: null }),
+
+    setBossPhase: (phase, message, bossType) => {
+      set({
+        bossPhase: phase,
+        bossPhaseMessage: message
+      });
+      // Auto-clear phase message after 2 seconds
+      setTimeout(() => {
+        set({ bossPhaseMessage: null });
+      }, 2000);
+    },
+
+    setBossEnraged: (message) => {
+      set({
+        bossEnraged: true,
+        bossEnrageMessage: message
+      });
+      // Auto-clear enrage message after 3 seconds
+      setTimeout(() => {
+        set({ bossEnrageMessage: null });
+      }, 3000);
+    },
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
@@ -111,7 +160,12 @@ export const useGameState = create<GameState>()(
       error: null,
       countdown: null,
       minions: new Map(),
-      discussionTimer: null
+      discussionTimer: null,
+      telegraph: null,
+      bossPhase: 1,
+      bossPhaseMessage: null,
+      bossEnraged: false,
+      bossEnrageMessage: null
     })
   }))
 );

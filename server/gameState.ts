@@ -470,7 +470,8 @@ class GameStateManager {
         avatar: 'warrior',
         avatarClass: 'warrior',
         hasSubmittedScore: false,
-        currentScore: undefined
+        currentScore: undefined,
+        level: 1
       }],
       teams: {
         developers: [],
@@ -553,7 +554,8 @@ class GameStateManager {
         avatar: 'warrior',
         avatarClass: 'warrior',
         hasSubmittedScore: false,
-        currentScore: undefined
+        currentScore: undefined,
+        level: 1
       };
       lobby.players.push(player);
     }

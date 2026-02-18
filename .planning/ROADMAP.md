@@ -1,183 +1,148 @@
-# Roadmap: ScrumQuest v1.3 Game Progression
-
-## Overview
-
-Transform ScrumQuest from a simple real-time multiplayer experience into a proper RPG progression system. Add XP tracking with account-level persistence, class mastery for long-term engagement, varied boss AI patterns for distinct battles, class-specific abilities with cooldown management, team combos for coordinated play, combat items for tactical depth, and lifetime statistics tracking. The journey follows natural dependencies: establish XP foundation first, extend with class mastery, enhance bosses independently, then layer abilities, combos, and items on top.
+# Roadmap: ScrumQuest
 
 ## Milestones
 
-- ✅ **v1.0 MVP** - Phases 1-6 (shipped 2026-02-02)
-- ✅ **v1.2 SDLC Best Practices** - Phases 7-14 (shipped 2026-02-03)
-- 🚧 **v1.3 Game Progression** - Phases 15-20 (in progress)
+- ✅ **v1.0 Domain Separation** — Phases 1-6 (shipped 2026-02-02)
+- ✅ **v1.2 SDLC Best Practices** — Phases 7-14 (shipped 2026-02-03)
+- ✅ **v1.3 Game Progression** — Phases 15-20 (shipped 2026-02-11)
+- 🚧 **v2.0 UI Redesign & Mobile** — Phases 21-24 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v1.0 Domain Separation (Phases 1-6) - SHIPPED 2026-02-02</summary>
+<summary>✅ v1.0 Domain Separation (Phases 1-6) — SHIPPED 2026-02-02</summary>
 
 See `.planning/milestones/v1.0-ROADMAP.md`
 
 </details>
 
 <details>
-<summary>✅ v1.2 SDLC Best Practices (Phases 7-14) - SHIPPED 2026-02-03</summary>
+<summary>✅ v1.2 SDLC Best Practices (Phases 7-14) — SHIPPED 2026-02-03</summary>
 
 See `.planning/milestones/v1.2-ROADMAP.md`
 
 </details>
 
-### 🚧 v1.3 Game Progression (In Progress)
+<details>
+<summary>✅ v1.3 Game Progression (Phases 15-20) — SHIPPED 2026-02-11</summary>
 
-**Milestone Goal:** Make the game more engaging with progression systems, varied boss battles, and deeper combat mechanics.
+See `.planning/milestones/v1.3-ROADMAP.md`
 
-- [ ] **Phase 15: XP/Progression Foundation** - Account-level XP tracking with visual feedback
-- [ ] **Phase 16: Class Mastery System** - Class-specific progression with tier unlocks
-- [ ] **Phase 17: Boss AI Patterns** - Unique boss behaviors with phases and scaling
-- [ ] **Phase 18: Class Abilities** - Class-specific abilities with cooldown system
-- [ ] **Phase 19: Team Combos** - Coordinated attacks and consensus ultimates
-- [ ] **Phase 20: Combat Items & Lifetime Stats** - Session consumables and persistent statistics
-- [x] **Phase 21: Lobby Magic & Emote System** ⚡ - Magic spells in lobby (PARTIALLY COMPLETE)
+- [x] Phase 15: XP/Progression Foundation (8/8 plans) — completed 2026-02-10
+- [x] Phase 16: Class Mastery System (5/5 plans) — completed 2026-02-11
+- [x] Phase 17: Boss AI Patterns (5/5 plans) — completed 2026-02-11
+- [x] Phase 18: Class Abilities (3/3 plans) — completed 2026-02-11
+- [x] Phase 19: Team Combos (3/3 plans) — completed 2026-02-11
+- [x] Phase 20: Combat Items & Lifetime Stats (4/4 plans) — completed 2026-02-11
 
-## Phase Details
+</details>
 
-### Phase 15: XP/Progression Foundation
+### 🚧 v2.0 UI Redesign & Mobile (In Progress)
 
-**Goal**: Players earn XP from game actions, see their progress, and level up with celebration
-**Depends on**: Nothing (first phase of v1.3, builds on v1.2 infrastructure)
-**Requirements**: XP-01, XP-02, XP-03, XP-04, XP-05, XP-06, XP-07, XP-08
+**Milestone Goal:** Redesign entire game experience with JRPG theming, responsive layout, simplified information architecture, and proper routing/SEO — making ScrumQuest look and feel like a polished product on any device.
+
+#### Phase 21: JRPG Theme Foundation
+**Goal**: Establish design system with reusable themed components preventing rework across all UI
+**Depends on**: Nothing (foundational)
+**Requirements**: THEME-01, THEME-02, THEME-03, THEME-04, THEME-05, THEME-06, THEME-07
 **Success Criteria** (what must be TRUE):
-  1. Player sees XP gain notification after submitting a vote
-  2. Player sees XP gain notification after dealing damage to boss
-  3. Player earns bonus XP when their vote matches consensus
-  4. Player earns XP for successfully reviving a teammate
-  5. Player's XP total persists after logging out and back in
-  6. Player sees their current level based on accumulated XP
-  7. Player sees XP bar showing progress toward next level
-  8. Player sees level-up celebration when crossing level threshold
-**Plans**: 6 plans
+  1. All game panels and modals use consistent JRPG-styled ornamental frames
+  2. Developers can build new UI using reusable themed components (GamePanel, GameButton, StatBar, HealthBar)
+  3. CSS custom property tokens define all colors, spacing, borders, shadows, and fonts
+  4. Phase transitions (lobby → avatar → battle → reveal) have smooth 100-500ms animations
+  5. UI sound effects play on button clicks, phase transitions, and key game events
+  6. JRPG theming maintains WCAG AA contrast ratios (4.5:1 text, 3:1 large)
+**Plans**: TBD
+
 Plans:
-- [ ] 15-01-PLAN.md — TDD: XP curve, types, and ProgressionManager domain
-- [ ] 15-02-PLAN.md — Client progression store and Socket.IO events
-- [ ] 15-03-PLAN.md — XP bar UI component with JRPG styling
-- [ ] 15-04-PLAN.md — Floating XP numbers with animations
-- [ ] 15-05-PLAN.md — Level-up celebration with class effects
-- [ ] 15-06-PLAN.md — Full integration and end-to-end wiring
+- [ ] 21-01: Design system architecture and CSS tokens
+- [ ] 21-02: Themed component library (GamePanel, GameButton, StatBar, HealthBar)
+- [ ] 21-03: UI sound effects library and integration
+- [ ] 21-04: Phase transition animations
+- [ ] 21-05: Accessibility validation and contrast fixes
 
-### Phase 16: Class Mastery System
-
-**Goal**: Players develop expertise in specific avatar classes with tier-based rewards
-**Depends on**: Phase 15 (requires XP infrastructure)
-**Requirements**: MSTR-01, MSTR-02, MSTR-03, MSTR-04
+#### Phase 22: Mobile UX Critical Path
+**Goal**: Ensure core game UX works on mobile devices with touch-friendly controls and adaptive performance
+**Depends on**: Phase 21 (themed components make responsive refactor easier)
+**Requirements**: MOBILE-01, MOBILE-02, MOBILE-03, MOBILE-04, MOBILE-05, MOBILE-06, MOBILE-07
 **Success Criteria** (what must be TRUE):
-  1. Player earns class-specific XP when playing as that class
-  2. Player sees their mastery tier for each class (Novice/Expert/Master)
-  3. Player's class stats improve as they gain mastery tiers
-  4. Player unlocks class-specific abilities at higher mastery tiers
+  1. All interactive elements (buttons, cards, abilities) have minimum 44x44px touch targets
+  2. Content is never obscured by notches, rounded corners, or home gesture zones on any device
+  3. Game UI adapts smoothly to both landscape (battle) and portrait (lobby/menus) orientations
+  4. Three.js canvas renders at acceptable FPS on mid-range phones without overheating
+  5. User sees visible reconnection status when network interrupts on mobile
+  6. User can complete a full game session on a phone browser without layout issues or double-tap bugs
 **Plans**: TBD
 
-### Phase 17: Boss AI Patterns
+Plans:
+- [ ] 22-01: Touch target audit and mobile-first responsive layouts
+- [ ] 22-02: Safe area handling with CSS env() variables
+- [ ] 22-03: Dual orientation support (landscape/portrait)
+- [ ] 22-04: Mobile Three.js performance optimization
+- [ ] 22-05: Mobile reconnection UX and input handler fixes
 
-**Goal**: Each boss type feels distinct with unique attack patterns and dynamic difficulty
-**Depends on**: Phase 15 (difficulty scales with team level)
-**Requirements**: BOSS-01, BOSS-02, BOSS-03, BOSS-04, BOSS-05, BOSS-06
+#### Phase 23: Routing & SEO Infrastructure
+**Goal**: Separate website/game modules with proper routing, SEO meta tags, and static marketing pages
+**Depends on**: Nothing (parallel to 21/22, integrates at App.tsx level)
+**Requirements**: ROUTE-01, ROUTE-02, ROUTE-03, ROUTE-04, ROUTE-05, ROUTE-06, ROUTE-07
 **Success Criteria** (what must be TRUE):
-  1. Each of 5 boss types uses distinct attack patterns (not the same attacks)
-  2. Boss changes behavior at HP thresholds (e.g., new attacks at 50% HP)
-  3. Player sees visual warning before boss attacks land (telegraphing)
-  4. Higher average team level results in more challenging boss encounters
-  5. Boss becomes more aggressive at low HP (faster attacks, more damage)
-  6. Boss prioritizes targeting players who deal more damage or healing
+  1. App uses clean URLs without hash fragments (/game/abc123 not /#/lobby?id=abc123)
+  2. Each public page (landing, about, how-to-play) has unique title, description, and meta tags
+  3. Links shared on Twitter/Discord/Slack show rich previews with Open Graph/Twitter card tags
+  4. Marketing pages pre-render as static HTML for search engine crawlers
+  5. Three.js game bundle only loads when user navigates to game routes (code splitting works)
+  6. Game routes use /game/:lobbyId with server state as authoritative (URLs reflect, don't drive state)
+  7. Three.js Canvas stays mounted across route changes without WebGL context leaks
 **Plans**: TBD
 
-### Phase 18: Class Abilities
+Plans:
+- [ ] 23-01: React Router v7 integration and clean URL structure
+- [ ] 23-02: React Helmet meta tags and Open Graph tags
+- [ ] 23-03: vite-react-ssg static page pre-rendering
+- [ ] 23-04: Route-based code splitting (lazy load Three.js)
+- [ ] 23-05: Canvas lifecycle management and routing integration
 
-**Goal**: Each avatar class has unique abilities that define its combat role
-**Depends on**: Phase 16 (mastery unlocks abilities), Phase 17 (abilities need bosses to test against)
-**Requirements**: ABIL-01, ABIL-02, ABIL-03, ABIL-04
+#### Phase 24: Lobby Polish & Animations
+**Goal**: Enhance lobby interactions with visible emote system, readiness indicators, and idle animations
+**Depends on**: Phase 21 (theme foundation), Phase 22 (touch-friendly interactions)
+**Requirements**: LOBBY-01, LOBBY-02, LOBBY-03
 **Success Criteria** (what must be TRUE):
-  1. Each avatar class has 1-2 unique abilities (Tank: taunt/shield, Healer: heal/buff, DPS: damage/debuff)
-  2. Abilities have server-enforced cooldowns that prevent spam
-  3. Player sees ability buttons with visual cooldown indicators
-  4. Ability effects match the class role (tanks protect, healers heal, DPS damages)
+  1. User sees clear, visible UI for sending emotes and viewing others' emotes
+  2. Player readiness state is visually indicated before game starts (ready/not ready)
+  3. Characters have idle animations during waiting periods (not static models)
 **Plans**: TBD
 
-### Phase 19: Team Combos
+Plans:
+- [ ] 24-01: Enhanced emote UI system
+- [ ] 24-02: Player readiness indicators
+- [ ] 24-03: Character idle animations
 
-**Goal**: Team coordination is rewarded with powerful combo attacks
-**Depends on**: Phase 18 (requires ability system)
-**Requirements**: CMBO-01, CMBO-02, CMBO-03
-**Success Criteria** (what must be TRUE):
-  1. Specific class combinations trigger special combo attacks
-  2. When entire team has voted, a consensus-powered ultimate attack activates
-  3. Combo attacks deal bonus damage and have distinct visual effects
-**Plans**: TBD
+## Backlog
 
-### Phase 20: Combat Items & Lifetime Stats
+### Phase 21-backlog: Lobby Magic & Emote System (ad-hoc, partially complete)
 
-**Goal**: Players have tactical consumables and can track their lifetime achievements
-**Depends on**: Phase 18 (items reuse ability effect system)
-**Requirements**: ITEM-01, ITEM-02, ITEM-03, ITEM-04, STAT-01, STAT-02, STAT-03, STAT-04
-**Success Criteria** (what must be TRUE):
-  1. Items exist only within a game session (not persisted between games)
-  2. Items provide effects: healing, damage boost, or shield
-  3. Player receives items when tickets are completed
-  4. Player can use items during combat phase via UI
-  5. Player's lifetime estimation stats are tracked (total votes, consensus rate, voting speed)
-  6. Player's lifetime combat stats are tracked (damage dealt, bosses defeated, revives, deaths)
-  7. Player can view lifetime stats on their profile page
-  8. Player sees session stats summary at game over
-**Plans**: TBD
-
-### Phase 21: Lobby Magic & Emote System ⚡ PARTIALLY COMPLETE
-
-**Goal**: Players can cast magic spells via emotes in the lobby for fun social interactions
-**Depends on**: Nothing (standalone social feature)
-**Requirements**: MAGIC-01 through MAGIC-17
-**Status**: Implemented ad-hoc, needs formal testing and polish
-**Success Criteria** (what must be TRUE):
-  1. ✅ Player can type magic words to trigger visual effects (fire, ice, heal, lightning, magic, love, confetti, rage, sleep, sparkle)
-  2. ✅ Player can change state with spells: die (X eyes), revive (restore), haste (speed up, 3x stack), slow (speed down), fly (levitate)
-  3. ✅ Player can target other players by name: "haste Bob", "slow Alice, Bob"
-  4. ✅ Player can freeze targets with "hold person [name]" or "freeze [name]" (5 second duration)
-  5. ✅ Player can cast "earthbind" to kill all flying players
-  6. ✅ Player can cast "avada kedavra" to kill all other players (darkens tavern 15s)
-  7. ✅ Player can cast "for the alliance" / "legends never die" to revive entire lobby
-  8. ✅ Player can summon dragon with "dracarys" / "clever girl" (eats random player)
-  9. ✅ Player can cast "dispel magic" on self or targets to remove all effects
-  10. ✅ Player can trigger "chaos mode" for 5-second disco rainbow effect
-  11. ✅ Player can cast "invisibility" (half opacity for self, invisible to others with random flicker)
-  12. ✅ Player can cast "enlarge" / "reduce" (stackable 3x size changes)
-  13. ✅ Player can cast "petrify [names]" to turn targets to stone (sepia, immobile)
-  14. ✅ Enlarged players cause screen shake when walking (intensity scales with stacks)
-  15. ✅ Invisibility breaks when casting other spells or dying
-  16. ✅ All targetable spells support multi-targeting: "spell name1, name2 and name3"
-  17. ✅ Tablet users can open emote menu via FAB button (bottom-left)
-**What's Missing**:
-  - Formal test coverage
-  - Code review and cleanup
-  - Server-side validation (currently client-only effects)
-  - Persistence of effects across reconnects
-  - Visual polish pass
-**Files Modified**:
-  - client/src/lib/utils/magicWords.ts (spell detection, targeting)
-  - client/src/components/game/Lobby.tsx (state management, handlers)
-  - client/src/components/game/MagicEffect.tsx (visual effects)
-  - client/src/components/game/EmoteModal.tsx (help text)
-**Plans**: TBD (needs formal planning for remaining work)
+Implemented ad-hoc during v1.3 without formal planning. Needs formal test coverage, code review, server-side validation, and visual polish before shipping. Deferred to Phase 24 formal planning.
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 15 → 16 → 17 → 18 → 19 → 20
+Phases execute in numeric order: 21 → 22 → 23 → 24
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
 | 7-14 | v1.2 | 21/21 | Complete | 2026-02-03 |
-| 15. XP/Progression | v1.3 | 5/6 | In Progress | - |
-| 16. Class Mastery | v1.3 | 0/TBD | Not started | - |
-| 17. Boss AI Patterns | v1.3 | 0/TBD | Not started | - |
-| 18. Class Abilities | v1.3 | 0/TBD | Not started | - |
-| 19. Team Combos | v1.3 | 0/TBD | Not started | - |
-| 20. Items & Stats | v1.3 | 0/TBD | Not started | - |
-| 21. Lobby Magic | v1.3 | N/A | ⚡ Partial | Ad-hoc |
+| 15. XP/Progression | v1.3 | 8/8 | Complete | 2026-02-10 |
+| 16. Class Mastery | v1.3 | 5/5 | Complete | 2026-02-11 |
+| 17. Boss AI Patterns | v1.3 | 5/5 | Complete | 2026-02-11 |
+| 18. Class Abilities | v1.3 | 3/3 | Complete | 2026-02-11 |
+| 19. Team Combos | v1.3 | 3/3 | Complete | 2026-02-11 |
+| 20. Items & Stats | v1.3 | 4/4 | Complete | 2026-02-11 |
+| 21. JRPG Theme Foundation | v2.0 | 0/5 | Not started | - |
+| 22. Mobile UX Critical Path | v2.0 | 0/5 | Not started | - |
+| 23. Routing & SEO Infrastructure | v2.0 | 0/5 | Not started | - |
+| 24. Lobby Polish & Animations | v2.0 | 0/3 | Not started | - |
+
+---
+*Roadmap created: 2026-02-11*
+*Last updated: 2026-02-11 after v2.0 milestone start*

@@ -210,12 +210,23 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('combat:boss_phase_transition', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:boss_phase_transition', {
+        newPhase: payload.newPhase,
+        previousPhase: payload.previousPhase,
+        message: payload.message,
+        bossType: payload.bossType,
+      });
+    });
+
     this.eventBus.on('combat:boss_telegraph', (payload) => {
       this.emitToLobby(payload.lobbyId, 'combat:boss_telegraph', {
         targetId: payload.targetId,
         attackType: payload.attackType,
         message: payload.message,
         delayMs: payload.delayMs,
+        visualEffect: payload.visualEffect,
+        bossType: payload.bossType,
       });
     });
 
@@ -373,6 +384,127 @@ export class ClientEventEmitter {
         playerId: payload.playerId,
         oldLevel: payload.oldLevel,
         newLevel: payload.newLevel,
+      });
+    });
+
+    // =============================================================================
+    // Class Mastery Events
+    // =============================================================================
+
+    this.eventBus.on('class_mastery:xp_awarded', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'class_mastery:xp_awarded', {
+        playerId: payload.playerId,
+        avatarClass: payload.avatarClass,
+        amount: payload.amount,
+        source: payload.source,
+        newTotal: payload.newTotal,
+      });
+    });
+
+    this.eventBus.on('class_mastery:tier_up', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'class_mastery:tier_up', {
+        playerId: payload.playerId,
+        avatarClass: payload.avatarClass,
+        oldTier: payload.oldTier,
+        newTier: payload.newTier,
+      });
+    });
+
+    // =============================================================================
+    // Ability Events
+    // =============================================================================
+
+    this.eventBus.on('ability:used', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'ability:used', {
+        playerId: payload.playerId,
+        abilityId: payload.abilityId,
+        abilityName: payload.abilityName,
+        effectType: payload.effectType,
+        targetType: payload.targetType,
+      });
+    });
+
+    this.eventBus.on('ability:cooldown_started', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'ability:cooldown_started', {
+        playerId: payload.playerId,
+        abilityId: payload.abilityId,
+        durationMs: payload.durationMs,
+        expiresAt: payload.expiresAt,
+      });
+    });
+
+    this.eventBus.on('ability:effect_applied', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'ability:effect_applied', {
+        playerId: payload.playerId,
+        abilityId: payload.abilityId,
+        effectType: payload.effectType,
+        targetIds: payload.targetIds,
+        value: payload.value,
+      });
+    });
+
+    // =============================================================================
+    // Combo Events
+    // =============================================================================
+
+    this.eventBus.on('combo:triggered', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combo:triggered', {
+        comboId: payload.comboId,
+        comboName: payload.comboName,
+        triggeringPlayerId: payload.triggeringPlayerId,
+        participantPlayerIds: payload.participantPlayerIds,
+        damage: payload.damage,
+        damageMultiplier: payload.damageMultiplier,
+        visualEffect: payload.visualEffect,
+      });
+    });
+
+    this.eventBus.on('combo:consensus_ultimate', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combo:consensus_ultimate', {
+        damage: payload.damage,
+        damageMultiplier: payload.damageMultiplier,
+        votingDurationMs: payload.votingDurationMs,
+      });
+    });
+
+    // =============================================================================
+    // Item Events
+    // =============================================================================
+
+    this.eventBus.on('item:awarded', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'item:awarded', {
+        playerId: payload.playerId,
+        itemType: payload.itemType,
+        newCount: payload.newCount,
+      });
+    });
+
+    this.eventBus.on('item:used', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'item:used', {
+        playerId: payload.playerId,
+        itemType: payload.itemType,
+        remainingCount: payload.remainingCount,
+      });
+    });
+
+    this.eventBus.on('item:effect_applied', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'item:effect_applied', {
+        playerId: payload.playerId,
+        itemType: payload.itemType,
+        effectType: payload.effectType,
+        value: payload.value,
+        durationMs: payload.durationMs,
+        targetIds: payload.targetIds,
+      });
+    });
+
+    // =============================================================================
+    // Stats Events
+    // =============================================================================
+
+    this.eventBus.on('stats:session_complete', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'stats:session_summary', {
+        summaries: payload.summaries,
       });
     });
   }

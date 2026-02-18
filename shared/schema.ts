@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, json, real } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, json, real, unique } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -52,6 +52,10 @@ export const userStats = pgTable("user_stats", {
   totalDamageDealt: integer("total_damage_dealt").default(0).notNull(),
   totalHealing: integer("total_healing").default(0).notNull(),
   revivesPerformed: integer("revives_performed").default(0).notNull(),
+  totalVotes: integer("total_votes").default(0).notNull(),
+  consensusRate: real("consensus_rate").default(0), // Percentage: votes in consensus / total votes * 100
+  averageVotingSpeedMs: integer("avg_voting_speed_ms").default(0),
+  totalDeaths: integer("total_deaths").default(0).notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
@@ -74,6 +78,18 @@ export const sessions = pgTable("sessions", {
   sess: json("sess").notNull(),
   expire: timestamp("expire").notNull(),
 });
+
+// Class mastery progress - per-class XP tracking
+export const classMasteryProgress = pgTable("class_mastery_progress", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  avatarClass: text("avatar_class").notNull(),
+  classXP: integer("class_xp").default(0).notNull(),
+  currentTier: text("current_tier").default('Novice').notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+}, (table) => ({
+  uniqueUserClass: unique().on(table.userId, table.avatarClass),
+}));
 
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -114,6 +130,10 @@ export const insertUserStatsSchema = createInsertSchema(userStats).pick({
   totalDamageDealt: true,
   totalHealing: true,
   revivesPerformed: true,
+  totalVotes: true,
+  consensusRate: true,
+  averageVotingSpeedMs: true,
+  totalDeaths: true,
 });
 
 export const insertEstimationHistorySchema = createInsertSchema(estimationHistory).pick({
@@ -124,6 +144,13 @@ export const insertEstimationHistorySchema = createInsertSchema(estimationHistor
   estimatedPoints: true,
   consensusPoints: true,
   wasInConsensus: true,
+});
+
+export const insertClassMasteryProgressSchema = createInsertSchema(classMasteryProgress).pick({
+  userId: true,
+  avatarClass: true,
+  classXP: true,
+  currentTier: true,
 });
 
 // Types
@@ -141,3 +168,6 @@ export type UserStats = typeof userStats.$inferSelect;
 
 export type InsertEstimationHistory = z.infer<typeof insertEstimationHistorySchema>;
 export type EstimationHistory = typeof estimationHistory.$inferSelect;
+
+export type InsertClassMasteryProgress = z.infer<typeof insertClassMasteryProgressSchema>;
+export type ClassMasteryProgress = typeof classMasteryProgress.$inferSelect;

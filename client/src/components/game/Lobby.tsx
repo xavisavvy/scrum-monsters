@@ -628,7 +628,7 @@ export function Lobby() {
   useEffect(() => {
     if (!socket || currentLobby?.gamePhase !== 'lobby') return;
 
-    const handleLobbyPlayerPos = ({ playerId, x, direction }: { playerId: string; x: number; y: number; direction?: string }) => {
+    const handleLobbyPlayerPos = ({ playerId, x, y, direction }: { playerId: string; x: number; y: number; direction?: string }) => {
       if (playerId === currentPlayer?.id) return; // Skip own updates
 
       setPlayerPositions(prev => {
@@ -2001,6 +2001,11 @@ export function Lobby() {
                                 {renderPlayerSprite(player.avatar)}
                               </div>
                               <span className="truncate max-w-[80px]">{player.name}</span>
+                              {player.level > 1 && (
+                                <span className="text-amber-400 opacity-75 text-[10px] font-bold ml-0.5">
+                                  Lv{player.level}
+                                </span>
+                              )}
                               {player.isHost && <span className="text-yellow-400">*</span>}
                             </div>
                           ))}
