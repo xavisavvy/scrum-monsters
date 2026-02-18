@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 23 of 25 (Mobile UX Critical Path) — IN PROGRESS
-Plan: 3 of 6 in current phase — COMPLETE
-Status: Phase 23 Plan 03 complete — useOrientation hook, RotateDeviceOverlay, portrait/landscape orientation CSS
-Last activity: 2026-02-18 — Completed 23-03: useOrientation hook, RotateDeviceOverlay soft prompt, portrait bottom-sheet sidebar, landscape compact HUD
+Plan: 4 of 6 in current phase — COMPLETE
+Status: Phase 23 Plan 04 complete — MobileControls virtual D-pad + action buttons, PlayerController pointer events
+Last activity: 2026-02-18 — Completed 23-04: MobileControls component, onPointerDown conversion, handleMobileKeyDown/Up, isMobile conditional rendering
 
-Progress: [████████████████████████████████░░░] 85% (101/119 total plans across all milestones)
+Progress: [████████████████████████████████░░░] 85% (102/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 14/23 | In progress (Phase 23 P03 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 15/23 | In progress (Phase 23 P04 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing Phase 23 Plan 02 (DPR cap + PerformanceMonitor adaptive quality)*
+*Updated: 2026-02-18 after completing Phase 23 Plan 04 (MobileControls virtual D-pad + PlayerController pointer events)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 23 P04 | 1 | 2 tasks | 2 files |
 | Phase 23 P03 | 1 | 2 tasks | 4 files |
 | Phase 23 P02 | 1 | 1 task | 2 files |
 | Phase 23 P01 | 1 | 2 tasks | 6 files |
@@ -94,6 +95,10 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 23-03]: RotateDeviceOverlay uses local dismissed state reset on phase change — soft nudge per phase, not a one-time global dismiss
 - [Phase 23-03]: battle-sidebar CSS class added as prefix to existing className string — minimal BattleScreen change, no logic refactor
 - [Phase 23-03]: Portrait bottom-sheet uses fixed positioning so it overlays game world without reflowing game layout
+- [Phase 23-04]: MobileControls uses makeButtonHandlers factory — DRY pattern creates onPointerDown/onPointerUp/onPointerCancel per button via spread
+- [Phase 23-04]: handleMobileKeyDown replicates handleKeyDown logic (not calls it) — keyboard handler takes KeyboardEvent, mobile handler takes string code; same side effects
+- [Phase 23-04]: handleScreenClick renamed handleScreenPointerDown with pointerType guard — prevents double-fire where touch fires both pointer and click events
+- [Phase 23-04]: handleMobileKeyDown placed after findNearestTargetPlayer — TypeScript hoisting constraint with const useCallback
 
 ### Pending Todos
 
@@ -112,11 +117,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 23-03-PLAN.md (useOrientation hook + RotateDeviceOverlay + orientation CSS)
+Stopped at: Completed 23-04-PLAN.md (MobileControls virtual D-pad + PlayerController pointer events)
 Resume file: None
 
-**Next action:** Continue Phase 23 — execute 23-04-PLAN.md (next plan in Mobile UX Critical Path).
+**Next action:** Continue Phase 23 — execute 23-05-PLAN.md (next plan in Mobile UX Critical Path).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 23-03 (useOrientation hook + RotateDeviceOverlay + portrait/landscape orientation CSS)*
+*Last updated: 2026-02-18 after completing 23-04 (MobileControls virtual D-pad + PlayerController pointer events)*
