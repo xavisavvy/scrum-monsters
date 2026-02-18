@@ -314,7 +314,14 @@ export function BattleScreen() {
             <TimerDisplay />
             
             {/* Boss Music Controls - Top Right */}
-            <div className="absolute top-6 right-6 z-40" data-no-shoot>
+            <div
+              className="absolute top-6 right-6 z-40"
+              style={{
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+                paddingRight: 'env(safe-area-inset-right, 0px)'
+              }}
+              data-no-shoot
+            >
               <BossMusicControls />
             </div>
 
@@ -371,7 +378,14 @@ export function BattleScreen() {
             <TimerDisplay />
             
             {/* Boss Music Controls - Top Right */}
-            <div className="absolute top-6 right-6 z-40" data-no-shoot>
+            <div
+              className="absolute top-6 right-6 z-40"
+              style={{
+                paddingTop: 'env(safe-area-inset-top, 0px)',
+                paddingRight: 'env(safe-area-inset-right, 0px)'
+              }}
+              data-no-shoot
+            >
               <BossMusicControls />
             </div>
 
