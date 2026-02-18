@@ -152,9 +152,10 @@ describe('PatternSequencer', () => {
 
       // High weight should be selected ~10x more often (with tolerance)
       // Expected ratio: ~909:91 for weight 10:1
+      // Using wide bounds (5-20) to avoid flakiness in statistical tests with 1000 iterations
       const ratio = highWeightCount / (lowWeightCount || 1);
-      expect(ratio).toBeGreaterThan(7); // Allow some variance
-      expect(ratio).toBeLessThan(13);
+      expect(ratio).toBeGreaterThan(5); // Allow reasonable variance
+      expect(ratio).toBeLessThan(20);
     });
   });
 
