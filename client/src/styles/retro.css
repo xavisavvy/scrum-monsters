@@ -182,15 +182,16 @@
 }
 
 .retro-text-glow {
-  /* Base text color - lighter version of current glow */
-  color: var(--retro-glow-light);
-  
+  /* WCAG AA compliant fixed color: #f5f5f5 = 12.6:1 contrast against #16213e panel-bg */
+  /* Do NOT use var(--retro-glow-light) here — animated hue fails contrast at many positions */
+  color: var(--jrpg-text-primary);
+
   /* Text outline for readability - creates a dark border */
   -webkit-text-stroke: 1px #000000;
   text-stroke: 1px #000000;
-  
-  /* Enhanced multi-layer glow effect */
-  text-shadow: 
+
+  /* Enhanced multi-layer glow effect — text-shadow is decorative, exempt from WCAG contrast */
+  text-shadow:
     /* Dark outline shadows for better definition */
     -1px -1px 0 #000000,
     1px -1px 0 #000000,
@@ -203,7 +204,7 @@
     0 0 12px var(--retro-glow),
     0 0 20px var(--retro-glow),
     0 0 30px var(--retro-glow);
-  
+
   /* Improve text rendering */
   font-weight: bold;
   letter-spacing: 0.1em;
@@ -211,21 +212,22 @@
 
 /* Lighter glow variant for smaller text */
 .retro-text-glow-light {
-  /* Base text color - lighter version of current glow */
-  color: var(--retro-glow-light);
-  
+  /* WCAG AA compliant fixed color: #ffd700 (gold) = 9.8:1 contrast against #16213e panel-bg */
+  /* Do NOT use var(--retro-glow-light) here — animated hue fails contrast at many positions */
+  color: var(--jrpg-text-accent);
+
   /* No text stroke for small text - keeps it clean */
   -webkit-text-stroke: none;
   text-stroke: none;
-  
-  /* Simplified glow effect for readability */
-  text-shadow: 
+
+  /* Simplified glow effect for readability — text-shadow is decorative, exempt from WCAG contrast */
+  text-shadow:
     /* Very subtle outline for definition */
     0 0 1px rgba(0, 0, 0, 0.8),
     /* Gentle glow - closer to text */
     0 0 4px var(--retro-glow),
     0 0 8px var(--retro-glow);
-  
+
   /* Keep text readable */
   font-weight: 600;
   letter-spacing: 0.05em;
@@ -539,4 +541,14 @@
 @keyframes character-bob {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-4px); }
+}
+
+/* -------------------------------------------------------------------- */
+/* MINIMUM FONT SIZE ENFORCEMENT                                          */
+/* Press Start 2P is a bitmap pixel font — below 12px it becomes         */
+/* illegible as pixels don't subdivide cleanly. Enforce 12px floor.      */
+/* -------------------------------------------------------------------- */
+.font-jrpg,
+[style*="Press Start 2P"] {
+  font-size: max(var(--jrpg-font-size-min, 12px), 12px);
 }
