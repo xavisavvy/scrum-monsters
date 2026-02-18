@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 23 of 25 (Mobile UX Critical Path) — IN PROGRESS
-Plan: 1 of 6 in current phase — COMPLETE
-Status: Phase 23 Plan 01 complete — mobile CSS foundation established
-Last activity: 2026-02-18 — Completed 23-01: viewport fix, mobile.css safe-area utilities, 44px touch targets
+Plan: 2 of 6 in current phase — COMPLETE
+Status: Phase 23 Plan 02 complete — Canvas DPR cap and PerformanceMonitor adaptive quality added
+Last activity: 2026-02-18 — Completed 23-02: DPR cap at 2, PerformanceMonitor adaptive FPS-based DPR, antialias toggle, touchAction on Canvas
 
-Progress: [███████████████████████████████░░░] 83% (99/119 total plans across all milestones)
+Progress: [████████████████████████████████░░░] 84% (100/119 total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity (v1.0-v1.3 shipped milestones):**
-- Total plans completed: 98 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 11)
+- Total plans completed: 100 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 13)
 - Average duration: ~45 min (estimated from milestone timelines)
 - Total execution time: ~66 hours across 4 milestones
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 12/23 | In progress (Phase 23 P01 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 13/23 | In progress (Phase 23 P02 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing Phase 23 Plan 01 (Mobile CSS Foundation — viewport fix, safe-area utilities, touch targets)*
+*Updated: 2026-02-18 after completing Phase 23 Plan 02 (DPR cap + PerformanceMonitor adaptive quality)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 23 P02 | 1 | 1 task | 2 files |
 | Phase 23 P01 | 1 | 2 tasks | 6 files |
 | Phase 22 P06 | 1 | 2 tasks | 5 files |
 | Phase 22 P05 | 1 | 2 tasks | 3 files |
@@ -47,7 +48,6 @@ Progress: [███████████████████████
 | Phase 22 P03 | 1 | 2 tasks | 2 files |
 | Phase 22 P02 | 1 | 2 tasks | 4 files |
 | Phase 22 P01 | 1 | 2 tasks | 3 files |
-| Phase 21 P05 | 1 | 2 tasks | 0 files |
 
 ## Accumulated Context
 
@@ -87,6 +87,9 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 23-01]: Global canvas touch-action: none removed — applied per-component for Three.js canvases only
 - [Phase 23-01]: fibonacci-button aspect-ratio: auto on mobile — rectangular buttons improve text readability on 4-col grid
 - [Phase 23-01]: 100dvh with 100vh fallback — fixes iOS Safari address bar collapsing visible viewport
+- [Phase 23-02]: PerformanceMonitor defaults used (250ms window, 10 iterations, 0.75 threshold) — drei defaults match intended adaptive behavior
+- [Phase 23-02]: DPR steps in 0.5 increments (1.0 to 2.0) via onDecline/onIncline for smooth visual transitions
+- [Phase 23-02]: mobile.css must use plain CSS (not @layer) when imported outside Tailwind directive scope
 
 ### Pending Todos
 
@@ -105,11 +108,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 23-01-PLAN.md (Mobile CSS Foundation — viewport fix, safe-area utilities, 44px touch targets)
+Stopped at: Completed 23-02-PLAN.md (Canvas DPR cap + PerformanceMonitor adaptive quality + antialias toggle)
 Resume file: None
 
-**Next action:** Continue Phase 23 — execute 23-02-PLAN.md (Battle HUD safe-area).
+**Next action:** Continue Phase 23 — execute 23-03-PLAN.md (next plan in Mobile UX Critical Path).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 23-01 (Mobile CSS Foundation — viewport-fit=cover, mobile.css, touch targets)*
+*Last updated: 2026-02-18 after completing 23-02 (Canvas DPR cap + PerformanceMonitor — GPU thermal throttling prevention)*
