@@ -57,11 +57,11 @@ See `.planning/milestones/v1.3-ROADMAP.md`
 **Plans:** 5 plans in 3 waves
 
 Plans:
-- [ ] 21-01-PLAN.md — Rate limiting middleware + open redirect fix + trust proxy (Wave 1)
-- [ ] 21-02-PLAN.md — CSRF protection middleware with csrf-sync (Wave 2)
-- [ ] 21-03-PLAN.md — Secure randomness: crypto.randomBytes for all IDs (Wave 1)
-- [ ] 21-04-PLAN.md — GitHub Actions workflow permissions lockdown (Wave 1)
-- [ ] 21-05-PLAN.md — Security verification and audit sweep (Wave 3)
+- [x] 21-01-PLAN.md — Rate limiting middleware + open redirect fix + trust proxy (Wave 1)
+- [x] 21-02-PLAN.md — CSRF protection middleware with csrf-sync (Wave 2)
+- [x] 21-03-PLAN.md — Secure randomness: crypto.randomBytes for all IDs (Wave 1)
+- [x] 21-04-PLAN.md — GitHub Actions workflow permissions lockdown (Wave 1)
+- [x] 21-05-PLAN.md — Security verification and audit sweep (Wave 3)
 
 #### Phase 22: JRPG Theme Foundation
 **Goal**: Establish design system with reusable themed components preventing rework across all UI
@@ -156,7 +156,7 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 | 18. Class Abilities | v1.3 | 3/3 | Complete | 2026-02-11 |
 | 19. Team Combos | v1.3 | 3/3 | Complete | 2026-02-11 |
 | 20. Items & Stats | v1.3 | 4/4 | Complete | 2026-02-11 |
-| 21. Security Hardening | v2.0 | 0/5 | Not started | - |
+| 21. Security Hardening | v2.0 | 5/5 | Complete | 2026-02-18 |
 | 22. JRPG Theme Foundation | v2.0 | 0/5 | Not started | - |
 | 23. Mobile UX Critical Path | v2.0 | 0/5 | Not started | - |
 | 24. Routing & SEO Infrastructure | v2.0 | 0/5 | Not started | - |
@@ -164,4 +164,4 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-17 — inserted Phase 21 (Security Hardening) as critical priority*
+*Last updated: 2026-02-18 — Phase 21 (Security Hardening) complete*
