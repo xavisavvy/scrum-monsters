@@ -1,6 +1,6 @@
 import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
-import { createHash, createHmac } from 'crypto';
+import { createHash, createHmac, randomBytes } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 
 interface RevivalSession {
@@ -10,6 +10,16 @@ interface RevivalSession {
   startedAt: number;
   lastTick: number;
   timeoutHandle: NodeJS.Timeout;
+}
+
+const LOBBY_CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function generateSecureLobbyCode(): string {
+  const bytes = randomBytes(6);
+  return Array.from(bytes).map(b => LOBBY_CODE_CHARSET[b % LOBBY_CODE_CHARSET.length]).join('');
+}
+
+function generateSecureId(): string {
+  return randomBytes(8).toString('hex').substring(0, 13);
 }
 
 class GameStateManager {
@@ -30,7 +40,7 @@ class GameStateManager {
   private disconnectWatchdog: NodeJS.Timeout;
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
   private readonly TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
-  private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + Math.random();
+  private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + randomBytes(16).toString('hex');
 
   constructor(io?: any) {
     this.io = io;
@@ -75,7 +85,7 @@ class GameStateManager {
       return normalized.toUpperCase();
     }
     // Otherwise, generate random 6-character ID
-    return Math.random().toString(36).substring(2, 8).toUpperCase();
+    return generateSecureLobbyCode();
   }
 
   private processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
@@ -456,7 +466,7 @@ class GameStateManager {
     customLobbyId?: string;
   }): Lobby {
     const lobbyId = this.generateLobbyId(initialSettings?.customLobbyId);
-    const hostId = Math.random().toString(36).substring(2, 15);
+    const hostId = generateSecureId();
     
     const lobby: Lobby = {
       id: lobbyId,
@@ -547,7 +557,7 @@ class GameStateManager {
     let player = lobby.players.find(p => p.name === playerName);
     if (!player) {
       player = {
-        id: Math.random().toString(36).substring(2, 15),
+        id: generateSecureId(),
         name: playerName,
         team: 'developers',
         isHost: false,
@@ -1205,7 +1215,7 @@ class GameStateManager {
       : `${selectedBoss.name} of ${tickets.length} Challenge${tickets.length > 1 ? 's' : ''}`;
     
     return {
-      id: Math.random().toString(36).substring(2, 15),
+      id: generateSecureId(),
       name: bossName,
       maxHealth: scaledHealth,
       currentHealth: scaledHealth,
@@ -1789,7 +1799,7 @@ class GameStateManager {
         const targetY = target.position.y + Math.sin(angle) * radius;
         
         projectiles.push({
-          id: Math.random().toString(36).substring(2, 15),
+          id: generateSecureId(),
           startX: 50, // Boss center
           startY: 40, // Boss center
           targetX: Math.max(5, Math.min(95, targetX)), // Keep within bounds
