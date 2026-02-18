@@ -1,5 +1,5 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { GamePanel, type GamePanelProps } from './GamePanel';
 
 interface RetroCardProps {
   children: React.ReactNode;
@@ -9,13 +9,12 @@ interface RetroCardProps {
 
 export function RetroCard({ children, className, title }: RetroCardProps) {
   return (
-    <div className={cn('retro-card', className)}>
-      {title && (
-        <h3 className="text-lg font-bold mb-4 retro-text-glow-light">
-          {title}
-        </h3>
-      )}
+    <GamePanel className={className} title={title}>
       {children}
-    </div>
+    </GamePanel>
   );
 }
+
+// Re-export for gradual migration
+export { GamePanel } from './GamePanel';
+export type { GamePanelProps } from './GamePanel';

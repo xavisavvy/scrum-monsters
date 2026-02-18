@@ -88,12 +88,13 @@ export function PhaseRenderer({
     isTransitioning
   };
 
-  // Render the phase with transition support
+  // Render the phase with transition support.
+  // AnimatePresence in PhaseTransition handles animation via key={toPhase} —
+  // isTransitioning is kept in the interface for backward compat but not passed.
   return (
     <PhaseTransition
       fromPhase={previousPhase}
       toPhase={currentPhase}
-      isTransitioning={isTransitioning}
     >
       <PhaseComponent {...phaseProps} />
     </PhaseTransition>
