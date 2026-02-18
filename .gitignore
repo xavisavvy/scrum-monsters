@@ -38,6 +38,10 @@ vite.config.ts.*
 coverage
 *.lcov
 
+# Playwright
+playwright-report/
+test-results/
+
 # Database
 *.sqlite
 *.db

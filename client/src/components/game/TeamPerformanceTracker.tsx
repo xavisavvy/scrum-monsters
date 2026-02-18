@@ -30,10 +30,10 @@ export function TeamPerformanceTracker() {
 
   // Track score submissions
   useEffect(() => {
-    if (currentPlayer?.hasSubmittedScore && currentPlayer.currentScore !== undefined) {
+    if (currentPlayer?.hasSubmittedScore && currentPlayer.currentScore !== undefined && currentPlayer.currentScore !== '?') {
       const submissionTime = Date.now();
-      const estimationTime = metrics.estimationStartTime 
-        ? submissionTime - metrics.estimationStartTime 
+      const estimationTime = metrics.estimationStartTime
+        ? submissionTime - metrics.estimationStartTime
         : 0;
 
       setMetrics(prev => ({
@@ -42,21 +42,19 @@ export function TeamPerformanceTracker() {
           ...prev.teamSubmissions,
           [currentPlayer.id]: {
             time: estimationTime,
-            score: currentPlayer.currentScore!
+            score: currentPlayer.currentScore as number
           }
         }
       }));
 
-      // Emit performance data to server (only for numeric scores)
-      if (typeof currentPlayer.currentScore === 'number') {
-        emit('player_performance', {
-          playerId: currentPlayer.id,
-          team: currentPlayer.team,
-          estimationTime,
-          score: currentPlayer.currentScore,
-          ticketId: currentLobby?.currentTicket?.id
-        });
-      }
+      // Emit performance data to server
+      emit('player_performance', {
+        playerId: currentPlayer.id,
+        team: currentPlayer.team,
+        estimationTime,
+        score: currentPlayer.currentScore as number,
+        ticketId: currentLobby?.currentTicket?.id
+      });
     }
   }, [currentPlayer?.hasSubmittedScore, currentPlayer?.currentScore, metrics.estimationStartTime, emit, currentPlayer?.id, currentPlayer?.team, currentLobby?.currentTicket?.id]);
 

@@ -685,7 +685,7 @@ export function BattleScreen() {
             key={phaseKey}
             lobby={currentLobby}
             currentPlayer={currentPlayer}
-            emit={emit as PhaseComponentProps['emit']}
+            emit={emit}
             sidebarCollapsed={false}
             onToggleSidebar={() => {}}
           />

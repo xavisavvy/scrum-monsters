@@ -25,6 +25,7 @@ export interface Player {
   isHost: boolean;
   currentScore?: number | "?";
   hasSubmittedScore: boolean;
+  level: number; // Player level from XP progression (default 1)
 }
 
 export interface TeamStats {
@@ -285,14 +286,17 @@ export interface ClientToServerEvents {
   attack_minion: (data: { minionPlayerId: string }) => void;
   // Discussion finalization
   finalize_estimate: (data: { estimate: number }) => void;
-  // Player charge attack
+  // Lobby magic/charge events
   player_charge: (data: { isCharging: boolean; chargePower?: number }) => void;
-  // Battle emote
+  // Battle events
   battle_emote: (data: { message: string; x: number; y: number }) => void;
-  // Return to lobby
   return_to_lobby: () => void;
-  // Estimation settings
+  // Settings update
   update_estimation_settings: (data: { estimationSettings: EstimationSettings }) => void;
+  // Class abilities
+  use_ability: (data: { abilityId: string }) => void;
+  // Items
+  use_item: (data: { itemType: string }) => void;
 }
 
 export interface TeamScores {
@@ -331,6 +335,7 @@ export interface ServerToClientEvents {
     y: number;
   }) => void;
   player_joined: (data: { player: Player; lobby: Lobby }) => void;
+  player_left: (data: { playerId: string; playerName?: string }) => void;
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
   score_submitted: (data: { playerId: string; team: TeamType }) => void;
   scores_revealed: (data: {
@@ -347,8 +352,7 @@ export interface ServerToClientEvents {
   game_over: (data: { lobby: Lobby }) => void;
   boss_healed: (data: { bossHealth: number; healAmount: number }) => void;
   modifier_updated: (data: { modifier: number }) => void;
-  game_error: (data: { message: string; code?: string; tiedValues?: number[] }) => void;
-  player_left: (data: { playerId: string; playerName: string }) => void;
+  game_error: (data: { message: string; code?: string; tiedValues?: (number | "?")[] }) => void;
   voting_timeout: (data: { submittedCount: number; totalCount: number; message: string }) => void;
   player_disconnected: (data: { playerId: string }) => void;
   host_transferred: (data: { oldHostId: string; newHostId: string; newHostName: string; reason: string }) => void;
@@ -431,7 +435,8 @@ export interface ServerToClientEvents {
   'combat:boss_damaged': (data: { playerId: string; damage: number; newHp: number; seq: number; timestamp: number }) => void;
   'combat:boss_healed': (data: { healAmount: number; newHp: number; seq: number; timestamp: number }) => void;
   'combat:boss_enraged': (data: { message: string; seq: number; timestamp: number }) => void;
-  'combat:boss_telegraph': (data: { targetId?: string; attackType?: string; message: string; delayMs: number; seq: number; timestamp: number }) => void;
+  'combat:boss_telegraph': (data: { targetId?: string; attackType?: string; message: string; delayMs: number; visualEffect?: string; bossType?: string; seq: number; timestamp: number }) => void;
+  'combat:boss_phase_transition': (data: { newPhase: number; previousPhase: number; message: string; bossType: string; seq: number; timestamp: number }) => void;
   'combat:boss_defeated': (data: { seq: number; timestamp: number }) => void;
   'combat:player_damaged': (data: { playerId: string; damage: number; newHp: number; source: 'boss' | 'player'; seq: number; timestamp: number }) => void;
   'combat:player_downed': (data: { playerId: string; countdownSeconds: number; seq: number; timestamp: number }) => void;
@@ -472,6 +477,128 @@ export interface ServerToClientEvents {
     playerId: string;
     totalXP: number;
     currentLevel: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Class mastery events
+  'class_mastery:xp_awarded': (data: {
+    playerId: string;
+    avatarClass: string;
+    amount: number;
+    source: string;
+    newTotal: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'class_mastery:tier_up': (data: {
+    playerId: string;
+    avatarClass: string;
+    oldTier: string;
+    newTier: string;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'class_mastery:sync': (data: {
+    playerId: string;
+    masteryData: Record<string, { classXP: number; currentTier: string }>;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Ability events
+  'ability:used': (data: {
+    playerId: string;
+    abilityId: string;
+    abilityName: string;
+    effectType: string;
+    targetType: string;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'ability:cooldown_started': (data: {
+    playerId: string;
+    abilityId: string;
+    durationMs: number;
+    expiresAt: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'ability:effect_applied': (data: {
+    playerId: string;
+    abilityId: string;
+    effectType: string;
+    targetIds: string[];
+    value: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Combo events
+  'combo:triggered': (data: {
+    comboId: string;
+    comboName: string;
+    triggeringPlayerId: string;
+    participantPlayerIds: string[];
+    damage: number;
+    damageMultiplier: number;
+    visualEffect: string;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'combo:consensus_ultimate': (data: {
+    damage: number;
+    damageMultiplier: number;
+    votingDurationMs: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Item events
+  'item:awarded': (data: {
+    playerId: string;
+    itemType: string;
+    newCount: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'item:used': (data: {
+    playerId: string;
+    itemType: string;
+    remainingCount: number;
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  'item:effect_applied': (data: {
+    playerId: string;
+    itemType: string;
+    effectType: string;
+    value: number;
+    durationMs: number | null;
+    targetIds: string[];
+    seq: number;
+    timestamp: number;
+  }) => void;
+
+  // Stats events
+  'stats:session_summary': (data: {
+    summaries: Record<string, {
+      totalVotes: number;
+      consensusCount: number;
+      averageVotingSpeedMs: number;
+      totalDamageDealt: number;
+      bossesDefeated: number;
+      revives: number;
+      deaths: number;
+      itemsUsed: number;
+    }>;
     seq: number;
     timestamp: number;
   }) => void;

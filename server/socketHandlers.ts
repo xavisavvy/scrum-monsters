@@ -8,7 +8,7 @@ export function setupTeamCompetitionHandlers(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
   gameStateManager: any // Replace with proper type
 ) {
-  socket.on('player_performance', (data) => {
+  socket.on('player_performance', (data: { playerId: string; team: string; estimationTime: number; score: number; ticketId?: string }) => {
     try {
       console.log(`Performance data received from ${data.playerId}:`, data);
       

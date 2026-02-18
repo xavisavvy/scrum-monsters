@@ -131,9 +131,14 @@ describe('ProgressionManager', () => {
       }
       emittedEvents[event].push(payload);
       return originalEmit(event, payload);
-    }) as any;
+    }) as typeof eventBus.emit;
 
-    manager = new ProgressionManager({ eventBus });
+    manager = new ProgressionManager({
+      eventBus,
+      getVoters: () => [], // Mock: no voters by default
+      storage: undefined, // No storage in unit tests
+      getUserId: undefined, // No user mapping in unit tests
+    });
   });
 
   describe('awardXP', () => {

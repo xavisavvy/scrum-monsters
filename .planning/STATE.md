@@ -2,28 +2,26 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-03)
+See: .planning/PROJECT.md (updated 2026-02-11)
 
-**Core value:** Focused estimation that doesn't bore people - voting distraction-free, waiting fun
-**Current focus:** Phase 15 - XP/Progression Foundation
+**Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
+**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 21 (JRPG Theme Foundation)
 
 ## Current Position
 
-Phase: 15 of 20 (XP/Progression Foundation)
-Plan: 6 of 6 in current phase (awaiting human verification)
-Status: In progress - Task 5 checkpoint pending (human E2E verification required)
-Last activity: 2026-02-17 - Plan 15-06 tasks 1-4 verified complete, consensus XP bug fixed, SUMMARY.md created
+Phase: 21 of 24 (JRPG Theme Foundation)
+Plan: 0 of 5 in current phase
+Status: Ready to plan
+Last activity: 2026-02-11 — v2.0 roadmap created with 4 phases, 24 requirements mapped
 
-Progress: [███████████████░░░░░] 73% (milestones 1.0+1.2 complete, 1.3 in progress)
-
-**Phase 21 (Lobby Magic)**: Implemented ad-hoc, marked as partially complete
+Progress: [████████████████████████████░░░░] 77% (88/114 total plans across all milestones)
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 55 (v1.0: 30, v1.2: 21, v1.3: 4)
-- Average duration: varies by phase complexity
-- Total execution time: see milestone archives
+**Velocity (v1.0-v1.3 shipped milestones):**
+- Total plans completed: 88 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 0)
+- Average duration: ~45 min (estimated from milestone timelines)
+- Total execution time: ~66 hours across 4 milestones
 
 **By Milestone:**
 
@@ -31,51 +29,53 @@ Progress: [███████████████░░░░░] 73% (mi
 |-----------|--------|-------|--------|
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
-| v1.3 Game Progression | 15-20 | TBD | In Progress |
+| v1.3 Game Progression | 15-20 | 28 | Complete |
+| v2.0 UI Redesign & Mobile | 21-24 | 0/18 | In progress |
 
 **Recent Trend:**
-- v1.2 phases completed efficiently with CI/CD patterns
-- Trend: Stable
+- Last 5 phases (v1.3): 3-8 plans per phase
+- Trend: Stable complexity, consistent velocity
 
-*Updated after each plan completion*
+*Updated: 2026-02-11 after v2.0 roadmap creation*
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+Recent decisions affecting v2.0 milestone work:
 
-- [v1.0]: Domain separation (Session/Estimation/Combat) - foundation for new domains
-- [v1.0]: EventBus for cross-domain coordination - will use for XP events
-- [v1.2]: 12% coverage baseline - maintain during feature work
-- [15-01]: XP curve exponential (baseXP=100, exponent=1.5) for balanced progression
-- [15-01]: Per-lobby XP isolation with ProgressionManager domain
-- [15-01]: XP rates: vote=10, boss_damage=2x, consensus=50, revival=30
-- [15-03]: Progressive disclosure UI pattern (minimal by default, expand on hover)
-- [15-03]: JRPG aesthetic (gold gradient #b8860b → #ffd700 → #ffec8b with beveled edges)
-- [15-04]: Source-specific XP positioning (vote=left, boss=center, revival=right)
-- [15-04]: Bonus XP animations (consensus, revival) larger with pulse effect
-- [15-04]: R3F components need smoke tests only (WebGL not available in Vitest)
-- [15-05]: 2.5s auto-dismiss for level-up celebration (balanced impact vs. disruption)
-- [15-05]: Class-specific particle colors for visual variety and class identity
-- [15-05]: Audio store extension pattern (dedicated sound handlers vs. generic playSound)
-- [15-06]: getActivePlayers callback pattern for cross-domain data access (matches CombatManager's getPlayerTeam pattern)
-- [15-06]: Client-side progression event filtering: only process events for current player (per CONTEXT.md)
-- [15-06]: XPBar placed as CSS fixed element; FloatingXPManager inside R3F scene group
+- **Theme foundation first:** Prevents rework across 20+ phase components. Design system establishes standards upfront before responsive/routing work.
+- **Mobile-first responsive:** Ensures core UX works on primary device type (mobile) before polish work.
+- **Routing parallel to UI work:** Minimal overlap, integrates at App.tsx level without touching individual components.
+- **Server state authoritative for phases:** URLs reflect game state, don't drive it. Prevents state machine vs URL navigation conflicts.
 
 ### Pending Todos
 
-None yet for v1.3.
+- Lobby magic/emote system (Phase 21 backlog) — now formalized as Phase 24 (Lobby Polish)
 
 ### Blockers/Concerns
 
-Open items from v1.2:
-- ARGOCD_AUTH_TOKEN secret and GitHub environment protection rules must be configured before rollback workflow can be used in production
-- Husky deprecation warning (v10 breaking change) - address when upgrading
+**Asset sourcing (Phase 21):**
+- UI sound effects library needs research during plan-phase (freesound.org, OpenGameArt.org, itch.io)
+- JRPG ornamental frame assets need sourcing or creation workflow
+
+**Social crawler middleware (Phase 23):**
+- User-agent detection needs careful implementation to avoid false positives/negatives
+- Testing methodology for crawler meta tag validation needs definition
+
+**Earlier milestones (not blocking v2.0):**
+- ARGOCD_AUTH_TOKEN secret and GitHub environment protection rules must be configured before rollback workflow used in production
+- Husky deprecation warning (v10 breaking change) — address when upgrading
 
 ## Session Continuity
 
-Last session: 2026-02-17 06:47 UTC
-Stopped at: 15-06-PLAN.md Task 5 checkpoint (human E2E verification required before plan complete)
+Last session: 2026-02-11
+Stopped at: v2.0 milestone roadmap creation complete
 Resume file: None
+
+**Next action:** Run `/gsd:plan-phase 21` to create execution plans for JRPG Theme Foundation.
+
+---
+*State initialized: 2026-02-11*
+*Last updated: 2026-02-11 after v2.0 roadmap creation*

@@ -103,7 +103,7 @@ export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelPr
       paladin: '🛡️',
       cleric: '✨',
       oathbreaker: '💀',
-      monk: '👊'
+      monk: '🥋'
     };
     return icons[avatarClass];
   };

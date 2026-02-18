@@ -10,6 +10,11 @@ import {
   sessionManager,
   estimationManager,
   combatManager,
+  progressionManager,
+  classMasteryManager,
+  abilityManager,
+  itemManager,
+  registerPlayerUserId,
   eventBus,
   initializeClientEventEmitter,
   getClientEventEmitter,
@@ -162,7 +167,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // Position batching for performance - aggregate updates and broadcast every 100ms
   const pendingPositionUpdates = new Map<string, boolean>(); // lobbyId -> hasPendingUpdates
   
-  setInterval(() => {
+  const positionBatchInterval = setInterval(() => {
     // Broadcast batched position updates for each lobby with pending changes
     pendingPositionUpdates.forEach((hasPending, lobbyId) => {
       if (hasPending) {
@@ -174,8 +179,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
   }, 100); // Batch broadcast every 100ms
+  
+  // Clean up position updates map when lobbies are destroyed
+  const lobbyDestroyedHandler = ({ lobbyId }: { lobbyId: string }) => {
+    pendingPositionUpdates.delete(lobbyId);
+  };
+  eventBus.on('session:lobby_destroyed', lobbyDestroyedHandler);
 
-  // Log connection stats every 5 minutes
+  // Log connection stats every 5 minutes (unref so it doesn't keep process alive)
   setInterval(() => {
     const connectedSockets = Array.from(io.sockets.sockets.values());
     const hostConnections = connectedSockets.filter(s => {
@@ -195,10 +206,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         console.log(`     - ${reason}: ${count}`);
       });
     }
-  }, 5 * 60 * 1000);
+  }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
-  setInterval(() => {
+  const revivalWatchdogInterval = setInterval(() => {
     const completedRevivals = (gameState as any).processRevivalSessions();
     for (const revival of completedRevivals) {
       io.to(revival.lobbyId).emit('revive_complete', {
@@ -278,6 +289,47 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           pendingActions: {},
           stateChanges: {}
         });
+
+        // Register player-user mapping and emit progression sync for authenticated users
+        if (socket.data.userId) {
+          registerPlayerUserId(lobby.hostId, socket.data.userId);
+          (async () => {
+            try {
+              await progressionManager.loadPlayerXP(lobby.id, lobby.hostId, socket.data.userId!);
+              const totalXP = progressionManager.getPlayerXP(lobby.id, lobby.hostId);
+              const currentLevel = progressionManager.getPlayerLevel(lobby.id, lobby.hostId);
+              socket.emit('progression:sync', {
+                playerId: lobby.hostId,
+                totalXP,
+                currentLevel,
+                seq: 0,
+                timestamp: Date.now(),
+              });
+            } catch (err) {
+              console.error('Failed to sync progression for host:', err);
+            }
+          })();
+
+          // Load class mastery (fire-and-forget, non-blocking)
+          (async () => {
+            try {
+              await classMasteryManager.loadAllClassMastery(lobby.id, lobby.hostId, socket.data.userId!);
+              // Build mastery data from loaded state
+              const masteryData = classMasteryManager.getAllMasteryData(lobby.id, lobby.hostId);
+              if (Object.keys(masteryData).length > 0) {
+                socket.emit('class_mastery:sync', {
+                  playerId: lobby.hostId,
+                  masteryData,
+                  seq: 0,
+                  timestamp: Date.now(),
+                });
+              }
+            } catch (err) {
+              console.error('Failed to sync class mastery:', err);
+            }
+          })();
+        }
+
         console.log(`Lobby created: ${lobby.id} by ${hostName}`);
       } catch (error) {
         console.error('Error creating lobby:', error);
@@ -340,6 +392,46 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Send full state event for fine-grained event system initialization
         const emitter = getClientEventEmitter();
         emitter.sendFullState(lobby.id, lobby, socket.id);
+
+        // Register player-user mapping and emit progression sync for authenticated users
+        if (socket.data.userId) {
+          registerPlayerUserId(player.id, socket.data.userId);
+          (async () => {
+            try {
+              await progressionManager.loadPlayerXP(lobby.id, player.id, socket.data.userId!);
+              const totalXP = progressionManager.getPlayerXP(lobby.id, player.id);
+              const currentLevel = progressionManager.getPlayerLevel(lobby.id, player.id);
+              socket.emit('progression:sync', {
+                playerId: player.id,
+                totalXP,
+                currentLevel,
+                seq: 0,
+                timestamp: Date.now(),
+              });
+            } catch (err) {
+              console.error('Failed to sync progression for player:', err);
+            }
+          })();
+
+          // Load class mastery (fire-and-forget, non-blocking)
+          (async () => {
+            try {
+              await classMasteryManager.loadAllClassMastery(lobby.id, player.id, socket.data.userId!);
+              // Build mastery data from loaded state
+              const masteryData = classMasteryManager.getAllMasteryData(lobby.id, player.id);
+              if (Object.keys(masteryData).length > 0) {
+                socket.emit('class_mastery:sync', {
+                  playerId: player.id,
+                  masteryData,
+                  seq: 0,
+                  timestamp: Date.now(),
+                });
+              }
+            } catch (err) {
+              console.error('Failed to sync class mastery:', err);
+            }
+          })();
+        }
 
         // Notify other players about the new player joining (for dropping animation)
         socket.to(lobby.id).emit('player_joined', { player, lobby });
@@ -518,6 +610,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId || !lobbyId) return;
 
       console.log(`🚪 Player ${playerId} explicitly leaving lobby ${lobbyId}`);
+
+      // Capture player info before removal
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      const leavingPlayer = lobby?.players.find(p => p.id === playerId);
+      const playerName = leavingPlayer?.name || 'Unknown';
 
       // Remove player from lobby
       const updatedLobby = sessionManager.removePlayer(playerId);
@@ -960,7 +1057,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         combatManager.cleanupLobby(lobbyId);
         const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
         const ticketIndex = (lobby.completedTickets?.length ?? 0);
-        combatManager.initializeCombat(lobbyId, players, ticketIndex);
+        combatManager.initializeCombat(lobbyId, players, ticketIndex, lobby.boss?.sprite);
 
         // Reset player scores
         for (const player of lobby.players) {
@@ -1331,6 +1428,46 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Reinitialize fine-grained event sequence for reconnected player
           const emitter = getClientEventEmitter();
           emitter.sendFullState(lobbyId, lobbySync.lobby, socket.id);
+
+          // Register player-user mapping and emit progression sync for authenticated users
+          if (socket.data.userId) {
+            registerPlayerUserId(playerId, socket.data.userId);
+            (async () => {
+              try {
+                await progressionManager.loadPlayerXP(lobbyId, playerId, socket.data.userId!);
+                const totalXP = progressionManager.getPlayerXP(lobbyId, playerId);
+                const currentLevel = progressionManager.getPlayerLevel(lobbyId, playerId);
+                socket.emit('progression:sync', {
+                  playerId,
+                  totalXP,
+                  currentLevel,
+                  seq: 0,
+                  timestamp: Date.now(),
+                });
+              } catch (err) {
+                console.error('Failed to sync progression on reconnect:', err);
+              }
+            })();
+
+            // Load class mastery (fire-and-forget, non-blocking)
+            (async () => {
+              try {
+                await classMasteryManager.loadAllClassMastery(lobbyId, playerId, socket.data.userId!);
+                // Build mastery data from loaded state
+                const masteryData = classMasteryManager.getAllMasteryData(lobbyId, playerId);
+                if (Object.keys(masteryData).length > 0) {
+                  socket.emit('class_mastery:sync', {
+                    playerId,
+                    masteryData,
+                    seq: 0,
+                    timestamp: Date.now(),
+                  });
+                }
+              } catch (err) {
+                console.error('Failed to sync class mastery:', err);
+              }
+            })();
+          }
 
           // Notify other players about the reconnection
           socket.to(lobbyId).emit('player_reconnected', {
@@ -1750,7 +1887,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Initialize combat with active players
       const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
-      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0);
+      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0, lobby.boss?.sprite);
 
       console.log(`Combat initialized for lobby ${data.lobbyId}`);
     });
@@ -1771,6 +1908,60 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           throw error;
         }
       }
+    });
+
+    // Player uses class ability
+    socket.on('use_ability', ({ abilityId }: { abilityId: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      // Get lobby for phase validation
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) {
+        socket.emit('game_error', { message: 'Not in a lobby' });
+        return;
+      }
+
+      // Validate combat phase
+      if (lobby.gamePhase !== 'battle') {
+        socket.emit('game_error', { message: 'Abilities only usable in battle phase' });
+        return;
+      }
+
+      // Attempt ability use (AbilityManager validates cooldown, mastery, combat state)
+      const result = abilityManager.useAbility(lobby.id, playerId, abilityId);
+
+      if (!result.success) {
+        socket.emit('game_error', { message: result.error || 'Ability use failed' });
+        return;
+      }
+
+      // Success - events emitted by AbilityManager and effect handlers in domains/index.ts
+      console.log(`Player ${playerId} used ability ${abilityId}`);
+    });
+
+    socket.on('use_item', ({ itemType }: { itemType: string }) => {
+      const playerId = socket.data.playerId;
+      if (!playerId) return;
+
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) {
+        socket.emit('game_error', { message: 'Not in a lobby' });
+        return;
+      }
+
+      if (lobby.gamePhase !== 'battle') {
+        socket.emit('game_error', { message: 'Items only usable in battle phase' });
+        return;
+      }
+
+      const result = itemManager.useItem(lobby.id, playerId, itemType as any);
+      if (!result.success) {
+        socket.emit('game_error', { message: result.error || 'Item use failed' });
+        return;
+      }
+
+      console.log(`Player ${playerId} used item ${itemType}`);
     });
 
     // Start revival
@@ -1886,5 +2077,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
   });
 
-  return io;
+  // Return both io and a cleanup function for graceful shutdown
+  return {
+    io,
+    cleanup: () => {
+      clearInterval(positionBatchInterval);
+      clearInterval(revivalWatchdogInterval);
+      eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);
+      pendingPositionUpdates.clear();
+    }
+  };
 }

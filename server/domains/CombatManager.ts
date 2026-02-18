@@ -28,6 +28,8 @@ import {
   RevivalNotAllowedError,
   NotHealerClassError,
 } from '../errors/CombatErrors';
+import { BossAI, getBossTypeFromSprite } from './boss-ai';
+import type { BossType, BossPhaseNumber, ThreatEntry as BossAIThreatEntry } from './boss-ai';
 
 /**
  * Dependencies required by CombatManager
@@ -36,6 +38,13 @@ export interface CombatManagerDeps {
   eventBus: ScopedEventBus;
   getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
+  classMasteryManager?: {
+    getMasteryMultiplier: (lobbyId: string, playerId: string, avatarClass: AvatarClass | null) => number;
+    getUnlockedAbilities: (lobbyId: string, playerId: string, avatarClass: AvatarClass | null) => string[];
+  };
+  progressionManager?: {
+    getPlayerLevel: (lobbyId: string, playerId: string) => number;
+  };
 }
 
 // =============================================================================
@@ -49,11 +58,9 @@ type PlayerCombatState = 'fighting' | 'downed' | 'ghost';
 
 /**
  * Threat table entry for boss targeting
+ * Using BossAI ThreatEntry type for consistency
  */
-interface ThreatEntry {
-  playerId: string;
-  threat: number;
-}
+type ThreatEntry = BossAIThreatEntry;
 
 /**
  * Player combat state tracking
@@ -76,9 +83,11 @@ interface PlayerCombat {
 interface BossCombat {
   bossId: string;
   bossName: string;
+  bossType: BossType;        // NEW: the boss type identifier
   hp: number;
   maxHp: number;
-  isEnraged: boolean;
+  isEnraged: boolean;        // KEEP for backward compat, but phase tracked by BossAI
+  currentPhase: BossPhaseNumber;  // NEW: current HP phase (1, 2, 3)
   attackTimerHandle?: NodeJS.Timeout;
   lastAttackAt: number;
   threatTable: Map<string, ThreatEntry>;
@@ -125,6 +134,7 @@ export class CombatManager {
   // State Maps
   private combatStates = new Map<string, LobbyCombatState>();
   private revivalSessions = new Map<string, RevivalSession>();
+  private bossAIs = new Map<string, BossAI>();
 
   // HP and damage tuning
   private readonly BASE_HP_PER_PLAYER = 1000;
@@ -148,6 +158,11 @@ export class CombatManager {
   private readonly BOSS_ATTACK_VARIANCE = 0.3;      // ±30%
   private readonly BOSS_INITIAL_ATTACK_DELAY_MS = 3000;
 
+  // Level-based difficulty scaling
+  private readonly LEVEL_HP_SCALING = 0.08;      // +8% HP per average level
+  private readonly LEVEL_DAMAGE_SCALING = 0.05;   // +5% damage per average level
+  private readonly PHASE_3_ATTACK_INTERVAL_MS = 2000; // Faster attacks in phase 3 (enrage)
+
   // Healer classes that can revive
   private readonly HEALER_CLASSES: AvatarClass[] = ['cleric', 'paladin', 'bard'];
 
@@ -169,11 +184,15 @@ export class CombatManager {
   private readonly eventBus: ScopedEventBus;
   private readonly getPlayerTeam?: (lobbyId: string, playerId: string) => TeamType | null;
   private readonly getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
+  private readonly classMasteryManager: CombatManagerDeps['classMasteryManager'];
+  private readonly progressionManager: CombatManagerDeps['progressionManager'];
 
   constructor(deps: CombatManagerDeps) {
     this.eventBus = deps.eventBus;
     this.getPlayerTeam = deps.getPlayerTeam;
     this.getPlayerClass = deps.getPlayerClass;
+    this.classMasteryManager = deps.classMasteryManager;
+    this.progressionManager = deps.progressionManager;
 
     // Subscribe to cross-domain events
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
@@ -355,7 +374,12 @@ export class CombatManager {
       }
 
       // Remove from threat table
-      combatState.boss?.threatTable.delete(playerId);
+      if (combatState.boss) {
+        const bossAI = this.bossAIs.get(lobbyId);
+        if (bossAI) {
+          bossAI.cleanupPlayer(combatState.boss.threatTable, playerId);
+        }
+      }
 
       // Remove from players map
       combatState.players.delete(playerId);
@@ -377,23 +401,47 @@ export class CombatManager {
   /**
    * Initialize combat state for a lobby
    */
-  initializeCombat(lobbyId: string, players: Array<{id: string; team: TeamType}>, ticketIndex: number = 0): void {
+  initializeCombat(lobbyId: string, players: Array<{id: string; team: TeamType}>, ticketIndex: number = 0, bossSprite?: string): void {
     // Filter out spectators for HP calculation
     const activePlayers = players.filter(p => p.team !== 'spectators');
     const activePlayerCount = activePlayers.length;
 
-    // Calculate boss HP with ticket scaling
-    const difficultyMultiplier = 1 + (ticketIndex * 0.2);
-    const bossMaxHp = Math.floor(this.BASE_HP_PER_PLAYER * activePlayerCount * difficultyMultiplier);
+    // Determine boss type from sprite or use default
+    let bossType: BossType = 'bug-hydra'; // Default
+    if (bossSprite) {
+      const typeFromSprite = getBossTypeFromSprite(bossSprite);
+      if (typeFromSprite) {
+        bossType = typeFromSprite;
+      }
+    }
+
+    // Create BossAI instance
+    const bossAI = new BossAI(bossType);
+    this.bossAIs.set(lobbyId, bossAI);
+
+    // Calculate average team level for difficulty scaling
+    let averageLevel = 1;
+    if (this.progressionManager) {
+      const levels = activePlayers.map(p => this.progressionManager!.getPlayerLevel(lobbyId, p.id));
+      const totalLevels = levels.reduce((a, b) => a + b, 0);
+      averageLevel = Math.max(1, Math.floor(totalLevels / levels.length));
+    }
+    const levelMultiplier = 1 + ((averageLevel - 1) * this.LEVEL_HP_SCALING);
+
+    // Calculate boss HP with ticket scaling and level scaling
+    const ticketMultiplier = 1 + (ticketIndex * 0.2);
+    const bossMaxHp = Math.floor(this.BASE_HP_PER_PLAYER * activePlayerCount * ticketMultiplier * levelMultiplier);
 
     // Create boss combat state
     const bossId = `boss-${lobbyId}-${Date.now()}`;
     const boss: BossCombat = {
       bossId,
       bossName: 'Boss',
+      bossType,
       hp: bossMaxHp,
       maxHp: bossMaxHp,
       isEnraged: false,
+      currentPhase: 1,
       lastAttackAt: 0,
       threatTable: new Map(),
     };
@@ -478,25 +526,15 @@ export class CombatManager {
       throw new PlayerNotInCombatError(playerId);
     }
 
-    // Get player class and calculate damage
-    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
-    const baseDamage = this.getClassBaseDamage(playerClass);
+    // Get player class and mastery multiplier
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId) ?? null;
+    const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, playerId, playerClass) ?? 1.0;
+    const baseDamage = this.getClassBaseDamage(playerClass, masteryMultiplier);
     const damage = Math.floor(baseDamage * combatState.battleModifier);
 
     // Reduce boss HP
     const boss = combatState.boss;
     boss.hp = Math.max(0, boss.hp - damage);
-
-    // Update threat table
-    const existingThreat = boss.threatTable.get(playerId);
-    if (existingThreat) {
-      existingThreat.threat += damage;
-    } else {
-      boss.threatTable.set(playerId, {
-        playerId,
-        threat: damage,
-      });
-    }
 
     // Emit boss damaged event
     this.eventBus.emit('combat:boss_damaged', {
@@ -506,18 +544,43 @@ export class CombatManager {
       bossHealth: boss.hp,
     });
 
-    // Check for enrage (50% HP threshold)
-    if (!boss.isEnraged && boss.hp <= boss.maxHp * 0.5 && boss.hp > 0) {
-      boss.isEnraged = true;
-      this.eventBus.emit('combat:boss_enraged', {
-        lobbyId,
-        message: 'The boss has become enraged!',
-      });
+    // Check for HP phase transition and record threat via BossAI
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI) {
+      // Record threat via BossAI
+      bossAI.recordThreat(boss.threatTable, playerId, 'damage', damage);
+
+      // Check for phase transition
+      const phaseResult = bossAI.checkPhaseTransition(boss.hp, boss.maxHp);
+      if (phaseResult.transitioned) {
+        boss.currentPhase = phaseResult.newPhase;
+
+        // Still set isEnraged for backward compat at phase 2+
+        if (phaseResult.newPhase >= 2) {
+          boss.isEnraged = true;
+        }
+
+        this.eventBus.emit('combat:boss_phase_transition', {
+          lobbyId,
+          newPhase: phaseResult.newPhase,
+          previousPhase: phaseResult.newPhase - 1,
+          message: phaseResult.message ?? 'The boss grows more powerful!',
+          bossType: boss.bossType,
+        });
+
+        // Also emit enraged for backward compat
+        if (phaseResult.newPhase === 2) {
+          this.eventBus.emit('combat:boss_enraged', {
+            lobbyId,
+            message: phaseResult.message ?? 'The boss has become enraged!',
+          });
+        }
+      }
     }
 
     // Check for boss defeat
     if (boss.hp <= 0) {
-      // Clear attack timer if running (placeholder for Plan 04-03)
+      // Clear attack timer if running
       if (boss.attackTimerHandle) {
         clearTimeout(boss.attackTimerHandle);
         boss.attackTimerHandle = undefined;
@@ -534,34 +597,44 @@ export class CombatManager {
 
   /**
    * Get base damage for a class
+   * @param avatarClass The player's class
+   * @param masteryMultiplier Mastery damage multiplier (1.0 Novice, 1.1 Expert, 1.2 Master)
    */
-  private getClassBaseDamage(avatarClass: AvatarClass | null | undefined): number {
+  private getClassBaseDamage(avatarClass: AvatarClass | null | undefined, masteryMultiplier: number = 1.0): number {
+    let baseDamage: number;
+
     switch (avatarClass) {
       // Tank classes - lower damage
       case 'warrior':
       case 'paladin':
       case 'oathbreaker':
-        return 15;
+        baseDamage = 15;
+        break;
 
       // DPS classes - standard damage
       case 'ranger':
       case 'rogue':
       case 'monk':
-        return 20;
+        baseDamage = 20;
+        break;
 
       // Glass cannon - high damage
       case 'sorcerer':
       case 'wizard':
-        return 25;
+        baseDamage = 25;
+        break;
 
       // Healer classes - lowest damage
       case 'cleric':
       case 'bard':
-        return 12;
+        baseDamage = 12;
+        break;
 
       default:
-        return 20; // Default to standard DPS damage
+        baseDamage = 20; // Default to standard DPS damage
     }
+
+    return Math.floor(baseDamage * masteryMultiplier);
   }
 
   /**
@@ -572,12 +645,13 @@ export class CombatManager {
     const combatState = this.combatStates.get(lobbyId);
     if (!combatState || !combatState.boss) return;
 
-    // Calculate base team damage (sum of all fighting player base damages)
+    // Calculate base team damage (sum of all fighting player base damages with mastery multipliers)
     let baseDamage = 0;
     for (const player of combatState.players.values()) {
       if (player.combatState === 'fighting') {
-        const playerClass = this.getPlayerClass?.(lobbyId, player.playerId);
-        baseDamage += this.getClassBaseDamage(playerClass);
+        const playerClass = this.getPlayerClass?.(lobbyId, player.playerId) ?? null;
+        const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, player.playerId, playerClass) ?? 1.0;
+        baseDamage += this.getClassBaseDamage(playerClass, masteryMultiplier);
       }
     }
 
@@ -817,9 +891,10 @@ export class CombatManager {
       return 0;
     }
 
-    // Calculate damage (use player's base damage)
-    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
-    const baseDamage = this.getClassBaseDamage(playerClass);
+    // Calculate damage (use player's base damage with mastery multiplier)
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId) ?? null;
+    const masteryMultiplier = this.classMasteryManager?.getMasteryMultiplier(lobbyId, playerId, playerClass) ?? 1.0;
+    const baseDamage = this.getClassBaseDamage(playerClass, masteryMultiplier);
     const damage = Math.floor(baseDamage * combatState.battleModifier);
 
     // Apply damage
@@ -908,8 +983,9 @@ export class CombatManager {
    */
   private performBossAttack(lobbyId: string): void {
     const combatState = this.combatStates.get(lobbyId);
-    if (!combatState || !combatState.boss) {
-      return; // Combat ended
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (!combatState || !combatState.boss || !bossAI) {
+      return; // Combat ended or not initialized
     }
 
     const boss = combatState.boss;
@@ -919,19 +995,68 @@ export class CombatManager {
       return;
     }
 
-    // Select attack type
-    const attackType = this.selectAttackType(boss.isEnraged);
+    // Build battle context
+    const context = {
+      bossHp: boss.hp,
+      bossMaxHp: boss.maxHp,
+      currentPhase: boss.currentPhase,
+      playerCount: combatState.players.size,
+      fightingPlayerCount: Array.from(combatState.players.values())
+        .filter(p => p.combatState === 'fighting').length,
+      timeSinceBattleStart: combatState.battleStartTime
+        ? Date.now() - combatState.battleStartTime : 0,
+    };
 
-    // Check if AoE
-    const isAoE = this.isAoEAttack(boss.isEnraged);
+    // Get alive fighting player IDs
+    const alivePlayers = Array.from(combatState.players.values())
+      .filter(p => p.combatState === 'fighting')
+      .map(p => p.playerId);
 
-    if (isAoE) {
-      this.performAoEAttack(lobbyId, attackType);
+    if (alivePlayers.length === 0) {
+      return; // No targets available
+    }
+
+    // Select action from BossAI
+    const action = bossAI.selectNextAction(context, boss.threatTable, alivePlayers);
+    if (!action) {
+      return; // No action selected
+    }
+
+    const { pattern, targetPlayerIds } = action;
+
+    // Calculate damage with level scaling
+    let averageLevel = 1;
+    if (this.progressionManager) {
+      const levels = alivePlayers.map(id => this.progressionManager!.getPlayerLevel(lobbyId, id));
+      const totalLevels = levels.reduce((a, b) => a + b, 0);
+      averageLevel = Math.max(1, Math.floor(totalLevels / levels.length));
+    }
+    const levelDamageMultiplier = 1 + ((averageLevel - 1) * this.LEVEL_DAMAGE_SCALING);
+    const scaledDamage = Math.floor(pattern.baseDamage * levelDamageMultiplier);
+
+    // Handle telegraphing
+    if (pattern.telegraphDurationMs > 0) {
+      // Emit telegraph event
+      this.eventBus.emit('combat:boss_telegraph', {
+        lobbyId,
+        targetId: targetPlayerIds.length === 1 ? targetPlayerIds[0] : undefined,
+        attackType: pattern.attackType,
+        message: pattern.telegraphMessage,
+        delayMs: pattern.telegraphDurationMs,
+        visualEffect: pattern.visualEffect,
+        bossType: boss.bossType,
+      });
+
+      // Apply damage after telegraph delay
+      setTimeout(() => {
+        for (const targetId of targetPlayerIds) {
+          this.applyDamageToPlayer(lobbyId, targetId, scaledDamage);
+        }
+      }, pattern.telegraphDurationMs);
     } else {
-      // Select single target via threat
-      const targetId = this.selectThreatTarget(boss.threatTable, combatState.players);
-      if (targetId) {
-        this.attackSingleTarget(lobbyId, targetId, attackType);
+      // Instant attack (no telegraph)
+      for (const targetId of targetPlayerIds) {
+        this.applyDamageToPlayer(lobbyId, targetId, scaledDamage);
       }
     }
 
@@ -1123,10 +1248,20 @@ export class CombatManager {
       return;
     }
 
-    // Calculate variable interval
-    const baseInterval = boss.isEnraged
-      ? this.BOSS_ATTACK_ENRAGED_INTERVAL_MS
-      : this.BOSS_ATTACK_BASE_INTERVAL_MS;
+    // Phase-based attack intervals:
+    // Phase 1: base (5000ms), Phase 2: enraged (3000ms), Phase 3: frantic (2000ms)
+    let baseInterval: number;
+    switch (boss.currentPhase) {
+      case 3:
+        baseInterval = this.PHASE_3_ATTACK_INTERVAL_MS;
+        break;
+      case 2:
+        baseInterval = this.BOSS_ATTACK_ENRAGED_INTERVAL_MS;
+        break;
+      default:
+        baseInterval = this.BOSS_ATTACK_BASE_INTERVAL_MS;
+        break;
+    }
 
     // Apply variance: ±30%
     const variance = (Math.random() * 2 - 1) * this.BOSS_ATTACK_VARIANCE; // Range: -0.3 to +0.3
@@ -1307,6 +1442,12 @@ export class CombatManager {
       healAmount: actualHealAmount,
       newHealth: targetState.hp,
     });
+
+    // Record healing threat
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI && combatState.boss) {
+      bossAI.recordThreat(combatState.boss.threatTable, healerId, 'healing', actualHealAmount);
+    }
   }
 
   /**
@@ -1472,6 +1613,12 @@ export class CombatManager {
       playerId: session.targetId,
       reviverId: session.reviverId,
     });
+
+    // Record revival threat
+    const bossAI = this.bossAIs.get(session.lobbyId);
+    if (bossAI && combatState.boss) {
+      bossAI.recordThreat(combatState.boss.threatTable, session.reviverId, 'revival', 1);
+    }
   }
 
   /**
@@ -1516,6 +1663,115 @@ export class CombatManager {
    */
   getCombatState(lobbyId: string): LobbyCombatState | undefined {
     return this.combatStates.get(lobbyId);
+  }
+
+  /**
+   * Check if a player can use a class-specific ability based on mastery tier
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @param abilityId Ability ID to check
+   * @returns True if player has unlocked the ability
+   */
+  public canUseClassAbility(lobbyId: string, playerId: string, abilityId: string): boolean {
+    const playerClass = this.getPlayerClass?.(lobbyId, playerId);
+    if (!playerClass || !this.classMasteryManager) return false;
+    const unlockedAbilities = this.classMasteryManager.getUnlockedAbilities(lobbyId, playerId, playerClass);
+    return unlockedAbilities.includes(abilityId);
+  }
+
+  /**
+   * Get BossAI instance for a lobby
+   * @param lobbyId Lobby identifier
+   * @returns BossAI instance or undefined
+   */
+  public getBossAI(lobbyId: string): BossAI | undefined {
+    return this.bossAIs.get(lobbyId);
+  }
+
+  /**
+   * Apply damage from class ability to boss
+   * Handles threat tracking, phase transitions, and defeat checks
+   * @param lobbyId Lobby identifier
+   * @param playerId Player identifier
+   * @param damage Damage amount
+   */
+  public applyAbilityDamageToBoss(lobbyId: string, playerId: string, damage: number): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState?.boss) return;
+
+    combatState.boss.hp = Math.max(0, combatState.boss.hp - damage);
+
+    this.eventBus.emit('combat:boss_damaged', {
+      lobbyId,
+      playerId,
+      damage,
+      bossHealth: combatState.boss.hp,
+    });
+
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI) {
+      bossAI.recordThreat(combatState.boss.threatTable, playerId, 'damage', damage);
+      // Check phase transition
+      const phaseResult = bossAI.checkPhaseTransition(combatState.boss.hp, combatState.boss.maxHp);
+      if (phaseResult.transitioned) {
+        combatState.boss.currentPhase = phaseResult.newPhase;
+        if (phaseResult.newPhase >= 2) combatState.boss.isEnraged = true;
+        this.eventBus.emit('combat:boss_phase_transition', {
+          lobbyId,
+          newPhase: phaseResult.newPhase,
+          previousPhase: phaseResult.newPhase - 1,
+          message: phaseResult.message ?? 'The boss grows more powerful!',
+          bossType: combatState.boss.bossType,
+        });
+      }
+    }
+  }
+
+  /**
+   * Apply combo damage to boss and check for phase transitions
+   * @param lobbyId Lobby identifier
+   * @param comboId Combo identifier (for XP tracking with 'combo:' prefix)
+   * @param damage Combo damage amount
+   */
+  public applyComboMultiplier(lobbyId: string, comboId: string, damage: number): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState?.boss) return;
+
+    // Apply combo damage to boss
+    combatState.boss.hp = Math.max(0, combatState.boss.hp - damage);
+
+    // Emit boss damaged event for XP tracking
+    this.eventBus.emit('combat:boss_damaged', {
+      lobbyId,
+      playerId: 'combo:' + comboId, // Special prefix for combo damage source
+      damage,
+      bossHealth: combatState.boss.hp,
+    });
+
+    // Check boss phase transitions via BossAI
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI) {
+      const phaseResult = bossAI.checkPhaseTransition(combatState.boss.hp, combatState.boss.maxHp);
+      if (phaseResult.transitioned) {
+        combatState.boss.currentPhase = phaseResult.newPhase;
+        if (phaseResult.newPhase >= 2) combatState.boss.isEnraged = true;
+        this.eventBus.emit('combat:boss_phase_transition', {
+          lobbyId,
+          newPhase: phaseResult.newPhase,
+          previousPhase: phaseResult.newPhase - 1,
+          message: phaseResult.message ?? 'The boss grows more powerful!',
+          bossType: combatState.boss.bossType,
+        });
+      }
+    }
+
+    // Check if boss defeated
+    if (combatState.boss.hp <= 0) {
+      this.eventBus.emit('combat:boss_defeated', {
+        lobbyId,
+        bossId: combatState.boss.bossId,
+      });
+    }
   }
 
   /**
@@ -1593,6 +1849,7 @@ export class CombatManager {
     }
 
     this.combatStates.delete(lobbyId);
+    this.bossAIs.delete(lobbyId);
 
     // Emit cleanup complete event
     this.eventBus.emit('combat:cleanup_complete', { lobbyId });
