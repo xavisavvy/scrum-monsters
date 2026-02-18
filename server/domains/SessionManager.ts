@@ -35,6 +35,16 @@ import {
   ReconnectionFailedError,
 } from '../errors/SessionErrors';
 
+const LOBBY_CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+function generateSecureLobbyCode(): string {
+  const bytes = randomBytes(6);
+  return Array.from(bytes).map(b => LOBBY_CODE_CHARSET[b % LOBBY_CODE_CHARSET.length]).join('');
+}
+
+function generateSecureId(): string {
+  return randomBytes(8).toString('hex').substring(0, 13);
+}
+
 /**
  * Dependencies required by SessionManager
  */
@@ -96,10 +106,10 @@ export class SessionManager {
     // Generate lobby ID
     const lobbyId =
       options?.customLobbyId ||
-      Math.random().toString(36).substring(2, 8).toUpperCase();
+      generateSecureLobbyCode();
 
     // Create host player
-    const hostId = Math.random().toString(36).substring(2, 15);
+    const hostId = generateSecureId();
     const hostPlayer: Player = {
       id: hostId,
       name: hostName,
@@ -242,7 +252,7 @@ export class SessionManager {
 
     // Create new player - make them host if no active host exists
     // Use preserved avatar/team from stale player if available
-    const playerId = Math.random().toString(36).substring(2, 15);
+    const playerId = generateSecureId();
     const player: Player = {
       id: playerId,
       name: playerName,
