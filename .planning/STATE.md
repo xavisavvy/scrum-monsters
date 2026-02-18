@@ -41,6 +41,7 @@ Progress: [███████████████████████
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
 | Phase 21 P04 | 1 | 1 tasks | 1 files |
+| Phase 21 P03 | 1 | 2 tasks | 4 files |
 | Phase 21 P01 | 1 | 2 tasks | 4 files |
 
 ## Accumulated Context
@@ -56,6 +57,8 @@ Recent decisions affecting v2.0 milestone work:
 - **Server state authoritative for phases:** URLs reflect game state, don't drive it. Prevents state machine vs URL navigation conflicts.
 - [Phase 21]: Top-level permissions: contents: read added to rollback.yml; job-level contents: write preserved for audit-and-notify job
 - [Phase 21-01]: authLimiter only on /api/auth/login and /api/auth/register (not OAuth routes — OAuth uses state param for CSRF); trust proxy set to 1 (single hop); lobbyId regex case-insensitive, normalizes to uppercase
+- [Phase 21-03]: Use crypto.randomBytes for all security-sensitive IDs; preserve Math.random for gameplay randomness (boss AI, damage, positioning)
+- [Phase 21-03]: generateSecureLobbyCode uses alphanumeric charset for human-readable lobby codes; generateSecureId uses 13-char hex for player/boss/projectile IDs
 
 ### Pending Todos
 
@@ -78,11 +81,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 21-01-PLAN.md (Rate limiting and open redirect fix)
+Stopped at: Completed 21-03-PLAN.md (Crypto randomness hardening)
 Resume file: None
 
 **Next action:** Execute remaining plans of phase 21 or start next phase.
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-11 after v2.0 roadmap creation*
+*Last updated: 2026-02-18 after completing 21-03 (Crypto randomness hardening)*
