@@ -1,12 +1,14 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { PlayerCharacter, PlayerPosition, Projectile } from './PlayerCharacter';
 import { ProjectileSystem } from './ProjectileSystem';
+import { MobileControls } from './MobileControls';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { useViewport } from '@/lib/hooks/useViewport';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 interface PlayerControllerProps {
   // Remove containerWidth/Height - viewport system handles this
@@ -32,6 +34,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   const [specialAttackCooldown, setSpecialAttackCooldown] = useState(0);
   const [currentDirection, setCurrentDirection] = useState<SpriteDirection>('down');
   const [isMoving, setIsMoving] = useState(false);
+
+  const isMobile = useIsMobile();
 
   const characterSize = 64;
   const moveSpeed = 5;
@@ -462,23 +466,30 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     setProjectiles(prev => [...prev, newProjectile]);
   }, []);
 
-  // Handle screen clicks for shooting
-  const handleScreenClick = useCallback((event: React.MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
+  // Handle screen pointer down for shooting (replaces onClick to avoid mobile double-fire)
+  const handleScreenPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    // Prevent synthetic mouse events on touch to avoid double-fire
+    if (event.pointerType === 'touch') {
+      event.preventDefault();
+    }
+
+    // Focus the element for keyboard input
+    (event.currentTarget as HTMLElement).focus?.();
+
     event.stopPropagation();
-    
+
     // Don't shoot if clicking on UI elements
     const target = event.target as HTMLElement;
-    
+
     // Only ignore clicks on interactive UI elements marked with data-no-shoot
     if (target.closest('[data-no-shoot]')) {
       return;
     }
-    
+
     // Allow clicks on player controller or its direct children (like character)
-    const isValidTarget = target === event.currentTarget || 
+    const isValidTarget = target === event.currentTarget ||
                          event.currentTarget.contains(target);
-    
+
     if (!isValidTarget) {
       return;
     }
@@ -675,6 +686,111 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     return nearestPlayer;
   }, [currentLobby, currentPlayer, playerPosition]);
 
+  // Mobile touch input handlers — update the same keys Set as keyboard input
+  const handleMobileKeyDown = useCallback((code: string) => {
+    setKeys(prev => new Set(prev).add(code));
+
+    // Handle jump (same logic as keyboard Space handler)
+    if (code === 'Space' && !isJumping) {
+      setIsJumping(true);
+      emit('player_jump', { isJumping: true });
+      setTimeout(() => {
+        setIsJumping(false);
+        setJumpHeight(0);
+        emit('player_jump', { isJumping: false });
+      }, jumpDuration);
+    }
+
+    // Handle special attack (same logic as keyboard Q handler)
+    if (code === 'KeyQ' && !qPressed && specialAttackCooldown <= 0) {
+      setQPressed(true);
+      if (currentPlayer) {
+        handleSpecialAttack(currentPlayer.avatar);
+        setSpecialAttackCooldown(5000);
+        const cooldownInterval = setInterval(() => {
+          setSpecialAttackCooldown(prev => {
+            if (prev <= 100) {
+              clearInterval(cooldownInterval);
+              return 0;
+            }
+            return prev - 100;
+          });
+        }, 100);
+      }
+    }
+
+    // Handle shoot (same logic as keyboard Ctrl handler)
+    if (code === 'ControlLeft' && currentPlayer && !ctrlPressed) {
+      setCtrlPressed(true);
+
+      let targetX, targetY, targetPlayerId: string | null = null;
+
+      if (currentPlayer.team === 'spectators') {
+        const nearestPlayer = findNearestTargetPlayer();
+        if (nearestPlayer) {
+          targetX = nearestPlayer.x;
+          targetY = nearestPlayer.y;
+          targetPlayerId = nearestPlayer.id;
+        } else {
+          const centerWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
+          targetX = centerWorld.x;
+          targetY = centerWorld.y;
+        }
+      } else {
+        const bossWorld = viewport.worldToScreen(viewport.worldWidth * 0.5, viewport.worldHeight * 0.4);
+        targetX = bossWorld.x;
+        targetY = bossWorld.y;
+      }
+
+      const characterCenterX = playerPosition.x + characterSize / 2;
+      const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
+
+      const newProjectile: Projectile = {
+        id: Math.random().toString(36).substring(2, 15),
+        startX: characterCenterX,
+        startY: characterCenterY,
+        targetX: targetX!,
+        targetY: targetY!,
+        emoji: getProjectileEmoji(currentPlayer.avatar),
+        progress: 0
+      };
+
+      setProjectiles(prev => [...prev, newProjectile]);
+
+      const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
+      const targetWorld = viewport.screenToWorld(targetX!, targetY!);
+      const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
+      const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
+      const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
+      const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
+
+      emit('player_projectile', {
+        startX: percentStartX,
+        startY: percentStartY,
+        targetX: percentTargetX,
+        targetY: percentTargetY,
+        emoji: getProjectileEmoji(currentPlayer.avatar),
+        targetPlayerId: targetPlayerId || undefined
+      });
+    }
+  }, [isJumping, jumpDuration, emit, qPressed, specialAttackCooldown, currentPlayer, ctrlPressed,
+      playerPosition, characterSize, viewport, findNearestTargetPlayer, handleSpecialAttack]);
+
+  const handleMobileKeyUp = useCallback((code: string) => {
+    setKeys(prev => {
+      const next = new Set(prev);
+      next.delete(code);
+      return next;
+    });
+
+    if (code === 'KeyQ') {
+      setQPressed(false);
+    }
+    if (code === 'ControlLeft') {
+      setCtrlPressed(false);
+    }
+  }, []);
+
   // Boss projectile collision handler
   const handleBossProjectileComplete = useCallback((projectile: Projectile) => {
     // Remove the boss projectile
@@ -790,10 +906,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   return (
     <div 
       className={`absolute inset-0 focus:outline-none ${isActive ? 'pointer-events-auto cursor-crosshair' : 'pointer-events-none'}`}
-      onClick={isActive ? handleScreenClick : undefined}
-      onMouseDown={isActive ? (e) => {
-        e.currentTarget.focus();
-      } : undefined}
+      onPointerDown={isActive ? handleScreenPointerDown : undefined}
       tabIndex={isActive ? 0 : -1}
       onKeyDown={isActive ? (e) => {
         const event = e.nativeEvent;
@@ -1051,6 +1164,15 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             </div>
           </div>
         </div>
+      )}
+
+      {/* Mobile virtual controls */}
+      {isMobile && (
+        <MobileControls
+          onKeyDown={handleMobileKeyDown}
+          onKeyUp={handleMobileKeyUp}
+          isActive={!!isActive}
+        />
       )}
     </div>
   );
