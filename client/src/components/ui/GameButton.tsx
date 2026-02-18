@@ -15,9 +15,9 @@ const gameButtonVariants = cva(
         ghost: 'bg-transparent border-gray-600 text-jrpg-text hover:bg-white/5',
       },
       size: {
-        sm: 'px-3 py-1 text-xs',
-        md: 'px-6 py-3 text-sm',
-        lg: 'px-8 py-4 text-base',
+        sm: 'px-3 py-2 min-h-[44px] min-w-[44px] text-xs',
+        md: 'px-6 py-3 min-h-[44px] text-sm',
+        lg: 'px-8 py-4 min-h-[44px] text-base',
       },
     },
     defaultVariants: {

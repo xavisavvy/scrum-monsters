@@ -116,6 +116,7 @@
   border: 2px solid var(--retro-border);
   color: var(--retro-text);
   padding: 12px 24px;
+  min-height: 44px;
   font-family: 'Press Start 2P', 'Courier New', monospace;
   font-weight: bold;
   text-transform: uppercase;
@@ -474,6 +475,13 @@
   margin: 16px 0;
 }
 
+@media (max-width: 767px) {
+  .fibonacci-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 6px;
+  }
+}
+
 .fibonacci-button {
   aspect-ratio: 1;
   display: flex;
@@ -481,6 +489,14 @@
   justify-content: center;
   font-size: 18px;
   font-weight: bold;
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 767px) {
+  .fibonacci-button {
+    aspect-ratio: auto;
+  }
 }
 
 .battle-screen {
