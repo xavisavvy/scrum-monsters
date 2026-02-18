@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 23 of 25 (Mobile UX Critical Path) — IN PROGRESS
-Plan: 4 of 6 in current phase — COMPLETE
-Status: Phase 23 Plan 04 complete — MobileControls virtual D-pad + action buttons, PlayerController pointer events
-Last activity: 2026-02-18 — Completed 23-04: MobileControls component, onPointerDown conversion, handleMobileKeyDown/Up, isMobile conditional rendering
+Plan: 5 of 6 in current phase — COMPLETE
+Status: Phase 23 Plan 05 complete — Safe-area insets on all edge UI, dvh height on all game screens
+Last activity: 2026-02-18 — Completed 23-05: ReconnectionStatus safe-area+touch-targets, PlayerHUD pb-safe, TimerDisplay/BossMusicControls safe-area offsets, LobbyCreation/LobbyJoin/AvatarSelection dvh+pb-safe, PhaseContainer dvh
 
-Progress: [████████████████████████████████░░░] 85% (102/119 total plans across all milestones)
+Progress: [█████████████████████████████████░░░] 86% (103/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 15/23 | In progress (Phase 23 P04 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 16/23 | In progress (Phase 23 P05 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing Phase 23 Plan 04 (MobileControls virtual D-pad + PlayerController pointer events)*
+*Updated: 2026-02-18 after completing Phase 23 Plan 05 (safe-area integration pass on all edge UI and game screens)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 23 P05 | 1 | 3 tasks | 8 files |
 | Phase 23 P04 | 1 | 2 tasks | 2 files |
 | Phase 23 P03 | 1 | 2 tasks | 4 files |
 | Phase 23 P02 | 1 | 1 task | 2 files |
@@ -99,6 +100,10 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 23-04]: handleMobileKeyDown replicates handleKeyDown logic (not calls it) — keyboard handler takes KeyboardEvent, mobile handler takes string code; same side effects
 - [Phase 23-04]: handleScreenClick renamed handleScreenPointerDown with pointerType guard — prevents double-fire where touch fires both pointer and click events
 - [Phase 23-04]: handleMobileKeyDown placed after findNearestTargetPlayer — TypeScript hoisting constraint with const useCallback
+- [Phase 23-05]: ReconnectionStatus uses calc(16px + env(safe-area-inset-top)) in style — Tailwind top-4 class cannot incorporate env() values
+- [Phase 23-05]: TimerDisplay uses top/left inline style with calc(1.5rem + env(safe-area-inset-*)) — overrides top-6/left-6 classes while preserving px-4/py-2 padding
+- [Phase 23-05]: pb-safe (not p-safe) on lobby screens — avoids overriding existing horizontal padding where env() resolves to 0px
+- [Phase 23-05]: PhaseContainer gets style={{ height: '100dvh' }} inline override — h-screen provides 100vh fallback
 
 ### Pending Todos
 
@@ -117,11 +122,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 23-04-PLAN.md (MobileControls virtual D-pad + PlayerController pointer events)
+Stopped at: Completed 23-05-PLAN.md (safe-area integration pass on all edge UI and game screens)
 Resume file: None
 
-**Next action:** Continue Phase 23 — execute 23-05-PLAN.md (next plan in Mobile UX Critical Path).
+**Next action:** Continue Phase 23 — execute 23-06-PLAN.md (next plan in Mobile UX Critical Path).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 23-04 (MobileControls virtual D-pad + PlayerController pointer events)*
+*Last updated: 2026-02-18 after completing 23-05 (safe-area integration pass on all edge UI and game screens)*
