@@ -70,3 +70,47 @@ body {
   /* stylelint-disable-next-line unit-no-unknown */
   min-height: 100dvh;
 }
+
+/* ===== Orientation: Portrait Mobile ===== */
+@media (orientation: portrait) and (max-width: 767px) {
+  /* Sidebar becomes bottom sheet */
+  .battle-sidebar {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    height: auto !important;
+    max-height: 45vh;
+    width: 100% !important;
+    margin-top: 0 !important;
+    border-top: 2px solid var(--retro-border);
+    border-left: none !important;
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .battle-sidebar-toggle {
+    /* Reposition toggle to top of bottom sheet */
+    bottom: auto !important;
+    top: -40px !important;
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+  }
+}
+
+/* ===== Orientation: Landscape Mobile ===== */
+@media (orientation: landscape) and (max-height: 500px) {
+  /* Compact HUD to save vertical space */
+  .player-hud-mobile {
+    padding: 4px 12px;
+  }
+
+  /* Narrower sidebar to give more game world space */
+  .battle-sidebar {
+    width: 35vw !important;
+    max-height: 90vh;
+    margin-top: 5vh !important;
+  }
+}
