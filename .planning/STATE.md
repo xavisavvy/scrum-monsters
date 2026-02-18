@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 21 (Production Security Hardening)
+**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 22 (JRPG Theme Foundation)
 
 ## Current Position
 
-Phase: 21 of 25 (Production Security Hardening)
-Plan: 5 of 5 in current phase
-Status: Complete
-Last activity: 2026-02-18 — Completed 21-05: Security verification sweep — all 10 checks pass, human runtime verified
+Phase: 22 of 25 (JRPG Theme Foundation)
+Plan: 1 of 5 in current phase
+Status: In Progress
+Last activity: 2026-02-18 — Completed 22-01: JRPG design token system (tokens.css + Tailwind mappings)
 
-Progress: [█████████████████████████████░░░░] 77% (92/119 total plans across all milestones)
+Progress: [█████████████████████████████░░░░] 78% (93/119 total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity (v1.0-v1.3 shipped milestones):**
-- Total plans completed: 88 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 0)
+- Total plans completed: 89 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 1)
 - Average duration: ~45 min (estimated from milestone timelines)
 - Total execution time: ~66 hours across 4 milestones
 
@@ -30,21 +30,21 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 5/23 | In progress (Phase 21 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 6/23 | In progress (Phase 22 Plan 1 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing 21-02 (CSRF protection)*
+*Updated: 2026-02-18 after completing 22-01 (JRPG design token system)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 22 P01 | 1 | 2 tasks | 3 files |
 | Phase 21 P05 | 1 | 2 tasks | 0 files |
 | Phase 21 P02 | 1 | 2 tasks | 5 files |
 | Phase 21 P04 | 1 | 1 tasks | 1 files |
 | Phase 21 P03 | 1 | 2 tasks | 4 files |
-| Phase 21 P01 | 1 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -63,6 +63,8 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 21-03]: generateSecureLobbyCode uses alphanumeric charset for human-readable lobby codes; generateSecureId uses 13-char hex for player/boss/projectile IDs
 - [Phase 21-02]: Read CSRF token from x-csrf-token header (not form body) — SPA clients use headers; OAuth routes excluded from CSRF (use OAuth state param); token re-fetched after login/register/logout (session may regenerate)
 - [Phase 21-05]: Security verification sweep is verification-only (no code changes); all 10 automated checks + human runtime verification confirm Phase 21 hardening is correctly wired end-to-end
+- [Phase 22-01]: tokens.css imported in App.tsx (not index.css) — retro.css was already there, maintaining consistent import pattern
+- [Phase 22-01]: --jrpg-panel-bg references var(--retro-primary) not hardcoded #16213e — single source of truth for primitive values
 
 ### Pending Todos
 
@@ -70,9 +72,8 @@ Recent decisions affecting v2.0 milestone work:
 
 ### Blockers/Concerns
 
-**Asset sourcing (Phase 21):**
-- UI sound effects library needs research during plan-phase (freesound.org, OpenGameArt.org, itch.io)
-- JRPG ornamental frame assets need sourcing or creation workflow
+**JRPG ornamental frame assets (Phase 22):**
+- Now resolved: .jrpg-panel uses CSS double-border technique (::before pseudo-element) — no external assets needed for basic frame ornament
 
 **Social crawler middleware (Phase 23):**
 - User-agent detection needs careful implementation to avoid false positives/negatives
@@ -85,11 +86,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 21-05-PLAN.md (security verification sweep — Phase 21 complete)
+Stopped at: Completed 22-01-PLAN.md (JRPG design token system — tokens.css + Tailwind mappings)
 Resume file: None
 
-**Next action:** Start Phase 22 (Theme Foundation) — first phase of v2.0 UI Redesign & Mobile milestone.
+**Next action:** Continue Phase 22 (Theme Foundation) — execute Plan 02.
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 21-05 (security verification sweep — Phase 21 complete)*
+*Last updated: 2026-02-18 after completing 22-01 (JRPG design token system)*
