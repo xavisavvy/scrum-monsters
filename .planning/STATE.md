@@ -10,9 +10,9 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 21 of 25 (Production Security Hardening)
-Plan: 4 of 5 in current phase
+Plan: 5 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-18 — Completed 21-03: Crypto randomness hardening (Math.random -> randomBytes)
+Last activity: 2026-02-18 — Completed 21-02: CSRF protection (csrf-sync Synchronizer Token Pattern)
 
 Progress: [████████████████████████████░░░░░] 74% (88/119 total plans across all milestones)
 
@@ -36,10 +36,11 @@ Progress: [███████████████████████
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing 21-04 (GitHub Actions permissions)*
+*Updated: 2026-02-18 after completing 21-02 (CSRF protection)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 21 P02 | 1 | 2 tasks | 5 files |
 | Phase 21 P04 | 1 | 1 tasks | 1 files |
 | Phase 21 P03 | 1 | 2 tasks | 4 files |
 | Phase 21 P01 | 1 | 2 tasks | 4 files |
@@ -59,6 +60,7 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 21-01]: authLimiter only on /api/auth/login and /api/auth/register (not OAuth routes — OAuth uses state param for CSRF); trust proxy set to 1 (single hop); lobbyId regex case-insensitive, normalizes to uppercase
 - [Phase 21-03]: Use crypto.randomBytes for all security-sensitive IDs; preserve Math.random for gameplay randomness (boss AI, damage, positioning)
 - [Phase 21-03]: generateSecureLobbyCode uses alphanumeric charset for human-readable lobby codes; generateSecureId uses 13-char hex for player/boss/projectile IDs
+- [Phase 21-02]: Read CSRF token from x-csrf-token header (not form body) — SPA clients use headers; OAuth routes excluded from CSRF (use OAuth state param); token re-fetched after login/register/logout (session may regenerate)
 
 ### Pending Todos
 
@@ -81,11 +83,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 21-03-PLAN.md (Crypto randomness hardening)
+Stopped at: Completed 21-02-PLAN.md (CSRF protection hardening)
 Resume file: None
 
-**Next action:** Execute remaining plans of phase 21 or start next phase.
+**Next action:** Execute remaining plan of phase 21 (21-05 if exists) or start next phase.
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 21-03 (Crypto randomness hardening)*
+*Last updated: 2026-02-18 after completing 21-02 (CSRF protection hardening)*
