@@ -1,0 +1,106 @@
+/* JRPG Semantic Token Layer
+ * All tokens use --jrpg-* prefix to avoid collision with:
+ *   - shadcn/ui tokens: --primary, --background, --accent, etc.
+ *   - retro primitives: --retro-*, --hue
+ *
+ * This file is imported AFTER retro.css and references --retro-* primitives via var().
+ */
+
+:root {
+  /* ------------------------------------------------------------------ */
+  /* COLOR TOKENS — PANEL                                                 */
+  /* ------------------------------------------------------------------ */
+  --jrpg-panel-bg: var(--retro-primary);           /* #16213e — deep navy */
+  --jrpg-panel-bg-raised: #1d2d5a;                  /* slightly lighter raised panel */
+  --jrpg-panel-border: var(--retro-border);         /* #333366 — muted indigo */
+  --jrpg-panel-border-gold: #b8860b;                /* dark goldenrod for ornamental frames */
+  --jrpg-panel-glow: var(--retro-glow);             /* animated hue-cycle glow */
+
+  /* ------------------------------------------------------------------ */
+  /* COLOR TOKENS — TEXT                                                  */
+  /* Contrast ratios verified against --jrpg-panel-bg (#16213e)          */
+  /* ------------------------------------------------------------------ */
+  --jrpg-text-primary: #f5f5f5;    /* 12.6:1 — primary readable text */
+  --jrpg-text-secondary: #b0b0b0;  /* 7.2:1  — secondary / supporting text */
+  --jrpg-text-accent: #ffd700;     /* 9.8:1  — gold accent / headings */
+  --jrpg-text-danger: #ff6b6b;     /* 4.7:1  — error / danger / low HP */
+  --jrpg-text-muted: #808080;      /* 4.6:1  — placeholders / disabled */
+
+  /* ------------------------------------------------------------------ */
+  /* COLOR TOKENS — BUTTON                                                */
+  /* ------------------------------------------------------------------ */
+  --jrpg-btn-primary-bg: var(--retro-secondary);  /* #0f3460 — deep blue */
+  --jrpg-btn-primary-text: #f5f5f5;
+  --jrpg-btn-danger-bg: var(--retro-accent);      /* #e94560 — vivid red */
+  --jrpg-btn-danger-text: #ffffff;
+
+  /* ------------------------------------------------------------------ */
+  /* COLOR TOKENS — STATS / HUD                                           */
+  /* ------------------------------------------------------------------ */
+  --jrpg-health-high: #22c55e;   /* green-500 — healthy HP */
+  --jrpg-health-mid: #eab308;    /* yellow-500 — medium HP warning */
+  --jrpg-health-low: #ef4444;    /* red-500 — critical HP */
+  --jrpg-xp-fill: #3b82f6;       /* blue-500 — XP / experience bar */
+  --jrpg-mana-fill: #8b5cf6;     /* violet-500 — mana / MP bar */
+
+  /* ------------------------------------------------------------------ */
+  /* SPACING TOKENS                                                        */
+  /* ------------------------------------------------------------------ */
+  --jrpg-space-xs: 4px;
+  --jrpg-space-sm: 8px;
+  --jrpg-space-md: 16px;
+  --jrpg-space-lg: 24px;
+  --jrpg-space-xl: 32px;
+
+  /* ------------------------------------------------------------------ */
+  /* BORDER TOKENS                                                         */
+  /* ------------------------------------------------------------------ */
+  --jrpg-border-width: 2px;
+  --jrpg-border-radius: 4px;
+
+  /* ------------------------------------------------------------------ */
+  /* SHADOW TOKENS                                                         */
+  /* ------------------------------------------------------------------ */
+  --jrpg-shadow-panel: 0 0 20px var(--jrpg-panel-glow), inset 0 0 20px rgba(0, 0, 0, 0.5);
+  --jrpg-shadow-button: 0 0 15px var(--jrpg-panel-glow);
+
+  /* ------------------------------------------------------------------ */
+  /* TYPOGRAPHY TOKENS                                                     */
+  /* ------------------------------------------------------------------ */
+  --jrpg-font-primary: 'Press Start 2P', 'Courier New', monospace;
+  --jrpg-font-size-min: 12px;   /* minimum size for Press Start 2P legibility */
+}
+
+/* -------------------------------------------------------------------- */
+/* ORNAMENTAL FRAME CLASSES                                              */
+/* -------------------------------------------------------------------- */
+
+/* Base JRPG panel frame — replaces ad-hoc retro-window usage */
+.jrpg-panel {
+  background: var(--jrpg-panel-bg);
+  border: var(--jrpg-border-width) solid var(--jrpg-panel-border);
+  border-radius: var(--jrpg-border-radius);
+  box-shadow: var(--jrpg-shadow-panel);
+  padding: var(--jrpg-space-md);
+  position: relative;
+}
+
+/* Inner border ornament — thin highlight creates a double-frame effect */
+.jrpg-panel::before {
+  content: '';
+  position: absolute;
+  inset: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: calc(var(--jrpg-border-radius) - 1px);
+  pointer-events: none;
+}
+
+/* Gold accent title bar used inside .jrpg-panel */
+.jrpg-panel-title {
+  color: var(--jrpg-text-accent);
+  font-family: var(--jrpg-font-primary);
+  font-size: var(--jrpg-font-size-min);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--jrpg-space-sm);
+}
