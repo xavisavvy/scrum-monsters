@@ -4,6 +4,7 @@ import { setupWebSocket } from "./websocket.js";
 import authRoutes from "./auth/routes.js";
 import profileRoutes from "./auth/profileRoutes.js";
 import { authLimiter, profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
+import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 
 // Import session middleware from index (circular import avoided by lazy loading)
 let sessionMiddlewareRef: RequestHandler | null = null;
@@ -24,6 +25,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use('/api/auth/register', authLimiter);
   app.use('/api/user', profileLimiter);
   app.use('/api', apiLimiter);
+
+  // CSRF token endpoint — GET so no CSRF check needed, session must exist first
+  app.get('/api/csrf-token', (req, res) => {
+    const token = generateToken(req);
+    res.json({ csrfToken: token });
+  });
+
+  // CSRF protection on state-changing endpoints
+  // OAuth routes (/api/auth/google, /api/auth/github) excluded — they use OAuth state param
+  // GET/HEAD/OPTIONS automatically skipped by csrfSynchronisedProtection
+  app.use('/api/auth/login', csrfSynchronisedProtection);
+  app.use('/api/auth/register', csrfSynchronisedProtection);
+  app.use('/api/auth/logout', csrfSynchronisedProtection);
+  app.use('/api/user', csrfSynchronisedProtection);
 
   // Mount auth routes
   app.use("/api/auth", authRoutes);

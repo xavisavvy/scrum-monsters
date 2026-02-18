@@ -31,6 +31,7 @@ import { ConnectionIndicator } from '@/components/ui/ConnectionIndicator';
 import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
 import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
+import { fetchCsrfToken } from '@/lib/csrfToken';
 import '@/styles/retro.css';
 
 // Lazy load heavy game components for better initial load performance
@@ -104,8 +105,9 @@ function App() {
   // Auth state
   const { checkAuth, isInitialized: authInitialized } = useAuth();
 
-  // Check auth on mount
+  // Fetch CSRF token and check auth on mount
   useEffect(() => {
+    fetchCsrfToken();
     checkAuth();
   }, [checkAuth]);
 
