@@ -87,7 +87,10 @@ export function ReconnectionStatus() {
   };
 
   return (
-    <div className="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 min-w-[320px] max-w-md">
+    <div
+      className="fixed left-1/2 transform -translate-x-1/2 z-50 w-[calc(100vw-32px)] max-w-md"
+      style={{ top: 'calc(16px + env(safe-area-inset-top, 0px))' }}
+    >
       <div className={`
         retro-card p-4 border-2 shadow-retro
         ${variant === 'error' 
@@ -116,7 +119,7 @@ export function ReconnectionStatus() {
                   variant="primary"
                   size="sm"
                   onClick={handleRetry}
-                  className="text-xs px-3 py-1"
+                  className="text-xs px-3 py-2 min-h-[44px]"
                   disabled={reconnection.status === 'reconnecting'}
                 >
                   <RotateCcw className="w-3 h-3 mr-1" />
@@ -129,7 +132,7 @@ export function ReconnectionStatus() {
                   variant="secondary"
                   size="sm"
                   onClick={handleDismiss}
-                  className="text-xs px-3 py-1"
+                  className="text-xs px-3 py-2 min-h-[44px]"
                 >
                   <X className="w-3 h-3 mr-1" />
                   Dismiss
