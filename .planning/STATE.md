@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 Phase: 21 of 25 (Production Security Hardening)
 Plan: 4 of 5 in current phase
 Status: In progress
-Last activity: 2026-02-18 — Completed 21-04: GitHub Actions top-level permissions
+Last activity: 2026-02-18 — Completed 21-03: Crypto randomness hardening (Math.random -> randomBytes)
 
 Progress: [████████████████████████████░░░░░] 74% (88/119 total plans across all milestones)
 
@@ -41,6 +41,7 @@ Progress: [███████████████████████
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
 | Phase 21 P04 | 1 | 1 tasks | 1 files |
+| Phase 21 P01 | 1 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -54,6 +55,7 @@ Recent decisions affecting v2.0 milestone work:
 - **Routing parallel to UI work:** Minimal overlap, integrates at App.tsx level without touching individual components.
 - **Server state authoritative for phases:** URLs reflect game state, don't drive it. Prevents state machine vs URL navigation conflicts.
 - [Phase 21]: Top-level permissions: contents: read added to rollback.yml; job-level contents: write preserved for audit-and-notify job
+- [Phase 21-01]: authLimiter only on /api/auth/login and /api/auth/register (not OAuth routes — OAuth uses state param for CSRF); trust proxy set to 1 (single hop); lobbyId regex case-insensitive, normalizes to uppercase
 
 ### Pending Todos
 
@@ -76,10 +78,10 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 21-04-PLAN.md (GitHub Actions top-level permissions)
+Stopped at: Completed 21-01-PLAN.md (Rate limiting and open redirect fix)
 Resume file: None
 
-**Next action:** Execute plan 05 of phase 21 (if remaining) or start next phase.
+**Next action:** Execute remaining plans of phase 21 or start next phase.
 
 ---
 *State initialized: 2026-02-11*
