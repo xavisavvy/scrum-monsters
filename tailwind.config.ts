@@ -9,10 +9,39 @@ export default {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
+        jrpg: "var(--jrpg-border-radius)",
       },
       colors: {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
+        jrpg: {
+          panel: {
+            DEFAULT: "var(--jrpg-panel-bg)",
+            raised: "var(--jrpg-panel-bg-raised)",
+            border: "var(--jrpg-panel-border)",
+            "border-gold": "var(--jrpg-panel-border-gold)",
+          },
+          text: {
+            DEFAULT: "var(--jrpg-text-primary)",
+            secondary: "var(--jrpg-text-secondary)",
+            accent: "var(--jrpg-text-accent)",
+            danger: "var(--jrpg-text-danger)",
+            muted: "var(--jrpg-text-muted)",
+          },
+          btn: {
+            primary: "var(--jrpg-btn-primary-bg)",
+            "primary-text": "var(--jrpg-btn-primary-text)",
+            danger: "var(--jrpg-btn-danger-bg)",
+            "danger-text": "var(--jrpg-btn-danger-text)",
+          },
+          health: {
+            high: "var(--jrpg-health-high)",
+            mid: "var(--jrpg-health-mid)",
+            low: "var(--jrpg-health-low)",
+          },
+          xp: "var(--jrpg-xp-fill)",
+          mana: "var(--jrpg-mana-fill)",
+        },
         card: {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
@@ -61,6 +90,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+      },
+      spacing: {
+        "jrpg-xs": "var(--jrpg-space-xs)",
+        "jrpg-sm": "var(--jrpg-space-sm)",
+        "jrpg-md": "var(--jrpg-space-md)",
+        "jrpg-lg": "var(--jrpg-space-lg)",
+        "jrpg-xl": "var(--jrpg-space-xl)",
+      },
+      fontFamily: {
+        jrpg: ["Press Start 2P", "Courier New", "monospace"],
       },
       keyframes: {
         "accordion-down": {
