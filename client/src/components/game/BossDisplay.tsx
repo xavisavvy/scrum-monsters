@@ -3,6 +3,7 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { Boss } from '@/lib/gameTypes';
 import { ExplosionAnimation } from './ExplosionAnimation';
+import { HealthBar } from '@/components/ui/HealthBar';
 
 // Boss images and lair backgrounds (using public URLs for better performance)
 const bugHydraImg = '/images/bosses/bug-hydra.png';
@@ -156,8 +157,6 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       }
     }
   }, [attackAnimations, playExplosion]);
-
-  const healthPercentage = (boss.currentHealth / boss.maxHealth) * 100;
 
   const isBossDead = boss.defeated || boss.currentHealth <= 0;
 
@@ -387,31 +386,18 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
             </p>
             
             {/* Health Bar */}
-            <div className="retro-health-bar mx-auto" style={{ width: '300px' }}>
-              <div
-                className="retro-health-fill"
-                style={{ width: `${healthPercentage}%` }}
+            <div style={{ width: '300px' }} className="mx-auto">
+              <HealthBar
+                value={boss.currentHealth}
+                max={boss.maxHealth}
+                showValue={true}
+                size="lg"
+                label={`${boss.name} HP`}
+                animated={true}
+                className="mx-auto"
               />
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '0',
-                  left: '0',
-                  right: '0',
-                  bottom: '0',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: 'white',
-                  fontSize: '12px',
-                  fontWeight: 'bold',
-                  textShadow: '1px 1px 2px #000'
-                }}
-              >
-                {boss.currentHealth} / {boss.maxHealth}
-              </div>
             </div>
-            
+
             {onAttack && (
               <div className="text-center mt-3">
                 <p className="text-xs text-gray-300">
@@ -457,29 +443,16 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       </div>
 
       {/* Health Bar */}
-      <div className="retro-health-bar mx-auto" style={{ width: '300px' }}>
-        <div
-          className="retro-health-fill"
-          style={{ width: `${healthPercentage}%` }}
+      <div style={{ width: '300px' }} className="mx-auto">
+        <HealthBar
+          value={boss.currentHealth}
+          max={boss.maxHealth}
+          showValue={true}
+          size="lg"
+          label={`${boss.name} HP`}
+          animated={true}
+          className="mx-auto"
         />
-        <div
-          style={{
-            position: 'absolute',
-            top: '0',
-            left: '0',
-            right: '0',
-            bottom: '0',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontSize: '12px',
-            fontWeight: 'bold',
-            textShadow: '1px 1px 2px #000'
-          }}
-        >
-          {boss.currentHealth} / {boss.maxHealth}
-        </div>
       </div>
 
       {onAttack && (

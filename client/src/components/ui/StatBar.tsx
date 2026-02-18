@@ -11,6 +11,7 @@ interface StatBarProps {
   showValue?: boolean;
   size?: StatBarSize;
   className?: string;
+  color?: string;
 }
 
 const VARIANT_COLORS: Record<StatBarVariant, string> = {
@@ -34,10 +35,11 @@ export function StatBar({
   showValue = false,
   size = 'md',
   className,
+  color,
 }: StatBarProps) {
   const effectiveMax = max ?? 100;
   const pct = Math.max(0, Math.min(100, (value / effectiveMax) * 100));
-  const fillColor = VARIANT_COLORS[variant];
+  const fillColor = color ?? VARIANT_COLORS[variant];
   const trackHeight = SIZE_CLASSES[size];
   const canShowText = size !== 'sm';
 
