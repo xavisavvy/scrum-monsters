@@ -6,7 +6,9 @@ export function XPBar() {
   const { currentXP, currentLevel, getProgressToNextLevel } = useProgression();
   const [isExpanded, setIsExpanded] = useState(false);
   const [isPulsing, setIsPulsing] = useState(false);
+  const [levelUpFlash, setLevelUpFlash] = useState(false);
   const prevXPRef = useRef(currentXP);
+  const prevLevelRef = useRef(currentLevel);
 
   const progress = getProgressToNextLevel();
 
@@ -21,14 +23,25 @@ export function XPBar() {
     prevXPRef.current = currentXP;
   }, [currentXP]);
 
+  // Level-up flash on the XP bar
+  useEffect(() => {
+    if (currentLevel > prevLevelRef.current) {
+      setLevelUpFlash(true);
+      const timer = setTimeout(() => setLevelUpFlash(false), 3000);
+      prevLevelRef.current = currentLevel;
+      return () => clearTimeout(timer);
+    }
+    prevLevelRef.current = currentLevel;
+  }, [currentLevel]);
+
   return (
     <div
-      className={`xp-bar-container ${isPulsing ? 'pulsing' : ''}`}
+      className={`xp-bar-container ${isPulsing ? 'pulsing' : ''} ${levelUpFlash ? 'level-up-flash-bar' : ''}`}
       onMouseEnter={() => setIsExpanded(true)}
       onMouseLeave={() => setIsExpanded(false)}
     >
       <div className="xp-level">
-        Lv {currentLevel}
+        {levelUpFlash ? 'UP!' : `Lv ${currentLevel}`}
       </div>
 
       <div className="xp-bar-track">

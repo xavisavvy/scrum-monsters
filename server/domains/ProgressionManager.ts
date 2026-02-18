@@ -25,6 +25,7 @@ import type {
  */
 export interface ProgressionManagerDeps {
   eventBus: ScopedEventBus;
+  getActivePlayers?: (lobbyId: string) => string[] | null;
   getVoters: (lobbyId: string) => string[];
   storage?: import('../storage').IStorage;
   getUserId?: (lobbyId: string, playerId: string) => number | undefined;
@@ -156,6 +157,7 @@ export class ProgressionManager {
   // Dependencies
   private readonly eventBus: ScopedEventBus;
   private readonly curve: XPCurve;
+  private readonly getActivePlayers: (lobbyId: string) => string[] | null;
   private readonly getVoters: (lobbyId: string) => string[];
   private readonly storage: import('../storage').IStorage | null;
   private readonly getUserId: ((lobbyId: string, playerId: string) => number | undefined) | null;
@@ -166,6 +168,7 @@ export class ProgressionManager {
   constructor(deps: ProgressionManagerDeps) {
     this.eventBus = deps.eventBus;
     this.curve = new XPCurve(DEFAULT_CURVE_CONFIG);
+    this.getActivePlayers = deps.getActivePlayers ?? (() => null);
     this.getVoters = deps.getVoters;
     this.storage = deps.storage ?? null;
     this.getUserId = deps.getUserId ?? null;
@@ -202,12 +205,12 @@ export class ProgressionManager {
    * Handle boss damaged event - award 2 XP per damage point
    */
   private handleBossDamaged(payload: CombatBossDamagedPayload): void {
-    const xp = payload.damage * XP_RATE_VALUES.boss_damage;
-    this.awardXP(payload.lobbyId, payload.playerId, xp, 'boss_damage');
+    // Pass raw damage — awardXP applies the boss_damage rate multiplier
+    this.awardXP(payload.lobbyId, payload.playerId, payload.damage, 'boss_damage');
   }
 
   /**
-   * Handle consensus reached event - award 50 XP to all voters
+   * Handle consensus reached event - award 50 XP to all active players
    */
   private handleConsensus(payload: EstimationFullConsensusReachedPayload): void {
     const voters = this.getVoters(payload.lobbyId);
