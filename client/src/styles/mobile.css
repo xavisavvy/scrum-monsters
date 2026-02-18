@@ -1,0 +1,75 @@
+/* ============================================================
+ * mobile.css — Mobile Foundation Stylesheet
+ *
+ * Establishes safe-area handling, dynamic viewport height,
+ * and touch-action fixes for mobile devices.
+ *
+ * Import order: after retro.css and tokens.css in App.tsx
+ * ============================================================ */
+
+/* ----------------------------------------------------------------
+ * SAFE-AREA UTILITY CLASSES
+ * Requires viewport-fit=cover in <meta name="viewport"> to work.
+ * env() safe-area-inset-* values are provided by the OS on devices
+ * with notches, home indicators, and rounded display cutouts.
+ * ---------------------------------------------------------------- */
+@layer utilities {
+  /* Single-side safe-area padding utilities */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pl-safe {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe {
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* All-sides safe-area padding */
+  .p-safe {
+    padding-top: env(safe-area-inset-top);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+  }
+
+  /* HUD/bottom-bar variant: adds extra padding on top of safe-area */
+  .pb-safe-plus {
+    padding-bottom: calc(16px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ----------------------------------------------------------------
+ * TOUCH-ACTION FIX
+ * Prevents double-tap zoom on interactive elements without
+ * blocking pinch-to-zoom (which maximum-scale=1 would block,
+ * violating WCAG 1.4.4 Resize Text).
+ * ---------------------------------------------------------------- */
+@layer base {
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  /* ----------------------------------------------------------------
+   * DYNAMIC VIEWPORT HEIGHT FIX
+   * iOS Safari shrinks 100vh when the address bar is visible.
+   * 100dvh tracks the actual visible viewport dynamically.
+   * The 100vh fallback ensures compatibility with older browsers.
+   * ---------------------------------------------------------------- */
+  body {
+    min-height: 100vh;
+    /* stylelint-disable-next-line unit-no-unknown */
+    min-height: 100dvh;
+  }
+}
