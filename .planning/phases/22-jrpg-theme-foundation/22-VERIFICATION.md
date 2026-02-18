@@ -1,28 +1,18 @@
 ---
 phase: 22-jrpg-theme-foundation
-verified: 2026-02-18T21:00:00Z
-status: gaps_found
-score: 5/6 success criteria verified
-re_verification: false
-gaps:
-  - truth: "StatBar and HealthBar must be wired into game screens that display health and XP"
-    status: failed
-    reason: "StatBar and HealthBar exist with substantive implementations but are not imported by any game screen. BossDisplay uses .retro-health-bar CSS directly. XPBar uses XPBar.css. Components are orphaned."
-    artifacts:
-      - path: "client/src/components/ui/StatBar.tsx"
-        issue: "Zero imports in any consuming file outside own definition"
-      - path: "client/src/components/ui/HealthBar.tsx"
-        issue: "Zero imports in any consuming file outside own definition"
-      - path: "client/src/components/game/BossDisplay.tsx"
-        issue: "Lines 390-393 and 460-463 use .retro-health-bar/.retro-health-fill CSS directly instead of HealthBar"
-      - path: "client/src/components/game/XPBar.tsx"
-        issue: "Uses custom XPBar.css instead of StatBar with variant=xp"
-    missing:
-      - "Import and use HealthBar in BossDisplay.tsx for boss HP display (replaces .retro-health-bar)"
-      - "Import and use StatBar in XPBar.tsx or replace with StatBar variant=xp"
+verified: 2026-02-18T20:56:58Z
+status: passed
+score: 6/6 success criteria verified
+re_verification:
+  previous_status: gaps_found
+  previous_score: 5/6
+  gaps_closed:
+    - "StatBar and HealthBar must be wired into game screens that display health and XP"
+  gaps_remaining: []
+  regressions: []
 human_verification:
   - test: "Navigate to battle phase and observe boss HP bar"
-    expected: "Health bars use JRPG token colors with green/yellow/red thresholds"
+    expected: "Health bars use JRPG token colors with green/yellow/red thresholds via HealthBar component"
     why_human: "Requires running game server and reaching battle state"
   - test: "Click buttons and listen for sound effects"
     expected: "Button click sound plays on each RetroButton/GameButton click"
@@ -38,9 +28,25 @@ human_verification:
 # Phase 22: JRPG Theme Foundation Verification Report
 
 **Phase Goal:** Establish design system with reusable themed components preventing rework across all UI
-**Verified:** 2026-02-18T21:00:00Z
-**Status:** gaps_found
-**Re-verification:** No - initial verification
+**Verified:** 2026-02-18T20:56:58Z
+**Status:** passed
+**Re-verification:** Yes - after gap closure (22-06 plan executed)
+
+## Gap Closure Verification
+
+The single gap from initial verification was:
+
+> StatBar and HealthBar existed with correct implementations but were orphaned - no game screen imported or used them.
+
+The 22-06 plan wired all three consumers. Re-verification confirms the gap is closed:
+| Gap Item | Previous Status | Current Status | Evidence |
+|----------|----------------|----------------|----------|
+| BossDisplay uses .retro-health-bar CSS instead of HealthBar | FAILED | CLOSED | Import at line 6; HealthBar rendered lines 390-399 and 447-456 with boss.currentHealth/maxHealth; no retro-health-bar or retro-health-fill remain |
+| XPBar uses custom XPBar.css instead of StatBar | FAILED | CLOSED | Import at line 3; StatBar rendered lines 48-54 variant=xp size=sm replacing removed .xp-bar-track/.xp-bar-fill divs |
+| CharacterDetailsPanel defines local renderStatBar instead of StatBar | FAILED | CLOSED | Import at line 4; renderStat helper lines 13-28 uses StatBar with color override; old renderStatBar function deleted |
+| StatBar lacks optional color prop | FAILED | CLOSED | color? prop at line 14; fillColor = color ?? VARIANT_COLORS[variant] at line 42 |
+
+No regressions detected in previously-passing items (tokens.css, App.tsx cascade, GamePanel/RetroCard chain, GameButton sound, PhaseTransition AnimatePresence, E2E accessibility test all intact).
 
 ## Goal Achievement
 
@@ -48,77 +54,77 @@ human_verification:
 
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
-| 1 | All game panels and modals use consistent JRPG-styled ornamental frames | VERIFIED | .jrpg-panel CSS class in tokens.css with double-frame ornament; GamePanel uses jrpg-panel as CVA base; RetroCard delegates to GamePanel; 30+ consumers import RetroCard |
-| 2 | Developers can build new UI using reusable themed components (GamePanel, GameButton, StatBar, HealthBar) | PARTIAL | GamePanel and GameButton wired through RetroCard/RetroButton chains; StatBar and HealthBar exist but ORPHANED with zero imports in any consuming file |
-| 3 | CSS custom property tokens define all colors, spacing, borders, shadows, and fonts | VERIFIED | 30 --jrpg-* custom properties in tokens.css; Tailwind maps all to utility classes (bg-jrpg-panel, text-jrpg-accent, font-jrpg, etc.) |
-| 4 | Phase transitions have smooth 100-500ms animations | VERIFIED | PhaseTransition.tsx uses Framer Motion AnimatePresence with duration: 0.25 (250ms); key={toPhase} drives declarative enter/exit; PhaseRenderer wraps all phases; useReducedMotion sets duration to 0 |
-| 5 | UI sound effects play on button clicks, phase transitions, and key game events | VERIFIED | GameButton calls useAudio.getState().playButtonSelect() on click; PhaseTransition calls sounds.onPhaseTransition() on phase change; all 15+ button consumers use RetroButton which delegates to GameButton |
-| 6 | JRPG theming maintains WCAG AA contrast ratios (4.5:1 text, 3:1 large) | VERIFIED* | All 5 --jrpg-text-* tokens documented: primary 12.6:1, secondary 7.2:1, accent 9.8:1, danger 4.7:1, muted 4.6:1; .retro-text-glow fixed; axe-core E2E test exists; *needs human E2E run |
+| 1 | All game panels and modals use consistent JRPG-styled ornamental frames | VERIFIED | .jrpg-panel CSS class in tokens.css; GamePanel uses jrpg-panel as CVA base; RetroCard delegates to GamePanel; 22 consumer imports across client/src |
+| 2 | Developers can build new UI using reusable themed components (GamePanel, GameButton, StatBar, HealthBar) | VERIFIED | All 4 components active, substantive, and wired: StatBar consumed by XPBar and CharacterDetailsPanel; HealthBar consumed by BossDisplay; GamePanel/GameButton via RetroCard/RetroButton chains |
+| 3 | CSS custom property tokens define all colors, spacing, borders, shadows, and fonts | VERIFIED | 53 JRPG-prefixed tokens in tokens.css; Tailwind maps all to utility classes; App.tsx imports tokens.css at line 36 after retro.css |
+| 4 | Phase transitions have smooth 100-500ms animations | VERIFIED | PhaseTransition.tsx uses Framer Motion AnimatePresence mode=wait duration 0.25s; key=toPhase drives enter/exit; PhaseRenderer wraps all phases; useReducedMotion sets duration to 0 |
+| 5 | UI sound effects play on button clicks, phase transitions, and key game events | VERIFIED | GameButton calls useAudio.getState().playButtonSelect() on click; PhaseTransition calls sounds.onPhaseTransition() on phase change; all button consumers use RetroButton delegating to GameButton |
+| 6 | JRPG theming maintains WCAG AA contrast ratios | VERIFIED* | All 5 --jrpg-text-* tokens with ratios documented; .retro-text-glow fixed; axe-core E2E test exists; needs human E2E run to confirm no rendered violations |
 
-**Score:** 5/6 truths verified (1 partial/failed on StatBar/HealthBar wiring)
+**Score:** 6/6 truths verified
 
 ### Required Artifacts
 
 | Artifact | Expected | Status | Details |
 |----------|----------|--------|---------|
-| client/src/styles/tokens.css | 30+ --jrpg-* CSS custom properties | VERIFIED | 30 tokens in 8 categories; WCAG contrast ratios documented; .jrpg-panel and .jrpg-panel-title classes included |
-| client/src/styles/retro.css | Existing --retro-* variables preserved | VERIFIED | All --retro-* variables intact; .retro-text-glow fixed to use --jrpg-text-primary instead of animated hue |
-| tailwind.config.ts | jrpg color, spacing, borderRadius, fontFamily mappings | VERIFIED | jrpg colors (panel, text, btn, health, xp, mana), spacing (jrpg-xs through jrpg-xl), borderRadius (jrpg), fontFamily (jrpg) all present |
-| client/src/App.tsx | Imports tokens.css after retro.css | VERIFIED | Line 35: retro.css; Line 36: tokens.css - correct cascade order |
-| client/src/components/ui/GamePanel.tsx | CVA-based JRPG panel with ornamental frame | VERIFIED | jrpg-panel base class, CVA variants (default/golden/dark), sizes (sm/md/lg), title renders .jrpg-panel-title h3 |
-| client/src/components/ui/GameButton.tsx | CVA-based button with sound integration | VERIFIED | forwardRef, CVA variants (primary/secondary/accent/danger/ghost), useAudio.getState().playButtonSelect() in click handler |
-| client/src/components/ui/retro-card.tsx | Backward-compatible re-export wrapping GamePanel | VERIFIED | Thin wrapper delegating to GamePanel; re-exports GamePanel for gradual migration |
-| client/src/components/ui/retro-button.tsx | Backward-compatible re-export wrapping GameButton | VERIFIED | forwardRef wrapper with variantMap (accent->danger); re-exports GameButton |
-| client/src/components/ui/StatBar.tsx | Generic progress bar with variant-based colors | ORPHANED | Correct implementation (health/xp/mana/timer variants, ARIA, 0.5s CSS transition) but zero imports in any consuming file |
-| client/src/components/ui/HealthBar.tsx | Health bar with dynamic color thresholds | ORPHANED | Correct implementation (green/yellow/red thresholds, prefers-reduced-motion, ARIA) but zero imports in any consuming file |
-| client/src/lib/hooks/useGameSounds.ts | Semantic game event to useAudio mapping | VERIFIED | 10 event mappings; getGameSounds non-hook companion; JSDoc documenting temporary mappings |
-| client/src/components/game/phases/PhaseTransition.tsx | Framer Motion AnimatePresence with sound | VERIFIED | AnimatePresence mode=wait, key={toPhase}, duration 0.25s, useReducedMotion, useGameSounds().onPhaseTransition() |
+| client/src/styles/tokens.css | 30+ --jrpg-* CSS custom properties | VERIFIED | 53 JRPG-prefixed occurrences; 8 token categories; WCAG ratios documented |
+| client/src/styles/retro.css | Existing --retro-* variables preserved | VERIFIED | All --retro-* variables intact; .retro-text-glow fixed |
+| tailwind.config.ts | jrpg color/spacing/borderRadius/fontFamily mappings | VERIFIED | jrpg colors, spacing, borderRadius, fontFamily all present |
+| client/src/App.tsx | Imports tokens.css after retro.css | VERIFIED | Line 35: retro.css; Line 36: tokens.css |
+| client/src/components/ui/GamePanel.tsx | CVA-based JRPG panel with ornamental frame | VERIFIED | jrpg-panel base class, CVA variants (default/golden/dark), sizes (sm/md/lg) |
+| client/src/components/ui/GameButton.tsx | CVA-based button with sound integration | VERIFIED | forwardRef, CVA variants, useAudio.getState().playButtonSelect() in click handler |
+| client/src/components/ui/retro-card.tsx | Backward-compatible re-export wrapping GamePanel | VERIFIED | Thin wrapper delegating to GamePanel; re-exports GamePanel |
+| client/src/components/ui/retro-button.tsx | Backward-compatible re-export wrapping GameButton | VERIFIED | forwardRef wrapper with variantMap; re-exports GameButton |
+| client/src/components/ui/StatBar.tsx | Generic progress bar with optional color override | VERIFIED | color? prop line 14; ARIA progressbar; consumed by XPBar and CharacterDetailsPanel |
+| client/src/components/ui/HealthBar.tsx | Health bar with dynamic color thresholds | VERIFIED | green/yellow/red thresholds, prefers-reduced-motion, ARIA; consumed by BossDisplay |
+| client/src/lib/hooks/useGameSounds.ts | Semantic game event to useAudio mapping | VERIFIED | 10 event mappings; getGameSounds non-hook companion |
+| client/src/components/game/phases/PhaseTransition.tsx | Framer Motion AnimatePresence with sound | VERIFIED | AnimatePresence mode=wait, key=toPhase, duration 0.25s, useReducedMotion, sounds.onPhaseTransition() |
 | client/src/components/game/phases/PhaseRenderer.tsx | Wraps phase components in PhaseTransition | VERIFIED | PhaseTransition wraps all phases with fromPhase/toPhase props |
-| e2e/accessibility.spec.ts | Playwright axe-core color-contrast test | VERIFIED | AxeBuilder with .withRules([color-contrast]); landing page and lobby creation tests; canvas excluded |
+| e2e/accessibility.spec.ts | Playwright axe-core color-contrast test | VERIFIED | AxeBuilder with .withRules([color-contrast]); landing page and lobby creation tests |
+| client/src/components/game/BossDisplay.tsx | Uses HealthBar for boss HP display | VERIFIED | HealthBar imported line 6; rendered lines 390-399 and 447-456 with boss.currentHealth/maxHealth |
+| client/src/components/game/XPBar.tsx | Uses StatBar variant=xp inside animation wrapper | VERIFIED | StatBar imported line 3; rendered lines 48-54 with variant=xp size=sm |
+| client/src/components/game/CharacterDetailsPanel.tsx | Uses StatBar with per-class color for all 6 stats | VERIFIED | StatBar imported line 4; renderStat helper lines 13-28 uses StatBar with per-class color |
 
 ### Key Link Verification
 
 | From | To | Via | Status | Details |
 |------|----|-----|--------|---------|
 | client/src/App.tsx | client/src/styles/tokens.css | @import after retro.css | WIRED | Line 36 imports tokens.css after line 35 imports retro.css |
-| client/src/styles/tokens.css | client/src/styles/retro.css | var(--retro-*) references | WIRED | 6 var(--retro-*) references: panel-bg, panel-border, panel-glow, btn-primary-bg, btn-danger-bg |
+| client/src/styles/tokens.css | client/src/styles/retro.css | var(--retro-*) references | WIRED | Multiple var(--retro-*) references confirmed |
 | client/src/components/ui/GamePanel.tsx | client/src/styles/tokens.css | CSS class jrpg-panel and Tailwind jrpg-* utilities | WIRED | CVA base includes jrpg-panel, rounded-jrpg, font-jrpg, text-jrpg-text |
 | client/src/components/ui/retro-card.tsx | client/src/components/ui/GamePanel.tsx | Re-export aliased as RetroCard | WIRED | Imports GamePanel, wraps as RetroCard, re-exports GamePanel |
 | client/src/components/ui/retro-button.tsx | client/src/components/ui/GameButton.tsx | Re-export aliased as RetroButton | WIRED | Imports GameButton, wraps with variantMap, re-exports GameButton |
-| client/src/components/ui/StatBar.tsx | client/src/styles/tokens.css | CSS custom properties for fill colors | ORPHANED | Uses --jrpg-health-high, --jrpg-xp-fill, --jrpg-mana-fill but no consuming component imports StatBar |
-| client/src/components/ui/HealthBar.tsx | client/src/styles/tokens.css | CSS custom properties for health thresholds | ORPHANED | Uses --jrpg-health-high/mid/low but no consuming component imports HealthBar |
-| client/src/lib/hooks/useGameSounds.ts | client/src/lib/stores/useAudio.tsx | Import and delegate to useAudio store functions | WIRED | useAudio() hook called; all 10 mappings delegate to audio.play* functions |
+| client/src/components/game/BossDisplay.tsx | client/src/components/ui/HealthBar.tsx | import and render HealthBar | WIRED | Import line 6; HealthBar rendered lines 390-399 and 447-456 |
+| client/src/components/game/XPBar.tsx | client/src/components/ui/StatBar.tsx | import and render StatBar variant=xp | WIRED | Import line 3; StatBar rendered lines 48-54 |
+| client/src/components/game/CharacterDetailsPanel.tsx | client/src/components/ui/StatBar.tsx | import and render StatBar with color prop | WIRED | Import line 4; StatBar rendered via renderStat with per-class color |
+| client/src/lib/hooks/useGameSounds.ts | client/src/lib/stores/useAudio.tsx | Import and delegate to useAudio store functions | WIRED | useAudio() called; all 10 mappings delegate to audio.play* functions |
 | client/src/components/game/phases/PhaseTransition.tsx | client/src/lib/hooks/useGameSounds.ts | Plays phase transition sound on phase change | WIRED | useGameSounds() called; sounds.onPhaseTransition() in useEffect on toPhase change |
-| client/src/components/game/phases/PhaseRenderer.tsx | client/src/components/game/phases/PhaseTransition.tsx | Wraps phase component in PhaseTransition | WIRED | PhaseTransition renders at line 95-100 with fromPhase/toPhase props |
+| client/src/components/game/phases/PhaseRenderer.tsx | client/src/components/game/phases/PhaseTransition.tsx | Wraps phase component in PhaseTransition | WIRED | PhaseTransition renders with fromPhase/toPhase props |
 
 ### Requirements Coverage
 
-| Requirement | Status | Blocking Issue |
-|-------------|--------|----------------|
-| All game panels and modals use consistent JRPG-styled ornamental frames | SATISFIED | None |
-| Developers can build new UI using reusable themed components (GamePanel, GameButton, StatBar, HealthBar) | PARTIAL | StatBar and HealthBar exist but are orphaned - not used by any existing screen |
-| CSS custom property tokens define all colors, spacing, borders, shadows, and fonts | SATISFIED | None |
-| Phase transitions have smooth 100-500ms animations | SATISFIED | None |
-| UI sound effects play on button clicks, phase transitions, and key game events | SATISFIED | None |
-| JRPG theming maintains WCAG AA contrast ratios | SATISFIED* | *E2E run needed to confirm no rendered violations |
+| Requirement | Status | Notes |
+|-------------|--------|-------|
+| All game panels and modals use consistent JRPG-styled ornamental frames | SATISFIED | RetroCard/GamePanel chain; 22 consumers |
+| Developers can build new UI using reusable themed components (GamePanel, GameButton, StatBar, HealthBar) | SATISFIED | All 4 components have active consumers in game screens |
+| CSS custom property tokens define all colors, spacing, borders, shadows, and fonts | SATISFIED | 53 JRPG tokens in tokens.css; full Tailwind mapping |
+| Phase transitions have smooth 100-500ms animations | SATISFIED | Framer Motion 250ms in PhaseTransition |
+| UI sound effects play on button clicks, phase transitions, and key game events | SATISFIED | GameButton + useGameSounds wired |
+| JRPG theming maintains WCAG AA contrast ratios | SATISFIED* | Statically verified + E2E test exists; human E2E run recommended |
 
 ### Anti-Patterns Found
 
-| File | Line | Pattern | Severity | Impact |
-|------|------|---------|----------|--------|
-| client/src/components/game/BossDisplay.tsx | 390-393 | Uses .retro-health-bar + .retro-health-fill CSS instead of HealthBar component | Warning | Boss health bar misses dynamic green/yellow/red threshold colors from HealthBar |
-| client/src/components/game/BossDisplay.tsx | 460-463 | Second boss HP bar also uses legacy CSS classes | Warning | Both boss health displays bypass the HealthBar component |
-| client/src/components/game/XPBar.tsx | 1-3 | Uses custom XPBar.css instead of StatBar with variant=xp | Warning | XP display uses custom CSS outside the JRPG token system |
+None. No TODO/FIXME/placeholder comments, empty implementations, or legacy health bar patterns remain in Phase 22 modified files.
 
-No blocking anti-patterns (placeholder/stub/TODO) found in any Phase 22 files. All implementations are substantive.
+Note: shared/schema.ts has pre-existing TypeScript errors (Zod/Drizzle compatibility issue from Phase 20, commit 32cafad). These are unrelated to Phase 22 and existed before this phase began.
 
 ### Human Verification Required
 
 #### 1. Boss and Player Health Bar Visual Appearance
 
-**Test:** Start a game session and reach battle phase. Observe the boss HP bar in BossDisplay.
-**Expected:** Health bars should use dynamic color thresholds (green over 50%, yellow 25-50%, red at or below 25%). Currently BossDisplay uses .retro-health-bar CSS (static gradient), not HealthBar component.
-**Why human:** Requires running game server and reaching battle state.
+**Test:** Start a game session, reach battle phase. Observe the boss HP bar in BossDisplay.
+**Expected:** HP bar shows dynamic color thresholds - green above 50%, yellow between 25-50%, red at or below 25%. Low HP triggers pulse animation.
+**Why human:** Requires running game server and reaching battle state with a live boss.
 
 #### 2. Button Sound Effects
 
@@ -134,26 +140,22 @@ No blocking anti-patterns (placeholder/stub/TODO) found in any Phase 22 files. A
 
 #### 4. WCAG AA E2E Test Execution
 
-**Test:** Run npm run test:e2e -- --grep JRPG Theme Accessibility against a running dev server.
-**Expected:** Both tests pass with zero color-contrast violations.
+**Test:** Run npm run test:e2e with JRPG Theme Accessibility grep against a running dev server.
+**Expected:** Both tests pass with zero color-contrast violations reported by axe-core.
 **Why human:** E2E requires a running server (dev or staging).
 
 ### Gaps Summary
 
-One gap blocks full goal achievement:
+No gaps. The single gap from initial verification (StatBar/HealthBar orphaned) was closed by the 22-06 plan execution (commits 39c6506 and 73405e6):
 
-**StatBar and HealthBar are orphaned components.** Both were created with correct, substantive implementations using the JRPG token system. However, they are not imported by any game screen:
+- BossDisplay now uses HealthBar (with dynamic color thresholds) for boss HP display in both fullscreen and non-fullscreen modes
+- XPBar now uses StatBar variant=xp inside its existing animation/interaction wrapper
+- CharacterDetailsPanel now uses StatBar with per-class color override for all 6 stat bars
+- StatBar gained an optional color prop enabling caller-controlled color override without breaking existing variant consumers
 
-- client/src/components/game/BossDisplay.tsx (lines 390-393, 460-463) uses .retro-health-bar and .retro-health-fill CSS classes directly - the pre-Phase-22 approach
-- client/src/components/game/XPBar.tsx uses a custom XPBar.css file instead of StatBar with variant=xp
-- client/src/components/game/CharacterDetailsPanel.tsx defines a local renderStatBar function instead of importing StatBar
-
-The phase goal states preventing rework across all UI. The HealthBar and StatBar components exist to prevent this rework but have not been adopted by existing stat displays. Any developer encountering the codebase will find both the new components and the old CSS pattern coexisting, undermining design system consistency.
-
-The remaining 5 success criteria are fully met: JRPG ornamental frames work through the RetroCard/GamePanel delegation chain (30+ consumers), CSS token system is complete and globally available, phase transitions animate at 250ms via Framer Motion, sound effects wire through GameButton and PhaseTransition, and WCAG contrast is validated both statically and with an E2E axe-core test.
+All 6 success criteria are now verified at the code level. The phase goal - establish a design system with reusable themed components preventing rework across all UI - is achieved: all 4 design system components (GamePanel, GameButton, StatBar, HealthBar) are active, substantive, and wired into consuming screens.
 
 ---
 
-_Verified: 2026-02-18T21:00:00Z_
+_Verified: 2026-02-18T20:56:58Z_
 _Verifier: Claude (gsd-verifier)_
-
