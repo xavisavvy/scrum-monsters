@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket.js";
 import authRoutes from "./auth/routes.js";
 import profileRoutes from "./auth/profileRoutes.js";
+import { authLimiter, profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
 
 // Import session middleware from index (circular import avoided by lazy loading)
 let sessionMiddlewareRef: RequestHandler | null = null;
@@ -16,6 +17,13 @@ export function getSessionMiddleware(): RequestHandler | null {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server first
   const httpServer = createServer(app);
+
+  // Rate limiting (applied before route handlers)
+  // authLimiter only on login/register — OAuth routes use state param for CSRF
+  app.use('/api/auth/login', authLimiter);
+  app.use('/api/auth/register', authLimiter);
+  app.use('/api/user', profileLimiter);
+  app.use('/api', apiLimiter);
 
   // Mount auth routes
   app.use("/api/auth", authRoutes);
@@ -59,8 +67,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lobby invite redirect endpoint
   app.get('/join/:lobbyId', (req, res) => {
     const { lobbyId } = req.params;
-    // Redirect to frontend with lobby ID
-    res.redirect(`/?join=${lobbyId}`);
+    // Validate: 6 alphanumeric chars (matches generateLobbyCode output)
+    // Case-insensitive so users can type lowercase URLs, normalized to uppercase
+    if (!/^[A-Z0-9]{6}$/i.test(lobbyId)) {
+      return res.redirect('/?error=invalid-invite');
+    }
+    res.redirect(`/?join=${encodeURIComponent(lobbyId.toUpperCase())}`);
   });
 
   // Marketing page route

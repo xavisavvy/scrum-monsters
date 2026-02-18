@@ -10,6 +10,10 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+// Trust first proxy hop (Kubernetes ingress / Cloudflare) for correct client IP
+// in X-Forwarded-For headers. Required for express-rate-limit to use real IPs.
+app.set('trust proxy', 1);
+
 // Session configuration
 const sessionSecret = process.env.SESSION_SECRET || "scrumquest-dev-secret-change-in-production";
 
