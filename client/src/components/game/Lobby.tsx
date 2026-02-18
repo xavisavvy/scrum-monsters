@@ -24,7 +24,9 @@ import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
 import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
 import { Canvas } from '@react-three/fiber';
+import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
+import { useIsMobile } from '@/hooks/use-is-mobile';
 
 // CSS Animation for spectator pulsing effect
 const spectatorStyles = `
@@ -162,6 +164,8 @@ function TavernLighting() {
 }
 
 export function Lobby() {
+  const isMobile = useIsMobile();
+  const [dpr, setDpr] = useState<number>(Math.min(window.devicePixelRatio, 2));
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
@@ -2223,12 +2227,18 @@ export function Lobby() {
           <div className="absolute inset-0" style={{ zIndex: 8, pointerEvents: 'none' }}>
             <Canvas
               camera={{ position: [0, 2, 8], fov: 120 }}
-              style={{ width: '100%', height: '100%' }}
-              gl={{ antialias: true, alpha: true }}
+              style={{ width: '100%', height: '100%', touchAction: 'none' }}
+              dpr={dpr}
+              gl={{ antialias: !isMobile, alpha: true }}
             >
-              <Suspense fallback={null}>
-                <TavernLighting />
-              </Suspense>
+              <PerformanceMonitor
+                onDecline={() => setDpr((d) => Math.max(d - 0.5, 1))}
+                onIncline={() => setDpr((d) => Math.min(d + 0.5, 2))}
+              >
+                <Suspense fallback={null}>
+                  <TavernLighting />
+                </Suspense>
+              </PerformanceMonitor>
             </Canvas>
           </div>
           
