@@ -100,11 +100,11 @@ Plans:
 **Plans:** 5 plans in 3 waves
 
 Plans:
-- [ ] 23-01-PLAN.md — Viewport meta fix, safe-area CSS utilities, 44px touch target enforcement (Wave 1)
-- [ ] 23-02-PLAN.md — Three.js Canvas DPR cap + PerformanceMonitor adaptive quality (Wave 1)
-- [ ] 23-03-PLAN.md — Orientation support, responsive sidebar, RotateDeviceOverlay (Wave 2)
-- [ ] 23-04-PLAN.md — PlayerController pointer events + MobileControls virtual D-pad (Wave 2)
-- [ ] 23-05-PLAN.md — Safe-area integration on ReconnectionStatus, PlayerHUD, BattleScreen edges (Wave 3)
+- [x] 23-01-PLAN.md — Viewport meta fix, safe-area CSS utilities, 44px touch target enforcement (Wave 1)
+- [x] 23-02-PLAN.md — Three.js Canvas DPR cap + PerformanceMonitor adaptive quality (Wave 1)
+- [x] 23-03-PLAN.md — Orientation support, responsive sidebar, RotateDeviceOverlay (Wave 2)
+- [x] 23-04-PLAN.md — PlayerController pointer events + MobileControls virtual D-pad (Wave 2)
+- [x] 23-05-PLAN.md — Safe-area integration on ReconnectionStatus, PlayerHUD, BattleScreen edges (Wave 3)
 
 #### Phase 24: Routing & SEO Infrastructure
 **Goal**: Separate website/game modules with proper routing, SEO meta tags, and static marketing pages
@@ -163,10 +163,10 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 | 20. Items & Stats | v1.3 | 4/4 | Complete | 2026-02-11 |
 | 21. Security Hardening | v2.0 | 5/5 | Complete | 2026-02-18 |
 | 22. JRPG Theme Foundation | v2.0 | 6/6 | Complete | 2026-02-18 |
-| 23. Mobile UX Critical Path | v2.0 | 0/5 | Not started | - |
+| 23. Mobile UX Critical Path | v2.0 | 5/5 | Complete | 2026-02-18 |
 | 24. Routing & SEO Infrastructure | v2.0 | 0/5 | Not started | - |
 | 25. Lobby Polish & Animations | v2.0 | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-18 — Phase 22 (JRPG Theme Foundation) complete*
+*Last updated: 2026-02-18 — Phase 23 (Mobile UX Critical Path) complete*
