@@ -40,6 +40,7 @@ Progress: [███████████████████████
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 22 P06 | 1 | 2 tasks | 5 files |
 | Phase 22 P05 | 1 | 2 tasks | 3 files |
 | Phase 22 P04 | 1 | 2 tasks | 3 files |
 | Phase 22 P03 | 1 | 2 tasks | 2 files |
@@ -78,6 +79,8 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 22-05]: .retro-text-glow-light uses --jrpg-text-accent (#ffd700 gold, 9.8:1) — preserves themed look while passing WCAG AA
 - [Phase 22-05]: text-shadow animated glow is WCAG-exempt per WCAG 2.1 — shadow is decorative, not the text color
 - [Phase 22-05]: e2e/accessibility.spec.ts uses direct AxeBuilder (not a11y-fixture) with color-contrast-only rule — focused JRPG theme regression test
+- [Phase 22-06]: StatBar color prop uses color ?? VARIANT_COLORS[variant] — caller overrides variant color without touching variant system
+- [Phase 22-06]: XPBar test updated to check role=progressbar ARIA attrs instead of .xp-bar-fill CSS class (implementation detail test tied to removed DOM node)
 
 ### Pending Todos
 
@@ -96,11 +99,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 22-05-PLAN.md (WCAG AA contrast validation + E2E axe-core accessibility test) — Phase 22 complete
+Stopped at: Completed 22-06-PLAN.md (StatBar/HealthBar gap closure — wired into BossDisplay, XPBar, CharacterDetailsPanel)
 Resume file: None
 
 **Next action:** Begin Phase 23 (Social Meta Tags & OG Images).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 22-05 (WCAG AA contrast validation + E2E accessibility test — Phase 22 complete)*
+*Last updated: 2026-02-18 after completing 22-06 (StatBar/HealthBar gap closure — Phase 22 fully complete)*
