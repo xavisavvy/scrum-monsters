@@ -153,7 +153,7 @@
     "@axe-core/playwright": "^4.11.1",
     "@commitlint/cli": "^20.4.1",
     "@commitlint/config-conventional": "^20.4.1",
-    "@eslint/js": "^9.17.0",
+    "@eslint/js": "^10.0.1",
     "@playwright/test": "^1.58.2",
     "@replit/vite-plugin-runtime-error-modal": "^0.0.4",
     "@stoplight/spectral-cli": "^6.15.0",
