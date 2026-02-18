@@ -5,7 +5,7 @@ import { TeamType } from '@/lib/gameTypes';
 
 interface PerformanceMetrics {
   estimationStartTime: number | null;
-  teamSubmissions: Record<string, { time: number; score: number }>;
+  teamSubmissions: Record<string, { time: number; score: number | '?' }>;
   consensusTime: number | null;
 }
 

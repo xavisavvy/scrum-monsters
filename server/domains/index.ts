@@ -129,6 +129,11 @@ const combatManager = new CombatManager({
 });
 const progressionManager = new ProgressionManager({
   eventBus,
+  getActivePlayers: (lobbyId: string) => {
+    const lobby = sessionManager.getLobby(lobbyId);
+    if (!lobby) return null;
+    return lobby.players.map(p => p.id);
+  },
   getVoters: (lobbyId: string) => {
     const estimation = estimationManager.getEstimation(lobbyId);
     if (!estimation) return [];
