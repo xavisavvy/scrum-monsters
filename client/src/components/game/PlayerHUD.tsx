@@ -38,7 +38,7 @@ export function PlayerHUD() {
   const showReturnHomeButton = isHost && currentLobby.gamePhase === 'victory';
 
   return (
-    <div className="player-hud">
+    <div className="player-hud pb-safe">
       <div className="flex justify-between items-center">
         {/* Player Info */}
         <div className="flex items-center gap-4">

@@ -41,15 +41,21 @@ export function TimerDisplay() {
   const isCritical = remainingTime < 30000; // Less than 30 seconds
   
   return (
-    <div className={`
-      fixed top-6 left-6 z-50 px-4 py-2 rounded-lg border-2 font-mono text-lg font-bold
-      ${isCritical 
-        ? 'bg-red-900 border-red-500 text-red-100 animate-pulse' 
-        : isUrgent 
-          ? 'bg-yellow-900 border-yellow-500 text-yellow-100' 
-          : 'bg-blue-900 border-blue-500 text-blue-100'
-      }
-    `}>
+    <div
+      className={`
+        fixed top-6 left-6 z-50 px-4 py-2 rounded-lg border-2 font-mono text-lg font-bold
+        ${isCritical
+          ? 'bg-red-900 border-red-500 text-red-100 animate-pulse'
+          : isUrgent
+            ? 'bg-yellow-900 border-yellow-500 text-yellow-100'
+            : 'bg-blue-900 border-blue-500 text-blue-100'
+        }
+      `}
+      style={{
+        top: 'calc(1.5rem + env(safe-area-inset-top, 0px))',
+        left: 'calc(1.5rem + env(safe-area-inset-left, 0px))'
+      }}
+    >
       <div className="flex items-center gap-2">
         <span className="text-xl">⏰</span>
         <div>
