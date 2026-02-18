@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
+
 import { RetroButton } from '@/components/ui/retro-button';
 import { AVATAR_CLASSES } from '@/lib/gameTypes';
 import { getAvatarImage } from '@/lib/avatarImages';
 import { AbandonQuestModal } from './AbandonQuestModal';
+import { XPBar } from './XPBar';
 
 export function PlayerHUD() {
   const { currentLobby, currentPlayer } = useGameState();
@@ -73,6 +75,11 @@ export function PlayerHUD() {
             <div className="text-sm text-gray-400">
               {AVATAR_CLASSES[currentPlayer.avatar]?.name} • {currentPlayer.team}
             </div>
+            {currentLobby.gamePhase !== 'lobby' && currentLobby.gamePhase !== 'avatar_selection' && (
+              <div className="mt-1">
+                <XPBar />
+              </div>
+            )}
           </div>
         </div>
 

@@ -10,7 +10,9 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
   const [animatedProjectiles, setAnimatedProjectiles] = useState<Projectile[]>([]);
 
   useEffect(() => {
-    console.log('🎯 ProjectileSystem received projectiles:', projectiles);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log('🎯 ProjectileSystem received projectiles:', projectiles);
+    }
     setAnimatedProjectiles(projectiles);
   }, [projectiles]);
 
@@ -20,22 +22,25 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
     const animateProjectiles = () => {
       setAnimatedProjectiles(prev => {
         if (prev.length === 0) return prev;
-        
+
         const updatedProjectiles = prev.map(projectile => {
           const newProgress = Math.min(1, projectile.progress + 0.03); // 3% progress per frame for smoother animation
           return { ...projectile, progress: newProgress };
         });
-        
-        // Find completed projectiles and call completion handler
+
+        // Find completed projectiles and defer completion handlers outside setState
         const completedProjectiles = updatedProjectiles.filter(p => p.progress >= 1);
-        completedProjectiles.forEach(projectile => {
-          // Call completion handler immediately 
-          onProjectileComplete(projectile);
-        });
-        
+        if (completedProjectiles.length > 0) {
+          queueMicrotask(() => {
+            completedProjectiles.forEach(projectile => {
+              onProjectileComplete(projectile);
+            });
+          });
+        }
+
         // Remove completed projectiles for better performance
         const activeProjectiles = updatedProjectiles.filter(p => p.progress < 1);
-        
+
         return activeProjectiles;
       });
       

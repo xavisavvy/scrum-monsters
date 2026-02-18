@@ -51,7 +51,9 @@ export const SpriteRenderer = memo(function SpriteRenderer({
     const frameCol = Math.floor(spriteFrame.x / frameSize.width);
     const frameRow = Math.floor(spriteFrame.y / frameSize.height);
     
-    console.log(`🎯 ${avatarClass}: frame(${frameCol},${frameRow}) size=${actualFrameWidth}x${actualFrameHeight}`);
+    if (import.meta.env.DEV && localStorage.getItem('debug')) {
+      console.log(`🎯 ${avatarClass}: frame(${frameCol},${frameRow}) size=${actualFrameWidth}x${actualFrameHeight}`);
+    }
     
     // Scale to fit our display size
     const scale = displaySize / actualFrameWidth;

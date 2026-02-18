@@ -11,7 +11,7 @@ export interface PhaseComponentProps {
   onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
-  emit: (event: string, data?: any) => void;
+  emit: (...args: [event: string, ...rest: any[]]) => void;
   isTransitioning?: boolean;
 }
 
