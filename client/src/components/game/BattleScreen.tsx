@@ -28,6 +28,7 @@ import { useViewport } from '@/lib/hooks/useViewport';
 import { FloatingXPManager } from '@/components/game/FloatingXPManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
 import { useProgression } from '@/lib/stores/useProgression';
+import { RotateDeviceOverlay } from './RotateDeviceOverlay';
 
 export function BattleScreen() {
   const { currentLobby, addAttackAnimation, currentPlayer } = useGameState();
@@ -53,7 +54,7 @@ export function BattleScreen() {
     <div className="fixed right-0 top-0 z-50" style={{ height: '80vh', marginTop: '10vh' }}>
       {/* Sidebar Panel */}
       <div
-        className={`bg-black bg-opacity-95 border-l-2 border-retro-border border-t-2 border-b-2 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl ${
+        className={`battle-sidebar bg-black bg-opacity-95 border-l-2 border-retro-border border-t-2 border-b-2 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl ${
           sidebarExpanded ? 'w-[30vw]' : 'w-0'
         }`}
         data-no-shoot
@@ -66,7 +67,7 @@ export function BattleScreen() {
       {/* Toggle Button - Attached to sidebar edge */}
       <button
         onClick={() => setSidebarExpanded(!sidebarExpanded)}
-        className="absolute bg-black bg-opacity-95 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-100 hover:border-retro-accent-bright transition-all duration-300 shadow-2xl"
+        className="battle-sidebar-toggle absolute bg-black bg-opacity-95 border-2 border-retro-accent rounded-l-lg p-3 hover:bg-opacity-100 hover:border-retro-accent-bright transition-all duration-300 shadow-2xl"
         style={{ 
           left: sidebarExpanded ? '-48px' : '-48px', // Always positioned at left edge of sidebar
           top: '60px' // Position below boss music controls
@@ -704,6 +705,8 @@ export function BattleScreen() {
   }, [currentLobby?.gamePhase, playSuccess]);
 
   return (
+    <>
+      <RotateDeviceOverlay />
     <div className="battle-screen relative">
       {renderGamePhase()}
       <div className="relative z-45">
@@ -790,5 +793,6 @@ export function BattleScreen() {
       {/* YouTube Audio Player (hidden) */}
       <YoutubeAudioPlayer />
     </div>
+    </>
   );
 }
