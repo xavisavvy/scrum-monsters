@@ -97,12 +97,14 @@ Plans:
   5. User sees visible reconnection status when network interrupts on mobile
   6. User can complete a full game session on a phone browser without layout issues or double-tap bugs
 
+**Plans:** 5 plans in 3 waves
+
 Plans:
-- [ ] 23-01: Touch target audit and mobile-first responsive layouts
-- [ ] 23-02: Safe area handling with CSS env() variables
-- [ ] 23-03: Dual orientation support (landscape/portrait)
-- [ ] 23-04: Mobile Three.js performance optimization
-- [ ] 23-05: Mobile reconnection UX and input handler fixes
+- [ ] 23-01-PLAN.md — Viewport meta fix, safe-area CSS utilities, 44px touch target enforcement (Wave 1)
+- [ ] 23-02-PLAN.md — Three.js Canvas DPR cap + PerformanceMonitor adaptive quality (Wave 1)
+- [ ] 23-03-PLAN.md — Orientation support, responsive sidebar, RotateDeviceOverlay (Wave 2)
+- [ ] 23-04-PLAN.md — PlayerController pointer events + MobileControls virtual D-pad (Wave 2)
+- [ ] 23-05-PLAN.md — Safe-area integration on ReconnectionStatus, PlayerHUD, BattleScreen edges (Wave 3)
 
 #### Phase 24: Routing & SEO Infrastructure
 **Goal**: Separate website/game modules with proper routing, SEO meta tags, and static marketing pages
