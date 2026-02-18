@@ -199,5 +199,9 @@
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
+  },
+  "overrides": {
+    "esbuild": "^0.25.11",
+    "prismjs": ">=1.30.0"
   }
 }
