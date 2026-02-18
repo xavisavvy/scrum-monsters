@@ -51,7 +51,7 @@ export function AvatarSelection() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen p-4">
+    <div className="flex items-center justify-center min-h-screen p-4 pb-safe" style={{ minHeight: '100dvh' }}>
       <div className="flex flex-col lg:flex-row gap-6 w-full max-w-7xl">
         {/* Left side - Character Selection */}
         <div className="flex-1">

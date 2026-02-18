@@ -205,7 +205,7 @@ export function PhaseContainer({
   };
 
   return (
-    <div className={`h-screen w-screen bg-black text-white overflow-hidden relative ${className}`}>
+    <div className={`h-screen w-screen bg-black text-white overflow-hidden relative ${className}`} style={{ height: '100dvh' }}>
       {renderLayout()}
     </div>
   );
