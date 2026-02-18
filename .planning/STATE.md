@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 23 of 25 (Mobile UX Critical Path) — IN PROGRESS
-Plan: 2 of 6 in current phase — COMPLETE
-Status: Phase 23 Plan 02 complete — Canvas DPR cap and PerformanceMonitor adaptive quality added
-Last activity: 2026-02-18 — Completed 23-02: DPR cap at 2, PerformanceMonitor adaptive FPS-based DPR, antialias toggle, touchAction on Canvas
+Plan: 3 of 6 in current phase — COMPLETE
+Status: Phase 23 Plan 03 complete — useOrientation hook, RotateDeviceOverlay, portrait/landscape orientation CSS
+Last activity: 2026-02-18 — Completed 23-03: useOrientation hook, RotateDeviceOverlay soft prompt, portrait bottom-sheet sidebar, landscape compact HUD
 
-Progress: [████████████████████████████████░░░] 84% (100/119 total plans across all milestones)
+Progress: [████████████████████████████████░░░] 85% (101/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,7 +30,7 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 13/23 | In progress (Phase 23 P02 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 14/23 | In progress (Phase 23 P03 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
@@ -40,6 +40,7 @@ Progress: [███████████████████████
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 23 P03 | 1 | 2 tasks | 4 files |
 | Phase 23 P02 | 1 | 1 task | 2 files |
 | Phase 23 P01 | 1 | 2 tasks | 6 files |
 | Phase 22 P06 | 1 | 2 tasks | 5 files |
@@ -90,6 +91,9 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 23-02]: PerformanceMonitor defaults used (250ms window, 10 iterations, 0.75 threshold) — drei defaults match intended adaptive behavior
 - [Phase 23-02]: DPR steps in 0.5 increments (1.0 to 2.0) via onDecline/onIncline for smooth visual transitions
 - [Phase 23-02]: mobile.css must use plain CSS (not @layer) when imported outside Tailwind directive scope
+- [Phase 23-03]: RotateDeviceOverlay uses local dismissed state reset on phase change — soft nudge per phase, not a one-time global dismiss
+- [Phase 23-03]: battle-sidebar CSS class added as prefix to existing className string — minimal BattleScreen change, no logic refactor
+- [Phase 23-03]: Portrait bottom-sheet uses fixed positioning so it overlays game world without reflowing game layout
 
 ### Pending Todos
 
@@ -108,11 +112,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 23-02-PLAN.md (Canvas DPR cap + PerformanceMonitor adaptive quality + antialias toggle)
+Stopped at: Completed 23-03-PLAN.md (useOrientation hook + RotateDeviceOverlay + orientation CSS)
 Resume file: None
 
-**Next action:** Continue Phase 23 — execute 23-03-PLAN.md (next plan in Mobile UX Critical Path).
+**Next action:** Continue Phase 23 — execute 23-04-PLAN.md (next plan in Mobile UX Critical Path).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 23-02 (Canvas DPR cap + PerformanceMonitor — GPU thermal throttling prevention)*
+*Last updated: 2026-02-18 after completing 23-03 (useOrientation hook + RotateDeviceOverlay + portrait/landscape orientation CSS)*
