@@ -1,23 +1,29 @@
-import React, { useState, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { GamePhase } from '@shared/gameEvents';
-import { PhaseRegistry } from './PhaseRegistry';
+import { useGameSounds } from '@/lib/hooks/useGameSounds';
 
 interface PhaseTransitionProps {
   fromPhase?: GamePhase;
   toPhase: GamePhase;
-  isTransitioning: boolean;
+  isTransitioning?: boolean;   // Keep for API compat — AnimatePresence handles transition via key
   onTransitionComplete?: () => void;
   children?: React.ReactNode;
 }
 
-interface TransitionState {
-  phase: 'entering' | 'active' | 'exiting';
-  progress: number;
-}
+const phaseVariants = {
+  hidden:  { opacity: 0, y: 16, scale: 0.97 },
+  visible: { opacity: 1, y: 0,  scale: 1 },
+  exit:    { opacity: 0, y: -16, scale: 0.97 },
+};
 
 /**
- * Component that handles smooth transitions between game phases.
- * Provides visual feedback and prevents DOM reconciliation issues.
+ * Wraps game phase content with Framer Motion AnimatePresence for smooth
+ * enter/exit animations. Plays a transition sound when the phase changes.
+ * Respects prefers-reduced-motion by setting duration to 0.
+ *
+ * CRITICAL: key={toPhase} drives AnimatePresence — changing toPhase triggers
+ * the exit of the old child and enter of the new one automatically.
  */
 export function PhaseTransition({
   fromPhase,
@@ -26,123 +32,54 @@ export function PhaseTransition({
   onTransitionComplete,
   children
 }: PhaseTransitionProps) {
-  const [transitionState, setTransitionState] = useState<TransitionState>({
-    phase: 'active',
-    progress: 1
-  });
+  const shouldReduceMotion = useReducedMotion();
+  const sounds = useGameSounds();
+  const prevPhaseRef = useRef(toPhase);
 
+  // Play phase transition sound when phase actually changes
   useEffect(() => {
-    if (!isTransitioning) {
-      setTransitionState({ phase: 'active', progress: 1 });
-      return;
+    if (prevPhaseRef.current !== toPhase) {
+      sounds.onPhaseTransition();
+      prevPhaseRef.current = toPhase;
     }
+  }, [toPhase, sounds]);
 
-    // Start transition sequence
-    setTransitionState({ phase: 'exiting', progress: 1 });
-
-    const exitTimer = setTimeout(() => {
-      setTransitionState({ phase: 'entering', progress: 0 });
-
-      const enterTimer = setTimeout(() => {
-        setTransitionState({ phase: 'active', progress: 1 });
-        onTransitionComplete?.();
-      }, 300); // Enter animation duration
-
-      return () => clearTimeout(enterTimer);
-    }, 200); // Exit animation duration
-
-    return () => clearTimeout(exitTimer);
-  }, [isTransitioning, onTransitionComplete]);
-
-  const getTransitionStyle = (): React.CSSProperties => {
-    const { phase, progress } = transitionState;
-
-    switch (phase) {
-      case 'exiting':
-        return {
-          opacity: progress,
-          transform: `scale(${0.95 + (progress * 0.05)})`,
-          transition: 'opacity 200ms ease-out, transform 200ms ease-out'
-        };
-
-      case 'entering':
-        return {
-          opacity: progress,
-          transform: `scale(${0.95 + (progress * 0.05)})`,
-          transition: 'opacity 300ms ease-in, transform 300ms ease-in'
-        };
-
-      case 'active':
-      default:
-        return {
-          opacity: 1,
-          transform: 'scale(1)',
-          transition: 'none'
-        };
-    }
-  };
-
-  const showTransitionOverlay = transitionState.phase !== 'active';
+  const transition = shouldReduceMotion
+    ? { duration: 0 }
+    : { duration: 0.25, ease: 'easeInOut' as const };
 
   return (
-    <div className="relative h-full w-full">
-      {/* Content */}
-      <div style={getTransitionStyle()}>
+    <AnimatePresence mode="wait" onExitComplete={onTransitionComplete}>
+      <motion.div
+        key={toPhase}
+        variants={phaseVariants}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        transition={transition}
+        style={{ width: '100%', height: '100%' }}
+      >
         {children}
-      </div>
-
-      {/* Transition Overlay */}
-      {showTransitionOverlay && (
-        <div 
-          className="absolute inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-100"
-          style={{
-            opacity: transitionState.phase === 'exiting' ? 1 - transitionState.progress : transitionState.progress
-          }}
-        >
-          <div className="text-center">
-            <div className="text-2xl mb-2">⚡</div>
-            <div className="text-sm text-gray-300">
-              {transitionState.phase === 'exiting' ? 'Transitioning...' : 'Loading...'}
-            </div>
-            {fromPhase && toPhase && (
-              <div className="text-xs text-gray-400 mt-1">
-                {PhaseRegistry.getConfig(fromPhase)?.name} → {PhaseRegistry.getConfig(toPhase)?.name}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
+      </motion.div>
+    </AnimatePresence>
   );
 }
 
 /**
- * Hook for managing phase transitions
+ * Hook for tracking phase transitions in the caller.
+ * AnimatePresence handles the actual animation — this hook only tracks
+ * the previous phase for cases where the caller needs it (e.g. PhaseRenderer).
  */
 export function usePhaseTransition(currentPhase: GamePhase) {
-  const [isTransitioning, setIsTransitioning] = useState(false);
   const [previousPhase, setPreviousPhase] = useState<GamePhase | undefined>();
 
-  const startTransition = (newPhase: GamePhase) => {
-    if (currentPhase === newPhase) return;
-
-    setPreviousPhase(currentPhase);
-    setIsTransitioning(true);
-
-    // Auto-complete transition after delay
-    setTimeout(() => {
-      setIsTransitioning(false);
-    }, 500);
-  };
-
-  const completeTransition = () => {
-    setIsTransitioning(false);
-  };
+  useEffect(() => {
+    return () => {
+      setPreviousPhase(currentPhase);
+    };
+  }, [currentPhase]);
 
   return {
-    isTransitioning,
     previousPhase,
-    startTransition,
-    completeTransition
   };
 }

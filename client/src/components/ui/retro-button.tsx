@@ -1,43 +1,25 @@
 import React from 'react';
-import { cn } from '@/lib/utils';
+import { GameButton, type GameButtonProps } from './GameButton';
 
 interface RetroButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'accent';
   size?: 'sm' | 'md' | 'lg';
 }
 
-export const RetroButton = React.forwardRef<HTMLButtonElement, RetroButtonProps>(({ 
-  className, 
-  variant = 'primary', 
-  size = 'md', 
-  children, 
-  ...props 
-}, ref) => {
-  const sizeClasses = {
-    sm: 'px-3 py-1 text-sm',
-    md: 'px-6 py-3 text-base',
-    lg: 'px-8 py-4 text-lg'
-  };
+const variantMap: Record<string, GameButtonProps['variant']> = {
+  primary: 'primary',
+  secondary: 'secondary',
+  accent: 'danger',
+};
 
-  const variantClasses = {
-    primary: 'retro-button',
-    secondary: 'retro-button bg-gray-600 hover:bg-gray-500',
-    accent: 'retro-button bg-red-600 hover:bg-red-500'
-  };
+export const RetroButton = React.forwardRef<HTMLButtonElement, RetroButtonProps>(
+  ({ variant = 'primary', ...props }, ref) => (
+    <GameButton ref={ref} variant={variantMap[variant] ?? 'primary'} {...props} />
+  )
+);
 
-  return (
-    <button
-      ref={ref}
-      className={cn(
-        variantClasses[variant],
-        sizeClasses[size],
-        className
-      )}
-      {...props}
-    >
-      {children}
-    </button>
-  );
-});
+RetroButton.displayName = 'RetroButton';
 
-RetroButton.displayName = "RetroButton";
+// Re-export for gradual migration
+export { GameButton } from './GameButton';
+export type { GameButtonProps } from './GameButton';
