@@ -75,7 +75,7 @@ Plans:
   5. UI sound effects play on button clicks, phase transitions, and key game events
   6. JRPG theming maintains WCAG AA contrast ratios (4.5:1 text, 3:1 large)
 
-**Plans:** 5 plans in 3 waves
+**Plans:** 6 plans in 4 waves
 
 Plans:
 - [ ] 22-01-PLAN.md — CSS design token system (tokens.css) and Tailwind mappings (Wave 1)
@@ -83,6 +83,7 @@ Plans:
 - [ ] 22-03-PLAN.md — StatBar + HealthBar progress bar components (Wave 2)
 - [ ] 22-04-PLAN.md — useGameSounds hook + Framer Motion phase transitions (Wave 2)
 - [ ] 22-05-PLAN.md — WCAG AA contrast validation and glow text fixes (Wave 3)
+- [ ] 22-06-PLAN.md — Wire StatBar/HealthBar into BossDisplay, XPBar, CharacterDetailsPanel (Wave 4, gap closure)
 
 #### Phase 23: Mobile UX Critical Path
 **Goal**: Ensure core game UX works on mobile devices with touch-friendly controls and adaptive performance
@@ -159,7 +160,7 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 | 19. Team Combos | v1.3 | 3/3 | Complete | 2026-02-11 |
 | 20. Items & Stats | v1.3 | 4/4 | Complete | 2026-02-11 |
 | 21. Security Hardening | v2.0 | 5/5 | Complete | 2026-02-18 |
-| 22. JRPG Theme Foundation | v2.0 | 0/5 | Planned | - |
+| 22. JRPG Theme Foundation | v2.0 | 0/6 | Planned | - |
 | 23. Mobile UX Critical Path | v2.0 | 0/5 | Not started | - |
 | 24. Routing & SEO Infrastructure | v2.0 | 0/5 | Not started | - |
 | 25. Lobby Polish & Animations | v2.0 | 0/3 | Not started | - |
