@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 22 (JRPG Theme Foundation)
+**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 23 (Social Meta Tags & OG Images)
 
 ## Current Position
 
-Phase: 22 of 25 (JRPG Theme Foundation)
-Plan: 4 of 5 in current phase
-Status: In Progress
-Last activity: 2026-02-18 — Completed 22-04: AnimatePresence phase transitions + useGameSounds semantic sound hook
+Phase: 22 of 25 (JRPG Theme Foundation) — COMPLETE
+Plan: 5 of 5 in current phase — COMPLETE
+Status: Phase 22 Complete — Moving to Phase 23
+Last activity: 2026-02-18 — Completed 22-05: WCAG AA contrast validation + E2E axe-core accessibility test
 
-Progress: [█████████████████████████████░░░░] 80% (96/119 total plans across all milestones)
+Progress: [██████████████████████████████░░░] 81% (97/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,22 +30,22 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 9/23 | In progress (Phase 22 Plan 4 complete) |
+| v2.0 UI Redesign & Mobile | 21-25 | 10/23 | In progress (Phase 22 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing 22-04 (AnimatePresence transitions + useGameSounds hook)*
+*Updated: 2026-02-18 after completing 22-05 (WCAG AA contrast validation + E2E accessibility test)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 22 P05 | 1 | 2 tasks | 3 files |
 | Phase 22 P04 | 1 | 2 tasks | 3 files |
 | Phase 22 P03 | 1 | 2 tasks | 2 files |
 | Phase 22 P02 | 1 | 2 tasks | 4 files |
 | Phase 22 P01 | 1 | 2 tasks | 3 files |
 | Phase 21 P05 | 1 | 2 tasks | 0 files |
-| Phase 21 P02 | 1 | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -74,15 +74,16 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 22-04]: useGameSounds maps to existing useAudio functions — no new Audio objects created; temporary mappings documented in JSDoc for future SFX replacement
 - [Phase 22-04]: PhaseTransition uses key={toPhase} for AnimatePresence — phase string as key drives declarative enter/exit without isTransitioning prop
 - [Phase 22-04]: framer-motion import from 'framer-motion' package (not 'motion/react') — v11.x uses the framer-motion package name
+- [Phase 22-05]: .retro-text-glow uses --jrpg-text-primary (#f5f5f5, 12.6:1) not --retro-glow-light — animated hue fails at many hue positions
+- [Phase 22-05]: .retro-text-glow-light uses --jrpg-text-accent (#ffd700 gold, 9.8:1) — preserves themed look while passing WCAG AA
+- [Phase 22-05]: text-shadow animated glow is WCAG-exempt per WCAG 2.1 — shadow is decorative, not the text color
+- [Phase 22-05]: e2e/accessibility.spec.ts uses direct AxeBuilder (not a11y-fixture) with color-contrast-only rule — focused JRPG theme regression test
 
 ### Pending Todos
 
 - Lobby magic/emote system (Phase 21 backlog) — now formalized as Phase 24 (Lobby Polish)
 
 ### Blockers/Concerns
-
-**JRPG ornamental frame assets (Phase 22):**
-- Now resolved: .jrpg-panel uses CSS double-border technique (::before pseudo-element) — no external assets needed for basic frame ornament
 
 **Social crawler middleware (Phase 23):**
 - User-agent detection needs careful implementation to avoid false positives/negatives
@@ -95,11 +96,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-18
-Stopped at: Completed 22-04-PLAN.md (AnimatePresence phase transitions + useGameSounds semantic sound hook)
+Stopped at: Completed 22-05-PLAN.md (WCAG AA contrast validation + E2E axe-core accessibility test) — Phase 22 complete
 Resume file: None
 
-**Next action:** Continue Phase 22 (Theme Foundation) — execute Plan 05.
+**Next action:** Begin Phase 23 (Social Meta Tags & OG Images).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing 22-04 (AnimatePresence transitions + useGameSounds hook)*
+*Last updated: 2026-02-18 after completing 22-05 (WCAG AA contrast validation + E2E accessibility test — Phase 22 complete)*
