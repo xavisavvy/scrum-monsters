@@ -1,5 +1,4 @@
 import { useEffect, useCallback } from 'react';
-import { Html } from '@react-three/drei';
 import type { AvatarClass } from '@shared/gameEvents';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -28,7 +27,7 @@ export function LevelUpCelebration({ playerClass, onComplete }: LevelUpCelebrati
   const { levelUp, clearLevelUp } = useProgression();
   const { playLevelUp } = useAudio();
 
-  const duration = 2500; // 2.5 seconds per CONTEXT.md
+  const duration = 4000; // 4 seconds — enough to read and appreciate
 
   // Play sound and auto-dismiss on mount
   useEffect(() => {
@@ -73,46 +72,45 @@ export function LevelUpCelebration({ playerClass, onComplete }: LevelUpCelebrati
   }));
 
   return (
-    <Html fullscreen>
+    <div
+      className="level-up-overlay"
+      onClick={handleSkip}
+      style={{ position: 'fixed', inset: 0, zIndex: 100 }}
+    >
+      {/* Full-screen flash */}
+      <div className="level-up-flash" />
+
+      {/* Radial burst effect */}
       <div
-        className="level-up-overlay"
-        onClick={handleSkip}
-      >
-        {/* Full-screen flash */}
-        <div className="level-up-flash" />
+        className="level-up-burst"
+        style={{
+          background: `radial-gradient(circle, ${effects.color}40 0%, transparent 70%)`,
+        }}
+      />
 
-        {/* Radial burst effect */}
-        <div
-          className="level-up-burst"
-          style={{
-            background: `radial-gradient(circle, ${effects.color}40 0%, transparent 70%)`,
-          }}
-        />
-
-        {/* Class-specific particles */}
-        <div className="level-up-particles">
-          {particles.map((p) => (
-            <div
-              key={p.id}
-              className="level-up-particle"
-              style={{
-                backgroundColor: Math.random() > 0.5 ? effects.color : effects.secondary,
-                '--angle': `${p.angle}deg`,
-                '--delay': `${Math.random() * 0.3}s`,
-              } as React.CSSProperties}
-            />
-          ))}
-        </div>
-
-        {/* Level text */}
-        <div className="level-up-text" style={{ color: effects.color }}>
-          <div className="level-up-label">LEVEL UP!</div>
-          <div className="level-up-number">{levelUp.newLevel}</div>
-        </div>
-
-        {/* Skip hint */}
-        <div className="level-up-skip">Click or press ESC to skip</div>
+      {/* Class-specific particles */}
+      <div className="level-up-particles">
+        {particles.map((p) => (
+          <div
+            key={p.id}
+            className="level-up-particle"
+            style={{
+              backgroundColor: Math.random() > 0.5 ? effects.color : effects.secondary,
+              '--angle': `${p.angle}deg`,
+              '--delay': `${Math.random() * 0.3}s`,
+            } as React.CSSProperties}
+          />
+        ))}
       </div>
-    </Html>
+
+      {/* Level text */}
+      <div className="level-up-text" style={{ color: effects.color }}>
+        <div className="level-up-label">LEVEL UP!</div>
+        <div className="level-up-number">{levelUp.newLevel}</div>
+      </div>
+
+      {/* Skip hint */}
+      <div className="level-up-skip">Click or press ESC to skip</div>
+    </div>
   );
 }

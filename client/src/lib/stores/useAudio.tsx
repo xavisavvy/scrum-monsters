@@ -218,7 +218,9 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (hitSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        console.log("Hit sound skipped (muted)");
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log("Hit sound skipped (muted)");
+        }
         return;
       }
       
@@ -270,7 +272,9 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (explosionSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        console.log("Explosion sound skipped (muted)");
+        if (import.meta.env.DEV && localStorage.getItem('debug')) {
+          console.log("Explosion sound skipped (muted)");
+        }
         return;
       }
 

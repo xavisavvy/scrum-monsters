@@ -1,7 +1,4 @@
-import { useRef, useEffect } from 'react';
-import { useFrame } from '@react-three/fiber';
-import { Text } from '@react-three/drei';
-import * as THREE from 'three';
+import { useEffect, useState } from 'react';
 import type { XPSource } from '@/lib/stores/useProgression';
 
 // Color coding per CONTEXT.md decisions
@@ -12,67 +9,50 @@ const XP_COLORS: Record<XPSource, string> = {
   revival: '#2ECC71',   // Green
 };
 
-// Bonus sources get larger text with glow
+// Bonus sources get larger text with pulse
 const BONUS_SOURCES: XPSource[] = ['consensus', 'revival'];
 
-interface FloatingXPProps {
+export interface FloatingXPProps {
   amount: number;
   source: XPSource;
-  startPosition: [number, number, number];
+  startPosition: { x: number; y: number };
   onComplete: () => void;
+  duration?: number;
 }
 
-export function FloatingXP({ amount, source, startPosition, onComplete }: FloatingXPProps) {
-  const textRef = useRef<THREE.Mesh>(null);
-  const startTime = useRef(Date.now());
-  const duration = 1000; // 1 second per CONTEXT.md
+export function FloatingXP({ amount, source, startPosition, onComplete, duration = 1000 }: FloatingXPProps) {
+  const [visible, setVisible] = useState(true);
   const isBonus = BONUS_SOURCES.includes(source);
 
   useEffect(() => {
-    const timer = setTimeout(onComplete, duration);
+    const timer = setTimeout(() => {
+      setVisible(false);
+      onComplete();
+    }, duration);
     return () => clearTimeout(timer);
   }, [onComplete, duration]);
 
-  useFrame(() => {
-    if (!textRef.current) return;
-
-    const elapsed = Date.now() - startTime.current;
-    const progress = Math.min(elapsed / duration, 1);
-
-    // Rise animation (ease-out curve: fast start, slow end)
-    const yOffset = progress * 1.5 * (2 - progress);
-    textRef.current.position.y = startPosition[1] + yOffset;
-
-    // Fade out during last 40% of animation
-    const fadeStart = 0.6;
-    const opacity = progress < fadeStart
-      ? 1
-      : 1 - ((progress - fadeStart) / (1 - fadeStart));
-
-    if (textRef.current.material) {
-      (textRef.current.material as THREE.MeshBasicMaterial).opacity = opacity;
-    }
-
-    // Slight scale pulse for bonus XP
-    if (isBonus) {
-      const pulse = 1 + 0.1 * Math.sin(progress * Math.PI * 4);
-      textRef.current.scale.setScalar(pulse);
-    }
-  });
+  if (!visible) return null;
 
   return (
-    <Text
-      ref={textRef}
-      position={startPosition}
-      fontSize={isBonus ? 0.6 : 0.4}
-      color={XP_COLORS[source]}
-      anchorX="center"
-      anchorY="middle"
-      outlineWidth={0.02}
-      outlineColor="#000000"
-      material-transparent={true}
+    <div
+      className="floating-xp"
+      style={{
+        position: 'absolute',
+        left: startPosition.x,
+        top: startPosition.y,
+        color: XP_COLORS[source],
+        fontSize: isBonus ? '1.5rem' : '1.1rem',
+        fontWeight: 'bold',
+        fontFamily: '"Press Start 2P", monospace',
+        textShadow: `0 0 6px ${XP_COLORS[source]}80, 2px 2px 4px rgba(0,0,0,0.9)`,
+        pointerEvents: 'none',
+        zIndex: 60,
+        animation: `floatUp ${duration}ms ease-out forwards`,
+        whiteSpace: 'nowrap',
+      }}
     >
       +{amount} XP
-    </Text>
+    </div>
   );
 }
