@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Outlet, useSearchParams, useLocation } from 'react-router';
+import { HelmetProvider } from 'react-helmet-async';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
@@ -197,24 +198,25 @@ function App() {
   }
 
   return (
-    <div className="retro-container">
-      {/* User Menu and Mute Button (top right) - show on menu and marketing pages */}
-      {showTopRightControls && (
-        <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
-          <RetroButton
-            onClick={toggleMute}
-            variant="secondary"
-            size="sm"
-            className={`${isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} flex items-center gap-2`}
-          >
-            {isMuted ? '🔇' : '🔊'}
-          </RetroButton>
-          <UserMenu />
-        </div>
-      )}
+    <HelmetProvider>
+      <div className="retro-container">
+        {/* User Menu and Mute Button (top right) - show on menu and marketing pages */}
+        {showTopRightControls && (
+          <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
+            <RetroButton
+              onClick={toggleMute}
+              variant="secondary"
+              size="sm"
+              className={`${isMuted ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} flex items-center gap-2`}
+            >
+              {isMuted ? '🔇' : '🔊'}
+            </RetroButton>
+            <UserMenu />
+          </div>
+        )}
 
-      {/* Route content */}
-      <Outlet />
+        {/* Route content */}
+        <Outlet />
 
       {/* Developer Menu */}
       <DeveloperMenu
@@ -245,7 +247,8 @@ function App() {
 
       {/* Toast Notifications */}
       <Toaster />
-    </div>
+      </div>
+    </HelmetProvider>
   );
 }
 
