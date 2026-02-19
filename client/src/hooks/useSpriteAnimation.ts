@@ -26,7 +26,7 @@ const SPRITE_CONFIG: SpriteConfig = {
   frameWidth: 64, // Each frame is 64px wide (256/4)
   frameHeight: 64, // Each frame is 64px tall (256/4)
   animations: {
-    idle: { row: 0, frames: 1, speed: 1000, loop: true }, // Frame 0: Idle pose
+    idle: { row: 0, frames: 2, speed: 800, loop: true }, // Frames 0-1: Idle breathing cycle
     walk: { row: 0, frames: 4, speed: 200, loop: true }, // Will be overridden by direction
     attack: { row: 3, frames: 1, speed: 150, loop: false }, // Frame 13: Attack action
     cast: { row: 3, frames: 1, speed: 200, loop: false }, // Frame 14: Cast action
