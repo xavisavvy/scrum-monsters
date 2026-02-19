@@ -5,6 +5,12 @@ import { registerRoutes, setSessionMiddleware } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeRedis, shutdownRedis, isRedisConnected } from "./redis";
 import { configurePassport } from "./auth/passport.js";
+import { validateEnv } from "./config/env.js";
+import { checkDatabaseHealth } from "./db/health.js";
+import { storage, PgStorage } from "./storage.js";
+
+// Validate environment variables (fail-fast on misconfiguration)
+const env = validateEnv();
 
 const app = express();
 app.use(express.json());
@@ -15,7 +21,7 @@ app.use(express.urlencoded({ extended: false }));
 app.set('trust proxy', 1);
 
 // Session configuration
-const sessionSecret = process.env.SESSION_SECRET || "scrumquest-dev-secret-change-in-production";
+const sessionSecret = env.SESSION_SECRET;
 
 // Configure session store
 let sessionStore: session.Store | undefined;
@@ -25,10 +31,13 @@ if (process.env.DATABASE_URL) {
     conString: process.env.DATABASE_URL,
     tableName: "sessions",
     createTableIfMissing: true,
+    pruneSessionInterval: 900,    // Prune expired sessions every 15 minutes (seconds)
+    ttl: 7 * 24 * 60 * 60,       // 7-day session lifetime (seconds) — matches cookie maxAge
+    errorLog: console.error.bind(console),
   });
-  console.log("🔐 Using PostgreSQL session store");
+  console.log("Using PostgreSQL session store (pruning every 15 min, 7-day TTL)");
 } else {
-  console.log("🔐 Using in-memory session store (no DATABASE_URL set)");
+  console.log("Using in-memory session store (no DATABASE_URL set)");
 }
 
 // Create session middleware (exported for Socket.IO integration)
@@ -95,6 +104,9 @@ app.use((req, res, next) => {
     console.log('📦 Running without Redis cache (in-memory only)');
   }
 
+  // Verify database connectivity (fail-fast if DATABASE_URL set but DB unreachable)
+  await checkDatabaseHealth();
+
   const server = await registerRoutes(app);
 
   // Configure server timeouts for production stability
@@ -130,8 +142,7 @@ app.use((req, res, next) => {
   // Serve the app (both API and client)
   // Use port 5000 for Replit, 5001 for local development
   const isReplit = process.env.REPLIT_DEPLOYMENT === '1' || process.env.REPLIT_DEV_DOMAIN;
-  const defaultPort = isReplit ? '5000' : '5001';
-  const port = parseInt(process.env.PORT || defaultPort, 10);
+  const port = isReplit ? 5000 : env.PORT;
   server.listen({
     port,
     host: process.env.HOST || "0.0.0.0",
@@ -142,13 +153,21 @@ app.use((req, res, next) => {
   // Graceful shutdown handling
   const gracefulShutdown = async (signal: string) => {
     console.log(`\n${signal} received, shutting down gracefully...`);
-    
+
     // Clean up WebSocket intervals
     if ((server as any).cleanupWebSocket) {
       (server as any).cleanupWebSocket();
     }
-    
+
     await shutdownRedis();
+
+    // Close database connections
+    if (storage instanceof PgStorage) {
+      console.log("Closing database connections...");
+      await storage.close();
+      console.log("Database connections closed");
+    }
+
     server.close(() => {
       console.log('Server closed');
       process.exit(0);
