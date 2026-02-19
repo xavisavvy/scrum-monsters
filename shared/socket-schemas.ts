@@ -191,6 +191,7 @@ export const PlayerSchema = z.object({
   isHost: z.boolean(),
   currentScore: ScoreValueSchema.optional(),
   hasSubmittedScore: z.boolean(),
+  isReady: z.boolean().optional(),
 });
 
 // ============================================
@@ -290,6 +291,13 @@ export const LobbyEmotePayloadSchema = z.object({
   message: z.string().min(1),
   x: z.number(),
   y: z.number(),
+});
+
+/**
+ * Toggle ready state event payload
+ */
+export const ToggleReadyPayloadSchema = z.object({
+  ready: z.boolean(),
 });
 
 /**
@@ -526,6 +534,7 @@ export type UpdateJiraSettingsPayload = z.infer<typeof UpdateJiraSettingsPayload
 export type LobbyPlayerPosPayload = z.infer<typeof LobbyPlayerPosPayloadSchema>;
 export type LobbyPlayerJumpPayload = z.infer<typeof LobbyPlayerJumpPayloadSchema>;
 export type LobbyEmotePayload = z.infer<typeof LobbyEmotePayloadSchema>;
+export type ToggleReadyPayload = z.infer<typeof ToggleReadyPayloadSchema>;
 export type SubmitScorePayload = z.infer<typeof SubmitScorePayloadSchema>;
 export type UpdateDiscussionVotePayload = z.infer<typeof UpdateDiscussionVotePayloadSchema>;
 export type AttackBossPayload = z.infer<typeof AttackBossPayloadSchema>;
@@ -636,6 +645,7 @@ export const ClientEventSchemas = {
   lobby_player_pos: LobbyPlayerPosPayloadSchema,
   lobby_player_jump: LobbyPlayerJumpPayloadSchema,
   lobby_emote: LobbyEmotePayloadSchema,
+  toggle_ready: ToggleReadyPayloadSchema,
   submit_score: SubmitScorePayloadSchema,
   update_discussion_vote: UpdateDiscussionVotePayloadSchema,
   attack_boss: AttackBossPayloadSchema,

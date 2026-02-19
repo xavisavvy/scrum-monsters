@@ -26,6 +26,7 @@ export interface Player {
   currentScore?: number | "?";
   hasSubmittedScore: boolean;
   level: number; // Player level from XP progression (default 1)
+  isReady?: boolean; // Player ready state for lobby phase
 }
 
 export interface TeamStats {
@@ -242,6 +243,7 @@ export interface ClientToServerEvents {
     x: number;
     y: number;
   }) => void;
+  toggle_ready: (data: { ready: boolean }) => void;
   start_battle: () => void;
   submit_score: (data: { score: number | "?" }) => void;
   update_discussion_vote: (data: { score: number | "?" }) => void;
