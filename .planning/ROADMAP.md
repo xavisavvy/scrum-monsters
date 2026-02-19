@@ -122,7 +122,7 @@ Plans:
 **Plans:** 4 plans in 3 waves
 
 Plans:
-- [ ] 24-01-PLAN.md — React Router v7 declarative mode, clean URL structure, SPA fallback, legacy redirects (Wave 1)
+- [x] 24-01-PLAN.md — React Router v7 declarative mode, clean URL structure, SPA fallback, legacy redirects (Wave 1)
 - [ ] 24-02-PLAN.md — React Helmet meta tags, Open Graph, and Twitter card tags (Wave 2)
 - [ ] 24-03-PLAN.md — Route-based code splitting and Vite chunk optimization for Three.js (Wave 2)
 - [ ] 24-04-PLAN.md — Server-side meta tag injection for crawlers and Canvas lifecycle verification (Wave 3)
@@ -165,9 +165,9 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 | 21. Security Hardening | v2.0 | 5/5 | Complete | 2026-02-18 |
 | 22. JRPG Theme Foundation | v2.0 | 6/6 | Complete | 2026-02-18 |
 | 23. Mobile UX Critical Path | v2.0 | 5/5 | Complete | 2026-02-18 |
-| 24. Routing & SEO Infrastructure | v2.0 | 0/4 | Not started | - |
+| 24. Routing & SEO Infrastructure | v2.0 | 1/4 | In progress | - |
 | 25. Lobby Polish & Animations | v2.0 | 0/3 | Not started | - |
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-18 — Phase 23 (Mobile UX Critical Path) complete*
+*Last updated: 2026-02-19 — Phase 24-01 (React Router Clean URLs) complete*
