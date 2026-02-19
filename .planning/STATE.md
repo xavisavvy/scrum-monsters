@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 24 of 25 (Routing & SEO Infrastructure) — IN PROGRESS
-Plan: 1 of 4 in current phase — COMPLETE
-Status: Phase 24 started — React Router v7 clean URLs implemented
-Last activity: 2026-02-19 — Phase 24-01 complete: React Router v7, clean URLs, server-state-driven game phases
+Plan: 3 of 4 in current phase — COMPLETE
+Status: Phase 24 continuing — Route-based code splitting and vendor isolation complete
+Last activity: 2026-02-19 — Phase 24-03 complete: Three.js isolated to 863KB vendor chunk, lazy-loaded on game routes
 
-Progress: [█████████████████████████████████░░░] 87% (104/119 total plans across all milestones)
+Progress: [█████████████████████████████████░░░] 88% (105/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 16/23 | In progress (Phase 23 verified) |
+| v2.0 UI Redesign & Mobile | 21-25 | 17/23 | In progress (Phase 24 in progress) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-19 after completing Phase 24-01 (React Router Clean URLs)*
+*Updated: 2026-02-19 after completing Phase 24-03 (Route-Based Code Splitting)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 24 P03 | 1 | 2 tasks | 2 files |
 | Phase 24 P01 | 1 | 2 tasks | 13 files |
 | Phase 23 P05 | 1 | 3 tasks | 8 files |
 | Phase 23 P04 | 1 | 2 tasks | 2 files |
@@ -109,6 +110,9 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 24-01]: App.tsx becomes layout component with Outlet — routes handle specific logic, WebSocket/audio/auth stay in layout
 - [Phase 24-01]: GamePage.tsx handles all game phases at single URL — server gamePhase drives rendering, URL never changes during transitions
 - [Phase 24-01]: Legacy query params redirect via loader functions — ?join=ABC redirects to /game/ABC via redirect()
+- [Phase 24-03]: Three.js isolated into three-vendor chunk (863KB) separate from react-vendor (143KB) and socket-vendor (41KB) — manualChunks categorizes all Three.js packages
+- [Phase 24-03]: GameLoadingFallback provides user feedback during chunk download — "Loading Game..." message with spinner animation
+- [Phase 24-03]: Marketing routes verified to import no game components — only lightweight marketing components, ensures fast landing page loads
 
 ### Pending Todos
 
@@ -123,11 +127,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 24-01-PLAN.md (React Router clean URLs)
+Stopped at: Completed 24-03-PLAN.md (Route-based code splitting)
 Resume file: None
 
-**Next action:** Continue Phase 24 with 24-02 (React Helmet meta tags).
+**Next action:** Continue Phase 24 with 24-02 (React Helmet meta tags) or 24-04 (Server-side meta tag injection).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-19 after completing Phase 24-01 (React Router Clean URLs — 2 tasks, 13 files)*
+*Last updated: 2026-02-19 after completing Phase 24-03 (Route-Based Code Splitting — 2 tasks, 2 files)*
