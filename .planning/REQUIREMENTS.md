@@ -74,26 +74,27 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| HOST-01 | Pending | Pending |
-| HOST-02 | Pending | Pending |
-| HOST-03 | Pending | Pending |
-| DB-01 | Pending | Pending |
-| DB-02 | Pending | Pending |
-| DB-03 | Pending | Pending |
-| DB-04 | Pending | Pending |
-| REL-01 | Pending | Pending |
-| REL-02 | Pending | Pending |
-| REL-03 | Pending | Pending |
-| DEBT-01 | Pending | Pending |
-| DEBT-02 | Pending | Pending |
-| DEBT-03 | Pending | Pending |
-| DEBT-04 | Pending | Pending |
+| DEBT-01 | Phase 26 | Pending |
+| DEBT-02 | Phase 26 | Pending |
+| DEBT-03 | Phase 26 | Pending |
+| DEBT-04 | Phase 26 | Pending |
+| DB-01 | Phase 27 | Pending |
+| DB-02 | Phase 27 | Pending |
+| DB-03 | Phase 27 | Pending |
+| DB-04 | Phase 27 | Pending |
+| REL-01 | Phase 28 | Pending |
+| REL-02 | Phase 28 | Pending |
+| REL-03 | Phase 28 | Pending |
+| HOST-01 | Phase 29 | Pending |
+| HOST-02 | Phase 29 | Pending |
+| HOST-03 | Phase 29 | Pending |
 
 **Coverage:**
 - v3.0 requirements: 14 total
-- Mapped to phases: 0
-- Unmapped: 14
+- Mapped to phases: 14
+- Unmapped: 0
+- Coverage: 100% ✓
 
 ---
 *Requirements defined: 2026-02-19*
-*Last updated: 2026-02-19 after initial definition*
+*Last updated: 2026-02-19 after v3.0 roadmap creation*
