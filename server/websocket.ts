@@ -35,6 +35,10 @@ import {
   RevivalNotAllowedError,
   NotHealerClassError,
 } from './domains/index.js';
+import {
+  validatePayload,
+  ToggleReadyPayloadSchema,
+} from '../shared/socket-schemas.js';
 
 type InterServerEvents = {};
 type SocketData = {
@@ -747,14 +751,42 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
 
       // Broadcast emote to other players in the same lobby
-      socket.to(lobbyId).emit('lobby_emote', { 
+      socket.to(lobbyId).emit('lobby_emote', {
         playerId,
         message: message.trim(),
-        x, 
-        y 
+        x,
+        y
       });
-      
+
       console.log(`Player ${playerId} emoted in lobby ${lobbyId}: "${message.trim()}"`);
+    });
+
+    socket.on('toggle_ready', (data) => {
+      const result = validatePayload(ToggleReadyPayloadSchema, data);
+      if (!result.success) {
+        socket.emit('game_error', { message: 'Invalid toggle_ready payload' });
+        return;
+      }
+
+      const { ready } = result.data;
+      const playerId = socket.data.playerId;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
+
+      const lobby = sessionManager.getLobby(lobbyId);
+      if (!lobby) return;
+
+      // Only allow toggling ready in lobby phase
+      if (lobby.gamePhase !== 'lobby') return;
+
+      const player = lobby.players.find(p => p.id === playerId);
+      if (!player) return;
+
+      player.isReady = ready;
+
+      // Broadcast updated lobby state to all players
+      io.to(lobbyId).emit('lobby_updated', { lobby });
+      console.log(`Player ${playerId} toggled ready to ${ready} in lobby ${lobbyId}`);
     });
 
     // Handle battle emotes
