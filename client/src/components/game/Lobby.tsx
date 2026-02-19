@@ -15,6 +15,7 @@ import { SpriteRenderer } from './SpriteRenderer';
 import { SpeechBubble } from './SpeechBubble';
 import { EmoteModal } from './EmoteModal';
 import { MagicEffect } from './MagicEffect';
+import { LobbyReadyButton } from './LobbyReadyButton';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -2011,6 +2012,11 @@ export function Lobby() {
                                 </span>
                               )}
                               {player.isHost && <span className="text-yellow-400">*</span>}
+                              {player.isReady && (
+                                <span className="text-green-400 text-xs ml-1" aria-label="Ready">
+                                  ✓
+                                </span>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -2485,6 +2491,11 @@ export function Lobby() {
                   {/* Player name above character */}
                   <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
                     {player.name}
+                    {player.isReady && (
+                      <span className="text-green-400 ml-1" aria-label="Ready">
+                        ✓
+                      </span>
+                    )}
                     {isDead && ' 💀'}
                     {frozenPlayers.has(player.id) && ' 🧊'}
                     {petrifiedPlayers.has(player.id) && ' 🗿'}
@@ -2689,18 +2700,22 @@ export function Lobby() {
         </div>
       )}
       
-      {/* Emote FAB for touch devices (tablets/mobile) */}
-      {currentLobby?.gamePhase === 'lobby' && (
-        <button
-          onClick={() => setShowEmoteModal(true)}
-          className="fixed bottom-6 left-6 z-40 w-14 h-14 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg flex items-center justify-center text-2xl hover:scale-110 active:scale-95 transition-transform md:hidden touch-manipulation"
-          title="Open Emote Menu"
-          style={{
-            boxShadow: '0 4px 14px rgba(147, 51, 234, 0.5)',
-          }}
-        >
-          💬
-        </button>
+      {/* Lobby Action Bar - Emote + Ready buttons */}
+      {currentLobby?.gamePhase === 'lobby' && currentPlayer && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex gap-3 items-center">
+          <button
+            onClick={() => setShowEmoteModal(true)}
+            className="w-12 h-12 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg flex items-center justify-center text-xl hover:scale-110 active:scale-95 transition-transform touch-manipulation"
+            title="Open Emote Menu (E)"
+            aria-label="Send emote message"
+            style={{
+              boxShadow: '0 4px 14px rgba(147, 51, 234, 0.5)',
+            }}
+          >
+            💬
+          </button>
+          <LobbyReadyButton />
+        </div>
       )}
 
       {/* Emote Modal */}
