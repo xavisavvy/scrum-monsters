@@ -117,3 +117,30 @@
 
 ---
 
+
+## v2.0 UI Redesign & Mobile (Shipped: 2026-02-19)
+
+**Delivered:** Full UI overhaul with JRPG theming, mobile-first responsive layout, production security hardening, modern routing with SEO, and lobby polish — making ScrumQuest a polished product on any device.
+
+**Phases completed:** 21-25 (5 phases, 23 plans, 44 tasks)
+
+**Key accomplishments:**
+- Production security hardened: three-tier rate limiting, CSRF protection (csrf-sync), crypto.randomBytes for all IDs, GitHub Actions permissions lockdown
+- JRPG design system: 53 CSS custom property tokens, reusable GamePanel/GameButton/StatBar/HealthBar CVA components, WCAG AA contrast verified with axe-core E2E
+- Mobile-first responsive: viewport-fit=cover safe-area handling, 44px touch targets, adaptive Three.js DPR cap (1.0-2.0), MobileControls virtual D-pad, RotateDeviceOverlay
+- Modern routing: React Router v7 clean URLs, server-side meta tag injection for social previews, Three.js code splitting (863KB isolated vendor chunk)
+- Lobby polish: player readiness system with ARIA support, 2-frame idle sprite animations with Framer Motion bobbing, 40 unit tests for magic word detection
+
+**Stats:**
+- 126 files created/modified
+- +14,529 / -1,310 lines of TypeScript/CSS
+- 5 phases, 23 plans, 44 tasks
+- 80 commits
+- 9 days from start to ship (2026-02-11 → 2026-02-19)
+
+**Git range:** `docs(21): research` → `docs(phase-25): complete`
+
+**What's next:** New milestone (v3.0 or feature work)
+
+---
+
