@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 27 - Database Foundation
+**Current focus:** Phase 28 - Production Reliability
 
 ## Current Position
 
-Phase: 27 of 29 (Database Foundation)
-Plan: 02 of 02
-Status: Complete
-Last activity: 2026-02-19 — Completed 27-02 (Session Persistence & Lifecycle Hooks)
+Phase: 28 of 29 (Production Reliability)
+Plan: 02 of 04
+Status: In Progress
+Last activity: 2026-02-19 — Completed 28-02 (Kubernetes Health Probes)
 
-Progress: [████████████████████████████████████████░░░░] 90% (106/118 estimated plans)
+Progress: [████████████████████████████████████████░░░░] 91% (107/118 estimated plans)
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
-- Total plans completed: 106 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 23, v3.0: 4)
+- Total plans completed: 107 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 23, v3.0: 5)
 - Total milestones shipped: 4
 
 **By Milestone:**
@@ -30,7 +30,7 @@ Progress: [███████████████████████
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete | 2026-02-03 |
 | v1.3 Game Progression | 15-20 | 28 | Complete | 2026-02-11 |
 | v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
-| v3.0 Production Optimization | 26-29 | 4 | In progress | - |
+| v3.0 Production Optimization | 26-29 | 5 | In progress | - |
 
 **Phase 27 Execution:**
 
@@ -38,6 +38,12 @@ Progress: [███████████████████████
 |------|------|----------|-------|-------|-----------|
 | 27-01 | Environment Validation & Connection Pooling | 122s | 2 | 3 | 2026-02-19 |
 | 27-02 | Session Persistence & Lifecycle Hooks | 116s | 2 | 2 | 2026-02-19 |
+
+**Phase 28 Execution:**
+
+| Plan | Name | Duration | Tasks | Files | Completed |
+|------|------|----------|-------|-------|-----------|
+| 28-02 | Kubernetes Health Probes | 132s | 2 | 3 | 2026-02-19 |
 
 ## Accumulated Context
 
@@ -57,6 +63,8 @@ Decisions logged in PROJECT.md Key Decisions table.
 - **Health Check Type Safety (27-02)**: Use instanceof PgStorage instead of process.env.DATABASE_URL check for more reliable type detection
 - **Fail-fast Database Health (27-02)**: Exit with code 1 on database connectivity failure to prevent limping along with broken DB
 - **Session Pruning Interval (27-02)**: 15-minute interval balances database load with timely cleanup (industry standard)
+- **Split Health Probes (28-02)**: Split health probes prevent restart loops from transient DB issues (livez never checks DB)
+- **Health Check Timeout (28-02)**: 3-second health check timeout balances responsiveness with network variability
 
 ### Pending Todos
 
@@ -76,11 +84,11 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 27-02-PLAN.md (session persistence & lifecycle hooks) - Phase 27 complete
+Stopped at: Completed 28-02-PLAN.md (Kubernetes health probes)
 Resume file: None
 
-**Next action:** Begin Phase 28 planning or execute existing Phase 28 plans
+**Next action:** Continue Phase 28 execution with remaining plans
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-19 after 27-02 completion (Phase 27 complete)*
+*Last updated: 2026-02-19 after 28-02 completion*
