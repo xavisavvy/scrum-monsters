@@ -371,11 +371,29 @@ export class MemStorage implements IStorage {
 
 // PostgreSQL storage implementation
 export class PgStorage implements IStorage {
+  private sql: postgres.Sql;
   private db: ReturnType<typeof drizzle>;
 
-  constructor(connectionString: string) {
-    const client = postgres(connectionString);
-    this.db = drizzle(client);
+  constructor(connectionString: string, options?: {
+    max?: number;
+    idle_timeout?: number;
+    connect_timeout?: number;
+  }) {
+    this.sql = postgres(connectionString, {
+      max: options?.max ?? 10,
+      idle_timeout: options?.idle_timeout ?? 60,
+      connect_timeout: options?.connect_timeout ?? 10,
+      onnotice: () => {},  // Suppress NOTICE messages
+    });
+    this.db = drizzle(this.sql);
+  }
+
+  async close(): Promise<void> {
+    await this.sql.end({ timeout: 5 });
+  }
+
+  getSql(): postgres.Sql {
+    return this.sql;
   }
 
   // User methods
@@ -619,7 +637,11 @@ export class PgStorage implements IStorage {
 function createStorage(): IStorage {
   if (process.env.DATABASE_URL) {
     console.log("📦 Using PostgreSQL storage");
-    return new PgStorage(process.env.DATABASE_URL);
+    return new PgStorage(process.env.DATABASE_URL, {
+      max: parseInt(process.env.DB_POOL_MAX || "10", 10),
+      idle_timeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || "60", 10),
+      connect_timeout: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || "10", 10),
+    });
   }
   console.log("📦 Using in-memory storage (no DATABASE_URL set)");
   return new MemStorage();
