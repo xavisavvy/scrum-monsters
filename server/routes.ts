@@ -96,35 +96,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.redirect('/');
   });
 
-  // Direct game access route
-  app.get('/game', (req, res) => {
-    // Redirect to frontend with game menu parameter
-    res.redirect('/?game=menu');
-  });
-
-  // About page route
-  app.get('/about', (req, res) => {
-    // Redirect to frontend with about parameter
-    res.redirect('/?page=about');
-  });
-
-  // Features page route
-  app.get('/features', (req, res) => {
-    // Redirect to frontend with features parameter
-    res.redirect('/?page=features');
-  });
-
-  // Pricing page route
-  app.get('/pricing', (req, res) => {
-    // Redirect to frontend with pricing parameter
-    res.redirect('/?page=pricing');
-  });
-
-  // Support page route
-  app.get('/support', (req, res) => {
-    // Redirect to frontend with support parameter
-    res.redirect('/?page=support');
-  });
+  // REMOVED: Legacy server-side redirects for /about, /features, /pricing, /support, /game
+  // These routes are now handled by React Router v7 (client-side) for clean URLs and SEO
+  // The Vite SPA fallback (server/vite.ts) serves index.html with injected meta tags for all routes
 
   // Recurring lobby route - for bookmarkable meeting rooms
   app.get('/room/:roomId', (req, res) => {
