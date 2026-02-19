@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 ## Current Position
 
 Phase: 25 of 25 (Lobby Polish & Animations) — IN PROGRESS
-Plan: 1 of 3 in current phase — COMPLETE
-Status: Phase 25 in progress — Magic words test coverage complete
-Last activity: 2026-02-19 — Phase 25-01 complete: Comprehensive unit tests for magicWords utility
+Plan: 2 of 3 in current phase — COMPLETE
+Status: Phase 25 in progress — Player ready system complete
+Last activity: 2026-02-19 — Phase 25-02 complete: Full-stack player readiness system with ARIA-compliant UI
 
-Progress: [█████████████████████████████████░░░] 91% (108/119 total plans across all milestones)
+Progress: [█████████████████████████████████░░░] 92% (109/119 total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity (v1.0-v1.3 shipped milestones):**
-- Total plans completed: 108 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 21)
+- Total plans completed: 109 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 22)
 - Average duration: ~45 min (estimated from milestone timelines)
 - Total execution time: ~68 hours across 4 milestones
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 21/23 | In progress (Phase 25 in progress) |
+| v2.0 UI Redesign & Mobile | 21-25 | 22/23 | In progress (Phase 25 in progress) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-19 after completing Phase 25-01 (Magic Words Unit Tests)*
+*Updated: 2026-02-19 after completing Phase 25-02 (Player Ready System)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 25 P02 | 1 | 2 tasks | 5 files |
 | Phase 25 P01 | 1 | 1 task | 1 file |
 | Phase 24 P04 | 1 | 2 tasks | 4 files |
 | Phase 24 P03 | 1 | 2 tasks | 2 files |
@@ -56,7 +57,6 @@ Progress: [███████████████████████
 | Phase 22 P03 | 1 | 2 tasks | 2 files |
 | Phase 22 P02 | 1 | 2 tasks | 4 files |
 | Phase 22 P01 | 1 | 2 tasks | 3 files |
-| Phase 25 P01 | 3 min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -122,7 +122,9 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 24-04]: Legacy server-side redirects removed (/about, /features, etc.) — conflicted with React Router v7 clean URLs
 - [Phase 24-04]: Canvas lifecycle verified: only exists in Lobby.tsx for particle effects — mounts/unmounts with phase changes, no WebGL context leaks
 - [Phase 25-01]: Used test-after approach since implementation already exists - tests document and lock down existing behavior
-- [Phase 25-01]: Used test-after approach since implementation already exists - tests document and lock down existing behavior
+- [Phase 25-02]: GameButton variant toggle - isReady uses primary variant, not-ready uses secondary variant for visual hierarchy
+- [Phase 25-02]: Emote button visible on all devices (removed md:hidden) - action bar pattern centered at bottom
+- [Phase 25-02]: aria-pressed and aria-label satisfy WCAG SC 4.1.2; green checkmark + color change satisfy WCAG SC 1.4.1
 
 ### Pending Todos
 
@@ -137,11 +139,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 25-01-PLAN.md (Magic words unit tests)
+Stopped at: Completed 25-02-PLAN.md (Player ready system)
 Resume file: None
 
-**Next action:** Continue Phase 25 with plan 02 (2 more plans in phase).
+**Next action:** Continue Phase 25 with plan 03 (1 more plan in phase).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-19 after completing Phase 25-01 (Magic Words Unit Tests — 1 task, 1 file)*
+*Last updated: 2026-02-19 after completing Phase 25-02 (Player Ready System — 2 tasks, 5 files)*
