@@ -88,10 +88,11 @@ Plans:
   2. Health check endpoint returns 503 when database is unreachable (not 200 OK)
   3. Operator reads startup logs and immediately knows if server is using PostgreSQL or in-memory storage, connection pool size, and environment (dev/staging/prod)
   4. Server experiences unhandled promise rejection and logs error details without crashing entire process
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 28-01: TBD
+- [ ] 28-01-PLAN.md — Global error handlers, enhanced graceful shutdown with client notification, startup config logging
+- [ ] 28-02-PLAN.md — Split health check into livez/readyz with DB connectivity, update K8s probes
 
 #### Phase 29: Hosting Analysis
 **Goal**: Data-driven hosting recommendation based on actual resource usage and cost comparison
