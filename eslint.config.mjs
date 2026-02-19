@@ -183,7 +183,7 @@ export default [
       ],
 
       // General rules
-      "no-console": "off",
+      "no-console": ["warn", { "allow": ["warn", "error"] }],
       "no-debugger": "warn",
       "no-unused-vars": "off", // Use TypeScript's version
       "prefer-const": "warn",
