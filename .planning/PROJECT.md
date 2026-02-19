@@ -79,7 +79,14 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(None — define in next milestone via `/gsd:new-milestone`)
+- [ ] Resource profiling to determine minimum viable RAM/CPU/bandwidth specs
+- [ ] Hosting cost comparison (Replit tiers vs AWS/Railway/Fly.io/Render)
+- [ ] Hosting optimization or migration based on findings
+- [ ] PostgreSQL database setup with persistent storage
+- [ ] Fix shared/schema.ts TypeScript errors (Zod/Drizzle compatibility)
+- [ ] Replace placeholder og-image.png with production 1200x630 branded image
+- [ ] Fix Husky v10 deprecation warning
+- [ ] Remove console.log debug statement in useSpriteAnimation.ts
 
 ### Out of Scope
 
@@ -95,6 +102,15 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Full SSR framework (Next.js) — overkill, vite-react-ssg handles marketing pages
 - Player collision physics in lobby — fun but non-essential, high implementation cost
 - Native mobile app (PWA/React Native) — responsive web sufficient for now
+
+## Current Milestone: v3.0 Production Optimization
+
+**Goal:** Make ScrumQuest production-solid — optimize hosting costs, add persistent PostgreSQL, and resolve all known tech debt.
+
+**Target features:**
+- Resource profiling and hosting cost optimization (Replit vs alternatives)
+- Real PostgreSQL database with persistent data
+- Tech debt cleanup (schema TS errors, OG image, Husky, console.log)
 
 ## Context
 
@@ -114,7 +130,12 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Kubernetes deployment: Kustomize overlays, ArgoCD GitOps, cert-manager TLS
 - Observability: Prometheus metrics, Grafana dashboards, Loki logs
 
-**Known tech debt:**
+**Deployment:**
+- Currently live on Replit
+- Budget: $5-20/mo
+- Scale: unpredictable, needs to handle growth
+
+**Known tech debt (targeted for v3.0):**
 - shared/schema.ts TypeScript errors (Zod/Drizzle compatibility from Phase 20)
 - console.log debug statement in useSpriteAnimation.ts
 - og-image.png is placeholder (needs production 1200x630 branded image)
@@ -187,4 +208,4 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Three.js vendor chunk isolation (863KB) | Marketing pages load fast, game bundle lazy-loaded | ✓ Good |
 
 ---
-*Last updated: 2026-02-19 after v2.0 milestone*
+*Last updated: 2026-02-19 after v3.0 milestone start*
