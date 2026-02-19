@@ -73,10 +73,11 @@ Plans:
   3. Database connection pool prevents exhaustion under load (200+ concurrent connections rejected gracefully, not timeout)
   4. Server startup fails fast with clear error message when DATABASE_URL is missing or malformed
   5. Estimation history survives server restarts (user can view past votes after restart)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 27-01: TBD
+- [ ] 27-01-PLAN.md — Environment validation (Zod) + PostgreSQL connection pool configuration
+- [ ] 27-02-PLAN.md — Database health check, session persistence with pruning, graceful DB shutdown
 
 #### Phase 28: Production Reliability
 **Goal**: Production-ready error handling, health monitoring, and graceful shutdown without data loss
