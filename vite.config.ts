@@ -52,6 +52,32 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          // Isolate Three.js and React Three Fiber into their own chunk
+          // This is the heaviest dependency (~600KB+)
+          if (id.includes('three') || id.includes('@react-three') || id.includes('postprocessing') || id.includes('three-stdlib') || id.includes('meshline') || id.includes('r3f-perf')) {
+            return 'three-vendor';
+          }
+
+          // React core in its own chunk (shared across all routes)
+          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+            return 'react-vendor';
+          }
+
+          // Socket.IO client (only needed for game routes but lighter)
+          if (id.includes('socket.io-client') || id.includes('engine.io')) {
+            return 'socket-vendor';
+          }
+
+          // Framer Motion (used for transitions, moderate size)
+          if (id.includes('framer-motion')) {
+            return 'motion-vendor';
+          }
+        }
+      }
+    }
   },
   // Exclude three-stdlib from esbuild pre-bundling so the Vite transform plugin
   // can patch the removed LuminanceFormat import before it's processed.
