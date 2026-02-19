@@ -112,11 +112,7 @@ export function useSpriteAnimation({
     if (col > 3 || row > 3) {
       console.warn(`⚠️ Frame out of bounds: ${avatarClass} col=${col} row=${row}`);
     }
-    
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.log(`🎯 ${avatarClass}: frame(${col},${row}) size=${frameWidth}x${frameHeight}`);
-    }
-    
+
     return {
       x: col * frameWidth,
       y: row * frameHeight,
