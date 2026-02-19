@@ -57,10 +57,11 @@ See `.planning/milestones/v2.0-ROADMAP.md`
   2. Social media previews display ScrumQuest branded 1200x630 OG image (not placeholder)
   3. Developer runs `npm install` without Husky v10 deprecation warnings
   4. Production build contains no debug console.log statements
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 26-01: TBD
+- [ ] 26-01-PLAN.md — Upgrade Zod 3.x to 4.x for drizzle-zod compatibility (DEBT-01)
+- [ ] 26-02-PLAN.md — OG image replacement, console.log cleanup, Husky fix (DEBT-02, DEBT-03, DEBT-04)
 
 #### Phase 27: Database Foundation
 **Goal**: Production-ready PostgreSQL with connection pooling, persistent sessions, and validated environment configuration
