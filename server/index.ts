@@ -25,6 +25,7 @@ import { configurePassport } from "./auth/passport.js";
 import { validateEnv } from "./config/env.js";
 import { checkDatabaseHealth } from "./db/health.js";
 import { storage, PgStorage } from "./storage.js";
+import logger from "./logger.js";
 
 // Validate environment variables (fail-fast on misconfiguration)
 const env = validateEnv();
@@ -165,30 +166,71 @@ app.use((req, res, next) => {
     host: process.env.HOST || "0.0.0.0",
   }, () => {
     log(`serving on port ${port}`);
+
+    // Structured startup configuration logging
+    logger.info({
+      msg: 'ScrumQuest server started',
+      environment: env.NODE_ENV,
+      nodeVersion: process.version,
+      database: storage instanceof PgStorage ? 'PostgreSQL' : 'In-Memory',
+      dbPoolMax: storage instanceof PgStorage ? env.DB_POOL_MAX : undefined,
+      dbPoolIdleTimeout: storage instanceof PgStorage ? `${env.DB_POOL_IDLE_TIMEOUT}s` : undefined,
+      port,
+      sessionStore: sessionStore ? 'PostgreSQL' : 'In-Memory',
+      redis: redisAvailable ? 'connected' : 'disabled',
+    });
   });
 
   // Graceful shutdown handling
   const gracefulShutdown = async (signal: string) => {
     console.log(`\n${signal} received, shutting down gracefully...`);
 
-    // Clean up WebSocket intervals
-    if ((server as any).cleanupWebSocket) {
-      (server as any).cleanupWebSocket();
-    }
+    // Force exit after 30s to prevent hanging (Kubernetes SIGKILL at 30s)
+    const forceExitTimeout = setTimeout(() => {
+      console.error('Shutdown timeout exceeded, forcing exit');
+      process.exit(1);
+    }, 30000);
+    forceExitTimeout.unref(); // Don't keep event loop alive
 
-    await shutdownRedis();
+    try {
+      // 1. Notify all connected WebSocket clients
+      const io = (server as any).io;
+      if (io) {
+        io.emit('server_shutdown', {
+          message: 'Server shutting down for maintenance',
+          reconnectDelayMs: 30000,
+        });
+        // Wait for clients to receive notification
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
 
-    // Close database connections
-    if (storage instanceof PgStorage) {
-      console.log("Closing database connections...");
-      await storage.close();
-      console.log("Database connections closed");
-    }
+      // 2. Stop accepting new connections and clean up intervals
+      if ((server as any).cleanupWebSocket) {
+        (server as any).cleanupWebSocket();
+      }
 
-    server.close(() => {
+      // 3. Close Redis connections
+      await shutdownRedis();
+
+      // 4. Close database connections
+      if (storage instanceof PgStorage) {
+        console.log("Closing database connections...");
+        await storage.close();
+        console.log("Database connections closed");
+      }
+
+      // 5. Close HTTP server (stops accepting new requests)
+      await new Promise<void>((resolve) => {
+        server.close(() => resolve());
+      });
+
+      clearTimeout(forceExitTimeout);
       console.log('Server closed');
       process.exit(0);
-    });
+    } catch (error) {
+      console.error('Error during shutdown:', error);
+      process.exit(1);
+    }
   };
 
   process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
