@@ -8,6 +8,7 @@ const __dirname = dirname(__filename);
 import { type Server } from "http";
 import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
+import { injectMetaTags } from "./seoMiddleware";
 
 const viteLogger = createLogger();
 
@@ -61,7 +62,10 @@ export async function setupVite(app: Express, server: Server) {
         `src="/src/main.tsx"`,
         `src="/src/main.tsx?v=${nanoid()}"`,
       );
-      const page = await vite.transformIndexHtml(url, template);
+      let page = await vite.transformIndexHtml(url, template);
+      // Inject SEO meta tags for social media crawlers
+      const requestPath = req.originalUrl.split('?')[0]; // Strip query params
+      page = injectMetaTags(page, requestPath);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);
     } catch (e) {
       vite.ssrFixStacktrace(e as Error);
@@ -79,10 +83,26 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Serve static files but exclude index.html (we handle it with meta tag injection)
+  app.use(express.static(distPath, { index: false }));
+
+  // Cache the base HTML template for performance
+  const htmlPath = path.resolve(distPath, "index.html");
+  let cachedHtml: string | null = null;
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (_req, res) => {
-    res.sendFile(path.resolve(distPath, "index.html"));
+  app.use("*", (req, res) => {
+    try {
+      // Read HTML from cache or disk
+      if (!cachedHtml) {
+        cachedHtml = fs.readFileSync(htmlPath, 'utf-8');
+      }
+      // Inject SEO meta tags for social media crawlers
+      const requestPath = req.originalUrl.split('?')[0]; // Strip query params
+      const processed = injectMetaTags(cachedHtml, requestPath);
+      res.status(200).set({ "Content-Type": "text/html" }).end(processed);
+    } catch (error) {
+      res.status(500).send('Internal Server Error');
+    }
   });
 }
