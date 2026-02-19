@@ -1,3 +1,20 @@
+// Global error handlers — safety net for unhandled errors
+// MUST be at top of file before any other code
+process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
+  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  // In production, exit to let container orchestrator restart
+  // In development, keep running for debugging
+  if (process.env.NODE_ENV === 'production') {
+    process.exit(1);
+  }
+});
+
+process.on('uncaughtException', (error: Error) => {
+  console.error('Uncaught Exception:', error);
+  // Always exit on uncaught exception — process state is unreliable
+  process.exit(1);
+});
+
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";

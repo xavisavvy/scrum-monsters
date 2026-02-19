@@ -608,6 +608,9 @@ export interface ServerToClientEvents {
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
   'system:missed_events': (data: { events: Array<{ event: string; data: any }> }) => void;
+
+  // Server lifecycle events
+  server_shutdown: (data: { message: string; reconnectDelayMs: number }) => void;
 }
 
 export const FIBONACCI_NUMBERS = [0, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89];
