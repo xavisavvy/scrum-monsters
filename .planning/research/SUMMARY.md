@@ -1,266 +1,317 @@
 # Project Research Summary
 
-**Project:** ScrumQuest v2.0 UI/UX Milestone
-**Domain:** JRPG-themed UI redesign, responsive mobile game UX, SPA routing with SEO
-**Researched:** 2026-02-11
+**Project:** ScrumQuest v3.0 — Hosting Optimization & PostgreSQL Production Setup
+**Domain:** Real-time multiplayer application infrastructure upgrade
+**Researched:** 2026-02-19
 **Confidence:** HIGH
 
 ## Executive Summary
 
-ScrumQuest v2.0 represents a frontend evolution milestone focused on four domains: JRPG-themed visual redesign, mobile-optimized game UX, proper routing with SEO support, and lobby interaction polish. The research reveals that this milestone leverages existing infrastructure exceptionally well. The real-time WebSocket reconnection system (validated in v1.0) already handles mobile network interruptions. Server-side events for emotes (`lobby_emote`, `battle_emote`) and charge system (`player_charge`) exist but need UI polish. The phase transition state machine (`GamePhase` type) is ready for animation hooks. This positions the project for a primarily frontend implementation with minimal server-side changes.
+ScrumQuest is a production-ready real-time multiplayer estimation game with a solid architectural foundation. The v3.0 milestone focuses on infrastructure maturation: transitioning from development-only PostgreSQL setup to production-ready database operations, selecting optimal hosting platforms for cost/performance balance, and implementing resource profiling to prevent production issues.
 
-The recommended approach centers on building a JRPG design system as the foundation, then layering mobile responsiveness, routing infrastructure, and lobby polish on top. Key stack additions include React Router v7 (upgrade from existing v6 for type safety), maintaining react-helmet-async for SEO meta tags, adding vite-react-ssg for static marketing page generation, and using react-responsive for JavaScript-based media queries. The architecture separates website routes (lightweight marketing pages without Three.js) from game routes (heavyweight real-time 3D experience), preventing Three.js bundle overhead on public pages. For mobile, CSS environment variables handle safe areas natively, with 44x44px minimum touch targets enforced across all phases.
+The recommended approach leverages **existing infrastructure strengths** — ScrumQuest already has IStorage abstraction with both in-memory and PostgreSQL implementations, Drizzle ORM schema for 7 tables, Kubernetes manifests, and session persistence via connect-pg-simple. The migration to production PostgreSQL is **environment-variable driven, not code-driven**. For hosting, the research recommends **Render.com ($7/month) + Neon PostgreSQL (free tier with scale-to-zero)** for MVP testing ($7-14/month total), with a clear path to Kubernetes for high-traffic production. This balances operational simplicity with cost control while maintaining compatibility with the existing Kubernetes infrastructure.
 
-The primary risks center on Three.js lifecycle management during route changes (WebGL context leaks), dual input handling (touch/mouse conflicts causing double-fires), and state machine vs URL navigation conflicts (server-driven phases vs URL-driven routing). These are mitigated by keeping Canvas mounted across route changes, using pointer events instead of separate touch/mouse handlers, and maintaining server state as authoritative with URLs reflecting (not driving) game phases. The biggest complexity lies in dual-orientation support (landscape for battle, portrait for lobby) and ensuring JRPG theming doesn't sacrifice accessibility. Overall, this milestone is well-scoped with clear patterns and manageable risks.
+Key risks center on **connection pool exhaustion** (prevent with proper sizing: `max: 10-20` connections based on CPU cores), **memory leaks** in long-running Node.js processes (detect with Clinic.js HeapProfiler), and **database migration failures** (mitigate with staging tests + advisory locks). The research provides clear prevention strategies, monitoring approaches, and mitigation paths for 11 identified pitfalls across critical/moderate/minor severity levels.
 
 ## Key Findings
 
 ### Recommended Stack
 
-Stack research reveals minimal new dependencies needed. React Router is already installed (v6.26.0) but unused—upgrading to v7 recommended for automatic route typing and 15% smaller bundle. React-helmet-async already installed and working for meta tags. Major additions: vite-react-ssg for static marketing page pre-rendering (SEO without full SSR), react-responsive for JavaScript media queries (mobile behavior detection), and optionally container queries for component-level responsiveness.
+The hosting optimization research identified **managed platforms** as the optimal choice for v3.0 MVP launch, with a clear upgrade path to Kubernetes at scale.
 
 **Core technologies:**
-- **React Router v7** (upgrade from v6): Client-side routing with type safety — automatic loader/action typing eliminates manual casting, 15% smaller bundle than v6, non-breaking upgrade path
-- **vite-react-ssg**: Static site generation for marketing pages — pre-renders landing/about/features to static HTML for SEO, hybrid approach (static marketing + dynamic game), Vite-native integration
-- **react-responsive**: JavaScript media query hooks — SSR-safe useMediaQuery for conditional rendering, needed for mobile vs desktop behavior in Three.js scenes (quality settings, controls)
-- **Framer Motion + GSAP** (already installed): UI animations — Framer Motion for 90% of UI (menus, buttons, cards), GSAP for 10% cinematic moments (battle intros, victory screens)
-- **@react-three/drei** (already installed): Adaptive performance — AdaptivePixelRatio to cap devicePixelRatio on mobile, PerformanceMonitor for dynamic quality adjustment based on FPS
+- **Render.com ($7/month)**: Primary hosting platform — native WebSocket support without timeouts, persistent connections, service-based scaling, managed databases with automatic backups. Best balance of simplicity and production features.
+- **Neon PostgreSQL (free tier)**: Serverless database with scale-to-zero — 0.5GB storage, 100 CU-hours/month free, autoscaling, connection pooling built-in. Ideal for development/MVP with $0 cost when idle.
+- **Clinic.js + autocannon**: Resource profiling suite — automated performance analysis identifying event loop delays, CPU bottlenecks, memory leaks with actionable recommendations. Use in staging before production deploys.
+- **PM2**: Process management — memory limit auto-restart (`max_memory_restart: 500M`), cluster mode for multi-core utilization, zero-downtime reloads, real-time dashboard.
+- **socket.io-prometheus**: Custom WebSocket metrics — tracks concurrent connections, room counts, event throughput. Integrates with existing Prometheus/Grafana monitoring stack.
 
-**Performance-critical settings:**
-- Canvas dpr capped at [1, 2] on mobile (prevents 3x/4x rendering on high-DPI phones)
-- Tailwind mobile-first breakpoints already configured (sm/md/lg/xl/2xl)
-- clsx + tailwind-merge already integrated via cn() utility
+**Version compatibility verified:**
+- postgres@^3.4.8 with drizzle-orm@^0.45.1 (already installed)
+- prom-client@^15.1.3 with socket.io@^4.8.3 (already installed)
+- Clinic.js with Node.js 18+ (current: tsx@^4.21.0)
+
+**Critical configuration:**
+- PostgreSQL connection pooling: `max: 10` for serverless (Neon), `max: 20` for dedicated instances (Railway/Render)
+- PM2 memory limits: `max_memory_restart: '500M'` prevents OOM crashes
+- Socket.IO compression: `perMessageDeflate: { threshold: 1024 }` reduces bandwidth 60-80%
 
 ### Expected Features
 
-Feature research separates table stakes (expected behaviors) from differentiators (competitive advantages). Most table stakes leverage existing infrastructure: WebSocket reconnection handles mobile network interruptions, emote events already exist, phase transitions are ready for animation hooks.
+Research identified **8 table stakes** features for production readiness and **7 differentiators** for operational excellence.
 
 **Must have (table stakes):**
-- JRPG UI theming: Ornamental frames on panels/modals, readable busy menus with WCAG AA contrast, phase-consistent visual language, UI sound effects (button clicks, phase transitions), smooth state transitions (100-500ms)
-- Mobile UX: Touch-friendly 44x44px minimum tap targets, safe area handling for notches/rounded corners, landscape + portrait support, network interruption UX with visible reconnection status, lightweight asset optimization
-- Routing/SEO: Unique meta tags per route via React Helmet, Open Graph tags for social sharing, clean URL structure (no hash routing), server-side rendering for social crawlers ONLY (not full SSR—avoids Google cloaking penalty)
-- Lobby interactions: Enhanced emote system visibility, player readiness indicators, idle character animations during waiting
+- **PostgreSQL Connection Pooling** — sized by formula: `(core_count * 2) + spindle_count` per instance. With 5 instances + 100-conn limit = 20 conns/instance max.
+- **Session Persistence (PostgreSQL)** — users stay logged in across server restarts. Already implemented via connect-pg-simple with `createTableIfMissing: true`.
+- **Database Migrations (Production)** — versioned migrations with `drizzle-kit generate` + `drizzle-orm migrate()` for audit trail and rollback. Migration job already exists in k8s/base/migration-job.yaml.
+- **Graceful Shutdown** — listen for SIGTERM/SIGINT, close HTTP server, drain active connections (with timeout), close DB pool.
+- **Memory Leak Detection** — run Clinic.js HeapProfiler in staging to identify leaks before production (constantly increasing Heap Used = leak).
+- **Automated Database Backups** — daily backups minimum, 7 daily + 4 weekly retention, pg_dump with gzip compression.
+- **Environment-Based Config** — validate required env vars on startup (DATABASE_URL, RECONNECT_TOKEN_SECRET), fail fast if missing.
+- **Basic Health Checks** — enhancement to existing `/api/health`: add database connectivity check (`SELECT 1` query).
 
-**Should have (differentiators):**
-- Class-specific UI flourishes: UI accents reflect player's chosen class (color, icons, borders) for Persona-style personalization
-- Charge/magic system polish: Visual effects for hold-to-charge mechanic (server events already exist via `player_charge`)
-- Adaptive UI density: Switch between compact (mobile) and spacious (desktop) layouts based on viewport
-- Haptic feedback: Vibration on button press, attack hit (Navigator Vibration API, user-controlled)
+**Should have (competitive):**
+- **Redis Adapter for Horizontal Scaling** — only needed above 10K concurrent connections. Uses Redis Pub/Sub to route messages between Socket.IO servers. Defer to Phase 4+.
+- **Clinic.js Performance Suite** — four tools (Doctor, BubbleProf, Flame, HeapProfiler) for automated performance analysis. Run in CI/staging before production deploys.
+- **V8 Garbage Collection Tuning** — reduce GC pauses 30-50% with `--max-semi-space-size=64` flag. Profile first with `--trace-gc`.
+- **Database Query Optimization** — indexes on frequently queried columns (userId, lobbyId, createdAt) for 10x+ faster lookups.
+- **WebSocket Compression** — built-in Socket.IO feature, enable with `perMessageDeflate: { threshold: 1024 }`.
+- **Prometheus Custom Dashboards** — pre-built Grafana dashboards for WebSocket metrics (connections, messages/sec, room occupancy, battle phase distribution).
+- **Automated Database Cleanup Jobs** — weekly cleanup: `DELETE FROM sessions WHERE expire < NOW()`, keep estimation_history last 90 days.
 
 **Defer (v2+):**
-- Pixel-perfect animations (sprite sheets, high complexity)
-- Gesture controls (swipe, pinch, long-press)
-- Dynamic lobby OG images (server-side image generation)
-- Lobby mini-games (scope creep risk, only if wait times become problematic)
-- Player collision physics (fun but non-essential)
+- **Socket.IO State Recovery** — complements existing reconnection tokens. Server remembers room memberships + pending messages during disconnect. Already have reconnection system that works.
+- **Connection Rate Limiting** — prevent abuse/DDoS. Add when abuse detected or before public launch.
+
+**Anti-features (explicitly avoid):**
+- Custom database connection manager (use postgres.js pooling)
+- In-memory session store in production (catastrophic on restart/scale)
+- Serverless/Lambda for WebSocket (cold starts on every reconnection >1s)
+- Custom profiling tools (use mature Clinic.js suite)
 
 ### Architecture Approach
 
-Architecture research recommends routing layer separation: website routes (SEO-optimized marketing pages without Three.js) vs game module routes (Three.js-enabled real-time experience). This prevents Three.js bundle overhead on public pages. React Router defines routes, Zustand stores remain router-agnostic, Socket.IO connection persists across route changes with route-specific event handler subscriptions.
+ScrumQuest has a **clear data persistence boundary** already implemented: ephemeral game state (lobbies, combat, votes) in memory Maps, permanent user data (profiles, stats, history, sessions) in PostgreSQL via IStorage abstraction. The migration from MemStorage to PgStorage is **environment-variable driven** (`DATABASE_URL` presence), not a code migration.
 
 **Major components:**
-1. **Router Shell**: BrowserRouter wrapper with route definitions and meta tag management via React Helmet. Website Layout wraps marketing pages (no Three.js dependency). Game Layout wraps game session (persistent UI like audio controls, connection status).
-2. **Domain-Separated Managers** (server-side): SessionManager (player/lobby lifecycle), EstimationManager (voting/consensus), CombatManager (battle mechanics). Communicate via internal EventBus rather than direct method calls. This avoids monolithic GameState coupling.
-3. **Phase Components** (client-side): Phase-specific UI (BattleScreen, RevealPhase, etc.) mounted based on `gamePhase` from server state machine. Three.js Canvas lifecycle managed carefully—mounted only when needed, explicit cleanup to prevent WebGL context leaks.
-4. **JRPG Design System**: Reusable themed components (GamePanel, GameButton, StatBar) with CSS custom property tokens for colors, spacing, borders. Prevents inconsistent theming across 20+ phase components.
-5. **Responsive Strategy**: Mobile-first Tailwind classes for styling, react-responsive hooks for behavior changes (disable particle effects, adjust Three.js quality), container queries (optional) for component-level responsiveness.
+1. **gameState.ts** — lobby lifecycle, player management, game phases. In-memory Map, ephemeral (cleared on restart).
+2. **storage.ts** — user CRUD, stats, estimation history, OAuth accounts. PostgreSQL via IStorage interface, survives restarts.
+3. **SessionManager** — authentication, session handling. PostgreSQL sessions table via connect-pg-simple when DATABASE_URL set.
+4. **ProgressionManager** — XP, levels, class mastery. Persisted to PostgreSQL after battles via IStorage.
+5. **Connection Pool (postgres.js)** — pooling configuration: size 10-20 based on instance type, idle timeout 30s, max lifetime 1 hour.
 
-**Critical patterns:**
-- Route-based code splitting: Lazy load Three.js-heavy components only when game routes accessed
-- Fine-grained events: Replace coarse `lobby_updated` with specific events (`player_voted`, `boss_damaged`, `phase_changed`) to reduce bandwidth
-- Three.js state mutations in `useFrame`, NOT via React state updates (avoids re-render overhead)
-- Server state as authoritative for game phases; URLs reflect state, don't drive it (prevents URL vs state machine conflicts)
+**Integration patterns:**
+- **Game completion → persistence flow**: Add hooks in `completeConsensus()` to call `storage.recordEstimation()` for each player, then `ProgressionManager.awardXP()`. Requires player → userId mapping on join.
+- **Connection pooling setup**: Add `{ max: 10, idle_timeout: 30, connect_timeout: 10 }` to postgres() call in storage.ts (currently missing explicit pool config).
+- **Migration system**: Already production-ready with k8s migration-job.yaml (ArgoCD PreSync hook, wave 5 before app deployment).
+
+**Hosting platform compatibility:**
+- **Current Kubernetes**: 3 replicas (prod), 512Mi/1Gi resources, PostgreSQL StatefulSet with 5Gi PVC. Cost: $50-100/month cluster.
+- **Alternative Render**: Web service ($7/month) + managed PostgreSQL ($7-20/month). Sticky sessions built-in for WebSocket. Cost: $14-27/month.
+- **Migration path**: Start with Render for MVP (<1000 users), migrate to Kubernetes when traffic justifies cluster cost (1000+ concurrent users).
 
 ### Critical Pitfalls
 
-Top pitfalls from research focus on Three.js lifecycle management, mobile input handling, and architecture conflicts.
+Research identified 11 pitfalls across 3 severity levels. Top 5 by impact:
 
-1. **Canvas Context Loss on Route Changes (CRITICAL)** — WebGL renderer leaks GPU memory when Canvas unmounts. Browsers limit contexts (8-16), causing black screens. Prevention: Keep Canvas mounted across routes using CSS visibility, not unmounting. If unmounting necessary, explicitly dispose renderer, geometries, materials, textures. Detection: Monitor `renderer.info.memory` for climbing counts.
+1. **Connection Pool Exhaustion (CRITICAL)** — all PostgreSQL connections in use, new queries timeout. **Prevention:** Size pool by formula `(core_count * 2) + spindle_count`, set `connect_timeout: 10000` to fail fast, monitor with Prometheus (alert when >90% utilization). **Detection:** "connection acquisition timeout" errors, `pool.totalCount === pool.max`, query latency spikes (p95 >200ms).
 
-2. **Dual Input Handling - Touch/Mouse Conflicts (CRITICAL)** — Mobile browsers fire both touch and synthesized mouse events. Without handling, game actions fire twice (double votes, double ability activations). Prevention: Use pointer events (pointerdown/up/move), set `touch-action: none` on canvas, minimum 44x44px touch targets, `preventDefault()` on touch events. Detection: Test all interactive elements with touch.
+2. **Memory Leaks in Long-Running Processes (CRITICAL)** — Node.js accumulates unreleased objects over hours/days, heap grows until OOM crash. **Prevention:** Run Clinic.js HeapProfiler in staging (`clinic heapprofiler -- node dist/index.js`) for 30+ minutes, always call `socket.off()` in cleanup, set PM2 memory limit `max_memory_restart: '500M'`. **Detection:** Process RSS grows >100MB/hour continuously, constantly increasing heapUsed, Clinic.js flame graph shows accumulating allocations.
 
-3. **State Machine vs URL Navigation Conflicts (CRITICAL)** — Game phases are server-driven state machine (lobby → avatar → battle → ...). Adding URL routing creates dual sources of truth. Prevention: Server state machine remains authoritative, URLs reflect (don't drive) game state, only non-game pages use URL-driven routing, game module gets single route `/game/:lobbyId` with phases managed internally.
+3. **Unhandled Promise Rejections (CRITICAL)** — async errors crash entire process in production. Database failures, network timeouts, validation errors all terminate server if not caught. **Prevention:** Global handler `process.on('unhandledRejection', (err) => { logger.error(err); })`, wrap all async operations in try/catch, test error paths (disconnect database during query). **Detection:** Process exits with code 1 unexpectedly, "UnhandledPromiseRejectionWarning" in logs, PM2 shows frequent restarts.
 
-4. **JRPG Theming Prioritizes Aesthetics Over Usability (MODERATE)** — Ornate borders obscure content, pixel fonts hard to read at small sizes, dark themes reduce contrast. Prevention: WCAG AA contrast ratios minimum (4.5:1 text, 3:1 large), use JRPG theming for decorations but keep text readable, test with axe-core (already integrated), progressive disclosure without information overload.
+4. **Database Migration Failures (CRITICAL)** — schema changes fail mid-deployment, database left in inconsistent state. **Prevention:** Test ALL migrations in staging first, use Drizzle's migration tracking table (`__drizzle_migrations`), lock migration execution with PostgreSQL advisory locks, wrap in transactions. **Detection:** Deployment fails with SQL syntax errors, tables half-created, `__drizzle_migrations` shows partial application.
 
-5. **Desktop Graphics Overwhelm Mobile GPUs (MODERATE)** — Three.js effects (shadows, particles, post-processing) designed for desktop cause mobile thermal throttling, battery drain, frame drops. Prevention: Cap devicePixelRatio to 2 on mobile, disable shadows/reduce particles, use PerformanceMonitor for auto-downgrade, provide quality presets (High/Medium/Low). Detection: Monitor FPS on mid-range phone, check battery drain during 30-min session.
+5. **Event Loop Blocking (MODERATE)** — synchronous operations block event loop, WebSocket message processing stops, players experience lag. **Prevention:** Use async file operations (`fs.promises` not `fs.readFileSync`), offload heavy computation to worker threads, monitor event loop lag with Prometheus (alert >100ms), parse JSON incrementally for payloads >1MB. **Detection:** `process_event_loop_lag_seconds` metric spikes, players report lag during voting/battle, Clinic.js Doctor shows "Event Loop" bottleneck.
+
+**Phase-specific warnings:**
+- **Phase 1 (Database Foundation)**: Watch for PIT-01 (Pool Exhaustion), PIT-04 (Migration Failures) — test migrations in staging, size pool based on CPU cores.
+- **Phase 2 (Reliability)**: Watch for PIT-03 (Unhandled Rejections), PIT-07 (Backup Failure) — add global error handler, test restoration monthly.
+- **Phase 3 (Performance)**: Watch for PIT-02 (Memory Leaks), PIT-05 (Event Loop Blocking) — run Clinic.js in staging, monitor event loop lag.
 
 ## Implications for Roadmap
 
-Based on research, suggested phase structure:
+Based on research, v3.0 milestone should be structured as **3 sequential phases** (Database Foundation → Reliability & Monitoring → Performance Optimization) with Phase 4+ deferred post-launch.
 
-### Phase 1: JRPG Theme Foundation
-**Rationale:** Building a design system first prevents rework. All subsequent UI work inherits theme tokens, reusable components, and animation patterns. Research shows JRPG theming affects every phase component (20+ components), making upfront standardization critical to avoid inconsistency (Pitfall PIT-10).
-
-**Delivers:**
-- JRPG design system with reusable themed components (GamePanel, GameButton, StatBar, HealthBar)
-- CSS custom property tokens (colors, spacing, borders, shadows, fonts)
-- UI sound effects library integrated with Howler.js or Web Audio API
-- Smooth state transition animations (100-500ms using Framer Motion)
-- Phase-consistent visual language applied to lobby, avatar selection, battle
-
+### Phase 1: Database Foundation (Week 1)
+**Rationale:** Can't go to production without reliable database setup. These are blocking requirements that must complete before any deployment.
+**Delivers:** Production-ready PostgreSQL with connection pooling, versioned migrations, persistent sessions, environment-specific configuration.
 **Addresses:**
-- Table stakes: Ornamental frames/borders, readable busy menus, phase-consistent theming, UI sound effects, smooth state transitions
-- Architecture: Component library with theme tokens, reusable JRPG-styled components
+- PostgreSQL Connection Pooling (FEATURES.md table stakes)
+- Database Migrations Production (FEATURES.md table stakes)
+- Session Persistence PostgreSQL (FEATURES.md table stakes)
+- Environment-Based Config (FEATURES.md table stakes)
 
 **Avoids:**
-- PIT-10 (Theme inconsistency across phase components) — design system establishes standards upfront
-- PIT-06 (Aesthetics over usability) — build accessibility testing into design system creation
+- PIT-01 (Connection Pool Exhaustion) via proper pool sizing
+- PIT-04 (Database Migration Failures) via staging tests + advisory locks
+- PIT-10 (Dev/Prod Database Bleeding) via environment validation
 
-**Duration:** Medium (component refactoring, asset sourcing)
-**Dependencies:** None — foundational work
+**Implementation notes:**
+- Add explicit pool config to storage.ts: `{ max: 10, idle_timeout: 30, connect_timeout: 10 }`
+- Migration system already exists (k8s/base/migration-job.yaml), verify ArgoCD PreSync hook
+- Session persistence already implemented (connect-pg-simple), just needs DATABASE_URL set
+- Add startup validation for required env vars (DATABASE_URL, RECONNECT_TOKEN_SECRET, NODE_ENV)
 
----
+### Phase 2: Reliability & Monitoring (Week 2)
+**Rationale:** Production reliability essentials before accepting real users. Monitoring prevents issues, graceful shutdown prevents data loss, backups enable disaster recovery.
+**Delivers:** Production-ready error handling, health checks with database connectivity, automated backups with restoration testing, graceful shutdown on deployments.
+**Uses:**
+- PM2 for process management (STACK.md)
+- Prometheus + Grafana (existing k8s/infrastructure/monitoring/)
+- pg_dump for backups (STACK.md)
 
-### Phase 2: Mobile UX Critical Path
-**Rationale:** Mobile represents majority of web game traffic. Ensuring core UX works on primary device type before polish work prevents mobile-specific issues discovered late. Research emphasizes 44px minimum touch targets (Pitfall PIT-04) and safe area handling as non-negotiable for mobile games.
-
-**Delivers:**
-- Touch-friendly tap targets (44px minimum enforced across all phases)
-- Safe area handling for notches, rounded corners, home gesture zones (CSS env() variables)
-- Dual orientation support (landscape for battle, portrait for lobby/menus)
-- Mobile Canvas settings with adaptive performance (capped DPR, quality regression)
-- Network interruption UX enhancements (visible connection status using existing reconnection system)
-
-**Addresses:**
-- Table stakes: Touch targets, safe areas, orientation support, network interruption UX, lightweight assets
-- Differentiators: Adaptive UI density (compact mobile vs spacious desktop)
-- Critical pitfalls: PIT-02 (Camera aspect ratio on orientation change), PIT-04 (Touch/mouse conflicts), PIT-08 (Desktop graphics overwhelm mobile)
-
-**Avoids:**
-- Desktop-only UX that breaks on mobile
-- Accidental taps from insufficient spacing
-- WebGL performance issues on mobile GPUs
-
-**Duration:** Medium (UI audit, responsive refactor, mobile testing)
-**Dependencies:** Phase 1 (reusable themed components make responsive refactor easier)
-
----
-
-### Phase 3: Routing & SEO Infrastructure
-**Rationale:** Can be developed in parallel with UI work since routing layer has minimal overlap with theming/mobile. React Router already installed (unused), making integration straightforward. Social crawler middleware is moderate complexity but isolated from game logic.
-
-**Delivers:**
-- React Router v7 integration (upgrade from existing v6.26.0)
-- Clean URL structure without hash fragments (`/lobby/abc123` not `/#/lobby?id=abc123`)
-- React Helmet Async for dynamic meta tags per route
-- Open Graph + Twitter card tags for rich social sharing previews
-- vite-react-ssg for static marketing page pre-rendering
-- Express middleware for social crawler detection (meta tags in initial HTML)
-
-**Addresses:**
-- Table stakes: Unique meta tags per route, Open Graph tags, clean URLs, server-side rendering for crawlers
-- Architecture: Route-based code splitting (lazy load Three.js only for game routes)
+**Implements:**
+- Graceful Shutdown (FEATURES.md table stakes)
+- Enhanced Health Checks with DB connectivity (FEATURES.md table stakes)
+- CPU/Event Loop Monitoring (FEATURES.md table stakes)
+- Automated Database Backups (FEATURES.md table stakes)
 
 **Avoids:**
-- PIT-07 (SEO effort wasted on authenticated/game routes) — SEO only on public pages, game routes get `noindex` meta
-- PIT-05 (State machine vs URL conflicts) — URLs reflect server state, don't drive it
-- Hash routing that breaks SEO
+- PIT-03 (Unhandled Promise Rejections) via global error handler
+- PIT-07 (Backup Failure Silent) via alerting + monthly restoration tests
+- PIT-11 (Aggressive Health Check Timeouts) via generous 5-10s timeout
 
-**Duration:** Low-Medium (routing straightforward, middleware moderate)
-**Dependencies:** None — parallel to Phase 1/2
+**Implementation notes:**
+- Add global handler: `process.on('unhandledRejection', (err) => { logger.error(err); })`
+- Enhance `/api/health`: add `await db.query('SELECT 1')` with try/catch
+- Set up PM2 with `max_memory_restart: '500M'` in ecosystem.config.cjs
+- Schedule backup job (node-schedule or cron): daily pg_dump, compress with gzip, 7 daily + 4 weekly retention
 
----
+### Phase 3: Performance Optimization (Week 3)
+**Rationale:** Performance improvements with high ROI and low complexity. Do these before scaling features to establish baselines and prevent issues at scale.
+**Delivers:** Indexed database queries, reduced bandwidth via compression, optimized garbage collection, memory leak detection in staging environment.
+**Uses:**
+- Clinic.js for profiling (STACK.md)
+- socket.io-prometheus for WebSocket metrics (STACK.md)
+- V8 GC tuning flags (STACK.md)
 
-### Phase 4: Lobby Polish & Animations
-**Rationale:** Builds on theme foundation and mobile UX. Adds differentiators after table stakes established. Server events for emotes and charge system already exist, making this primarily UI polish work rather than backend complexity.
-
-**Delivers:**
-- Enhanced emote UI (make existing `lobby_emote`/`battle_emote` events more visible)
-- Player readiness indicators (visual cue showing who's ready to start)
-- Idle character animations during waiting periods
-- Charge/magic system visual polish (effects for existing `player_charge` events)
-- Smooth phase transition animations (hooks on existing `GamePhase` state machine)
-
-**Addresses:**
-- Table stakes: Enhanced emote system, readiness indicators, idle animations
-- Differentiators: Charge/magic system polish, emote wheel/quick chat, haptic feedback
+**Implements:**
+- Database Query Optimization (FEATURES.md differentiator)
+- WebSocket Compression (FEATURES.md differentiator)
+- V8 Garbage Collection Tuning (FEATURES.md differentiator)
+- Memory Leak Detection (FEATURES.md table stakes)
 
 **Avoids:**
-- Static lobby that feels dead
-- Jarring phase transitions without visual continuity
+- PIT-02 (Memory Leaks) via Clinic.js HeapProfiler in staging
+- PIT-05 (Event Loop Blocking) via monitoring + async operations
+- PIT-08 (Environment Variable Leakage) via sanitized error logging
 
-**Duration:** Low-Medium (UI polish, animation timing, playtesting)
-**Dependencies:** Phase 1 (theme foundation for consistent animations), Phase 2 (touch-friendly emote interactions)
+**Implementation notes:**
+- Add indexes to schema: `index('user_stats_user_id_idx').on(userStats.userId)`, similar for estimationHistory, sessions
+- Enable Socket.IO compression: `perMessageDeflate: { threshold: 1024 }` in server/websocket.ts
+- Add V8 flags to start script: `--max-semi-space-size=64` (profile first with `--trace-gc`)
+- Run Clinic.js in staging: `clinic heapprofiler -- node dist/index.js` for 30+ minutes under load
 
----
+### Phase 4+: Scaling (Post-Launch, Deferred)
+**Rationale:** These features support scale beyond initial launch requirements (budget: $5-20/mo → likely <1000 users initially). Validate product-market fit first, then scale infrastructure.
+**Deferred features:**
+- Redis Adapter for Horizontal Scaling (FEATURES.md differentiator) — only needed above 10K concurrent connections
+- Socket.IO State Recovery (FEATURES.md differentiator) — already have reconnection system that works
+- Connection Rate Limiting (FEATURES.md differentiator) — add when abuse detected or before public launch
+- Prometheus Custom Dashboards (FEATURES.md differentiator) — build incrementally as monitoring needs grow
+- Automated Database Cleanup Jobs (FEATURES.md differentiator) — schedule after 1 month of production data
+
+**Trigger for Phase 4:** Either (1) concurrent connections approaching 5K on single instance, or (2) hosting costs exceed $50/month, or (3) evidence of abuse requiring rate limiting.
 
 ### Phase Ordering Rationale
 
-- **Theme first:** Prevents rework. All UI work in subsequent phases inherits design system. Research shows 20+ phase components need consistent theming—upfront standardization is critical.
-- **Mobile second:** Ensures core UX works on primary device type (mobile web games see 85% mobile traffic per research). Building on themed components makes responsive refactor easier.
-- **Routing parallel:** Minimal overlap with UI work. Can be developed alongside Phases 1-2. Integration happens at App.tsx level without touching individual components.
-- **Lobby polish last:** Builds on theme + mobile foundation. Adds differentiators after table stakes met. Server events already exist, making this straightforward UI work.
+- **Sequential, not parallel**: Each phase builds on the previous. Can't optimize performance (Phase 3) without reliable monitoring (Phase 2). Can't monitor effectively without stable database (Phase 1).
+- **Database first**: Connection pooling, migrations, sessions are foundational. Without these, app crashes or loses data on restart. Everything else depends on stable database.
+- **Reliability before optimization**: Add error handling and monitoring (Phase 2) before performance tuning (Phase 3). Need monitoring baselines to measure optimization impact.
+- **Defer scaling features**: Redis adapter, state recovery, rate limiting only matter above 1000 concurrent users. MVP target: <100 users. Don't pay complexity cost until needed.
 
-**Dependency flow:**
+**Critical path dependencies:**
 ```
-Phase 1 (Theme Foundation) → Phase 2 (Mobile UX) → Phase 4 (Lobby Polish)
-                    ↓
-Phase 3 (Routing/SEO) [parallel, integrates at end]
+Phase 1: Database Foundation
+  ├─> Connection Pooling → Session Persistence
+  └─> Database Migrations → Automated Backups (Phase 2)
+
+Phase 2: Reliability & Monitoring
+  ├─> Graceful Shutdown → Health Checks
+  └─> Error Handling → Monitoring Setup
+      └─> Performance Optimization (Phase 3)
+
+Phase 3: Performance Optimization
+  ├─> Query Optimization → Memory Leak Detection
+  └─> GC Tuning → WebSocket Compression
 ```
 
 ### Research Flags
 
-**Phases likely needing deeper research during planning:**
-- **Phase 1 (Theme):** Asset sourcing for audio library (research found design principles but not specific royalty-free sources). Need to explore freesound.org, OpenGameArt.org, itch.io for UI sound effects.
-- **Phase 3 (Routing):** Social crawler middleware implementation. User-agent detection needs careful implementation to avoid false positives (blocking real users) or false negatives (missing crawlers). May need deeper research on Vite/Express integration patterns.
+**Needs deeper research during planning:**
+- **Phase 4+ (Horizontal Scaling)**: Redis adapter configuration for Socket.IO, sticky session setup on load balancers, pub/sub message routing patterns. Current research covers concepts but not implementation details. Use `/gsd:research-phase` when implementing.
 
-**Phases with standard patterns (skip research-phase):**
-- **Phase 2 (Mobile):** Safe area handling well-documented. CSS env() variables are standard. Touch targets have established minimums (44px Apple HIG, 48dp Material Design).
-- **Phase 4 (Lobby):** Straightforward polish work. Animation timing may need playtesting but no research needed.
+**Standard patterns (skip research-phase):**
+- **Phase 1 (Database Foundation)**: Well-documented patterns. Drizzle migrations already configured, connection pooling is standard postgres.js config, session persistence already implemented. Follow existing codebase patterns.
+- **Phase 2 (Reliability & Monitoring)**: Prometheus/Grafana already set up (k8s/infrastructure/monitoring/), pg_dump is standard PostgreSQL tooling, PM2 has extensive documentation. No novel research needed.
+- **Phase 3 (Performance Optimization)**: Clinic.js has official docs with clear usage, V8 GC tuning is well-documented, Socket.IO compression is single config flag. Straightforward implementation.
 
-### Technical Unknowns Requiring Validation
-
-- **Performance impact of JRPG frames:** Will ornamental CSS borders or canvas-based pixel art frames affect frame rate on mobile? Test during Phase 1.
-- **Social crawler reliability:** How to test that crawlers receive correct meta tags without manual verification on each platform? May need test tooling during Phase 3.
-- **Dual-orientation UX flow:** Should app hint/enforce orientation change, or adapt silently? User testing needed during Phase 2.
-- **View Transitions API browser support:** Modern API for phase transitions. Need fallback for older browsers (Framer Motion already installed as fallback).
+**Knowledge gaps to fill during execution:**
+- **Hosting platform selection**: Research provides options (Render/Fly.io/Railway), but final decision needs budget clarity and traffic projections. Determine during Phase 1 planning.
+- **Backup storage provider**: Research mentions S3 for backup uploads but doesn't specify Neon/Render managed backup capabilities. Investigate native backup features before implementing custom solution.
+- **PM2 cluster mode compatibility**: Research mentions cluster mode but doesn't detail Socket.IO sticky session compatibility. Verify sticky sessions work with PM2 cluster before enabling.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | Existing dependencies cover most needs. React Router, react-helmet-async already installed. vite-react-ssg and react-responsive are well-documented additions. Version compatibility verified. |
-| Features | HIGH | Table stakes clearly defined from mobile game UX research. Existing server events (emotes, charge) validated in codebase. Feature dependencies mapped. |
-| Architecture | HIGH | Routing layer separation pattern verified across multiple React + Three.js projects. Component boundaries align with existing codebase structure. Socket.IO persistence pattern already implemented. |
-| Pitfalls | HIGH | Critical pitfalls (Canvas context loss, dual input, state machine conflicts) sourced from React Three Fiber official docs and mobile web game best practices. Mitigation strategies proven. |
+| Stack | HIGH | All hosting platforms verified with 2026 pricing (Render, Railway, Fly.io, Neon). PostgreSQL services confirmed with current free tier limits. Profiling tools (Clinic.js, PM2) actively maintained with recent documentation. Version compatibility verified against existing package.json. |
+| Features | HIGH | Feature categorization based on production Node.js/Socket.IO best practices from authoritative sources (Socket.IO official docs, Node.js guides, PostgreSQL documentation). Table stakes vs differentiators validated against multiple hosting platform incident reports and scaling case studies. |
+| Architecture | HIGH | ScrumQuest codebase reviewed directly (storage.ts, gameState.ts, server/index.ts). IStorage abstraction already implemented with both MemStorage and PgStorage. Kubernetes manifests exist for PostgreSQL StatefulSet. Migration job configured in k8s/base/. Architecture patterns match industry-standard separation of ephemeral state (memory) vs persistent data (database). |
+| Pitfalls | HIGH | Pitfalls sourced from production Node.js incident reports (memory leaks, connection exhaustion), PostgreSQL best practices (migration failures, pool sizing), and Socket.IO scaling documentation (sticky sessions, event loop blocking). All 11 pitfalls include detection methods and mitigation strategies verified against multiple sources. |
 
 **Overall confidence:** HIGH
 
-Research synthesizes patterns from authoritative sources (React Router docs, Three.js migration guides, WCAG 2.1 guidelines, mobile web game best practices) with analysis of existing ScrumQuest codebase. All recommended technologies have official documentation and current version verification (2026-02-11). Architecture patterns align with existing implementation (Zustand, Socket.IO, phase-based state machine).
-
 ### Gaps to Address
 
-**Areas where research was inconclusive:**
-- **Audio asset sourcing:** Found design principles (UI sound effects need pitch/volume variation to prevent fatigue) and integration patterns (Howler.js vs Web Audio API), but not specific asset libraries or creation workflows. Gap: Need to research royalty-free game sound effect sources during Phase 1 planning.
-- **Social crawler user-agent detection:** General approach documented (check user-agent header, inject meta tags for crawlers), but specific implementation for Vite/Express needs validation. Risk of false positives or false negatives. Gap: Test with actual social platform crawlers during Phase 3.
-- **View Transitions API browser support:** Modern API available in Chrome 111+, Safari 17.4+, but support across target devices needs verification. Fallback strategy (Framer Motion) already exists. Gap: Test on target mobile browsers during Phase 1.
+**Budget and traffic projections:**
+- Research provides 3 cost tiers ($5-10/mo, $15-20/mo, $20+/mo) but doesn't know actual budget or expected launch traffic.
+- **Action during planning:** Determine budget constraints and initial user projections. If budget <$15/mo → use Neon free tier + Railway. If budget $15-30/mo → use Render + Neon. If existing cluster available → keep Kubernetes.
 
-**Topics needing phase-specific research later:**
-- **Phase 1 (Theme):** Audio integration patterns for React apps. Pixel art asset creation or sourcing workflow. Animation timing for JRPG feel (100ms vs 250ms vs 500ms transitions).
-- **Phase 2 (Mobile):** Testing methodology for safe areas across devices. Emulator vs real device testing requirements. Dual-orientation testing strategy.
-- **Phase 3 (Routing):** Social crawler detection implementation details. Meta tag validation for different platforms (Twitter, Discord, Slack, LinkedIn). vite-react-ssg configuration for hybrid static/dynamic approach.
-- **Phase 4 (Lobby):** Idle animation loops (sprite sheets vs CSS animations). Emote UI patterns (toast vs bubble vs overhead display).
+**Hosting platform migration strategy:**
+- Research recommends Render for simplicity but ScrumQuest already has Kubernetes manifests.
+- **Action during planning:** Decide whether to (1) migrate to managed platform for operational simplicity, or (2) keep Kubernetes deployment and apply database/monitoring improvements. Not a technical gap — a business decision between OpEx (managed) vs CapEx (Kubernetes).
+
+**Multi-instance Socket.IO testing:**
+- Research identifies need for Redis adapter and sticky sessions when scaling horizontally, but doesn't detail testing procedure.
+- **Action during Phase 4 planning:** Set up staging environment with 2+ instances, verify reconnection works, monitor for "transport error" logs. Document sticky session requirements for each hosting platform (Fly.io: automatic, Render: best-effort, Railway: needs config).
+
+**Backup restoration validation:**
+- Research recommends monthly backup restoration tests but doesn't specify automation approach.
+- **Action during Phase 2 execution:** Create staging restoration script: (1) download latest backup, (2) restore to temporary database, (3) run test queries to validate data integrity, (4) alert if restoration fails. Schedule via GitHub Actions or cron.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- **Stack:** React Router v7 official docs, react-helmet-async GitHub, Tailwind CSS responsive design guide, @react-three/drei scaling performance docs
-- **Features:** Game UI Database (gameuidatabase.com), mobile game UX best practices (genieee.com, pixune.com), WCAG 2.1 guidelines
-- **Architecture:** React Three Fiber official docs, React Router v6 guide, Socket.IO with React integration guide, domain-driven design patterns (DDD Academy, HackerNoon)
-- **Pitfalls:** Three.js migration guides, React Three Fiber discussions (GitHub), mobile web game development (gamedeveloper.com), WCAG accessibility guidelines
+
+**Hosting Platforms:**
+- [Render.com Pricing](https://render.com/pricing) — 2026 pricing, WebSocket support
+- [Render WebSocket Documentation](https://render.com/docs/websocket) — Persistent connection details
+- [Railway Pricing 2026](https://railway.com/pricing) — $5/month Hobby tier
+- [Fly.io Pricing](https://fly.io/pricing/) — Global deployment costs
+- [AWS Lightsail Pricing](https://aws.amazon.com/lightsail/pricing/) — Node.js blueprint
+
+**Managed PostgreSQL:**
+- [Neon Pricing 2026](https://neon.com/pricing) — Free tier, scale-to-zero
+- [Neon Plans Documentation](https://neon.com/docs/introduction/plans) — Connection limits
+- [Neon Serverless Postgres Pricing Analysis](https://vela.simplyblock.io/articles/neon-serverless-postgres-pricing-2026/) — 2025 pricing cuts
+- [Supabase vs Neon Comparison](https://www.bytebase.com/blog/neon-vs-supabase/) — Feature comparison
+
+**Resource Profiling:**
+- [Clinic.js Official Site](https://clinicjs.org/) — Memory profiling suite
+- [Clinic.js GitHub](https://github.com/clinicjs/node-clinic) — Documentation
+- [Node.js Memory Profiling Guide](https://oneuptime.com/blog/post/2026-01-26-nodejs-memory-leak-profiling/view) — 2026 best practices
+- [PM2 Monitoring Documentation](https://pm2.keymetrics.io/docs/usage/monitoring/) — Real-time dashboard
+
+**Socket.IO & WebSocket:**
+- [Socket.IO Performance Tuning](https://socket.io/docs/v4/performance-tuning/) — Official optimization guide
+- [Socket.IO Multi-Node Scaling](https://socket.io/docs/v4/using-multiple-nodes/) — Redis adapter
+- [Socket.IO Redis Adapter](https://socket.io/docs/v4/redis-adapter/) — Configuration
+
+**Database & ORM:**
+- [Drizzle ORM Migrations](https://orm.drizzle.team/docs/migrations) — Official docs
+- [Drizzle PostgreSQL Best Practices](https://gist.github.com/productdevbook/7c9ce3bbeb96b3fabc3c7c2aa2abc717) — Connection pooling
+- [Node.js Connection Pooling Guide](https://oneuptime.com/blog/post/2026-01-06-nodejs-connection-pooling-postgresql-mysql/view) — Pool sizing
+- [node-postgres Pooling](https://node-postgres.com/features/pooling) — postgres.js features
 
 ### Secondary (MEDIUM confidence)
-- Framer Motion vs GSAP comparison (blog.logrocket.com 2026), React Router + Three.js integration (2023 blog post - patterns still valid), vite-react-ssg GitHub repo, react-responsive NPM package
 
-### Tertiary (LOW confidence - flagged for validation)
-- JRPG color schemes (generic game asset marketplaces - need custom design), social crawler middleware patterns (community discussions - need testing)
+**Platform Comparisons:**
+- [Render vs Fly.io Comparison](https://render.com/articles/render-vs-fly-io) — Feature/cost analysis
+- [Railway vs Render (2026)](https://northflank.com/blog/railway-vs-render) — Developer experience
+- [Deployment Platforms Comparison](https://www.jasonsy.dev/blog/comparing-deployment-platforms-2025) — WebSocket support
 
-### Additional Context Files
-- `.planning/research/UI_ROUTING_ARCHITECTURE.md` — Detailed routing patterns and component boundaries
-- `.planning/research/STACK-ui-mobile-routing.md` — Howler.js audio library, safe area CSS, asset optimization
-- `.planning/research/SUMMARY-ui-mobile-routing.md` — Early synthesis focusing on UI/routing domain
+**Performance & Monitoring:**
+- [Node.js Application Monitoring Tools 2026](https://betterstack.com/community/comparisons/nodejs-application-monitoring-tools/) — Tool comparison
+- [Profiling Node.js Applications](https://betterstack.com/community/guides/scaling-nodejs/profiling-nodejs-applications/) — Techniques
+- [Prometheus, Loki, Grafana Integration 2026](https://johal.in/cloud-native-observability-stack-prometheus-grafana-loki-and-tempo-integration-for-full-stack-monitoring-2026-3/) — Full stack monitoring
+
+**Load Testing:**
+- [k6 WebSocket Documentation](https://grafana.com/docs/k6/latest/using-k6/protocols/websockets/) — Native support
+- [autocannon npm package](https://www.npmjs.com/package/autocannon) — HTTP benchmarking
+- [Load Testing Node.js Apps](https://v-checha.medium.com/load-testing-tools-for-node-js-developers-98291ed75a4b) — Tool comparison
 
 ---
-*Research completed: 2026-02-11*
+*Research completed: 2026-02-19*
 *Ready for roadmap: YES*

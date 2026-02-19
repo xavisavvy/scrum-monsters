@@ -1,249 +1,249 @@
 # Feature Landscape
 
-**Domain:** JRPG-themed UI redesign, mobile game UX, routing/SEO, and lobby magic systems for real-time multiplayer
-**Researched:** 2026-02-11
+**Domain:** Hosting optimization, PostgreSQL database setup, and resource profiling for Node.js/Socket.IO real-time application
+**Researched:** 2026-02-19
 
 ## Table Stakes
 
-Features users expect. Missing = product feels incomplete.
+Features users expect from a production-ready real-time multiplayer app. Missing these = app feels incomplete or unreliable.
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| **JRPG UI Theming** |
-| Stylized ornamental frames | JRPGs have distinctive menu borders - players expect frames around panels, modals, and cards | Medium | Pixel art borders, art deco patterns. CSS-based first, canvas for pixel-perfect |
-| Readable busy menus | JRPG menus balance visual flash with readability - information density + style | Medium | Modern JRPGs (Persona series) show menus can be "busy" but still readable |
-| Phase-consistent theming | All game phases should share visual language - inconsistent UI breaks immersion | Low | Reusable component library with theme tokens |
-| UI sound effects | Every button click, menu transition, action confirmation needs audio feedback | Medium | Prevents fatigue through variation (pitch, volume). User must control volume levels |
-| Smooth state transitions | UI elements animate between states (100-500ms ideal) - not instant swaps | Medium | Micro-interactions confirm actions, guide next steps |
-| **Mobile Game UX** |
-| Touch-friendly tap targets | Buttons must be large enough to prevent accidental taps - minimum 44x44px | Low | CRITICAL: Test on smallest phones, not just tablets |
-| Safe area handling | UI must respect notches, rounded corners, home gesture zones | Medium | Portrait: top/bottom insets. Landscape: left/right + bottom insets |
-| Landscape + Portrait support | Real-time games typically landscape, but lobby/menus work portrait | High | Different safe areas per orientation. Anchor points for responsive layout |
-| No accidental taps | Proper spacing between interactive elements - prevent mis-taps | Low | Part of touch zone sizing |
-| Lightweight UI assets | Mobile bandwidth limited - minimize heavy graphics, complex animations | Medium | Cache frequently-used assets locally. Use clean, simple designs |
-| Network interruption UX | WebSocket disconnects common on mobile - must notify + reconnect gracefully | High | Exponential backoff, heartbeat, message queue, visible connection status |
-| **SPA Routing & SEO** |
-| Unique meta tags per route | Each "page" needs distinct title, description for social sharing | Medium | React Helmet Async for dynamic meta tags |
-| Open Graph tags | Social platforms expect og: tags for rich previews (image, title, description) | Low | Twitter cards + OG tags for LinkedIn, Slack, Discord |
-| Clean URL structure | `/lobby/abc123` not `/#/lobby?id=abc123` - hash routing breaks SEO | Medium | React Router with BrowserRouter, not HashRouter |
-| Server-side rendering OR prerendering | Social crawlers don't execute JS - meta tags must be in initial HTML | High | CRITICAL: Not for Google in 2026 (avoid cloaking). For social crawlers only |
-| **Lobby Interactions** |
-| Emote system | Players expect way to express emotion in waiting periods - keeps engagement up | Low | Already exists (`lobby_emote` event). Enhance visibility/UI |
-| Player readiness indicator | Visual cue showing who's ready to start - prevents "waiting on who?" | Low | Checkmark, color change, animation on ready state |
-| Idle animations | Characters should animate while waiting - static sprites feel dead | Medium | Idle loops, breathing animations. Don't overwhelm with constant motion |
+| Feature | Why Expected | Complexity | Dependencies | Notes |
+|---------|--------------|------------|--------------|-------|
+| **PostgreSQL Connection Pooling** | Required for production database — eliminates connection overhead. For apps handling 1000 queries/second, proper pooling = difference between 55s and 5s cumulative latency. | Low | Existing Drizzle schema, `postgres` package | Standard formula: `connections = (core_count * 2) + effective_spindle_count` per instance. With 5 instances + 100-conn limit = 20 conns/instance max. |
+| **Session Persistence (PostgreSQL)** | Users expect to stay logged in across server restarts. In-memory sessions reset on every deploy. | Low | `connect-pg-simple` package, existing session table in schema | Table auto-created via `createTableIfMissing: true`. TTL defaults to cookie maxAge, prune interval 900s (15 min). |
+| **Basic Health Checks** | Hosting platforms expect `/health` endpoints to know if app is alive. Already have `/api/health` and `/api/ws-health`. | Minimal | None — already exists | Enhancement: add database connectivity check to health endpoint. |
+| **Graceful Shutdown** | Prevent data loss when server restarts. Socket.IO connections should cleanly disconnect, DB connections released. | Medium | Existing Socket.IO setup | Listen for SIGTERM/SIGINT, close HTTP server, wait for active connections to drain (with timeout), close DB pool. |
+| **Database Migrations (Production)** | Production databases cannot use `drizzle-kit push` (codebase-first) — need versioned migrations for audit trail and rollback capability. | Medium | Existing Drizzle schema | Use `drizzle-kit generate` + custom `migrate.ts` script with drizzle-orm's `migrate()` function for reliability. Naming: `20260219_add_session_cleanup.ts`. |
+| **Memory Leak Detection** | Long-running Node.js apps accumulate memory leaks. Uncaught leaks → crashes → bad user experience. | Medium | New: Clinic.js Heap Profiler | Use `clinic heapprofiler -- node dist/index.js` in staging to identify leaks before production. Constantly increasing Heap Used = leak. |
+| **CPU/Event Loop Monitoring** | WebSocket apps sensitive to event loop blocking. Blocked loop = lag spikes, disconnects. | Low | Existing Prometheus metrics | Already tracking with `prom-client` collectDefaultMetrics (event loop lag). Add alert: event_loop_lag > 100ms. |
+| **Automated Database Backups** | Data loss protection. Expect daily backups minimum for production apps. | Medium | `pg_dump` (comes with PostgreSQL) | Use node-schedule or cron to run `pg_dump` via child_process, compress with gzip, upload to S3 or equivalent. Retention: 7 daily + 4 weekly. |
+| **Environment-Based Config** | Different settings for dev/staging/prod (DB URLs, log levels, pool sizes). | Low | Existing `.env` setup | Validate required env vars on startup (DATABASE_URL, RECONNECT_TOKEN_SECRET, etc.). Fail fast if missing. |
 
 ## Differentiators
 
-Features that set product apart. Not expected, but valued.
+Features that set product apart or significantly improve operational quality. Not expected, but valued.
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| **JRPG UI Theming** |
-| Class-specific UI flourishes | UI accents reflect player's chosen class (color, icons, borders) | Medium | Persona-style personalization. Visual identity reinforcement |
-| Pixel-perfect animations | Subtle pixel art animations in UI (sparkles, shimmer, transitions) | High | Requires sprite sheets, careful timing. High polish payoff |
-| HP/status bars styled as JRPG | Party status display like classic JRPGs (Final Fantasy, Persona) | Medium | Health bars, status effects, turn indicators during battle |
-| Battle UI phase transitions | Unique transition animations between game phases (whoosh, fade, slide) | Medium | View Transitions API in modern browsers. Fallback for older |
-| **Mobile Game UX** |
-| Gesture controls | Swipe to switch views, pinch to zoom, long-press for context menu | High | Not expected for real-time multiplayer, but elevates mobile feel |
-| Adaptive UI density | Switch between compact (mobile) and spacious (desktop) layouts | Medium | Different component variants based on viewport size |
-| Haptic feedback | Vibration on button press, attack hit, level up (mobile browsers support) | Low | Navigator Vibration API. Optional, user-controlled |
-| Orientation lock hints | Suggest landscape for battle, portrait OK for lobby | Low | Inform users of optimal orientation without forcing |
-| **SPA Routing & SEO** |
-| Dynamic lobby OG images | Generate unique preview images per lobby (lobby name, player count, boss) | High | Server-side image generation or prerender with canvas |
-| Lobby shareable cards | Beautiful, game-themed invite previews when shared on social media | Medium | High engagement - people share what looks good |
-| Route-based analytics | Track page views per route (lobby, battle, victory) for insights | Low | React Router + analytics integration |
-| **Lobby Interactions** |
-| Charge/magic system | Hold key to charge power, release for special effects (fireworks, sparkles) | Medium | Already exists (`player_charge` event). Add visual polish |
-| Emote wheel/quick chat | Radial menu or shortcuts for common emotes (thumbs up, laugh, celebrate) | Medium | Faster than typing, works during time pressure |
-| Player collision/physics | Characters bounce off each other in lobby, not walk through | High | Physics engine or collision detection. Fun but non-essential |
-| Spectator mode enhancements | Spectators can react, cheer, but not interfere with game | Low | Minion system exists. Add emote-only mode for spectators |
-| Lobby mini-games | Optional waiting room activities (rock-paper-scissors, quick vote) | Very High | HIGH RISK: Scope creep. Only if lobby wait times are problematic |
+| Feature | Value Proposition | Complexity | Dependencies | Notes |
+|---------|-------------------|------------|--------------|-------|
+| **Redis Adapter for Horizontal Scaling** | Scale to 100K+ concurrent connections by distributing players across multiple server instances. | High | New: `@socket.io/redis-adapter`, Redis instance (Upstash free tier works) | Uses Redis Pub/Sub to route messages between Socket.IO servers. Requires sticky sessions on load balancer (already have reconnection system). Sharded adapter recommended for Redis 7.0+. |
+| **Socket.IO State Recovery** | Players reconnect after brief disconnects (network blip, tab switch) without losing room/position. Already have reconnection system, extend with Socket.IO 4.6+ built-in recovery. | Medium | Socket.IO 4.6+ (already on 4.8.3) | Complements existing reconnection tokens. Server remembers room memberships + pending messages during disconnect. Max recovery window: 2 minutes. |
+| **Clinic.js Performance Suite** | Automated performance analysis beyond basic profiling. Identifies event loop delays, CPU bottlenecks, I/O problems with actionable recommendations. | Medium | New: `clinic` package | Four tools: Doctor (general diagnosis), BubbleProf (async flow), Flame (CPU), HeapProfiler (memory). Run in CI/staging before production deploys. |
+| **V8 Garbage Collection Tuning** | Reduce GC pauses by 30-50% with optimized heap settings. Better latency for real-time game actions. | Low | Node.js flags only | Flag: `--max-semi-space-size=64` (MB per semi-space, 128MB total Young Gen). Trade-off: more memory = less GC overhead. Profile first with `--trace-gc`. |
+| **Prometheus Custom Dashboards** | Pre-built Grafana dashboards for WebSocket metrics (connections, messages/sec, room occupancy, battle phase distribution). | Medium | Existing Prometheus metrics | Use community dashboard templates as base (NodeJS Application Dashboard #11159). Add custom panels for game-specific metrics (activeLobbies, playersByPhase). |
+| **Database Query Optimization** | Indexes on frequently queried columns (userId, lobbyId, createdAt). 10x+ faster lookups for user stats/history. | Low | Existing Drizzle schema | Add indexes to schema: `index('user_stats_user_id_idx').on(userStats.userId)`, similar for estimationHistory. Minimal storage cost (<5% DB size). |
+| **Connection Rate Limiting** | Prevent abuse/DDoS by rate-limiting WebSocket connections per IP. Protect server resources. | Medium | New: `express-rate-limit` (already have 8.2.1) | Apply to Socket.IO handshake route. Limit: 10 connections/minute/IP for anonymous, higher for authenticated. Redis store for multi-instance rate limiting. |
+| **Automated Database Cleanup Jobs** | Remove expired sessions, old estimation history (>90 days) to prevent database bloat. | Low | node-schedule or cron | Weekly cleanup query: `DELETE FROM sessions WHERE expire < NOW()`. Keep estimation_history last 90 days for stats. |
+| **WebSocket Compression** | Reduce bandwidth by 60-80% for text-heavy messages (lobby updates, ticket data). Lower hosting costs. | Low | Socket.IO built-in `perMessageDeflate` | Enable: `perMessageDeflate: { threshold: 1024 }` (compress messages >1KB). Trade-off: slight CPU increase for compression/decompression. |
 
 ## Anti-Features
 
-Features to explicitly NOT build.
+Features to explicitly NOT build or avoid.
 
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
-| Flash/Unity-style intros | Users want to play, not watch 10-second splash screens | Quick fade-in logo (1-2s max) or skip entirely |
-| Forced tutorial on first visit | Interrupts flow, annoys returning users | Contextual help, optional tutorial link in menu |
-| Auto-play music | Startles users, often inappropriate (meetings, public) | Let user initiate music. Default muted. |
-| PWA install prompts | Intrusive, low conversion, users know how to install if they want | Passive "Add to Home Screen" in menu |
-| Separate mobile app | Maintenance burden, fragmented user base, unnecessary for web game | Responsive design covers all devices |
-| Multiple login methods | Social login increases complexity, privacy concerns, dependency on 3rd party | Anonymous join by name (current system) is perfect |
-| Pixel-perfect mobile scaling | Impossible across all devices, wastes time | Fluid layouts, safe areas, tested on 3-4 representative devices |
-| Complex onboarding flow | Multi-step wizards for simple multiplayer game confuse | Direct join/create lobby. Settings optional. |
-| Loot boxes / IAP | Changes product nature, legal complexity, user trust issues | Keep game free, no monetization in MVP |
+| **Custom Database Connection Manager** | Reinventing the wheel. `postgres` package already has robust pooling with connection retry, health checks, prepared statements. | Use `postgres(DATABASE_URL, { max: 20 })` with pool config. Let library handle connection lifecycle. |
+| **Manual Schema Sync** | Running raw SQL migrations manually = high error rate, no version tracking, no rollback. | Always use Drizzle migrations: `drizzle-kit generate` → `drizzle-orm migrate()`. Track in `__drizzle_migrations` table. |
+| **In-Memory Session Store (Production)** | Already using MemoryStore as fallback. Fine for dev, catastrophic for production (sessions lost on restart/scale). | Use `connect-pg-simple` with PostgreSQL. Sessions persisted, shared across instances. |
+| **Serverless/Lambda for WebSocket** | WebSockets = long-lived stateful connections. Lambda designed for short-lived stateless requests. Causes cold starts on every reconnection (>1s delay). | Use always-on servers (Fly.io, Railway, Render). Avoid AWS Lambda/Vercel Serverless for WebSocket backends. |
+| **VPC for Simple Apps** | Adds latency (cold starts), complexity (NAT gateways), cost (data transfer) for minimal security benefit at current scale (<1000 users). | Use connection strings with SSL/TLS (Postgres requires SSL by default). Add VPC only if compliance/regulation requires. |
+| **Custom Profiling Tools** | Node.js ecosystem has mature profiling tools (Clinic.js, V8 profiler, Chrome DevTools). Building custom = months of work for worse results. | Use Clinic.js suite for automated analysis. Use Node.js built-in `--inspect` flag for manual profiling with Chrome DevTools. |
+| **Database Read Replicas (Premature)** | Adds operational complexity (replication lag, failover logic, connection routing). Only needed at 10K+ concurrent users or read-heavy workloads. | Single PostgreSQL instance handles 1000+ concurrent connections easily. Scale vertically first (more RAM/CPU). Add read replicas when write load saturates. |
+| **Custom Heartbeat/Ping System** | Socket.IO already has built-in heartbeat mechanism (pingInterval: 25000ms, pingTimeout: 20000ms). Duplicating = bandwidth waste + complexity. | Configure Socket.IO ping settings. Monitor `disconnect` events with reason codes to detect network vs. intentional disconnects. |
 
 ## Feature Dependencies
 
+Dependencies between features (implementation order matters):
+
 ```
-JRPG UI Theming
-├─ Sound effects → Requires asset library, audio system
-├─ State transitions → Requires animation framework (Framer Motion exists)
-└─ Phase-consistent theming → Requires design system, component library
+PostgreSQL Connection Pooling → Session Persistence (PostgreSQL)
+  └─> Database Migrations (Production)
+      └─> Automated Database Backups
+      └─> Automated Database Cleanup Jobs
+          └─> Database Query Optimization
 
-Mobile UX
-├─ Safe areas → Requires viewport detection, CSS custom properties
-├─ Touch targets → Requires button size audit across all phases
-├─ Network interruption UX → Depends on WebSocket reconnection (EXISTS in shared/gameEvents.ts)
-└─ Lightweight assets → Requires asset optimization, lazy loading
+Graceful Shutdown → Basic Health Checks
+  └─> Environment-Based Config
 
-SPA Routing & SEO
-├─ Meta tags → Requires React Helmet Async
-├─ Server-side rendering → MAJOR: Requires SSR setup (Vite SSR or framework switch)
-│   └─ Alternative: Middleware for social crawlers only (Vercel Edge)
-└─ Clean URLs → Requires React Router update (if using hash routing)
+Memory Leak Detection (Development)
+  └─> CPU/Event Loop Monitoring (Production)
+      └─> Prometheus Custom Dashboards
 
-Lobby Interactions
-├─ Charge/magic system → Server events EXIST, need UI polish
-├─ Emote system → Server events EXIST (`lobby_emote`, `battle_emote`)
-└─ Idle animations → Requires sprite sheets or CSS animations
+Redis Adapter (Optional) → Connection Rate Limiting (Redis store)
+  └─> Socket.IO State Recovery
+
+V8 Garbage Collection Tuning (Independent)
+WebSocket Compression (Independent)
 ```
 
 ## MVP Recommendation
 
-Prioritize **Table Stakes** first. These are expected behaviors that will make or break the user experience.
+Prioritize for initial production deployment:
 
-### Phase 1: JRPG UI Foundation (table stakes only)
-1. Ornamental frames/borders on all panels
-2. UI sound effects (button clicks, phase transitions)
-3. Smooth state transitions (100-500ms animations)
-4. Phase-consistent theming (design tokens, component library)
-5. JRPG-styled health/status bars
+### Phase 1: Database Foundation (Week 1)
+1. **PostgreSQL Connection Pooling** — Core requirement for production database performance
+2. **Database Migrations (Production)** — Enables safe schema changes
+3. **Session Persistence (PostgreSQL)** — Users stay logged in across deploys
+4. **Environment-Based Config** — Proper dev/staging/prod separation
 
-### Phase 2: Mobile UX Critical Path (table stakes only)
-1. Touch-friendly tap targets (44px minimum, test on small phones)
-2. Safe area handling (notches, rounded corners, home gesture)
-3. Landscape + Portrait support with responsive anchors
-4. Network interruption UX (reconnection already built, add visible status)
-5. Lightweight asset optimization
+**Rationale:** Can't go to production without reliable database setup. These are blocking requirements.
 
-### Phase 3: Routing & SEO Essentials (table stakes only)
-1. React Router with clean URLs (BrowserRouter)
-2. React Helmet Async for dynamic meta tags
-3. Open Graph + Twitter cards
-4. Social crawler middleware (NOT full SSR - avoid cloaking penalty)
+### Phase 2: Reliability & Monitoring (Week 2)
+5. **Graceful Shutdown** — Prevent data loss on deploys
+6. **Basic Health Checks** — Enhanced with DB connectivity check
+7. **CPU/Event Loop Monitoring** — Already have Prometheus, add alerting thresholds
+8. **Automated Database Backups** — Data protection (compliance requirement)
 
-### Phase 4: Lobby Polish (table stakes + one differentiator)
-1. Enhanced emote UI (already built, make more visible)
-2. Player readiness indicators
-3. Idle animations
-4. **Differentiator:** Charge/magic system polish (events exist, add visuals)
+**Rationale:** Production reliability essentials. Monitoring prevents issues, backups recover from disasters.
 
-### Defer to Post-MVP
-- Class-specific UI flourishes (differentiator, not critical)
-- Gesture controls (differentiator, complex)
-- Dynamic OG images (differentiator, requires server-side image gen)
-- Lobby mini-games (very high complexity, scope creep risk)
-- Player collision physics (fun but non-essential)
+### Phase 3: Performance Optimization (Week 3)
+9. **Database Query Optimization** — Add indexes for common queries
+10. **WebSocket Compression** — Reduce bandwidth costs by 60-80%
+11. **V8 Garbage Collection Tuning** — Lower latency for real-time actions
+12. **Memory Leak Detection** — Run Clinic.js in staging environment
 
-## Complexity Assessment
+**Rationale:** Performance improvements with high ROI and low complexity. Do these before scaling features.
 
-| Category | Overall Complexity | Notes |
-|----------|-------------------|-------|
-| JRPG UI Theming | **Medium** | CSS + existing animation framework. Sound effects need sourcing/integration |
-| Mobile UX | **Medium-High** | Safe areas straightforward. Network UX already built. Dual orientation tricky |
-| SPA Routing & SEO | **High** | Social crawler middleware requires server-side logic. Full SSR is VERY HIGH |
-| Lobby Interactions | **Low-Medium** | Server events already exist. UI polish is primary work |
+### Defer to Phase 4+ (Post-Launch Scaling)
+- **Redis Adapter for Horizontal Scaling** — Only needed above 10K concurrent connections (current limit: ~5K on single instance)
+- **Socket.IO State Recovery** — Nice-to-have, already have reconnection system that works
+- **Clinic.js Performance Suite** — Full suite (beyond heap profiler) once performance bottlenecks identified
+- **Connection Rate Limiting** — Add when abuse detected or before public launch
+- **Prometheus Custom Dashboards** — Build incrementally as monitoring needs grow
+- **Automated Database Cleanup Jobs** — Schedule after 1 month of production data accumulation
 
-## Integration with Existing Features
+**Why Defer:** These features support scale beyond initial launch requirements (budget: $5-20/mo → likely <1000 users initially). Validate product-market fit first, then scale infrastructure.
 
-### Already Built (Leverage These)
-- **WebSocket reconnection system** (`reconnect_with_token`, `LobbySync`) - Mobile network interruption UX already handled
-- **Emote events** (`lobby_emote`, `battle_emote`) - Just need better UI
-- **Charge system** (`player_charge`) - Server events ready, add visual polish
-- **Phase transitions** (GamePhase type) - Hook into existing phase changes for animations
-- **Real-time sync** (`lobby_updated`) - All state changes broadcast, UI just needs to react smoothly
-- **Spectator system** (minions) - Foundation for spectator-mode enhancements
+## Hosting-Specific Feature Notes
 
-### Gaps to Fill
-- **No routing** - Currently single-page, entire app in one route
-- **No meta tags** - No React Helmet, no social sharing previews
-- **No mobile-specific layout** - Likely responsive, but not optimized for touch/safe areas
-- **No JRPG UI theming** - Functional UI, not game-themed
-- **No UI sound effects** - Silent interactions
-- **No idle animations** - Static lobby experience
+### Budget: $5-20/mo Targets
 
-## Success Criteria
+**Fly.io** ($3.94/mo baseline):
+- 256MB shared instance: $1.94/mo (always-on)
+- Dedicated IPv4: $2/mo
+- PostgreSQL (256MB): Free tier available
+- **Fits:** All Phase 1-3 features comfortably
+- **Strengths:** Native WebSocket support, Redis add-on available, global edge deployment
+- **Limitation:** Redis costs extra (~$5/mo for 25MB) if adding horizontal scaling
 
-### JRPG UI Theming
-- [ ] All major panels/modals have ornamental frames
-- [ ] Sound effects on all button interactions (with volume control)
-- [ ] Phase transitions animate smoothly (100-500ms duration)
-- [ ] Visual consistency across all phases (lobby → battle → victory)
-- [ ] Health bars styled like classic JRPG party status
+**Railway** ($5/mo starter):
+- Hobby tier: $5/mo includes $5 usage credit
+- PostgreSQL: Included in hobby tier
+- **Fits:** All Phase 1-3 features + room for Redis
+- **Strengths:** Excellent database management, transparent usage-based pricing, Redis included
+- **Limitation:** Usage-based = unpredictable costs if traffic spikes
 
-### Mobile UX
-- [ ] All buttons meet 44x44px minimum (tested on iPhone SE sized screens)
-- [ ] UI respects safe areas in both portrait and landscape
-- [ ] Network disconnection shows visible status + reconnection progress
-- [ ] No heavy graphics causing bandwidth issues on mobile networks
-- [ ] Game playable in landscape (battle) and portrait (lobby/menus)
+**Render** ($7/mo baseline):
+- Web service: $7/mo
+- PostgreSQL: $7/mo (total: $14/mo)
+- **Fits:** All Phase 1-3 features
+- **Strengths:** Managed PostgreSQL with daily backups included, auto-scaling
+- **Limitation:** Costs exceed budget ($14/mo) but includes managed backups (saves dev time)
 
-### SPA Routing & SEO
-- [ ] Clean URLs without hash fragments (`/lobby/abc123`)
-- [ ] Unique title and description per route
-- [ ] Open Graph tags generate rich previews on Twitter, Discord, Slack
-- [ ] Social crawler middleware serves meta tags in initial HTML (not full SSR)
+**Recommendation for Budget:** Start with **Fly.io** ($3.94/mo) for MVP testing. Migrate to **Railway** ($5/mo) if database management becomes time-consuming. Reserve **Render** for later if auto-scaling + managed backups justify $14/mo cost.
 
-### Lobby Interactions
-- [ ] Emotes clearly visible to all players in lobby
-- [ ] Readiness indicators show who's ready to start battle
-- [ ] Character idle animations during waiting periods
-- [ ] Charge/magic system has polished visual effects
+## Resource Profiling Metrics
+
+What to measure for production readiness:
+
+### Memory Metrics
+| Metric | Target | Alert Threshold | Why It Matters |
+|--------|--------|----------------|----------------|
+| Heap Used | Stable or sawtooth pattern | Constantly increasing >10min | Memory leak indicator |
+| Heap Size | <80% of max heap | >90% for >5min | Approaching OOM crash |
+| RSS (Resident Set Size) | <512MB for 256MB instance | >80% of available RAM | Total memory consumption |
+| External Memory | Minimal | >100MB | Buffers outside V8 heap (WebSocket frames) |
+| GC Pause Time | <10ms per collection | >50ms average | GC blocking event loop |
+
+### CPU Metrics
+| Metric | Target | Alert Threshold | Why It Matters |
+|--------|--------|----------------|----------------|
+| CPU Usage | <50% average | >80% sustained >5min | Approaching saturation |
+| Event Loop Lag | <10ms | >100ms | Delayed WebSocket message processing |
+| GC Time % | <5% of CPU time | >20% | Excessive garbage collection |
+
+### Connection Metrics
+| Metric | Target | Alert Threshold | Why It Matters |
+|--------|--------|----------------|----------------|
+| Active WebSocket Connections | Based on player count | Close to instance limit (5K-10K) | Capacity planning |
+| Connection Rate | Stable | Spikes >100/second | Potential DDoS |
+| Database Connections | <20 per instance | >18 (approaching pool max) | Connection pool exhaustion |
+| Failed Connections | Near 0 | >10/minute | Service degradation |
+
+### Bandwidth Metrics
+| Metric | Target | Alert Threshold | Why It Matters |
+|--------|--------|----------------|----------------|
+| Inbound WS Messages | Based on active lobbies | Spikes >1000/second | Unusual traffic pattern |
+| Outbound WS Messages | 2-5x inbound (broadcasts) | >5000/second sustained | Bandwidth costs |
+| Message Size Average | <1KB per message | >5KB average | Inefficient data structures |
+
+### Database Metrics
+| Metric | Target | Alert Threshold | Why It Matters |
+|--------|--------|----------------|----------------|
+| Query Time (p95) | <50ms | >200ms | Slow queries impacting UX |
+| Connection Pool Utilization | <70% | >90% | Need more connections |
+| Transaction Rate | Matches lobby activity | Drops >50% | Database issues |
+| Failed Queries | Near 0 | >5/minute | Query errors or DB down |
+
+**Profiling Tools:**
+- **Clinic.js Doctor** — Overall health (event loop, CPU, I/O)
+- **Clinic.js HeapProfiler** — Memory leak detection
+- **Prometheus + Grafana** — Real-time monitoring dashboard
+- **Node.js --inspect** — Manual debugging with Chrome DevTools
+- **V8 --trace-gc** — Garbage collection patterns
+
+## Complexity Ratings Explained
+
+- **Minimal:** <2 hours implementation (config changes, enable existing features)
+- **Low:** 2-8 hours (npm install + basic integration)
+- **Medium:** 1-3 days (requires testing, multiple integration points)
+- **High:** 1-2 weeks (architectural changes, extensive testing required)
 
 ## Sources
 
-**JRPG UI Design:**
-- [Let's talk about the importance of UI design in JRPG's | ResetEra](https://www.resetera.com/threads/lets-talk-about-the-importance-of-ui-design-in-jrpgs.59286/)
-- [Persona devs' new JPRG has got everyone hyped about its menus | GamesRadar+](https://www.gamesradar.com/games/jrpg/persona-devs-new-jprg-has-got-everyone-hyped-about-its-menus-this-is-why-you-invest-in-ui/)
-- [Game UI Database](https://www.gameuidatabase.com/)
-- [Game UI Database - Player Vitals](https://www.gameuidatabase.com/index.php?tag=83&scrn=133)
+**Socket.IO Performance & Scaling:**
+- [Performance tuning | Socket.IO](https://socket.io/docs/v4/performance-tuning/)
+- [Scaling Socket.IO: Real-world challenges and proven strategies](https://ably.com/topic/scaling-socketio)
+- [How to Implement WebSocket Connections in Node.js with Socket.io and Scaling](https://oneuptime.com/blog/post/2026-01-06-nodejs-websocket-socketio-scaling/view)
+- [Using multiple nodes | Socket.IO](https://socket.io/docs/v4/using-multiple-nodes/)
+- [Redis adapter | Socket.IO](https://socket.io/docs/v4/redis-adapter/)
+- [How to Configure Socket.io with Multiple Servers](https://oneuptime.com/blog/post/2026-01-24-socketio-multiple-servers/view)
 
-**Mobile Game UX:**
-- [Responsive UI design for games – Game Development Studio](https://genieee.com/responsive-ui-design-for-games/)
-- [Best Examples in Mobile Game UI Designs (2026 Review)](https://pixune.com/blog/best-examples-mobile-game-ui-design/)
-- [Best Practices for Game UI/UX Design – Game Development Studio](https://genieee.com/best-practices-for-game-ui-ux-design/)
-- [7 Crucial Mobile Game UI/UX Principles to Follow - Sunday](https://sunday.gg/7-crucial-mobile-game-ui-ux-principles-to-follow/)
-- [How do you make responsive mobile games that take safe areas into account - Unity Discussions](https://discussions.unity.com/t/how-do-you-make-responsive-mobile-games-that-take-safe-areas-into-account-and-scale-game-world-appropriately/1494290)
-- [Touch Control Design: Ways Of Playing On Mobile](https://mobilefreetoplay.com/control-mechanics/)
-- [Allow play in both landscape and portrait – Game Accessibility Guidelines](https://gameaccessibilityguidelines.com/allow-play-in-both-landscape-and-portrait/)
+**PostgreSQL Connection Pooling & Sessions:**
+- [How to Implement Connection Pooling in Node.js for PostgreSQL/MySQL](https://oneuptime.com/blog/post/2026-01-06-nodejs-connection-pooling-postgresql-mysql/view)
+- [Pooling – node-postgres](https://node-postgres.com/features/pooling)
+- [GitHub - voxpelli/node-connect-pg-simple](https://github.com/voxpelli/node-connect-pg-simple)
+- [connect-pg-simple - npm](https://www.npmjs.com/package/connect-pg-simple)
 
-**Real-time Latency & Network UX:**
-- [7 Mobile UX/UI Design Patterns Dominating 2026](https://www.sanjaydey.com/mobile-ux-ui-design-patterns-2026-data-backed/)
-- [Handling Latency and Performance Challenges in Real-Time Apps](https://erbis.com/blog/real-time-apps/)
-- [How to Implement Reconnection Logic for WebSockets](https://oneuptime.com/blog/post/2026-01-27-websocket-reconnection-logic/view)
-- [How to Handle WebSocket Reconnection Logic](https://oneuptime.com/blog/post/2026-01-24-websocket-reconnection-logic/view)
-- [Building Games that Run on Poor Mobile Connections](https://www.gamedeveloper.com/programming/building-games-that-run-on-poor-mobile-connections)
+**Resource Profiling & Monitoring:**
+- [Best Node.js Application Monitoring Tools in 2026](https://betterstack.com/community/comparisons/nodejs-application-monitoring-tools/)
+- [Profiling Node.js Applications](https://betterstack.com/community/guides/scaling-nodejs/profiling-nodejs-applications/)
+- [Clinic.js - An Open Source Node.js performance profiling suite](https://clinicjs.org/)
+- [How to Profile Node.js Applications for Memory Leaks](https://oneuptime.com/blog/post/2026-01-26-nodejs-memory-leak-profiling/view)
+- [NodeJS Application Dashboard | Grafana Labs](https://grafana.com/grafana/dashboards/11159-nodejs-application-dashboard/)
+- [Node.js Performance Monitoring with Prometheus](https://blog.risingstack.com/node-js-performance-monitoring-with-prometheus/)
 
-**UI Animation & Transitions:**
-- [Motion UI Trends 2026: Interactive Design & Examples](https://lomatechnology.com/blog/motion-ui-trends-2026/2911)
-- [The View Transitions API And Delightful UI Animations - Smashing Magazine](https://www.smashingmagazine.com/2023/12/view-transitions-api-ui-animations-part1/)
+**WebSocket Hosting & Long-Lived Connections:**
+- [Using multiple nodes | Socket.IO](https://socket.io/docs/v4/using-multiple-nodes/)
+- [How to Configure WebSocket with Load Balancers](https://oneuptime.com/blog/post/2026-01-24-websocket-load-balancer-configuration/view)
+- [Node.js and Websockets best practices checklist](https://medium.com/voodoo-engineering/websockets-on-production-with-node-js-bdc82d07bb9f)
+- [How to Fix "Socket Hang Up" WebSocket Errors](https://oneuptime.com/blog/post/2026-01-24-websocket-socket-hang-up/view)
 
-**Audio Feedback:**
-- [Ross Tregenza's 3 Essential Ingredients to Great Game UI Sound Design | A Sound Effect](https://www.asoundeffect.com/game-ui-sound-design/)
-- [Lessons learned in audio feedback for game and app design | Medium](https://medium.com/@fernando1lins/lessons-learned-in-audio-feedback-for-game-and-app-design-e4818c9b72fd)
+**Hosting Platform Comparisons:**
+- [Vercel Alternatives: 12 Hosting Platforms for Web Devs in 2026](https://replit.com/discover/vercel-alternatives)
+- [The 7 Best Node.js Hosting Platforms for 2026](https://runcloud.io/blog/best-node-js-hosting)
+- [7 Best Render alternatives for simple app hosting in 2026](https://northflank.com/blog/render-alternatives)
 
-**React SPA Routing & SEO:**
-- [React SEO Guide: SSR, Performance & Rankings (2026)](https://www.linkgraph.com/blog/seo-for-react-applications/)
-- [How to Make a React Website SEO-Friendly in 2025 | Best Practices & Tools](https://www.creolestudios.com/how-to-make-react-website-seo-friendly/)
-- [Improving React App SEO with React Helmet](https://talent500.com/blog/improve-react-seo-with-react-helmet/)
-- [7 Common SPA SEO Challenges and Solutions](https://prerender.io/blog/spa-javascript-seo-challenges-and-solutions/)
-- [Dynamic OG Tags for React SPA on Vercel with Serverless and Vite - VibeIt Blog](https://blog.vibeit.hr/blog/dynamic-og-tags)
+**Database Migrations & Drizzle ORM:**
+- [Drizzle ORM - Migrations](https://orm.drizzle.team/docs/migrations)
+- [Drizzle migrations to postgres in production](https://budivoogt.com/blog/drizzle-migrations)
+- [Drizzle ORM PostgreSQL Best Practices Guide (2025)](https://gist.github.com/productdevbook/7c9ce3bbeb96b3fabc3c7c2aa2abc717)
+- [How to Use Drizzle ORM with Node.js](https://oneuptime.com/blog/post/2026-02-03-nodejs-drizzle-orm/view)
 
-**Responsive Canvas & Anchors:**
-- [Responsive HTML5 Canvas Game](https://blog.sklambert.com/responsive-html5-canvas-game/)
-- [Unity - Manage screen size and anchors](https://learn.unity.com/pathway/creative-core/unit/creative-core-ui/tutorial/manage-screen-size-and-anchors)
-- [Designing UI for Multiple Resolutions | Unity UI](https://docs.unity3d.com/Packages/com.unity.ugui@1.0/manual/HOWTO-UIMultiResolution.html)
+**Garbage Collection & Performance Tuning:**
+- [Boost Node.js with V8 GC Optimization](https://blog.platformatic.dev/optimizing-nodejs-performance-v8-memory-management-and-gc-tuning)
+- [Node.js — Understanding and Tuning Memory](https://nodejs.org/en/learn/diagnostics/memory/understanding-and-tuning-memory)
+- [How to Tune Garbage Collection](https://oneuptime.com/blog/post/2026-01-25-tune-garbage-collection/view)
 
-**Lobby & Waiting Room UX:**
-- [The Lobby as a Liminal Space: How Pre-Game UX Design Shapes Player Mindset](https://kidlantis.com/the-lobby-as-a-liminal-space-how-pre-game-ux-design-shapes-player-mindset-in-online-slot-2025/)
-- [Game UI Database - Pre-Game & Lobby](https://gameuidatabase.com/index.php?scrn=43)
-- [Game UI Database - Chat Shortcuts & Emotes](https://www.gameuidatabase.com/index.php?scrn=113)
-- [Multiplayer: Waiting Lobby | Medium](https://medium.com/@ahtashamali263/multiplayer-waiting-lobby-e652b82793b5)
-
-**Pixel Art UI Assets:**
-- [Pixel Art Game User UI Templates | GraphicRiver](https://graphicriver.net/graphics-with-pixel+art-in-game-assets/user-interfaces)
-- [Top game assets tagged Pixel Art and User Interface - itch.io](https://itch.io/game-assets/tag-pixel-art/tag-user-interface)
-- [User Interface (UI) Art Collection | OpenGameArt.org](https://opengameart.org/content/user-interface-ui-art-collection)
+**Database Backups:**
+- [Setting Up Automated Database (PostgreSQL) Backups Using Node.js and Bash](https://blog.harveydelaney.com/setting-up-automated-database-postgresql-backups-using-node-js-and-bash/)
+- [GitHub - railwayapp-templates/postgres-s3-backups](https://github.com/railwayapp-templates/postgres-s3-backups)

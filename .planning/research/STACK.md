@@ -1,360 +1,253 @@
-# Technology Stack
+# Stack Research: Hosting Optimization & PostgreSQL Setup
 
-**Project:** ScrumQuest UI Redesign & Mobile Responsiveness
-**Researched:** 2026-02-11
+**Domain:** Full-stack TypeScript WebSocket application hosting optimization
+**Researched:** 2026-02-19
+**Confidence:** HIGH
 
-## Recommended Stack Additions
+## Recommended Stack
 
-This document covers ONLY the new libraries needed for responsive JRPG-themed UI, mobile-friendly interfaces, proper routing, and SEO optimization. Existing stack (React, Three.js, Zustand, Tailwind) remains unchanged.
+### Hosting Platform
 
-### Routing & Navigation
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| React Router | ^6.26.0 (current) → ^7.x (upgrade recommended) | Client-side routing, URL management | Already installed (v6.26.0). **Upgrade to v7 recommended** for type safety (automatic route typing with typegen), React 19 compatibility, 15% smaller bundle, and improved SSR support. V6→V7 is non-breaking if future flags enabled. V7 simplifies package structure (single `react-router` import) and adds automatic loader/action typing. |
+| Technology | Pricing | Purpose | Why Recommended |
+|------------|---------|---------|-----------------|
+| **Render.com** | $7/month starter | Primary production hosting | Native WebSocket support without timeouts, persistent connections, $30/100GB bandwidth (reduced in 2025), service-based scaling, no arbitrary connection limits |
+| **Railway** | $5/month + usage | Alternative/development | PostgreSQL included in credits, one-click database setup, pay-per-use model ($0.10/GB egress), excellent DX, but no permanent free tier |
+| **Fly.io** | Variable (complex pricing) | Global low-latency needs | Best for multi-region deployments, edge compute, WebSocket support, but pricing requires spreadsheet planning |
+| **AWS Lightsail** | $5/month (1 vCPU, 0.5GB RAM, 1TB transfer) | Budget-constrained production | Predictable pricing, Node.js blueprint, WebSocket support, data overage $0.09/GB, 3-month free trial on select bundles |
 
-**Note:** React Router v6.26.0 is already in package.json but NOT currently used (no Routes/Route components found in codebase). Current routing uses manual state management (`appState` variable in App.tsx with query params). Migration needed.
+### Managed PostgreSQL
 
-### SEO & Meta Tags
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| react-helmet-async | ^2.0.5 (current) | Dynamic meta tags, document head management | **Already installed and working.** Thread-safe, prevents performance issues vs original react-helmet. Essential for SPA SEO (title, description, Open Graph tags per route). Context-based, no hydration mismatches. |
-| vite-react-ssg | ^0.5.0+ | Static site generation for marketing pages | **NEW - RECOMMENDED.** Pre-renders landing, about, features, pricing, support pages to static HTML for SEO. Wraps React Helmet for SSR. Enables hybrid approach: static marketing + dynamic game. Vite-native, works with existing build setup. |
+| Service | Free Tier | Paid Starting | Purpose | Why Recommended |
+|---------|-----------|---------------|---------|-----------------|
+| **Neon** | 100 CU-hours/mo, 0.5GB storage, 5GB egress | $19/month (Launch) | Primary database | Serverless autoscaling, scale-to-zero (huge cost savings), 2025 pricing cuts (storage $0.35/GB-month), branches for testing, HTTP API, connection pooling built-in |
+| **Supabase** | 0.5GB storage, 500MB database, 50K MAU | $25/month (Pro) | Alternative with auth | Includes auth/realtime/storage, fixed compute instances, higher base cost but bundled features |
+| **Railway PostgreSQL** | Included in $5/month credits | $5/month + usage | Development/staging | One-click setup, usage-based pricing, excellent for ephemeral environments |
 
-**Alternative considered:** vite-plugin-prerender (more manual). vite-react-ssg chosen for better React Helmet integration and cleaner API.
+### Resource Profiling Tools
 
-### Responsive Design Utilities
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| @tailwindcss/container-queries | Latest (built-in v4) | Component-level responsive design | **NEW - OPTIONAL.** Enables `@sm:`, `@md:` prefixes for container-based breakpoints vs viewport. Perfect for sidebar/panel layouts that resize independently. Now built into Tailwind v4 (no plugin needed). Use for micro-layouts; keep media queries for page-level. |
-| react-responsive | ^10.0.0 | JavaScript-based media query hooks | **NEW - RECOMMENDED.** SSR-safe `useMediaQuery` hook for conditional rendering/logic. Needed for mobile vs desktop behavior in Three.js scenes (adjust quality, controls). Complements Tailwind CSS breakpoints with runtime detection. |
+| Tool | Version | Purpose | When to Use |
+|------|---------|---------|-------------|
+| **clinic.js** | Latest | CPU/memory/event loop profiling | Deep performance analysis, identifying bottlenecks, memory leaks, event loop delays |
+| **autocannon** | Latest | HTTP load testing | Quick benchmarks, integration with clinic.js via `--autocannon` flag, programmatic API |
+| **prom-client** | ^15.1.3 (already installed) | Prometheus metrics | Production monitoring, custom Socket.IO connection metrics, already integrated in app |
+| **PM2** | Latest | Process management & monitoring | Production deployments, memory limit auto-restart, real-time dashboard, zero-downtime reloads |
 
-**Note:** Tailwind v3.4.14 already installed with mobile-first breakpoints (sm/md/lg/xl/2xl). Additional utilities only needed for JS-driven responsiveness.
+### Supporting Libraries
 
-### Animation & Transitions (JRPG Feel)
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| framer-motion | ^11.13.1 (current) | Page transitions, UI animations, gestures | **Already installed.** Perfect for JRPG menu transitions (slide, fade), hover effects, dialog animations. React-native API (`motion.div`), gesture support (`whileHover`, `whileTap`), AnimatePresence for exit animations. 32KB gzipped, optimized for React. **Keep using.** |
-| gsap | ^3.12.5 (current) | Complex timeline animations, scroll effects | **Already installed.** Use for cinematic cutscenes, boss intro sequences, complex multi-step animations. Timeline control superior to Framer Motion for scripted sequences. Performance-optimized (bypasses React diffing). **Keep using.** |
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| **postgres** | ^3.4.8 (installed) | PostgreSQL driver | Already using with Drizzle ORM, excellent connection pooling, prepared statement control |
+| **connect-pg-simple** | ^10.0.0 (installed) | PostgreSQL session store | Production session persistence, already configured in server/index.ts |
+| **artillery** | Latest | Advanced load testing | Complex scenarios, serverless distributed testing, YAML-based test definitions |
+| **socket.io-prometheus** | Latest | Socket.IO metrics exporter | Tracking concurrent connections, room counts, event throughput for monitoring |
 
-**Decision:** Use BOTH. Framer Motion for 90% of UI (menus, buttons, cards). GSAP for 10% cinematic moments (battle intros, victory screens, scrolling parallax). Already integrated, no new dependencies.
+### Development Tools
 
-### Three.js Performance (Mobile Optimization)
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| @react-three/drei | ^9.122.0 (current) | Adaptive performance components | **Already installed.** Use `<AdaptivePixelRatio />` to cap devicePixelRatio on mobile (prevent 4x rendering on high-DPI phones). Use `<PerformanceMonitor>` to dynamically adjust quality based on FPS. Use `<AdaptiveDpr />` for idle vs interaction quality regression. Essential for mobile Three.js. |
-| r3f-perf | ^7.2.3 (current) | Performance monitoring overlay | **Already installed.** Debug tool for mobile performance testing. Shows FPS, drawcalls, memory. Keep for development, disable in production. |
+| Tool | Purpose | Notes |
+|------|---------|-------|
+| **Grafana + Prometheus + Loki** | Observability stack | Industry standard 2026, pre-configured dashboards for Node.js, log aggregation with Loki, already have k8s/infrastructure/monitoring/ setup |
+| **k6** | Load testing | Already have tests/load/ setup, native WebSocket support, but Socket.IO requires custom extension (see Pitfalls) |
 
-**Mobile-specific settings:**
-```tsx
-// Recommended Canvas props for mobile
-<Canvas
-  dpr={[1, 2]} // Min 1, max 2 (caps at 2x even on 3x/4x devices)
-  performance={{ min: 0.5 }} // Allow 50% quality drop during interaction
-  gl={{
-    antialias: true, // Enable for visual quality
-    powerPreference: "high-performance" // Use GPU on mobile
-  }}
->
-  <AdaptivePixelRatio /> {/* From @react-three/drei */}
-  <PerformanceMonitor> {/* Auto-adjust on FPS drops */}
-</Canvas>
-```
+## Installation
 
-### Utility & Class Management
-| Technology | Version | Purpose | Why |
-|------------|---------|---------|-----|
-| clsx | ^2.1.1 (current) | Conditional class names | **Already installed and used** (in `lib/utils.ts` as `cn()` helper). Tiny (240 bytes), faster than classnames. Essential for dynamic Tailwind classes. Keep using. |
-| tailwind-merge | ^2.5.4 (current) | Tailwind class conflict resolution | **Already installed and used** (combined with clsx in `cn()` utility). Prevents conflicts like `text-blue-500 text-red-500` by intelligently merging. Industry standard 2026. Keep using. |
-
-## Installation Commands
-
-### Required New Packages
 ```bash
-# Static site generation for SEO
-npm install -D vite-react-ssg@^0.5.0
+# Production dependencies (if adding new tools)
+npm install pm2 -g                    # Global install for production
 
-# Responsive utilities
-npm install react-responsive@^10.0.0
+# Development dependencies
+npm install -D clinic autocannon artillery socket.io-prometheus
 
-# Optional: Container queries (if Tailwind v4 upgrade planned)
-# npm install -D @tailwindcss/container-queries@^0.1.0
+# Optional: For advanced profiling
+npm install -D 0x                     # Flamegraph profiling
 ```
 
-### Optional Upgrades
-```bash
-# React Router v6 → v7 (recommended for type safety)
-npm install react-router@^7.0.0
+## Alternatives Considered
 
-# Note: Remove react-router-dom after upgrade (consolidated into react-router in v7)
-```
+| Recommended | Alternative | When to Use Alternative |
+|-------------|-------------|-------------------------|
+| **Render.com** | Replit ($20/month Core) | Use Replit if: already deployed there, need integrated AI agent, value dev environment + hosting bundle. Cost: $20/mo base + $1/mo autoscale deployments |
+| **Render.com** | DigitalOcean App Platform ($3/month starter) | Use DO if: need K8s integration path, already use DO infrastructure, comfortable with more hands-on setup. WebSocket support confirmed via wss:// |
+| **Neon PostgreSQL** | Supabase | Use Supabase if: need built-in auth/realtime/storage, prefer fixed compute instances, want all-in-one backend platform |
+| **Neon PostgreSQL** | Railway PostgreSQL | Use Railway if: hosting app on Railway (reduces egress costs), prefer operational simplicity, okay with higher costs at scale |
+| **clinic.js** | Node.js built-in profiler | Use built-in if: can't install dependencies, need zero-overhead baseline, comfortable with Chrome DevTools for analysis |
+| **autocannon** | artillery | Use artillery if: need complex multi-step scenarios, serverless distributed load testing, prefer YAML config over programmatic |
 
-## What NOT to Add
+## What NOT to Use
 
-| Anti-Library | Why Avoid | What to Use Instead |
-|--------------|-----------|-------------------|
-| react-helmet (original) | Synchronous, performance issues, not maintained | **react-helmet-async** (already installed) |
-| Next.js / Remix | Full framework overkill, requires rewrite | vite-react-ssg for static pages + existing Vite setup |
-| Material-UI / Chakra UI | Heavy component libraries, conflicts with custom retro styling | Existing Radix UI primitives + Tailwind |
-| react-spring | Animation library overlap | Framer Motion (already installed, better DX) |
-| Preact | React replacement, breaks Three.js ecosystem | Stick with React 18 |
-| TanStack Router | Alternative router, ecosystem smaller than React Router | React Router v7 (battle-tested, type-safe) |
-| CSS-in-JS (styled-components, emotion) | Runtime overhead, conflicts with Tailwind | Tailwind + CSS custom properties (already using) |
+| Avoid | Why | Use Instead |
+|-------|-----|-------------|
+| **Heroku** | Expensive at scale ($7/dyno + $9/Postgres = $16/mo minimum), free tier removed, better alternatives exist | Render, Railway, or Fly.io |
+| **In-memory session store** | Data loss on restart, doesn't work with multiple instances | connect-pg-simple (already installed) with PostgreSQL |
+| **Generic WebSocket tools for Socket.IO load testing** | Socket.IO protocol differs from standard WebSocket (handshake issues, bad handshake errors) | Use Socket.IO-specific extensions for k6 or autocannon with custom logic |
+| **Always-on PostgreSQL for development** | Wastes money when not coding | Neon with scale-to-zero (1-minute idle timeout configurable) |
+| **AWS RDS for small projects** | Minimum ~$15/month, no free tier, over-engineered for this scale | Neon (serverless) or Railway (usage-based) |
+| **Synchronous heap snapshots in production** | Performance impact, can cause timeouts | PM2 profiling with throttling, scheduled during maintenance windows |
 
-## Configuration Updates Needed
+## Stack Patterns by Budget
 
-### 1. Vite Config (vite.config.ts)
+**Budget: $5-10/month (Development/Low Traffic)**
+- Railway Hobby ($5/month) with included PostgreSQL
+- Neon Free tier (100 CU-hours, scale-to-zero)
+- clinic.js + autocannon for local profiling
+- Use existing k6 tests for load validation
+
+**Budget: $15-20/month (Production Ready)**
+- Render.com Web Service ($7/month) + Neon Launch ($19/month but likely under with scale-to-zero) = ~$10-15/mo actual
+- PM2 for process management
+- Prometheus + Grafana (existing k8s setup)
+- socket.io-prometheus for connection metrics
+
+**Budget: $20+/month (High Availability)**
+- Render.com with auto-scaling + Neon Scale tier
+- Multiple regions via Fly.io (if latency critical)
+- Full observability stack (Prometheus + Loki + Grafana)
+- Artillery for distributed load testing
+
+## Version Compatibility
+
+| Package | Compatible With | Notes |
+|---------|-----------------|-------|
+| postgres@^3.4.8 | drizzle-orm@^0.45.1 | Already installed and working, ensure `max` connections configured based on hosting platform limits |
+| prom-client@^15.1.3 | socket.io@^4.8.3 | Already installed, use socket.io-prometheus for easier integration |
+| clinic.js | Node.js 18+ | Works with current tsx@^4.21.0 dev setup |
+| PM2 | Node.js 18+ | Cluster mode requires same Node version across workers |
+
+## Configuration Best Practices
+
+### PostgreSQL Connection Pooling
+
 ```typescript
-import { defineConfig } from "vite";
-import react from "@vitejs/plugin-react";
-import glsl from "vite-plugin-glsl";
-import viteReactSSG from 'vite-react-ssg'; // NEW
+// For Neon (serverless)
+const client = postgres(process.env.DATABASE_URL, {
+  max: 10,              // Limit based on Neon plan (Free: shared, Launch: 100 max)
+  idle_timeout: 20,     // Close idle connections after 20s
+  connect_timeout: 10,  // Fail fast on connection issues
+  prepare: false,       // Disable prepared statements for serverless compatibility
+});
 
-export default defineConfig({
-  plugins: [
-    react(),
-    glsl(),
-    viteReactSSG({
-      // Pre-render marketing pages for SEO
-      routes: ['/', '/about', '/features', '/pricing', '/support'],
-      // Don't pre-render game routes (dynamic)
-      exclude: ['/game', '/lobby', '/battle']
-    })
-  ],
-  // ... rest of config
+// For Railway/traditional hosting
+const client = postgres(process.env.DATABASE_URL, {
+  max: 20,                      // Higher limit for dedicated instances
+  idle_timeout: 30,             // Keep connections longer
+  connectionTimeoutMillis: 2000,
+  prepare: true,                // Enable for performance
 });
 ```
 
-### 2. Tailwind Config (tailwind.config.ts)
-```typescript
-export default {
-  darkMode: ["class"],
-  content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
-  theme: {
-    // Mobile-first breakpoints (already configured)
-    screens: {
-      'sm': '640px',
-      'md': '768px',
-      'lg': '1024px',
-      'xl': '1280px',
-      '2xl': '1536px',
+### PM2 Memory Management
+
+```javascript
+// ecosystem.config.cjs
+module.exports = {
+  apps: [{
+    name: 'scrumquest',
+    script: './dist/index.js',
+    instances: 'max',
+    exec_mode: 'cluster',
+    max_memory_restart: '500M',  // Auto-restart if memory exceeds limit
+    env: {
+      NODE_ENV: 'production',
     },
-    extend: {
-      // JRPG color scheme (already configured in :root CSS vars)
-      // Add container queries if using @container syntax
-      containers: { // NEW (optional)
-        'xs': '20rem',
-        'sm': '24rem',
-        'md': '28rem',
-        'lg': '32rem',
-      }
-    }
-  },
-  plugins: [
-    require("tailwindcss-animate"), // Already installed
-    require("@tailwindcss/typography"), // Already installed
-    // require("@tailwindcss/container-queries"), // NEW (optional)
-  ]
+  }],
 };
 ```
 
-### 3. Router Integration Pattern
+### Prometheus Metrics for Socket.IO
 
-**Current state:** No React Router usage. App.tsx manages routing with manual `appState` variable.
+```typescript
+// Add to server/metrics.ts
+import { register } from 'prom-client';
+import socketIOPrometheus from 'socket.io-prometheus';
 
-**Recommended migration:**
-```tsx
-// NEW: client/src/router.tsx
-import { createBrowserRouter, RouterProvider } from 'react-router';
+// Apply to Socket.IO instance
+socketIOPrometheus(io, {
+  collectDefaultMetrics: true,
+  checkForNewNamespaces: true,
+});
 
-const router = createBrowserRouter([
-  {
-    path: '/',
-    element: <LandingPage />,
-    meta: { title: 'ScrumQuest - JRPG Sprint Planning' }
-  },
-  {
-    path: '/about',
-    element: <AboutPage />,
-  },
-  {
-    path: '/game',
-    element: <GameContainer />,
-    children: [
-      { path: 'lobby/:lobbyId', element: <Lobby /> },
-      { path: 'battle/:lobbyId', element: <BattleScreen /> }
-    ]
-  }
-]);
-
-// Replace App.tsx manual routing with RouterProvider
+// Metrics endpoint already exists at /metrics
 ```
 
-**Integration with Zustand:** Navigation state can remain in Zustand. Router handles URL sync, Zustand handles game state. Use `useNavigate()` hook to trigger routing from Zustand actions.
+## Resource Estimation (for 10 concurrent users)
 
-### 4. SEO Meta Tags Pattern
+Based on existing app structure and typical Socket.IO usage:
 
-```tsx
-// Each route component
-import { Helmet } from 'react-helmet-async';
+| Resource | Expected Usage | Notes |
+|----------|---------------|-------|
+| **RAM** | 150-300MB | Express + Socket.IO + in-memory state, measure with `process.memoryUsage().rss` |
+| **CPU** | <10% (0.1 vCPU) | Mostly idle, spikes during combat calculations, React Three Fiber renders client-side |
+| **Bandwidth** | ~5GB/month | 10 users × 50KB/session × 10 sessions/user/month, WebSocket is efficient |
+| **Database** | <100MB | User profiles, stats, estimation history, sessions table |
+| **Connections** | 5-10 concurrent | PostgreSQL connections (session store + queries), use pooling |
 
-function LandingPage() {
-  return (
-    <>
-      <Helmet>
-        <title>ScrumQuest - Turn Sprint Planning into Epic Boss Battles</title>
-        <meta name="description" content="JRPG-style scrum poker..." />
-        <meta property="og:title" content="ScrumQuest" />
-        <meta property="og:image" content="/og-image.png" />
-      </Helmet>
-      {/* page content */}
-    </>
-  );
-}
-```
+**Scaling implications:**
+- 100 users: ~1.5GB RAM, ~50GB bandwidth/month
+- 1000 users: Need horizontal scaling (PM2 cluster + Redis for shared state)
 
-### 5. Mobile Three.js Settings
+## Monitoring Strategy
 
-```tsx
-// client/src/components/game/BattleScreen.tsx
-import { useMediaQuery } from 'react-responsive';
+### Development Phase
+1. Use clinic.js for one-time profiling sessions
+2. Run autocannon against local server to establish baselines
+3. Execute existing k6 load tests (tests/load/websocket/game-flow.test.js)
+4. Monitor with `process.memoryUsage()` in health endpoint
 
-function BattleScreen() {
-  const isMobile = useMediaQuery({ maxWidth: 768 });
+### Production Phase
+1. PM2 for process monitoring and auto-restart
+2. Prometheus + Grafana (existing k8s setup) for metrics
+3. socket.io-prometheus for connection tracking
+4. Loki for log aggregation (existing k8s/infrastructure/monitoring/)
+5. Set PM2 memory limit to 80% of platform RAM allocation
 
-  return (
-    <Canvas
-      dpr={isMobile ? [1, 1.5] : [1, 2]} // Lower DPR on mobile
-      performance={{ min: isMobile ? 0.3 : 0.5 }} // More aggressive regression
-      gl={{
-        antialias: !isMobile, // Disable AA on mobile for performance
-        powerPreference: "high-performance"
-      }}
-    >
-      <AdaptivePixelRatio /> {/* Auto-adjust during lag */}
-      <PerformanceMonitor factor={1} onChange={({ fps }) => {
-        if (fps < 30 && isMobile) {
-          console.warn('Low FPS on mobile, reduce quality');
-        }
-      }} />
-      {/* scene content */}
-    </Canvas>
-  );
-}
-```
+## Sources
 
-## Mobile Responsiveness Strategy
+### Hosting Platforms
+- [Render.com Pricing](https://render.com/pricing) — WebSocket support, 2026 pricing
+- [Render WebSocket Documentation](https://render.com/docs/websocket) — Persistent connection details, no timeouts
+- [Railway Pricing 2026](https://railway.com/pricing) — $5/month Hobby tier, PostgreSQL included
+- [Railway Pricing Plans Documentation](https://docs.railway.com/reference/pricing/plans) — Free tier limits, usage credits
+- [Fly.io Pricing](https://fly.io/pricing/) — Complex pricing model, global deployment
+- [AWS Lightsail Pricing](https://aws.amazon.com/lightsail/pricing/) — Node.js blueprint, WebSocket support
+- [DigitalOcean App Platform Pricing](https://docs.digitalocean.com/products/app-platform/details/pricing/) — WebSocket support confirmed
+- [Replit Pricing](https://replit.com/pricing) — Core plan $20/month, 4 vCPUs, 8GB RAM
+- [Replit Deployment Pricing Docs](https://docs.replit.com/billing/deployment-pricing) — Autoscale deployments $1/month
 
-### CSS Approach (Tailwind)
-- **Use mobile-first classes** (already following this pattern in retro.css)
-- **Breakpoint prefixes:** `sm:`, `md:`, `lg:` for progressive enhancement
-- **Example:** `<div className="text-sm md:text-base lg:text-lg">`
+### Managed PostgreSQL
+- [Neon Pricing 2026](https://neon.com/pricing) — Free tier, Launch $19/month, scale-to-zero
+- [Neon Plans Documentation](https://neon.com/docs/introduction/plans) — 100 CU-hours free tier, connection limits
+- [Neon Serverless Postgres Pricing Analysis](https://vela.simplyblock.io/articles/neon-serverless-postgres-pricing-2026/) — 2025 pricing cuts, storage $0.35/GB-month
+- [Supabase vs Neon Comparison](https://www.bytebase.com/blog/neon-vs-supabase/) — Feature comparison, pricing models
+- [Top Managed PostgreSQL Services](https://seenode.com/blog/top-managed-postgresql-services-compared/) — 2025 edition comparison
 
-### Container Queries (NEW - Optional)
-- **Use for component-level responsiveness** (sidebar, panels)
-- **Syntax:** `@container` wrapper + `@sm:`, `@md:` classes on children
-- **Example:** Lobby sidebar that adapts to available space, not viewport
+### Resource Profiling
+- [clinic.js Official Site](https://clinicjs.org/) — Memory profiling, autocannon integration
+- [clinic.js GitHub](https://github.com/clinicjs/node-clinic) — Documentation, usage examples
+- [Tracking Memory Allocation in Node.js](https://nearform.com/insights/tracking-memory-allocation-node-js/) — Flamegraph analysis
+- [Node.js Memory Profiling Guide](https://oneuptime.com/blog/post/2026-01-26-nodejs-memory-leak-profiling/view) — 2026 best practices
+- [PM2 Monitoring Documentation](https://pm2.keymetrics.io/docs/usage/monitoring/) — Real-time dashboard, metrics
+- [PM2 Memory Limit Reload](https://pm2.keymetrics.io/docs/usage/memory-limit/) — Auto-restart configuration
+- [Optimize Node.js for Production 2026](https://forwardemail.net/en/blog/docs/optimize-nodejs-performance-production-monitoring-pm2-health-checks) — PM2 best practices
 
-### JavaScript Detection (NEW - react-responsive)
-- **Use for behavior changes** (not styling)
-- **Examples:**
-  - Disable particle effects on mobile
-  - Use touch controls vs mouse controls
-  - Adjust Three.js quality settings
-  - Conditional component rendering (swap heavy 3D for sprite on mobile)
+### Load Testing
+- [k6 WebSocket Documentation](https://grafana.com/docs/k6/latest/using-k6/protocols/websockets/) — Native WebSocket support
+- [k6 Socket.IO Issue #3097](https://github.com/grafana/k6/issues/3097) — Socket.IO compatibility challenges
+- [autocannon npm package](https://www.npmjs.com/package/autocannon) — HTTP/1.1 and HTTP/2 benchmarking
+- [artillery vs autocannon comparison](https://npmtrends.com/artillery-vs-autocannon-vs-grinder-vs-jmeter-vs-loadtest) — Feature comparison, download stats
+- [Load Testing Node.js Apps](https://v-checha.medium.com/load-testing-tools-for-node-js-developers-98291ed75a4b) — Tool comparison guide
 
-### Existing Responsive Patterns (retro.css)
-✅ **Already implemented:**
-- Avatar selection horizontal scroll on mobile (<699px)
-- Player chip size reduction on mobile (<640px)
-- Custom scrollbar styling for touch devices
-- `scroll-snap-type: x mandatory` for carousels
+### Monitoring & Observability
+- [prom-client GitHub](https://github.com/siimon/prom-client) — Prometheus client for Node.js
+- [socket.io-prometheus GitHub](https://github.com/shamil/socket.io-prometheus) — Socket.IO metrics collector
+- [Custom Metrics with Prometheus](https://oneuptime.com/blog/post/2026-01-06-nodejs-custom-metrics-prometheus/view) — prom-client examples
+- [Grafana Node.js Observability Dashboard](https://grafana.com/grafana/dashboards/24439-nodejs-observability/) — Pre-configured dashboard
+- [Prometheus, Loki, Grafana Integration 2026](https://johal.in/cloud-native-observability-stack-prometheus-grafana-loki-and-tempo-integration-for-full-stack-monitoring-2026-3/) — Full stack monitoring
 
-## Performance Budget
+### Database Connection Pooling
+- [Drizzle ORM PostgreSQL Best Practices](https://gist.github.com/productdevbook/7c9ce3bbeb96b3fabc3c7c2aa2abc717) — Connection pool configuration
+- [Drizzle ORM with Node.js](https://oneuptime.com/blog/post/2026-02-03-nodejs-drizzle-orm/view) — 2026 usage guide
+- [postgres.js connection pooling discussion](https://www.answeroverflow.com/m/1154016477381414932) — Best practices, max connections
 
-| Asset Type | Desktop | Mobile | Notes |
-|------------|---------|--------|-------|
-| Initial JS | <500KB | <350KB | Existing bundle ~480KB (within range) |
-| Three.js Bundle | <200KB | <150KB | Use dynamic imports for 3D scenes |
-| Images (per page) | <2MB | <1MB | Use WebP, lazy load bosses |
-| Animation FPS | 60 FPS | 30-60 FPS | Allow quality regression via PerformanceMonitor |
-
-## Integration Checklist
-
-- [x] Tailwind CSS already configured with mobile-first breakpoints
-- [x] clsx + tailwind-merge already integrated in `cn()` utility
-- [x] Framer Motion + GSAP already installed for animations
-- [x] @react-three/drei already installed for adaptive performance
-- [x] react-helmet-async already installed for meta tags
-- [ ] **Add vite-react-ssg** for static marketing page generation
-- [ ] **Add react-responsive** for JavaScript media queries
-- [ ] **Upgrade React Router v6 → v7** for type safety (optional but recommended)
-- [ ] **Configure vite-react-ssg routes** in vite.config.ts
-- [ ] **Migrate App.tsx routing** from manual state to React Router
-- [ ] **Add Helmet meta tags** to all marketing pages
-- [ ] **Implement mobile Canvas settings** with useMediaQuery in BattleScreen
-
-## Sources & Verification
-
-### High Confidence (Official Docs + Current Versions)
-- **Tailwind CSS responsive design:** [Tailwind Responsive Design](https://tailwindcss.com/docs/responsive-design), [Best Practices 2026](https://www.frontendtools.tech/blog/tailwind-css-best-practices-design-system-patterns)
-- **React Router v7:** [Official v7 Announcement](https://reactrouter.com/), [v7 vs v6 Comparison](https://medium.com/@ignatovich.dm/react-router-7-vs-6-whats-new-and-should-you-upgrade-93bba58576a8)
-- **react-helmet-async:** [NPM Package](https://www.npmjs.com/package/react-helmet-async), [SEO Guide](https://blog.sachinchaurasiya.dev/how-to-integrate-reactjs-and-react-helmet-async-manage-seo-and-meta-data)
-- **Container Queries:** [Tailwind Container Queries](https://tailkits.com/blog/tailwind-container-queries/), [LogRocket Guide](https://blog.logrocket.com/container-queries-2026/)
-- **clsx + tailwind-merge:** [Best Practices](https://medium.com/@naglaafouz4/enhancing-component-reusability-in-tailwind-css-with-clsx-and-tailwind-merge-986aa4e1fe76)
-
-### Medium Confidence (Community Sources + WebSearch)
-- **Framer Motion vs GSAP:** [2026 Comparison](https://blog.logrocket.com/best-react-animation-libraries/), [Performance Guide](https://semaphore.io/blog/react-framer-motion-gsap)
-- **React Three Fiber mobile performance:** [Scaling Performance Docs](https://r3f.docs.pmnd.rs/advanced/scaling-performance), [Adaptive Performance RFC](https://github.com/pmndrs/react-three-fiber/issues/1070)
-- **vite-react-ssg:** [GitHub Repo](https://github.com/Daydreamer-riri/vite-react-ssg), [Vite SSG Discussion](https://github.com/vitejs/vite/discussions/18130)
-- **react-responsive:** [NPM Package](https://www.npmjs.com/package/react-responsive), [SSR-safe useMediaQuery](https://medium.com/@dwinTech/managing-usemediaquery-hydration-errors-in-next-js-9ecc555542c7)
-
-### Low Confidence (Flagged for Validation)
-- **JRPG-specific color schemes:** No authoritative source found. Search returned generic game asset marketplaces. **Recommendation:** Design custom palette based on existing retro.css variables (already has JRPG aesthetic).
-- **React Router + Three.js integration:** Limited 2026-specific guidance. Found [2023 blog post](https://romain-legall.fr/posts/handle-react-router-v6-with-react-18-and-react-three-fiber) but couldn't verify current best practices. **Recommendation:** Standard React Router wrapping works fine (Canvas inside Route components).
-
-## Version Compatibility Matrix
-
-| Library | Current | Recommended | React Version | Breaking Changes |
-|---------|---------|-------------|---------------|------------------|
-| React | 18.3.1 | 18.3.1 (keep) | - | - |
-| React Router | 6.26.0 | 7.x (upgrade) | 18+ | None (with future flags) |
-| Tailwind CSS | 3.4.14 | 3.4.14 (keep) | - | - |
-| Framer Motion | 11.13.1 | 11.13.1 (keep) | 18+ | - |
-| react-helmet-async | 2.0.5 | 2.0.5 (keep) | 18+ | - |
-| @react-three/fiber | 8.18.0 | 8.18.0 (keep) | 18+ | - |
-| @react-three/drei | 9.122.0 | 9.122.0 (keep) | 18+ | - |
-
-**Note:** All existing versions are current as of 2026-02-11. Only additions needed, no upgrades required (except optional React Router v7).
-
-## Decision Rationale
-
-### Why React Router v7 over alternatives?
-- **Type safety:** Automatic loader/action typing eliminates manual type casting
-- **Bundle size:** 15% smaller than v6, matters for mobile
-- **Ecosystem:** Largest React routing ecosystem, better Three.js community examples
-- **Migration path:** Non-breaking upgrade from existing v6 installation
-- **React 19 ready:** Future-proof for React 19 adoption
-
-### Why vite-react-ssg over alternatives?
-- **Vite-native:** Works with existing build setup, no migration
-- **React Helmet integration:** Wraps helmet for SSR automatically
-- **Hybrid approach:** Static marketing + dynamic game (perfect for ScrumQuest)
-- **Lightweight:** Doesn't force full SSR framework (Next.js would be overkill)
-
-### Why react-responsive over custom hooks?
-- **SSR-safe:** Handles hydration mismatches correctly
-- **Tested:** Battle-tested library, fewer edge cases
-- **Features:** Device type detection, orientation, custom queries
-- **Bundle size:** 3KB gzipped, acceptable overhead
-
-### Why keep both Framer Motion AND GSAP?
-- **Different use cases:** Framer for declarative UI, GSAP for imperative timelines
-- **Already installed:** No new bundle impact
-- **Performance:** Both optimized, use right tool for job
-- **Examples:** Framer for menu transitions, GSAP for boss intro cinematics
-
-### Why NOT Next.js/Remix?
-- **Overkill:** Full framework for what's primarily a client-side game
-- **Migration cost:** Requires rewriting existing Vite setup, Socket.IO integration complex
-- **Bundle impact:** Larger runtime overhead for SSR features mostly unused
-- **Decision:** vite-react-ssg provides 80% benefit (static marketing pages) with 20% effort
+---
+*Stack research for: Hosting optimization and PostgreSQL setup*
+*Researched: 2026-02-19*
+*Confidence: HIGH — All hosting platforms verified with 2026 pricing, PostgreSQL services confirmed with current free tier limits, profiling tools actively maintained*
