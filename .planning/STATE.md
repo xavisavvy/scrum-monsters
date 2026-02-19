@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 ## Current Position
 
-Phase: 23 of 25 (Mobile UX Critical Path) — COMPLETE (verified 6/6 must-haves)
-Plan: 5 of 5 in current phase — COMPLETE
-Status: Phase 23 verified — all mobile UX success criteria passed
-Last activity: 2026-02-18 — Phase 23 complete: 44px touch targets, safe-area insets, orientation support, adaptive DPR, virtual D-pad, full-session mobile layout
+Phase: 24 of 25 (Routing & SEO Infrastructure) — IN PROGRESS
+Plan: 1 of 4 in current phase — COMPLETE
+Status: Phase 24 started — React Router v7 clean URLs implemented
+Last activity: 2026-02-19 — Phase 24-01 complete: React Router v7, clean URLs, server-state-driven game phases
 
-Progress: [█████████████████████████████████░░░] 86% (103/119 total plans across all milestones)
+Progress: [█████████████████████████████████░░░] 87% (104/119 total plans across all milestones)
 
 ## Performance Metrics
 
@@ -36,10 +36,11 @@ Progress: [███████████████████████
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-18 after completing Phase 23 (Mobile UX Critical Path — 5/5 plans, 6/6 must-haves verified)*
+*Updated: 2026-02-19 after completing Phase 24-01 (React Router Clean URLs)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 24 P01 | 1 | 2 tasks | 13 files |
 | Phase 23 P05 | 1 | 3 tasks | 8 files |
 | Phase 23 P04 | 1 | 2 tasks | 2 files |
 | Phase 23 P03 | 1 | 2 tasks | 4 files |
@@ -104,6 +105,10 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 23-05]: TimerDisplay uses top/left inline style with calc(1.5rem + env(safe-area-inset-*)) — overrides top-6/left-6 classes while preserving px-4/py-2 padding
 - [Phase 23-05]: pb-safe (not p-safe) on lobby screens — avoids overriding existing horizontal padding where env() resolves to 0px
 - [Phase 23-05]: PhaseContainer gets style={{ height: '100dvh' }} inline override — h-screen provides 100vh fallback
+- [Phase 24-01]: React Router v7 declarative mode (not framework mode) — no CLI changes, no build changes, maintains existing Vite setup
+- [Phase 24-01]: App.tsx becomes layout component with Outlet — routes handle specific logic, WebSocket/audio/auth stay in layout
+- [Phase 24-01]: GamePage.tsx handles all game phases at single URL — server gamePhase drives rendering, URL never changes during transitions
+- [Phase 24-01]: Legacy query params redirect via loader functions — ?join=ABC redirects to /game/ABC via redirect()
 
 ### Pending Todos
 
@@ -117,12 +122,12 @@ Recent decisions affecting v2.0 milestone work:
 
 ## Session Continuity
 
-Last session: 2026-02-18
-Stopped at: Phase 23 complete and verified (6/6 must-haves passed)
+Last session: 2026-02-19
+Stopped at: Completed 24-01-PLAN.md (React Router clean URLs)
 Resume file: None
 
-**Next action:** Begin Phase 24 (Routing & SEO Infrastructure).
+**Next action:** Continue Phase 24 with 24-02 (React Helmet meta tags).
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-18 after completing Phase 23 (Mobile UX Critical Path — all 5 plans verified)*
+*Last updated: 2026-02-19 after completing Phase 24-01 (React Router Clean URLs — 2 tasks, 13 files)*
