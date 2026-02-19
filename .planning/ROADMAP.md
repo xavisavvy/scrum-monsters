@@ -91,8 +91,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 28-01-PLAN.md — Global error handlers, enhanced graceful shutdown with client notification, startup config logging
-- [ ] 28-02-PLAN.md — Split health check into livez/readyz with DB connectivity, update K8s probes
+- [x] 28-01-PLAN.md — Global error handlers, enhanced graceful shutdown with client notification, startup config logging
+- [x] 28-02-PLAN.md — Split health check into livez/readyz with DB connectivity, update K8s probes
 
 #### Phase 29: Hosting Analysis
 **Goal**: Data-driven hosting recommendation based on actual resource usage and cost comparison
@@ -121,11 +121,11 @@ Phases execute in numeric order: 26 → 27 → 28 → 29
 | 21-25 | v2.0 | 23/23 | Complete | 2026-02-19 |
 | 26. Tech Debt Cleanup | v3.0 | 2/2 | Complete | 2026-02-19 |
 | 27. Database Foundation | v3.0 | 2/2 | Complete | 2026-02-19 |
-| 28. Production Reliability | v3.0 | 0/0 | Not started | - |
+| 28. Production Reliability | v3.0 | 2/2 | Complete | 2026-02-19 |
 | 29. Hosting Analysis | v3.0 | 0/0 | Not started | - |
 
-**Total: 5 milestones (4 shipped, 1 in progress), 29 phases (27 shipped, 2 planned), 106 plans shipped**
+**Total: 5 milestones (4 shipped, 1 in progress), 29 phases (28 shipped, 1 planned), 108 plans shipped**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-19 — Phase 27 Database Foundation completed*
+*Last updated: 2026-02-19 — Phase 28 Production Reliability completed*
