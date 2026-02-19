@@ -28,6 +28,7 @@ import { Canvas } from '@react-three/fiber';
 import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { useIsMobile } from '@/hooks/use-is-mobile';
+import { motion } from 'framer-motion';
 
 // CSS Animation for spectator pulsing effect
 const spectatorStyles = `
@@ -2404,13 +2405,33 @@ export function Lobby() {
                       : 'none')
                 }}
               >
-                <SpriteRenderer
-                  avatarClass={getAvatarClass(currentPlayer)}
-                  animation={deadPlayers.has(currentPlayer.id) ? 'death' : (jumpState.isJumping ? 'victory' : (keys.size > 0 ? 'walk' : 'idle'))}
-                  direction={myPosition.direction}
-                  isMoving={!deadPlayers.has(currentPlayer.id) && keys.size > 0}
-                  size={characterSize}
-                />
+                {keys.size === 0 && !deadPlayers.has(currentPlayer.id) && !jumpState.isJumping ? (
+                  <motion.div
+                    animate={{ y: [0, -3, 0] }}
+                    transition={{
+                      duration: 2.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                      repeatType: 'loop',
+                    }}
+                  >
+                    <SpriteRenderer
+                      avatarClass={getAvatarClass(currentPlayer)}
+                      animation="idle"
+                      direction={myPosition.direction}
+                      isMoving={false}
+                      size={characterSize}
+                    />
+                  </motion.div>
+                ) : (
+                  <SpriteRenderer
+                    avatarClass={getAvatarClass(currentPlayer)}
+                    animation={deadPlayers.has(currentPlayer.id) ? 'death' : (jumpState.isJumping ? 'victory' : 'walk')}
+                    direction={myPosition.direction}
+                    isMoving={keys.size > 0}
+                    size={characterSize}
+                  />
+                )}
               </div>
               
               
@@ -2535,13 +2556,33 @@ export function Lobby() {
                           : 'none')
                     }}
                   >
-                    <SpriteRenderer
-                      avatarClass={getAvatarClass(player)}
-                      animation={isDead ? 'death' : (position.isJumping ? 'victory' : (position.isMoving ? 'walk' : 'idle'))}
-                      direction={position.direction}
-                      isMoving={!isDead && position.isMoving}
-                      size={characterSize}
-                    />
+                    {!position.isMoving && !isDead && !position.isJumping ? (
+                      <motion.div
+                        animate={{ y: [0, -3, 0] }}
+                        transition={{
+                          duration: 2.5,
+                          repeat: Infinity,
+                          ease: 'easeInOut',
+                          repeatType: 'loop',
+                        }}
+                      >
+                        <SpriteRenderer
+                          avatarClass={getAvatarClass(player)}
+                          animation="idle"
+                          direction={position.direction}
+                          isMoving={false}
+                          size={characterSize}
+                        />
+                      </motion.div>
+                    ) : (
+                      <SpriteRenderer
+                        avatarClass={getAvatarClass(player)}
+                        animation={isDead ? 'death' : (position.isJumping ? 'victory' : 'walk')}
+                        direction={position.direction}
+                        isMoving={position.isMoving}
+                        size={characterSize}
+                      />
+                    )}
                   </div>
                   
                   
