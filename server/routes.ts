@@ -5,6 +5,7 @@ import authRoutes from "./auth/routes.js";
 import profileRoutes from "./auth/profileRoutes.js";
 import { authLimiter, profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
+import { storage, PgStorage } from './storage.js';
 
 // Import session middleware from index (circular import avoided by lazy loading)
 let sessionMiddlewareRef: RequestHandler | null = null;
@@ -44,9 +45,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.use("/api/auth", authRoutes);
   app.use("/api/user", profileRoutes);
 
-  // Health check endpoint
-  app.get('/api/health', (req, res) => {
+  // Helper function for readiness checks
+  async function checkReadiness(): Promise<{ status: number; body: object }> {
+    const checks: Record<string, { healthy: boolean; message?: string }> = {};
+
+    if (storage instanceof PgStorage) {
+      try {
+        const sql = storage.getSql();
+        await Promise.race([
+          sql`SELECT 1 as health`,
+          new Promise((_, reject) =>
+            setTimeout(() => reject(new Error('Database health check timeout (3s)')), 3000)
+          ),
+        ]);
+        checks.database = { healthy: true };
+      } catch (error) {
+        checks.database = {
+          healthy: false,
+          message: error instanceof Error ? error.message : 'Unknown database error',
+        };
+      }
+    } else {
+      checks.database = { healthy: true, message: 'in-memory storage' };
+    }
+
+    const isReady = Object.values(checks).every((check) => check.healthy);
+    return {
+      status: isReady ? 200 : 503,
+      body: {
+        status: isReady ? 'ok' : 'not_ready',
+        checks,
+        timestamp: new Date().toISOString(),
+      },
+    };
+  }
+
+  // Liveness probe - simple heartbeat, never checks database
+  // Kubernetes uses this to decide when to restart container
+  app.get('/api/health/livez', (_req, res) => {
     res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  });
+
+  // Readiness probe - comprehensive check including database
+  // Kubernetes uses this to decide when to route traffic to this pod
+  app.get('/api/health/readyz', async (_req, res) => {
+    const result = await checkReadiness();
+    res.status(result.status).json(result.body);
+  });
+
+  // Backward-compatible health check endpoint (delegates to readyz)
+  app.get('/api/health', async (_req, res) => {
+    const result = await checkReadiness();
+    res.status(result.status).json(result.body);
   });
 
   // WebSocket health check endpoint
