@@ -7,6 +7,8 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
 import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { getGameMeta } from '@/components/seo/metaConfig';
 
 // Lazy load heavy game components
 const Lobby = lazy(() => import('@/components/game/Lobby').then(m => ({ default: m.Lobby })));
@@ -345,5 +347,10 @@ export default function GamePage() {
     );
   };
 
-  return <>{renderGamePhase()}</>;
+  return (
+    <>
+      <PageMeta meta={getGameMeta(currentLobby?.name, lobbyId)} />
+      {renderGamePhase()}
+    </>
+  );
 }

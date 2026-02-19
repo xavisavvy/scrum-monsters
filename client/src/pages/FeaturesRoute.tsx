@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router';
 import { FeaturesPage } from '@/components/marketing/FeaturesPage';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { META_CONFIG } from '@/components/seo/metaConfig';
 
 /**
  * Route wrapper for features page
@@ -17,9 +19,12 @@ export default function FeaturesRoute() {
   };
 
   return (
-    <FeaturesPage
-      onBackToHome={() => navigate('/')}
-      onNavigate={handleNavigate}
-    />
+    <>
+      <PageMeta meta={META_CONFIG.features} />
+      <FeaturesPage
+        onBackToHome={() => navigate('/')}
+        onNavigate={handleNavigate}
+      />
+    </>
   );
 }

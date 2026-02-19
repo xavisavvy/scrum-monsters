@@ -9,6 +9,8 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
 import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { META_CONFIG } from '@/components/seo/metaConfig';
 
 type MenuState = 'main' | 'create_lobby' | 'join_lobby';
 
@@ -80,6 +82,7 @@ export default function MenuPage() {
   // Main menu
   return (
     <>
+      <PageMeta meta={META_CONFIG.play} />
       <CinematicBackground />
 
       {/* Back Button */}
