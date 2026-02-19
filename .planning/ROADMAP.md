@@ -136,10 +136,12 @@ Plans:
   2. Player readiness state is visually indicated before game starts (ready/not ready)
   3. Characters have idle animations during waiting periods (not static models)
 
+**Plans:** 3 plans
+
 Plans:
-- [ ] 25-01: Enhanced emote UI system
-- [ ] 25-02: Player readiness indicators
-- [ ] 25-03: Character idle animations
+- [ ] 25-01-PLAN.md — TDD: magicWords.ts unit test coverage for emote detection/extraction (Wave 1)
+- [ ] 25-02-PLAN.md — Player readiness system: shared types, server handler, toggle button, visual indicators (Wave 1)
+- [ ] 25-03-PLAN.md — Idle animations: multi-frame sprite cycling and Framer Motion bobbing (Wave 2)
 
 ## Backlog
 
