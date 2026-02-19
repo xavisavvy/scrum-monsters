@@ -5,7 +5,7 @@
 - ✅ **v1.0 Domain Separation** — Phases 1-6 (shipped 2026-02-02)
 - ✅ **v1.2 SDLC Best Practices** — Phases 7-14 (shipped 2026-02-03)
 - ✅ **v1.3 Game Progression** — Phases 15-20 (shipped 2026-02-11)
-- 🚧 **v2.0 UI Redesign & Mobile** — Phases 21-25 (in progress)
+- ✅ **v2.0 UI Redesign & Mobile** — Phases 21-25 (shipped 2026-02-19)
 
 ## Phases
 
@@ -37,7 +37,7 @@ See `.planning/milestones/v1.3-ROADMAP.md`
 
 </details>
 
-### 🚧 v2.0 UI Redesign & Mobile (In Progress)
+### ✅ v2.0 UI Redesign & Mobile (SHIPPED 2026-02-19)
 
 **Milestone Goal:** Redesign entire game experience with JRPG theming, responsive layout, simplified information architecture, and proper routing/SEO — making ScrumQuest look and feel like a polished product on any device.
 
@@ -139,9 +139,9 @@ Plans:
 **Plans:** 3 plans
 
 Plans:
-- [ ] 25-01-PLAN.md — TDD: magicWords.ts unit test coverage for emote detection/extraction (Wave 1)
-- [ ] 25-02-PLAN.md — Player readiness system: shared types, server handler, toggle button, visual indicators (Wave 1)
-- [ ] 25-03-PLAN.md — Idle animations: multi-frame sprite cycling and Framer Motion bobbing (Wave 2)
+- [x] 25-01-PLAN.md — TDD: magicWords.ts unit test coverage for emote detection/extraction (Wave 1)
+- [x] 25-02-PLAN.md — Player readiness system: shared types, server handler, toggle button, visual indicators (Wave 1)
+- [x] 25-03-PLAN.md — Idle animations: multi-frame sprite cycling and Framer Motion bobbing (Wave 2)
 
 ## Backlog
 
@@ -168,8 +168,8 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 | 22. JRPG Theme Foundation | v2.0 | 6/6 | Complete | 2026-02-18 |
 | 23. Mobile UX Critical Path | v2.0 | 5/5 | Complete | 2026-02-18 |
 | 24. Routing & SEO Infrastructure | v2.0 | 4/4 | Complete | 2026-02-18 |
-| 25. Lobby Polish & Animations | v2.0 | 0/3 | Not started | - |
+| 25. Lobby Polish & Animations | v2.0 | 3/3 | Complete | 2026-02-19 |
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-18 — Phase 24 (Routing & SEO Infrastructure) complete*
+*Last updated: 2026-02-19 — Phase 25 (Lobby Polish & Animations) complete — v2.0 milestone shipped*
