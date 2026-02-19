@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-11)
 
 ## Current Position
 
-Phase: 25 of 25 (Lobby Polish & Animations) — IN PROGRESS
-Plan: 2 of 3 in current phase — COMPLETE
-Status: Phase 25 in progress — Player ready system complete
-Last activity: 2026-02-19 — Phase 25-02 complete: Full-stack player readiness system with ARIA-compliant UI
+Phase: 25 of 25 (Lobby Polish & Animations) — COMPLETE
+Plan: 3 of 3 in current phase — COMPLETE
+Status: Phase 25 complete — All lobby polish and animations implemented
+Last activity: 2026-02-19 — Phase 25-03 complete: Multi-frame idle animations with sprite cycling and Framer Motion bobbing
 
-Progress: [█████████████████████████████████░░░] 92% (109/119 total plans across all milestones)
+Progress: [██████████████████████████████████░░] 93% (110/119 total plans across all milestones)
 
 ## Performance Metrics
 
 **Velocity (v1.0-v1.3 shipped milestones):**
-- Total plans completed: 109 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 22)
+- Total plans completed: 110 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 23)
 - Average duration: ~45 min (estimated from milestone timelines)
 - Total execution time: ~68 hours across 4 milestones
 
@@ -30,16 +30,17 @@ Progress: [███████████████████████
 | v1.0 Domain Separation | 1-6 | 30 | Complete |
 | v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
 | v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 22/23 | In progress (Phase 25 in progress) |
+| v2.0 UI Redesign & Mobile | 21-25 | 23/23 | Complete (Phase 25 complete) |
 
 **Recent Trend:**
 - Last 5 phases (v1.3): 3-8 plans per phase
 - Trend: Stable complexity, consistent velocity
 
-*Updated: 2026-02-19 after completing Phase 25-02 (Player Ready System)*
+*Updated: 2026-02-19 after completing Phase 25-03 (Lobby Idle Animations)*
 
 | Phase | Plans Completed | Tasks | Files |
 |-------|----------------|-------|-------|
+| Phase 25 P03 | 1 | 2 tasks | 2 files |
 | Phase 25 P02 | 1 | 2 tasks | 5 files |
 | Phase 25 P01 | 1 | 1 task | 1 file |
 | Phase 24 P04 | 1 | 2 tasks | 4 files |
@@ -125,6 +126,8 @@ Recent decisions affecting v2.0 milestone work:
 - [Phase 25-02]: GameButton variant toggle - isReady uses primary variant, not-ready uses secondary variant for visual hierarchy
 - [Phase 25-02]: Emote button visible on all devices (removed md:hidden) - action bar pattern centered at bottom
 - [Phase 25-02]: aria-pressed and aria-label satisfy WCAG SC 4.1.2; green checkmark + color change satisfy WCAG SC 1.4.1
+- [Phase 25-03]: 2-frame idle animation uses frames 0-1 from row 0 at 800ms speed (1.6s cycle) — subtle weight-shifting without looking like walking
+- [Phase 25-03]: Framer Motion bobbing (3px, 2.5s) only applies when idle (not moving/jumping/dead) — conditional rendering prevents competing animations
 
 ### Pending Todos
 
@@ -139,11 +142,11 @@ Recent decisions affecting v2.0 milestone work:
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 25-02-PLAN.md (Player ready system)
+Stopped at: Completed 25-03-PLAN.md (Lobby idle animations)
 Resume file: None
 
-**Next action:** Continue Phase 25 with plan 03 (1 more plan in phase).
+**Next action:** Phase 25 complete. v2.0 UI Redesign & Mobile milestone complete (23/23 plans). Ready for next milestone.
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-19 after completing Phase 25-02 (Player Ready System — 2 tasks, 5 files)*
+*Last updated: 2026-02-19 after completing Phase 25-03 (Lobby Idle Animations — 2 tasks, 2 files)*
