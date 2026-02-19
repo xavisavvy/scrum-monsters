@@ -119,12 +119,13 @@ Plans:
   6. Game routes use /game/:lobbyId with server state as authoritative (URLs reflect, don't drive state)
   7. Three.js Canvas stays mounted across route changes without WebGL context leaks
 
+**Plans:** 4 plans in 3 waves
+
 Plans:
-- [ ] 24-01: React Router v7 integration and clean URL structure
-- [ ] 24-02: React Helmet meta tags and Open Graph tags
-- [ ] 24-03: vite-react-ssg static page pre-rendering
-- [ ] 24-04: Route-based code splitting (lazy load Three.js)
-- [ ] 24-05: Canvas lifecycle management and routing integration
+- [ ] 24-01-PLAN.md — React Router v7 declarative mode, clean URL structure, SPA fallback, legacy redirects (Wave 1)
+- [ ] 24-02-PLAN.md — React Helmet meta tags, Open Graph, and Twitter card tags (Wave 2)
+- [ ] 24-03-PLAN.md — Route-based code splitting and Vite chunk optimization for Three.js (Wave 2)
+- [ ] 24-04-PLAN.md — Server-side meta tag injection for crawlers and Canvas lifecycle verification (Wave 3)
 
 #### Phase 25: Lobby Polish & Animations
 **Goal**: Enhance lobby interactions with visible emote system, readiness indicators, and idle animations
@@ -164,7 +165,7 @@ Phases execute in numeric order: 21 → 22 → 23 → 24 → 25
 | 21. Security Hardening | v2.0 | 5/5 | Complete | 2026-02-18 |
 | 22. JRPG Theme Foundation | v2.0 | 6/6 | Complete | 2026-02-18 |
 | 23. Mobile UX Critical Path | v2.0 | 5/5 | Complete | 2026-02-18 |
-| 24. Routing & SEO Infrastructure | v2.0 | 0/5 | Not started | - |
+| 24. Routing & SEO Infrastructure | v2.0 | 0/4 | Not started | - |
 | 25. Lobby Polish & Animations | v2.0 | 0/3 | Not started | - |
 
 ---
