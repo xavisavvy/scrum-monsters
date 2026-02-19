@@ -18,7 +18,8 @@ function GameLoadingFallback() {
     <div className="fixed inset-0 flex items-center justify-center bg-gray-900">
       <div className="text-center">
         <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-yellow-400 font-bold text-lg">Loading...</p>
+        <p className="text-yellow-400 font-bold text-lg">Loading Game...</p>
+        <p className="text-gray-400 text-sm mt-2">Preparing your quest...</p>
       </div>
     </div>
   );
