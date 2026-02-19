@@ -1,23 +1,11 @@
-import React, { useEffect, useState, Suspense, lazy } from 'react';
+import { useEffect, useState } from 'react';
+import { Outlet, useSearchParams, useLocation } from 'react-router';
 import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
-import { LobbyCreation } from '@/components/game/LobbyCreation';
-import { LobbyJoin } from '@/components/game/LobbyJoin';
-import { RoomJoin } from '@/components/game/RoomJoin';
-import { LandingPage } from '@/components/marketing/LandingPage';
-import { AboutPage } from '@/components/marketing/AboutPage';
-import { FeaturesPage } from '@/components/marketing/FeaturesPage';
-import { PricingPage } from '@/components/marketing/PricingPage';
-import { SupportPage } from '@/components/marketing/SupportPage';
-
-import { RetroButton } from '@/components/ui/retro-button';
-import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
-import { CharacterTools } from '@/components/utils/CharacterTools';
-import { BossTools } from '@/components/utils/BossTools';
 import { UserMenu } from '@/components/auth/UserMenu';
+import { RetroButton } from '@/components/ui/retro-button';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
-import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { useAuth } from '@/lib/stores/useAuth';
 import { useBacktickKey } from '@/hooks/useBacktickKey';
@@ -25,87 +13,44 @@ import { useKonamiCode } from '@/hooks/useKonamiCode';
 import { setupEventHandlers, teardownEventHandlers } from '@/lib/socket/eventHandlers';
 import { useEventSync } from '@/lib/stores/useEventSync';
 import { CheatMenu } from '@/components/ui/CheatMenu';
-import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { ReconnectionStatus } from '@/components/ui/ReconnectionStatus';
 import { ConnectionIndicator } from '@/components/ui/ConnectionIndicator';
 import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
-import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
-import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import { fetchCsrfToken } from '@/lib/csrfToken';
 import '@/styles/retro.css';
 import '@/styles/tokens.css';
 import '@/styles/mobile.css';
 
-// Lazy load heavy game components for better initial load performance
-const Lobby = lazy(() => import('@/components/game/Lobby').then(m => ({ default: m.Lobby })));
-const AvatarSelection = lazy(() => import('@/components/game/AvatarSelection').then(m => ({ default: m.AvatarSelection })));
-const BattleScreen = lazy(() => import('@/components/game/BattleScreen').then(m => ({ default: m.BattleScreen })));
-
-function GameLoadingFallback() {
-  return (
-    <div className="fixed inset-0 flex items-center justify-center bg-gray-900">
-      <div className="text-center">
-        <div className="w-16 h-16 border-4 border-yellow-400 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-yellow-400 font-bold text-lg">Loading...</p>
-      </div>
-    </div>
-  );
-}
-
-type AppState = 'landing' | 'about' | 'features' | 'pricing' | 'support' | 'menu' | 'create_lobby' | 'join_lobby' | 'room_join' | 'lobby' | 'avatar_selection' | 'battle' | 'character_tools' | 'boss_tools';
-
+/**
+ * App Layout Component
+ * Handles global concerns: WebSocket, audio, auth, developer tools
+ * Route content renders via <Outlet />
+ */
 function App() {
-  const [appState, setAppState] = useState<AppState>('landing');
-  const [joinLobbyId, setJoinLobbyId] = useState<string>('');
-  const [roomId, setRoomId] = useState<string>('');
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   const [showReconnectionDialog, setShowReconnectionDialog] = useState(false);
-  const [lastLobby, setLastLobby] = useState(LastLobbyStorage.loadLastLobby());
-  const [isAttemptingRejoin, setIsAttemptingRejoin] = useState(false);
-  
-  // Force remount mechanism for critical phase transitions
-  const [battleRemountKey, setBattleRemountKey] = useState(0);
-  const [lastGamePhase, setLastGamePhase] = useState<string | null>(null);
-  const [isBattleUnmounting, setIsBattleUnmounting] = useState(false);
-  
-  const { socket, connect, disconnect, isConnected, reconnection, emit, reconnectToLobby, getReconnectToken, clearReconnectionState } = useWebSocket();
-  const { 
-    currentLobby, 
-    currentPlayer, 
-    error,
-    setLobby, 
-    setPlayer, 
-    setBoss, 
-    setInviteLink, 
-    setError,
-    clearAll 
-  } = useGameState();
-  const { 
-    toggleMute, 
-    isMuted, 
-    setMenuMusic, 
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+
+  const { socket, connect, disconnect, isConnected, reconnection } = useWebSocket();
+  const {
+    toggleMute,
+    isMuted,
+    setMenuMusic,
     setBossMusic,
     setButtonSelectSound,
     setExplosionSound,
     setHitSound,
     setWalkingSound,
     setMusicTracks,
-    fadeInMenuMusic, 
-    fadeOutMenuMusic, 
-    stopMenuMusic,
-    playButtonSelect,
-    switchToNextTrack,
-    isMenuMusicPlaying 
+    fadeInMenuMusic,
+    fadeOutMenuMusic,
+    isMenuMusicPlaying,
   } = useAudio();
-  
-  // Direct selector for current track name to ensure re-renders
-  const currentTrackName = useAudio(state =>
-    state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
-  );
 
   // Auth state
-  const { checkAuth, isInitialized: authInitialized } = useAuth();
+  const { checkAuth } = useAuth();
 
   // Fetch CSRF token and check auth on mount
   useEffect(() => {
@@ -115,38 +60,27 @@ function App() {
 
   // Handle OAuth redirect params
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const authStatus = urlParams.get('auth');
-    const authProvider = urlParams.get('provider');
+    const authStatus = searchParams.get('auth');
+    const authProvider = searchParams.get('provider');
 
     if (authStatus === 'success' && authProvider) {
       toast.success(`Signed in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
         duration: 3000,
       });
-      // Clean up URL
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('auth');
-      newUrl.searchParams.delete('provider');
-      window.history.replaceState(null, '', newUrl.toString());
       // Refresh auth state
       checkAuth();
     } else if (authStatus === 'error' && authProvider) {
       toast.error(`Failed to sign in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
         duration: 5000,
       });
-      // Clean up URL
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.delete('auth');
-      newUrl.searchParams.delete('provider');
-      window.history.replaceState(null, '', newUrl.toString());
     }
-  }, [checkAuth]);
+  }, [searchParams, checkAuth]);
 
   // Developer menu hotkey
   useBacktickKey(() => {
     setShowDeveloperMenu(!showDeveloperMenu);
   });
-  
+
   // Konami code for cheat menu
   useKonamiCode(() => {
     setShowCheatMenu(true);
@@ -155,7 +89,7 @@ function App() {
   // Connect to WebSocket on mount and setup menu music
   useEffect(() => {
     connect();
-    
+
     // Load music tracks
     const tracks = [
       {
@@ -165,21 +99,21 @@ function App() {
       },
       {
         name: 'Scrum Battles',
-        file: '/sounds/scrum-battles.mp3', 
+        file: '/sounds/scrum-battles.mp3',
         audio: new Audio('/sounds/scrum-battles.mp3')
       }
     ];
-    
+
     // Preload all tracks
     tracks.forEach(track => {
       if (track.audio) {
         track.audio.preload = 'auto';
       }
     });
-    
+
     setMusicTracks(tracks);
     setMenuMusic(tracks[0].audio!); // Set first track as default
-    
+
     // Load button select sound
     const buttonSelectAudio = new Audio('/sounds/button-select.mp3');
     buttonSelectAudio.preload = 'auto';
@@ -195,7 +129,6 @@ function App() {
     explosionAudio.preload = 'auto';
     setExplosionSound(explosionAudio);
 
-
     // Load boss music
     const bossAudio = new Audio('/sounds/boss-fight.mp3');
     bossAudio.preload = 'auto';
@@ -205,78 +138,9 @@ function App() {
     const walkingAudio = new Audio('/sounds/walking.mp3');
     walkingAudio.preload = 'auto';
     setWalkingSound(walkingAudio);
-    
+
     return () => disconnect();
   }, [connect, disconnect, setMenuMusic, setBossMusic, setButtonSelectSound, setExplosionSound, setHitSound, setWalkingSound, setMusicTracks]);
-
-  // Check for URL parameters and routing
-  useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const lobbyParam = urlParams.get('join');
-    const roomParam = urlParams.get('room');
-    const gameParam = urlParams.get('game');
-    const pageParam = urlParams.get('page');
-
-    if (lobbyParam) {
-      setJoinLobbyId(lobbyParam);
-
-      // Check if we need to wait for reconnection attempt
-      const storedToken = localStorage.getItem('scrum-monsters-reconnect-token');
-      const storedSnapshot = localStorage.getItem('scrum-monsters-lobby-snapshot');
-
-      if (storedToken && storedSnapshot && isConnected) {
-        // There's a potential reconnection, wait for it to complete
-        console.log('🔄 URL join detected with stored token - waiting for reconnection attempt');
-
-        // Set a timeout to fallback to manual join if reconnection doesn't complete
-        const reconnectionTimeout = setTimeout(() => {
-          // If we're still on landing page after 5 seconds, the reconnection didn't work
-          console.log('⏱️ Reconnection timeout - falling back to manual join');
-          setAppState('join_lobby');
-        }, 5000);
-
-        // Store timeout so it can be cleared if lobby_sync arrives
-        (window as any).__reconnectionTimeout = reconnectionTimeout;
-      } else {
-        // No stored reconnection data, safe to proceed with manual join
-        setAppState('join_lobby');
-      }
-    } else if (roomParam) {
-      // Recurring meeting room - store room ID for lobby creation/join
-      setRoomId(roomParam);
-
-      // Check if this lobby already exists via reconnection
-      const storedToken = localStorage.getItem('scrum-monsters-reconnect-token');
-      const storedSnapshot = localStorage.getItem('scrum-monsters-lobby-snapshot');
-
-      if (storedToken && storedSnapshot && isConnected) {
-        console.log('🔄 Room join detected with stored token - waiting for reconnection attempt');
-        // Wait for reconnection to complete
-      } else {
-        // Show create/join UI for recurring room
-        setAppState('room_join');
-      }
-    } else if (gameParam === 'menu') {
-      setAppState('menu');
-    } else if (pageParam === 'about') {
-      setAppState('about');
-    } else if (pageParam === 'features') {
-      setAppState('features');
-    } else if (pageParam === 'pricing') {
-      setAppState('pricing');
-    } else if (pageParam === 'support') {
-      setAppState('support');
-    }
-    // Default stays on landing page
-  }, [isConnected]);
-
-  // Auto-scroll to top when navigating to marketing pages
-  useEffect(() => {
-    const marketingPages = ['about', 'features', 'pricing', 'support'];
-    if (marketingPages.includes(appState)) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  }, [appState]);
 
   // Handle reconnection dialog visibility
   useEffect(() => {
@@ -287,18 +151,20 @@ function App() {
     }
   }, [reconnection.status, reconnection.attempt, reconnection.maxAttempts]);
 
-  // Handle menu music based on app state
+  // Handle menu music based on current route
   useEffect(() => {
-    const marketingPages = ['menu', 'landing', 'about', 'features', 'pricing', 'support'];
-    if (marketingPages.includes(appState) && !isMuted && !isMenuMusicPlaying) {
+    const marketingRoutes = ['/', '/about', '/features', '/pricing', '/support', '/play'];
+    const isMarketingPage = marketingRoutes.includes(location.pathname);
+
+    if (isMarketingPage && !isMuted && !isMenuMusicPlaying) {
       // Small delay to ensure audio is loaded
       setTimeout(() => fadeInMenuMusic(), 500);
-    } else if (!marketingPages.includes(appState) && isMenuMusicPlaying) {
+    } else if (!isMarketingPage && isMenuMusicPlaying) {
       fadeOutMenuMusic();
     }
-  }, [appState, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
+  }, [location.pathname, isMuted, isMenuMusicPlaying, fadeInMenuMusic, fadeOutMenuMusic]);
 
-  // Setup fine-grained event handlers (separate effect to avoid teardown on appState changes)
+  // Setup fine-grained event handlers
   useEffect(() => {
     if (!socket) return;
     setupEventHandlers(socket);
@@ -308,653 +174,32 @@ function App() {
     };
   }, [socket]);
 
-  // Setup WebSocket event listeners
-  useEffect(() => {
-    if (!socket) return;
+  // Determine if we should show mute button and user menu
+  const showTopRightControls = ['/', '/about', '/features', '/pricing', '/support', '/play'].includes(location.pathname);
 
-    socket.on('lobby_created', ({ lobby, inviteLink }) => {
-      setLobby(lobby);
-      setInviteLink(inviteLink);
-      const host = lobby.players.find(p => p.isHost);
-      if (host) setPlayer(host);
-      // Save last lobby for quick rejoin
-      LastLobbyStorage.saveLastLobby(lobby.id, lobby.name);
-      setLastLobby({ lobbyId: lobby.id, lobbyName: lobby.name, timestamp: Date.now() });
-      setAppState('avatar_selection'); // Host also goes through avatar selection
-    });
-
-    socket.on('lobby_joined', ({ lobby, player }) => {
-      setLobby(lobby);
-      setPlayer(player);
-      // Save last lobby for quick rejoin
-      LastLobbyStorage.saveLastLobby(lobby.id, lobby.name);
-      setLastLobby({ lobbyId: lobby.id, lobbyName: lobby.name, timestamp: Date.now() });
-      // Clear rejoin flag (fallback path was taken, new player created)
-      setIsAttemptingRejoin(false);
-      setAppState('avatar_selection');
-    });
-
-    // Handle lobby sync from reconnection attempts
-    socket.on('lobby_sync', ({ lobby, yourPlayer, reconnectToken }) => {
-      console.log('📥 App received lobby sync from reconnection');
-      setLobby(lobby);
-      setPlayer(yourPlayer);
-
-      // Clear the reconnection timeout if it exists
-      if ((window as any).__reconnectionTimeout) {
-        clearTimeout((window as any).__reconnectionTimeout);
-        (window as any).__reconnectionTimeout = null;
-      }
-
-      // Check if this was a URL join scenario that was waiting for reconnection
-      const urlParams = new URLSearchParams(window.location.search);
-      const lobbyParam = urlParams.get('join');
-
-      // Handle explicit rejoin (Rejoin button) or URL join
-      if (isAttemptingRejoin || (lobbyParam && lobbyParam.toUpperCase() === lobby.id)) {
-        console.log('✅ Reconnection successful, transitioning to appropriate state');
-        setIsAttemptingRejoin(false);
-
-        // For reconnections, trust the lobby phase - player already selected avatar
-        if (lobby.gamePhase === 'lobby') {
-          setAppState('lobby');
-        } else if (lobby.gamePhase === 'avatar_selection') {
-          setAppState('avatar_selection');
-        } else if (lobby.gamePhase === 'battle' || lobby.gamePhase === 'scoring' || lobby.gamePhase === 'reveal' || lobby.gamePhase === 'discussion') {
-          setAppState('battle');
-        } else {
-          setAppState('lobby'); // Default fallback
-        }
-      }
-    });
-
-    // Handle reconnection failures
-    socket.on('reconnect_response', ({ result, message, newHost }) => {
-      const urlParams = new URLSearchParams(window.location.search);
-      const lobbyParam = urlParams.get('join');
-
-      // Clear the reconnection timeout if it exists
-      if ((window as any).__reconnectionTimeout) {
-        clearTimeout((window as any).__reconnectionTimeout);
-        (window as any).__reconnectionTimeout = null;
-      }
-
-      if (result !== 'success') {
-        console.log('❌ Reconnection failed:', message);
-        setIsAttemptingRejoin(false);
-
-        // If lobby no longer exists, clear saved lobby info
-        if (result === 'lobby_closed') {
-          LastLobbyStorage.clearLastLobby();
-          setLastLobby(null);
-          toast.error('Lobby no longer exists');
-        }
-
-        // For URL joins, proceed to manual join screen
-        if (lobbyParam && appState === 'landing') {
-          setAppState('join_lobby');
-        }
-      }
-
-      // Notify if player lost host status during disconnect
-      if (result === 'success' && newHost) {
-        toast.info(`${newHost} became the host while you were disconnected.`, {
-          duration: 5000,
-          icon: '👑'
-        });
-      }
-    });
-
-    socket.on('lobby_updated', ({ lobby }) => {
-      // DEPRECATED: This event should no longer be emitted
-      // Fine-grained events should update state incrementally
-      console.warn('Received deprecated lobby_updated event - this should not happen');
-      // Still apply update as fallback for safety
-      setLobby(lobby);
-
-      // Update currentPlayer with fresh data if they're still in the lobby
-      if (currentPlayer) {
-        const updatedPlayer = lobby.players.find(p => p.id === currentPlayer.id);
-        if (updatedPlayer) {
-          setPlayer(updatedPlayer);
-        }
-      }
-
-      // Handle Return Home functionality: transition from any battle-related phase back to lobby
-      // If game phase is 'lobby' but we're still showing battle screen, return to lobby
-      if (lobby.gamePhase === 'lobby' && appState === 'battle') {
-        console.log(`🏠 Return Home: transitioning from battle to lobby (was in ${lastGamePhase})`);
-        setAppState('lobby');
-      }
-
-      // Force BattleScreen remount on ANY significant state change to prevent DOM reconciliation errors
-      const shouldRemount = (
-        (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') || // Entering battle
-        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' &&
-         JSON.stringify(currentLobby?.currentTicket) !== JSON.stringify(lobby.currentTicket)) // Ticket changed in battle
-      );
-
-      if (shouldRemount) {
-        console.log(`🔄 COMPREHENSIVE REMOUNT: ${lastGamePhase} → ${lobby.gamePhase}, ticket change detected`);
-
-        // Step 1: Unmount immediately
-        setIsBattleUnmounting(true);
-
-        // Step 2: Remount after a brief delay with new key
-        setTimeout(() => {
-          setBattleRemountKey(prev => {
-            const newKey = prev + 1;
-            console.log(`🎮 BattleScreen comprehensive remount key: ${prev} → ${newKey}`);
-            return newKey;
-          });
-          setIsBattleUnmounting(false);
-        }, 100); // Increased delay for more reliable cleanup
-      }
-
-      // Log all phase changes for debugging
-      if (lastGamePhase !== lobby.gamePhase) {
-        console.log(`📋 Phase transition: ${lastGamePhase} → ${lobby.gamePhase}`);
-      }
-
-      // Track phase changes
-      setLastGamePhase(lobby.gamePhase);
-
-      // Note: Removed auto-transition to battle - only transition on explicit battle_started event
-    });
-
-    socket.on('avatar_selected', ({ playerId, avatar }) => {
-      // Update the player's avatar in state
-      if (currentLobby) {
-        const updatedLobby = {
-          ...currentLobby,
-          players: currentLobby.players.map(p =>
-            p.id === playerId ? { ...p, avatar, avatarClass: avatar } : p
-          )
-        };
-        setLobby(updatedLobby);
-      }
-
-      // Update currentPlayer if this is us
-      if (currentPlayer?.id === playerId) {
-        setPlayer({ ...currentPlayer, avatar, avatarClass: avatar });
-
-        // Transition to lobby if we were in avatar selection
-        if (appState === 'avatar_selection') {
-          setAppState('lobby');
-        }
-      }
-    });
-
-    socket.on('battle_started', ({ lobby, boss }) => {
-      setLobby(lobby);
-      setBoss(boss);
-      setAppState('battle');
-    });
-
-    socket.on('scores_revealed', ({ teamScores, teamConsensus }) => {
-      console.log('Team scores revealed:', { teamScores, teamConsensus });
-      // Game state will be updated via lobby_updated event
-    });
-
-    socket.on('boss_attacked', ({ playerId, damage, bossHealth }) => {
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log(`Player ${playerId} dealt ${damage} damage. Boss health: ${bossHealth}`);
-      }
-      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
-      // Update standalone boss reference
-      if (currentBoss) {
-        setBoss({ ...currentBoss, currentHealth: bossHealth });
-      }
-      // Update lobby boss so BattleScreen UI re-renders
-      if (currentLobby?.boss) {
-        setLobby({
-          ...currentLobby,
-          boss: { ...currentLobby.boss, currentHealth: bossHealth },
-        });
-      }
-    });
-
-    socket.on('boss_healed', ({ bossHealth }: { bossHealth: number }) => {
-      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
-      if (currentBoss) {
-        setBoss({ ...currentBoss, currentHealth: bossHealth });
-      }
-      if (currentLobby?.boss) {
-        setLobby({
-          ...currentLobby,
-          boss: { ...currentLobby.boss, currentHealth: bossHealth },
-        });
-      }
-    });
-
-    socket.on('boss_defeated', ({ lobby }) => {
-      console.log('Boss defeated!', lobby);
-    });
-
-    socket.on('quest_abandoned', ({ lobby }) => {
-      console.log('Quest abandoned - returning to lobby');
-      setLobby(lobby);
-      setAppState('lobby');
-    });
-
-    socket.on('game_error', ({ message }) => {
-      setError(message);
-      toast.error(message);
-      console.error('Game error:', message);
-
-      // Clear error after showing toast
-      setTimeout(() => setError(null), 100);
-
-      // If lobby not found, clear the saved last lobby info
-      if (message.toLowerCase().includes('lobby not found') || message.toLowerCase().includes('does not exist')) {
-        LastLobbyStorage.clearLastLobby();
-        setLastLobby(null);
-        setIsAttemptingRejoin(false);
-      }
-
-      // If we're trying to join a lobby and it fails, fade menu music back in
-      if (appState === 'join_lobby' && !isMuted) {
-        setTimeout(() => {
-          if (!isMenuMusicPlaying) {
-            fadeInMenuMusic();
-          }
-        }, 500);
-      }
-    });
-
-    socket.on('player_disconnected', ({ playerId }) => {
-      console.log(`Player ${playerId} disconnected`);
-    });
-
-    socket.on('host_transferred', ({ oldHostId, newHostId, newHostName, reason }) => {
-      console.log(`👑 Host transferred from ${oldHostId} to ${newHostName} (${newHostId}). Reason: ${reason}`);
-      
-      // Show notification to all players
-      if (currentPlayer?.id === newHostId) {
-        toast.success(`You are now the host! You can manage the lobby and start battles.`, {
-          duration: 5000,
-          icon: '👑'
-        });
-      } else {
-        toast.info(`${newHostName} is now the host.`, {
-          duration: 3000,
-          icon: '👑'
-        });
-      }
-    });
-
-    socket.on('boss_ring_attack', ({ bossX, bossY, projectiles }) => {
-      console.log('💀 Boss ring attack received!', projectiles.length, 'projectiles');
-      // Handle boss ring attack visual effects
-    });
-
-    socket.on('youtube_play_synced', ({ videoId, url }) => {
-      console.log('🎵 YouTube music synced:', url);
-      const { setYoutubeUrl, playYoutubeAudio } = useAudio.getState();
-      setYoutubeUrl(url);
-      playYoutubeAudio(videoId);
-    });
-
-    socket.on('youtube_stop_synced', () => {
-      console.log('🎵 YouTube music stopped (synced)');
-      const { stopYoutubeAudio } = useAudio.getState();
-      stopYoutubeAudio(); // This will now handle URL clearing internally
-    });
-
-    socket.on('score_submitted', ({ playerId, team }) => {
-      console.log(`Player ${playerId} from ${team} team submitted their score`);
-      // Lobby will be updated via lobby_updated event which triggers re-render
-    });
-
-    return () => {
-      socket.off('lobby_created');
-      socket.off('lobby_joined');
-      socket.off('lobby_sync');
-      socket.off('reconnect_response');
-      socket.off('lobby_updated');
-      socket.off('avatar_selected');
-      socket.off('battle_started');
-      socket.off('scores_revealed');
-      socket.off('boss_attacked');
-      socket.off('boss_healed');
-      socket.off('boss_defeated');
-      socket.off('quest_abandoned');
-      socket.off('game_error');
-      socket.off('player_disconnected');
-      socket.off('host_transferred');
-      socket.off('youtube_play_synced');
-      socket.off('youtube_stop_synced');
-    };
-  }, [socket, currentPlayer, currentLobby, appState, isAttemptingRejoin, setLobby, setPlayer, setBoss, setInviteLink, setError]);
-
-  const handleBackToMenu = () => {
-    // Tell server we're leaving the lobby
-    if (currentLobby) {
-      emit('leave_lobby', {});
-    }
-
-    // Clear reconnection data so Rejoin doesn't show stale lobby
-    LastLobbyStorage.clearLastLobby();
-    setLastLobby(null);
-    clearReconnectionState();
-
-    clearAll();
-    setAppState('menu');
-    window.history.replaceState(null, '', window.location.pathname);
-  };
-
-  const renderCurrentState = () => {
-    if (!isConnected) {
-      return (
-        <div className="flex items-center justify-center min-h-screen p-6">
-          <div className="retro-card text-center">
-            <div className="flex justify-center mb-4">
-              <img 
-                src="/scrum-monster-icon.png" 
-                alt="Scrum Monster" 
-                className="w-16 h-16 pixelated object-contain animate-pulse"
-                style={{ imageRendering: 'pixelated' }}
-              />
-            </div>
-            <h2 className="text-xl font-bold mb-4">Connecting to Server...</h2>
-            <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
+  if (!isConnected) {
+    return (
+      <div className="flex items-center justify-center min-h-screen p-6">
+        <div className="retro-card text-center">
+          <div className="flex justify-center mb-4">
+            <img
+              src="/scrum-monster-icon.png"
+              alt="Scrum Monster"
+              className="w-16 h-16 pixelated object-contain animate-pulse"
+              style={{ imageRendering: 'pixelated' }}
+            />
           </div>
+          <h2 className="text-xl font-bold mb-4">Connecting to Server...</h2>
+          <div className="animate-spin w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full mx-auto"></div>
         </div>
-      );
-    }
-
-    switch (appState) {
-      case 'landing':
-        return (
-          <LandingPage 
-            onStartGame={() => setAppState('menu')} 
-            onNavigate={(page) => setAppState(page)}
-          />
-        );
-
-      case 'about':
-        return (
-          <AboutPage 
-            onBackToHome={() => setAppState('landing')} 
-            onNavigate={(page) => setAppState(page)}
-          />
-        );
-
-      case 'features':
-        return (
-          <FeaturesPage 
-            onBackToHome={() => setAppState('landing')} 
-            onNavigate={(page) => setAppState(page)}
-          />
-        );
-
-      case 'pricing':
-        return (
-          <PricingPage 
-            onBackToHome={() => setAppState('landing')} 
-            onNavigate={(page) => setAppState(page)}
-          />
-        );
-
-      case 'support':
-        return (
-          <SupportPage 
-            onBackToHome={() => setAppState('landing')} 
-            onNavigate={(page) => setAppState(page)}
-          />
-        );
-
-      case 'menu':
-        return (
-          <>
-            <CinematicBackground />
-            
-            {/* Back Button */}
-            <div className="absolute top-4 left-4 z-[100]">
-              <RetroButton
-                onClick={() => {
-                  playButtonSelect();
-                  setAppState('landing');
-                }}
-                size="sm"
-                variant="secondary"
-              >
-                ← Back to Home
-              </RetroButton>
-            </div>
-            
-            <div className="flex items-center justify-center min-h-screen p-6 relative z-20">
-              <div className="retro-card text-center max-w-md w-full">
-                <div className="flex items-center justify-center gap-4 mb-2">
-                  <img 
-                    src="/scrum-monster-icon.png" 
-                    alt="Scrum Monster" 
-                    className="w-12 h-12 pixelated object-contain"
-                    style={{ imageRendering: 'pixelated' }}
-                  />
-                  <h1 className="text-4xl font-bold retro-text-glow">
-                    SCRUM MONSTERS
-                  </h1>
-                  <img 
-                    src="/scrum-monster-icon.png" 
-                    alt="Scrum Monster" 
-                    className="w-12 h-12 pixelated object-contain"
-                    style={{ imageRendering: 'pixelated' }}
-                  />
-                </div>
-                <p className="text-lg text-gray-400 mb-8">
-                  Battle Tickets in Epic JRPG Style!
-                </p>
-
-                <div className="space-y-4">
-                  {lastLobby && (
-                    <div className="mb-2">
-                      <RetroButton
-                        onClick={() => {
-                          playButtonSelect();
-                          fadeOutMenuMusic();
-                          setIsAttemptingRejoin(true);
-
-                          // Try reconnection with token first (preserves avatar)
-                          if (getReconnectToken() && reconnectToLobby()) {
-                            console.log('✅ Reconnecting with token (avatar preserved)');
-                            return;
-                          }
-
-                          // Fall back to join_lobby (new player, needs avatar selection)
-                          const savedName = PlayerNameStorage.loadName();
-                          if (savedName) {
-                            console.log('⚠️ No reconnect token, joining as new player');
-                            emit('join_lobby', {
-                              lobbyId: lastLobby.lobbyId.toUpperCase(),
-                              playerName: savedName
-                            });
-                          } else {
-                            setIsAttemptingRejoin(false);
-                            setJoinLobbyId(lastLobby.lobbyId);
-                            setAppState('join_lobby');
-                          }
-                        }}
-                        className="w-full"
-                        variant="primary"
-                      >
-                        🔄 Rejoin: {lastLobby.lobbyName}
-                      </RetroButton>
-                      <p className="text-xs text-gray-500 mt-1 text-center">
-                        Lobby Code: {lastLobby.lobbyId}
-                      </p>
-                    </div>
-                  )}
-
-                  <RetroButton
-                    onClick={() => {
-                      playButtonSelect();
-                      fadeOutMenuMusic();
-                      setAppState('create_lobby');
-                    }}
-                    className="w-full"
-                  >
-                    Create Battle Lobby
-                  </RetroButton>
-
-                  <RetroButton
-                    onClick={() => {
-                      playButtonSelect();
-                      fadeOutMenuMusic();
-                      setAppState('join_lobby');
-                    }}
-                    className="w-full"
-                    variant="secondary"
-                  >
-                    Join Battle
-                  </RetroButton>
-                </div>
-                
-                <div className="mt-8 pt-4 border-t border-gray-600 space-y-3">
-                  <RetroButton
-                    onClick={() => {
-                      playButtonSelect();
-                      switchToNextTrack();
-                    }}
-                    size="sm"
-                    variant="secondary"
-                    className="w-full"
-                  >
-                    🎵 {currentTrackName}
-                  </RetroButton>
-                  
-                  <RetroButton
-                    onClick={toggleMute}
-                    size="sm"
-                    variant="secondary"
-                  >
-                    {isMuted ? '🔇 Unmute' : '🔊 Mute'}
-                  </RetroButton>
-                </div>
-
-                {/* Credits Section */}
-                <div className="mt-6 pt-4 border-t border-gray-700 text-center">
-                  <div className="text-sm text-gray-400 mb-3">
-                    Made with ❤️ by{' '}
-                    <a 
-                      href="https://prestonfarr.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-blue-400 hover:text-blue-300 underline transition-colors"
-                    >
-                      Preston Farr
-                    </a>
-                  </div>
-                  <p className="text-xs text-gray-500 mb-3">
-                    Consider Supporting my work
-                  </p>
-                  <RetroButton
-                    onClick={() => window.open('https://donate.stripe.com/5kQ00j4Up7yf7Nj9Uee7m00', '_blank')}
-                    size="sm"
-                    variant="secondary"
-                    className="text-xs"
-                  >
-                    💳 Donate via Stripe
-                  </RetroButton>
-                </div>
-              </div>
-            </div>
-          </>
-        );
-
-      case 'create_lobby':
-        return (
-          <LobbyCreation onLobbyCreated={() => {}} />
-        );
-
-      case 'join_lobby':
-        return (
-          <LobbyJoin lobbyId={joinLobbyId} onLobbyJoined={() => {}} />
-        );
-
-      case 'room_join':
-        return (
-          <RoomJoin roomId={roomId} onLobbyCreatedOrJoined={() => {}} />
-        );
-
-      case 'avatar_selection':
-        return (
-          <Suspense fallback={<GameLoadingFallback />}>
-            <AvatarSelection />
-          </Suspense>
-        );
-
-      case 'lobby':
-        return (
-          <Suspense fallback={<GameLoadingFallback />}>
-            <Lobby />
-          </Suspense>
-        );
-
-      case 'battle':
-        // Show loading during aggressive unmount/remount to prevent DOM conflicts
-        if (isBattleUnmounting) {
-          return (
-            <div className="retro-container bg-gray-900 flex items-center justify-center h-screen">
-              <div className="text-center">
-                <div className="text-xl font-bold text-cyan-400 mb-4">⚡ Entering Battle...</div>
-                <div className="text-sm text-gray-400">Preparing combat systems...</div>
-              </div>
-            </div>
-          );
-        }
-        
-        return (
-          <Suspense fallback={<GameLoadingFallback />}>
-            <ErrorBoundary
-              fallback={
-                <div className="retro-container bg-gray-900 flex items-center justify-center h-screen">
-                  <div className="text-center">
-                    <div className="text-xl font-bold text-red-400 mb-4">⚡ Battle System Recovered</div>
-                    <div className="text-sm text-gray-400">Combat systems automatically restored</div>
-                  </div>
-                </div>
-              }
-            >
-              <BattleScreen 
-                key={`battle-${battleRemountKey}-${currentLobby?.gamePhase}-${currentLobby?.currentTicket?.id || 'none'}`} 
-              />
-            </ErrorBoundary>
-          </Suspense>
-        );
-
-      case 'character_tools':
-        return (
-          <CharacterTools onBack={() => setAppState('menu')} />
-        );
-
-      case 'boss_tools':
-        return (
-          <BossTools onBack={() => setAppState('menu')} />
-        );
-
-      default:
-        return null;
-    }
-  };
+      </div>
+    );
+  }
 
   return (
     <div className="retro-container">
-      {/* Back button (except on landing and menu) */}
-      {appState !== 'landing' && appState !== 'menu' && appState !== 'battle' && appState !== 'character_tools' && (
-        <div className="absolute top-4 left-4 z-50">
-          <RetroButton
-            onClick={handleBackToMenu}
-            size="sm"
-            variant="secondary"
-          >
-            ← Back to Menu
-          </RetroButton>
-        </div>
-      )}
-
       {/* User Menu and Mute Button (top right) - show on menu and marketing pages */}
-      {['landing', 'menu', 'about', 'features', 'pricing', 'support'].includes(appState) && (
+      {showTopRightControls && (
         <div className="absolute top-4 right-4 z-[100] flex items-center gap-2">
           <RetroButton
             onClick={toggleMute}
@@ -968,35 +213,36 @@ function App() {
         </div>
       )}
 
-      {renderCurrentState()}
-      
+      {/* Route content */}
+      <Outlet />
+
       {/* Developer Menu */}
-      <DeveloperMenu 
-        isOpen={showDeveloperMenu} 
+      <DeveloperMenu
+        isOpen={showDeveloperMenu}
         onClose={() => setShowDeveloperMenu(false)}
-        onOpenCharacterTools={() => setAppState('character_tools')}
-        onOpenBossTools={() => setAppState('boss_tools')}
+        onOpenCharacterTools={() => { /* Character tools removed from App - TODO: add to route */ }}
+        onOpenBossTools={() => { /* Boss tools removed from App - TODO: add to route */ }}
       />
-      
+
       {/* Cheat Menu (Konami Code) */}
       <CheatMenu
         isOpen={showCheatMenu}
         onClose={() => setShowCheatMenu(false)}
       />
-      
+
       {/* Reconnection Status */}
       <ReconnectionStatus />
-      
+
       {/* Connection Indicator */}
       <ConnectionIndicator />
-      
+
       {/* Reconnection Dialog */}
       <ReconnectionDialog
         isOpen={showReconnectionDialog}
         onClose={() => setShowReconnectionDialog(false)}
         onRefreshPage={() => window.location.reload()}
       />
-      
+
       {/* Toast Notifications */}
       <Toaster />
     </div>
