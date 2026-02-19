@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router';
 import { LandingPage } from '@/components/marketing/LandingPage';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { META_CONFIG } from '@/components/seo/metaConfig';
 
 /**
  * Route wrapper for landing page
@@ -17,9 +19,12 @@ export default function LandingRoute() {
   };
 
   return (
-    <LandingPage
-      onStartGame={() => navigate('/play')}
-      onNavigate={handleNavigate}
-    />
+    <>
+      <PageMeta meta={META_CONFIG.landing} />
+      <LandingPage
+        onStartGame={() => navigate('/play')}
+        onNavigate={handleNavigate}
+      />
+    </>
   );
 }

@@ -1,5 +1,7 @@
 import { useNavigate } from 'react-router';
 import { PricingPage } from '@/components/marketing/PricingPage';
+import { PageMeta } from '@/components/seo/PageMeta';
+import { META_CONFIG } from '@/components/seo/metaConfig';
 
 /**
  * Route wrapper for pricing page
@@ -17,9 +19,12 @@ export default function PricingRoute() {
   };
 
   return (
-    <PricingPage
-      onBackToHome={() => navigate('/')}
-      onNavigate={handleNavigate}
-    />
+    <>
+      <PageMeta meta={META_CONFIG.pricing} />
+      <PricingPage
+        onBackToHome={() => navigate('/')}
+        onNavigate={handleNavigate}
+      />
+    </>
   );
 }
