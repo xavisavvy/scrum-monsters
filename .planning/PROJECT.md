@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time multiplayer scrum poker estimation game with JRPG-style boss battles and RPG progression. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
+A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, and React Router v7 clean URLs with SEO.
 
 ## Core Value
 
@@ -61,29 +61,25 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Consensus ultimates with voting-speed damage scaling — v1.3
 - ✓ Session-scoped combat items (heal/shield/damage boost) — v1.3
 - ✓ Persistent lifetime statistics with session summaries — v1.3
+- ✓ Production security: rate limiting, CSRF, secure randomness, Actions permissions — v2.0
+- ✓ JRPG design system: CSS tokens, GamePanel/GameButton/StatBar/HealthBar components — v2.0
+- ✓ WCAG AA contrast compliance with axe-core E2E test — v2.0
+- ✓ Smooth phase transitions with Framer Motion AnimatePresence — v2.0
+- ✓ UI sound effects on game events — v2.0
+- ✓ Mobile-first responsive: 44px touch targets, safe-area handling, 100dvh — v2.0
+- ✓ Adaptive Three.js rendering: DPR cap, PerformanceMonitor quality scaling — v2.0
+- ✓ MobileControls virtual D-pad with pointer events — v2.0
+- ✓ Orientation support with RotateDeviceOverlay — v2.0
+- ✓ React Router v7 clean URLs with server-side SEO meta injection — v2.0
+- ✓ Open Graph/Twitter card rich previews — v2.0
+- ✓ Three.js code splitting (863KB isolated vendor chunk) — v2.0
+- ✓ Player readiness system with ARIA accessibility — v2.0
+- ✓ Idle sprite animations with Framer Motion bobbing — v2.0
+- ✓ Emote system with magic word detection (40 unit tests) — v2.0
 
 ### Active
 
-- [ ] JRPG-themed visual redesign across all game phases (post-lobby)
-- [ ] Responsive web — full sessions playable on phone browsers
-- [ ] Information architecture overhaul — progressive disclosure, reduce visual noise
-- [ ] Clear phase transitions — easy to follow game flow between states
-- [ ] Website/game module separation — proper routes for SEO, game as self-contained module
-- [ ] Lobby magic/emote system (formalize Phase 21 backlog)
-- [ ] Visual polish — professional product quality
-
-## Current Milestone: v2.0 UI Redesign & Mobile
-
-**Goal:** Redesign the entire game experience with JRPG theming, responsive layout, simplified information architecture, and proper routing/SEO — making ScrumQuest look and feel like a polished product on any device.
-
-**Target features:**
-- Full JRPG-themed visual redesign (all post-lobby phases)
-- Responsive web layout (phone-friendly without a native app)
-- Information architecture overhaul (simplify, progressive disclosure)
-- Clear phase transitions and game flow
-- Website/game module separation (SEO-friendly routes + Three.js game module)
-- Lobby magic/emote system
-- Professional visual polish
+(None — define in next milestone via `/gsd:new-milestone`)
 
 ### Out of Scope
 
@@ -93,24 +89,37 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Pay-to-win progression — violates core value
 - Microservices architecture — network latency kills real-time performance
 - Full removal of lobby_updated fallback — intentionally retained for edge cases
+- Pixel-perfect sprite animations — high complexity, diminishing returns for estimation app
+- Dynamic lobby OG images — server-side image generation complexity, low SEO impact
+- Lobby mini-games — scope creep risk, only warranted if wait times become problematic
+- Full SSR framework (Next.js) — overkill, vite-react-ssg handles marketing pages
+- Player collision physics in lobby — fun but non-essential, high implementation cost
+- Native mobile app (PWA/React Native) — responsive web sufficient for now
 
 ## Context
 
-**Current State (v2.0 in progress):**
-- ~100k lines of TypeScript/YAML across client/server/shared/k8s
+**Current State (post-v2.0):**
+- ~58,000 lines of TypeScript across client/server/shared
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager, ProgressionManager, ClassMasteryManager, AbilityManager, ComboManager, ItemManager, StatsTracker
 - EventBus-based coordination with scoped subscriptions
 - Fine-grained events with 80-95% bandwidth reduction
 - RPG progression: XP/leveling, class mastery tiers, 20 class abilities, team combos, combat items, lifetime stats
 - Boss AI: 5 unique bosses with state machines, HP phases, threat targeting, telegraphing, level scaling
+- JRPG design system: 53 CSS tokens, CVA components (GamePanel, GameButton, StatBar, HealthBar), WCAG AA verified
+- Mobile-responsive: safe-area, 44px touch targets, adaptive DPR, virtual D-pad, orientation handling
+- Modern routing: React Router v7, server-side SEO, Three.js code splitting, clean URLs
+- Production security: rate limiting, CSRF, secure randomness, GitHub Actions permissions
 - Comprehensive CI/CD: ESLint, Playwright E2E/visual/a11y, Vitest coverage
-- Security scanning: CodeQL SAST, gitleaks secrets, audit-ci, license-checker
-- Database migrations: Drizzle versioned, CI validation, ArgoCD PreSync
-- API contracts: OpenAPI 3.1, AsyncAPI 3.0, Schemathesis testing
-- Load testing: k6 HTTP/WebSocket with nightly runs
-- Deployment safety: ArgoCD rollback with environment protection and audit trail
+- Security scanning: CodeQL SAST, gitleaks, audit-ci, license-checker
+- Kubernetes deployment: Kustomize overlays, ArgoCD GitOps, cert-manager TLS
 - Observability: Prometheus metrics, Grafana dashboards, Loki logs
-- Ad-hoc lobby magic/emote system (partially complete, needs formal planning)
+
+**Known tech debt:**
+- shared/schema.ts TypeScript errors (Zod/Drizzle compatibility from Phase 20)
+- console.log debug statement in useSpriteAnimation.ts
+- og-image.png is placeholder (needs production 1200x630 branded image)
+- ARGOCD_AUTH_TOKEN secret not yet configured for production rollback workflow
+- Husky v10 deprecation warning
 
 ## Shipped Milestones
 
@@ -118,6 +127,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - **v1.1 CI/CD Infrastructure** (2026-02-02): ESLint, Playwright E2E, Kubernetes/Kustomize, ArgoCD GitOps, observability
 - **v1.2 SDLC Best Practices** (2026-02-03): PR gates, security scanning, migrations, contracts, load testing, rollback
 - **v1.3 Game Progression** (2026-02-11): XP/leveling, class mastery, boss AI, abilities, combos, items, lifetime stats
+- **v2.0 UI Redesign & Mobile** (2026-02-19): JRPG design system, mobile responsive, security hardening, routing/SEO, lobby polish
 
 ## Constraints
 
@@ -164,6 +174,17 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Consensus ultimate one-per-ticket | Prevents re-trigger on discussion phase return | ✓ Good |
 | Session-scoped items (no persistence) | Simplicity, avoids inventory management complexity | ✓ Good |
 | Event-driven stats tracking | StatsTracker subscribes to EventBus, zero coupling | ✓ Good |
+| Three-tier rate limiting (auth/profile/api) | Defense in depth, different limits per sensitivity | ✓ Good |
+| CSRF via x-csrf-token header (not form body) | SPA pattern, OAuth routes excluded (use state param) | ✓ Good |
+| crypto.randomBytes for security, Math.random for gameplay | Secure IDs without slowing game randomness | ✓ Good |
+| CSS custom property tokens over Tailwind-only | Framework-agnostic, works in plain CSS and Tailwind | ✓ Good |
+| GamePanel/GameButton as canonical, RetroCard/RetroButton as re-exports | Avoids 30-file migration, backward compatible | ✓ Good |
+| HealthBar standalone (not StatBar wrapper) | Threshold-based dynamic color is fundamentally different pattern | ✓ Good |
+| viewport-fit=cover over maximum-scale=1 | Enables safe-area CSS while preserving WCAG pinch-to-zoom | ✓ Good |
+| React Router v7 declarative mode (not framework) | No build changes, maintains existing Vite setup | ✓ Good |
+| Server-state-driven game phases (URL reflects, doesn't drive) | Prevents state machine vs URL navigation conflicts | ✓ Good |
+| Server-side meta injection for all requests | Ensures social previews work without client-side JS | ✓ Good |
+| Three.js vendor chunk isolation (863KB) | Marketing pages load fast, game bundle lazy-loaded | ✓ Good |
 
 ---
-*Last updated: 2026-02-11 after v2.0 milestone start*
+*Last updated: 2026-02-19 after v2.0 milestone*

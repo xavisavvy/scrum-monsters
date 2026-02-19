@@ -2,151 +2,61 @@
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-02-11)
+See: .planning/PROJECT.md (updated 2026-02-19)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v2.0 UI Redesign & Mobile milestone — Phase 23 complete, moving to Phase 24
+**Current focus:** Planning next milestone
 
 ## Current Position
 
-Phase: 25 of 25 (Lobby Polish & Animations) — COMPLETE
-Plan: 3 of 3 in current phase — COMPLETE
-Status: Phase 25 complete — All lobby polish and animations implemented
-Last activity: 2026-02-19 — Phase 25-03 complete: Multi-frame idle animations with sprite cycling and Framer Motion bobbing
+Phase: All phases complete (25 phases across 4 milestones)
+Plan: N/A — between milestones
+Status: v2.0 UI Redesign & Mobile shipped
+Last activity: 2026-02-19 — v2.0 milestone archived
 
-Progress: [██████████████████████████████████░░] 93% (110/119 total plans across all milestones)
+Progress: [████████████████████████████████████] 100% (102/102 total plans across all milestones)
 
 ## Performance Metrics
 
-**Velocity (v1.0-v1.3 shipped milestones):**
-- Total plans completed: 110 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 23)
-- Average duration: ~45 min (estimated from milestone timelines)
-- Total execution time: ~68 hours across 4 milestones
+**Velocity (all shipped milestones):**
+- Total plans completed: 102 (v1.0: 30, v1.2: 21, v1.3: 28, v2.0: 23)
+- Total milestones shipped: 4
 
 **By Milestone:**
 
-| Milestone | Phases | Plans | Status |
-|-----------|--------|-------|--------|
-| v1.0 Domain Separation | 1-6 | 30 | Complete |
-| v1.2 SDLC Best Practices | 7-14 | 21 | Complete |
-| v1.3 Game Progression | 15-20 | 28 | Complete |
-| v2.0 UI Redesign & Mobile | 21-25 | 23/23 | Complete (Phase 25 complete) |
-
-**Recent Trend:**
-- Last 5 phases (v1.3): 3-8 plans per phase
-- Trend: Stable complexity, consistent velocity
-
-*Updated: 2026-02-19 after completing Phase 25-03 (Lobby Idle Animations)*
-
-| Phase | Plans Completed | Tasks | Files |
-|-------|----------------|-------|-------|
-| Phase 25 P03 | 1 | 2 tasks | 2 files |
-| Phase 25 P02 | 1 | 2 tasks | 5 files |
-| Phase 25 P01 | 1 | 1 task | 1 file |
-| Phase 24 P04 | 1 | 2 tasks | 4 files |
-| Phase 24 P03 | 1 | 2 tasks | 2 files |
-| Phase 24 P02 | 1 | 2 tasks | 11 files |
-| Phase 24 P01 | 1 | 2 tasks | 13 files |
-| Phase 23 P05 | 1 | 3 tasks | 8 files |
-| Phase 23 P04 | 1 | 2 tasks | 2 files |
-| Phase 23 P03 | 1 | 2 tasks | 4 files |
-| Phase 23 P02 | 1 | 1 task | 2 files |
-| Phase 23 P01 | 1 | 2 tasks | 6 files |
-| Phase 22 P06 | 1 | 2 tasks | 5 files |
-| Phase 22 P05 | 1 | 2 tasks | 3 files |
-| Phase 22 P04 | 1 | 2 tasks | 3 files |
-| Phase 22 P03 | 1 | 2 tasks | 2 files |
-| Phase 22 P02 | 1 | 2 tasks | 4 files |
-| Phase 22 P01 | 1 | 2 tasks | 3 files |
+| Milestone | Phases | Plans | Status | Shipped |
+|-----------|--------|-------|--------|---------|
+| v1.0 Domain Separation | 1-6 | 30 | Complete | 2026-02-02 |
+| v1.2 SDLC Best Practices | 7-14 | 21 | Complete | 2026-02-03 |
+| v1.3 Game Progression | 15-20 | 28 | Complete | 2026-02-11 |
+| v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
 
 ## Accumulated Context
 
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table.
-Recent decisions affecting v2.0 milestone work:
-
-- **Theme foundation first:** Prevents rework across 20+ phase components. Design system establishes standards upfront before responsive/routing work.
-- **Mobile-first responsive:** Ensures core UX works on primary device type (mobile) before polish work.
-- **Routing parallel to UI work:** Minimal overlap, integrates at App.tsx level without touching individual components.
-- **Server state authoritative for phases:** URLs reflect game state, don't drive it. Prevents state machine vs URL navigation conflicts.
-- [Phase 21]: Top-level permissions: contents: read added to rollback.yml; job-level contents: write preserved for audit-and-notify job
-- [Phase 21-01]: authLimiter only on /api/auth/login and /api/auth/register (not OAuth routes — OAuth uses state param for CSRF); trust proxy set to 1 (single hop); lobbyId regex case-insensitive, normalizes to uppercase
-- [Phase 21-03]: Use crypto.randomBytes for all security-sensitive IDs; preserve Math.random for gameplay randomness (boss AI, damage, positioning)
-- [Phase 21-03]: generateSecureLobbyCode uses alphanumeric charset for human-readable lobby codes; generateSecureId uses 13-char hex for player/boss/projectile IDs
-- [Phase 21-02]: Read CSRF token from x-csrf-token header (not form body) — SPA clients use headers; OAuth routes excluded from CSRF (use OAuth state param); token re-fetched after login/register/logout (session may regenerate)
-- [Phase 21-05]: Security verification sweep is verification-only (no code changes); all 10 automated checks + human runtime verification confirm Phase 21 hardening is correctly wired end-to-end
-- [Phase 22-01]: tokens.css imported in App.tsx (not index.css) — retro.css was already there, maintaining consistent import pattern
-- [Phase 22-01]: --jrpg-panel-bg references var(--retro-primary) not hardcoded #16213e — single source of truth for primitive values
-- [Phase 22-02]: GamePanel/GameButton are canonical names; RetroCard/RetroButton are backward-compatible re-export aliases — re-export wrapper avoids 30-file import migration
-- [Phase 22-02]: useAudio.getState() used in GameButton (not hook) to avoid re-renders on audio state changes
-- [Phase 22-02]: accent variant maps to danger in RetroButton->GameButton variantMap for backward compatibility
-- [Phase 22-03]: HealthBar is standalone (not a StatBar wrapper) — threshold-based dynamic color is fundamentally different from StatBar's static per-variant colors
-- [Phase 22-03]: Dynamic health color applied via inline style not Tailwind class — color is computed at runtime based on HP percentage
-- [Phase 22-04]: useGameSounds maps to existing useAudio functions — no new Audio objects created; temporary mappings documented in JSDoc for future SFX replacement
-- [Phase 22-04]: PhaseTransition uses key={toPhase} for AnimatePresence — phase string as key drives declarative enter/exit without isTransitioning prop
-- [Phase 22-04]: framer-motion import from 'framer-motion' package (not 'motion/react') — v11.x uses the framer-motion package name
-- [Phase 22-05]: .retro-text-glow uses --jrpg-text-primary (#f5f5f5, 12.6:1) not --retro-glow-light — animated hue fails at many hue positions
-- [Phase 22-05]: .retro-text-glow-light uses --jrpg-text-accent (#ffd700 gold, 9.8:1) — preserves themed look while passing WCAG AA
-- [Phase 22-05]: text-shadow animated glow is WCAG-exempt per WCAG 2.1 — shadow is decorative, not the text color
-- [Phase 22-05]: e2e/accessibility.spec.ts uses direct AxeBuilder (not a11y-fixture) with color-contrast-only rule — focused JRPG theme regression test
-- [Phase 22-06]: StatBar color prop uses color ?? VARIANT_COLORS[variant] — caller overrides variant color without touching variant system
-- [Phase 22-06]: XPBar test updated to check role=progressbar ARIA attrs instead of .xp-bar-fill CSS class (implementation detail test tied to removed DOM node)
-- [Phase 23-01]: viewport-fit=cover replaces maximum-scale=1 — enables env() safe-area CSS while preserving WCAG 1.4.4 pinch-to-zoom
-- [Phase 23-01]: touch-action: manipulation in mobile.css @layer base replaces maximum-scale=1 for double-tap prevention
-- [Phase 23-01]: Global canvas touch-action: none removed — applied per-component for Three.js canvases only
-- [Phase 23-01]: fibonacci-button aspect-ratio: auto on mobile — rectangular buttons improve text readability on 4-col grid
-- [Phase 23-01]: 100dvh with 100vh fallback — fixes iOS Safari address bar collapsing visible viewport
-- [Phase 23-02]: PerformanceMonitor defaults used (250ms window, 10 iterations, 0.75 threshold) — drei defaults match intended adaptive behavior
-- [Phase 23-02]: DPR steps in 0.5 increments (1.0 to 2.0) via onDecline/onIncline for smooth visual transitions
-- [Phase 23-02]: mobile.css must use plain CSS (not @layer) when imported outside Tailwind directive scope
-- [Phase 23-03]: RotateDeviceOverlay uses local dismissed state reset on phase change — soft nudge per phase, not a one-time global dismiss
-- [Phase 23-03]: battle-sidebar CSS class added as prefix to existing className string — minimal BattleScreen change, no logic refactor
-- [Phase 23-03]: Portrait bottom-sheet uses fixed positioning so it overlays game world without reflowing game layout
-- [Phase 23-04]: MobileControls uses makeButtonHandlers factory — DRY pattern creates onPointerDown/onPointerUp/onPointerCancel per button via spread
-- [Phase 23-04]: handleMobileKeyDown replicates handleKeyDown logic (not calls it) — keyboard handler takes KeyboardEvent, mobile handler takes string code; same side effects
-- [Phase 23-04]: handleScreenClick renamed handleScreenPointerDown with pointerType guard — prevents double-fire where touch fires both pointer and click events
-- [Phase 23-04]: handleMobileKeyDown placed after findNearestTargetPlayer — TypeScript hoisting constraint with const useCallback
-- [Phase 23-05]: ReconnectionStatus uses calc(16px + env(safe-area-inset-top)) in style — Tailwind top-4 class cannot incorporate env() values
-- [Phase 23-05]: TimerDisplay uses top/left inline style with calc(1.5rem + env(safe-area-inset-*)) — overrides top-6/left-6 classes while preserving px-4/py-2 padding
-- [Phase 23-05]: pb-safe (not p-safe) on lobby screens — avoids overriding existing horizontal padding where env() resolves to 0px
-- [Phase 23-05]: PhaseContainer gets style={{ height: '100dvh' }} inline override — h-screen provides 100vh fallback
-- [Phase 24-01]: React Router v7 declarative mode (not framework mode) — no CLI changes, no build changes, maintains existing Vite setup
-- [Phase 24-01]: App.tsx becomes layout component with Outlet — routes handle specific logic, WebSocket/audio/auth stay in layout
-- [Phase 24-01]: GamePage.tsx handles all game phases at single URL — server gamePhase drives rendering, URL never changes during transitions
-- [Phase 24-01]: Legacy query params redirect via loader functions — ?join=ABC redirects to /game/ABC via redirect()
-- [Phase 24-03]: Three.js isolated into three-vendor chunk (863KB) separate from react-vendor (143KB) and socket-vendor (41KB) — manualChunks categorizes all Three.js packages
-- [Phase 24-03]: GameLoadingFallback provides user feedback during chunk download — "Loading Game..." message with spinner animation
-- [Phase 24-03]: Marketing routes verified to import no game components — only lightweight marketing components, ensures fast landing page loads
-- [Phase 24-04]: Server injects meta tags for ALL requests (not just crawlers) — ensures meta tags always present in initial HTML for social media
-- [Phase 24-04]: express.static configured with index: false — prevents bypassing SEO middleware in production
-- [Phase 24-04]: Legacy server-side redirects removed (/about, /features, etc.) — conflicted with React Router v7 clean URLs
-- [Phase 24-04]: Canvas lifecycle verified: only exists in Lobby.tsx for particle effects — mounts/unmounts with phase changes, no WebGL context leaks
-- [Phase 25-01]: Used test-after approach since implementation already exists - tests document and lock down existing behavior
-- [Phase 25-02]: GameButton variant toggle - isReady uses primary variant, not-ready uses secondary variant for visual hierarchy
-- [Phase 25-02]: Emote button visible on all devices (removed md:hidden) - action bar pattern centered at bottom
-- [Phase 25-02]: aria-pressed and aria-label satisfy WCAG SC 4.1.2; green checkmark + color change satisfy WCAG SC 1.4.1
-- [Phase 25-03]: 2-frame idle animation uses frames 0-1 from row 0 at 800ms speed (1.6s cycle) — subtle weight-shifting without looking like walking
-- [Phase 25-03]: Framer Motion bobbing (3px, 2.5s) only applies when idle (not moving/jumping/dead) — conditional rendering prevents competing animations
 
 ### Pending Todos
 
-- Lobby magic/emote system (Phase 21 backlog) — now formalized as Phase 24 (Lobby Polish)
+(None — cleared at milestone boundary)
 
 ### Blockers/Concerns
 
-**Earlier milestones (not blocking v2.0):**
+**Carried from earlier milestones:**
 - ARGOCD_AUTH_TOKEN secret and GitHub environment protection rules must be configured before rollback workflow used in production
 - Husky deprecation warning (v10 breaking change) — address when upgrading
+- shared/schema.ts TypeScript errors (Zod/Drizzle compatibility)
+- og-image.png needs production 1200x630 branded image
 
 ## Session Continuity
 
 Last session: 2026-02-19
-Stopped at: Completed 25-03-PLAN.md (Lobby idle animations)
+Stopped at: v2.0 milestone archived
 Resume file: None
 
-**Next action:** Phase 25 complete. v2.0 UI Redesign & Mobile milestone complete (23/23 plans). Ready for next milestone.
+**Next action:** Start next milestone with `/gsd:new-milestone`
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-19 after completing Phase 25-03 (Lobby Idle Animations — 2 tasks, 2 files)*
+*Last updated: 2026-02-19 after v2.0 milestone completion*
