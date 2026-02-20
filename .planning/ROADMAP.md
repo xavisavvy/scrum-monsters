@@ -103,10 +103,11 @@ Plans:
   2. Operator reads cost comparison table showing monthly costs for Replit vs Railway vs Render vs Fly.io vs AWS Lightsail at measured resource levels
   3. Operator receives clear recommendation (platform + tier) that fits $5-20/mo budget with headroom for 2x traffic growth
   4. Profiling identifies performance bottlenecks (event loop blocking, memory leaks, connection pool saturation) with actionable mitigation steps
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 29-01: TBD
+- [ ] 29-01-PLAN.md — Profiling infrastructure (MetricsCollector + run-profile orchestrator with cold start/steady state/teardown scenarios)
+- [ ] 29-02-PLAN.md — Cost analyzer, report generator, and CLI entrypoint for hosting analysis markdown
 
 ## Progress
 
@@ -122,7 +123,7 @@ Phases execute in numeric order: 26 → 27 → 28 → 29
 | 26. Tech Debt Cleanup | v3.0 | 2/2 | Complete | 2026-02-19 |
 | 27. Database Foundation | v3.0 | 2/2 | Complete | 2026-02-19 |
 | 28. Production Reliability | v3.0 | 2/2 | Complete | 2026-02-19 |
-| 29. Hosting Analysis | v3.0 | 0/0 | Not started | - |
+| 29. Hosting Analysis | v3.0 | 0/2 | Planned | - |
 
 **Total: 5 milestones (4 shipped, 1 in progress), 29 phases (28 shipped, 1 planned), 108 plans shipped**
 
