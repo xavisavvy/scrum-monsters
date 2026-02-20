@@ -92,7 +92,15 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(None — planning next milestone)
+## Current Milestone: v3.1 Tech Debt Cleanup
+
+**Goal:** Resolve all carried-forward tech debt items for a clean codebase baseline
+
+**Target features:**
+- Configure ARGOCD_AUTH_TOKEN for production rollback workflow
+- Migrate console.log statements to Pino structured logging (ESLint no-console → error)
+- Remove unused zod-validation-error package
+- Implement server_shutdown client handler for graceful disconnect UX
 
 ### Out of Scope
 

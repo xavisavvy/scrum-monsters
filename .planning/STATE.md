@@ -5,15 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Planning next milestone
+**Current focus:** v3.1 Tech Debt Cleanup
 
 ## Current Position
 
-Phase: 29 of 29 (all shipped)
-Status: v3.0 milestone complete
-Last activity: 2026-02-20 — v3.0 Production Optimization shipped
-
-Progress: [████████████████████████████████████████████] 100% (111 plans shipped)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-02-20 — Milestone v3.1 started
 
 ## Performance Metrics
 
@@ -43,7 +42,7 @@ None.
 
 ### Blockers/Concerns
 
-**Carried forward:**
+**Being addressed in v3.1:**
 - ARGOCD_AUTH_TOKEN secret configuration for production rollback workflow
 - ESLint no-console at warn level (100+ operational console.log statements)
 - zod-validation-error peer dependency mismatch (unused package)
@@ -52,11 +51,11 @@ None.
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: v3.0 milestone archived and shipped
+Stopped at: Starting v3.1 milestone
 Resume file: None
 
-**Next action:** `/gsd:new-milestone` — start next milestone cycle
+**Next action:** Define requirements for v3.1
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-20 after v3.0 milestone completion*
+*Last updated: 2026-02-20 after v3.1 milestone start*
