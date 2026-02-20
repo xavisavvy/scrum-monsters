@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, and React Router v7 clean URLs with SEO.
+A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, React Router v7 clean URLs with SEO, and production-ready PostgreSQL persistence with graceful lifecycle management.
 
 ## Core Value
 
@@ -76,17 +76,23 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Player readiness system with ARIA accessibility — v2.0
 - ✓ Idle sprite animations with Framer Motion bobbing — v2.0
 - ✓ Emote system with magic word detection (40 unit tests) — v2.0
+- ✓ Zod 4.x upgrade resolving shared/schema.ts TypeScript errors — v3.0
+- ✓ Production OG image (1200x630 branded) replacing placeholder — v3.0
+- ✓ Husky v10 deprecation warning resolved — v3.0
+- ✓ Debug console.log removed from sprite code — v3.0
+- ✓ PostgreSQL persistence with connection pooling and session store — v3.0
+- ✓ Zod environment validation with fail-fast startup — v3.0
+- ✓ Graceful shutdown with WebSocket client notification — v3.0
+- ✓ Split Kubernetes health probes (livez/readyz) with DB connectivity — v3.0
+- ✓ Global error handlers (unhandledRejection/uncaughtException) — v3.0
+- ✓ Structured startup config logging (DB type, pool size, env) — v3.0
+- ✓ Resource profiling infrastructure with MetricsCollector — v3.0
+- ✓ Hosting cost comparison across 5 platforms (9 tiers) — v3.0
+- ✓ Data-driven hosting recommendation (AWS Lightsail $5/mo) — v3.0
 
 ### Active
 
-- [ ] Resource profiling to determine minimum viable RAM/CPU/bandwidth specs
-- [ ] Hosting cost comparison (Replit tiers vs AWS/Railway/Fly.io/Render)
-- [ ] Hosting optimization or migration based on findings
-- [ ] PostgreSQL database setup with persistent storage
-- [ ] Fix shared/schema.ts TypeScript errors (Zod/Drizzle compatibility)
-- [ ] Replace placeholder og-image.png with production 1200x630 branded image
-- [ ] Fix Husky v10 deprecation warning
-- [ ] Remove console.log debug statement in useSpriteAnimation.ts
+(None — planning next milestone)
 
 ### Out of Scope
 
@@ -102,20 +108,13 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Full SSR framework (Next.js) — overkill, vite-react-ssg handles marketing pages
 - Player collision physics in lobby — fun but non-essential, high implementation cost
 - Native mobile app (PWA/React Native) — responsive web sufficient for now
-
-## Current Milestone: v3.0 Production Optimization
-
-**Goal:** Make ScrumQuest production-solid — optimize hosting costs, add persistent PostgreSQL, and resolve all known tech debt.
-
-**Target features:**
-- Resource profiling and hosting cost optimization (Replit vs alternatives)
-- Real PostgreSQL database with persistent data
-- Tech debt cleanup (schema TS errors, OG image, Husky, console.log)
+- Actual hosting migration — v3.0 profiled and recommended; migration is separate effort
+- Database read replicas — premature optimization for current scale
 
 ## Context
 
-**Current State (post-v2.0):**
-- ~58,000 lines of TypeScript across client/server/shared
+**Current State (post-v3.0):**
+- ~60,300 lines of TypeScript across client/server/shared
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager, ProgressionManager, ClassMasteryManager, AbilityManager, ComboManager, ItemManager, StatsTracker
 - EventBus-based coordination with scoped subscriptions
 - Fine-grained events with 80-95% bandwidth reduction
@@ -125,22 +124,25 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Mobile-responsive: safe-area, 44px touch targets, adaptive DPR, virtual D-pad, orientation handling
 - Modern routing: React Router v7, server-side SEO, Three.js code splitting, clean URLs
 - Production security: rate limiting, CSRF, secure randomness, GitHub Actions permissions
-- Comprehensive CI/CD: ESLint, Playwright E2E/visual/a11y, Vitest coverage
+- Production database: PostgreSQL with connection pooling, Zod env validation, fail-fast startup
+- Server lifecycle: graceful shutdown with client notification, split health probes (livez/readyz), global error handlers
+- Comprehensive CI/CD: ESLint, Playwright E2E/visual/a11y, Vitest coverage (615 tests)
 - Security scanning: CodeQL SAST, gitleaks, audit-ci, license-checker
 - Kubernetes deployment: Kustomize overlays, ArgoCD GitOps, cert-manager TLS
-- Observability: Prometheus metrics, Grafana dashboards, Loki logs
+- Observability: Prometheus metrics, Grafana dashboards, Loki logs, startup config logging
+- Hosting analysis: AWS Lightsail $5/mo recommended (58% headroom for 2x growth)
 
 **Deployment:**
 - Currently live on Replit
+- Recommended migration: AWS Lightsail $5/mo ($240/yr savings vs Replit)
 - Budget: $5-20/mo
-- Scale: unpredictable, needs to handle growth
+- Scale: handles 50 concurrent users, 58% headroom for 2x growth
 
-**Known tech debt (targeted for v3.0):**
-- shared/schema.ts TypeScript errors (Zod/Drizzle compatibility from Phase 20)
-- console.log debug statement in useSpriteAnimation.ts
-- og-image.png is placeholder (needs production 1200x630 branded image)
+**Known tech debt:**
 - ARGOCD_AUTH_TOKEN secret not yet configured for production rollback workflow
-- Husky v10 deprecation warning
+- ESLint no-console set to warn (100+ operational console.log statements)
+- zod-validation-error peer dependency mismatch (unused package retained)
+- server_shutdown client handler not implemented (existing disconnect logic works)
 
 ## Shipped Milestones
 
@@ -149,6 +151,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - **v1.2 SDLC Best Practices** (2026-02-03): PR gates, security scanning, migrations, contracts, load testing, rollback
 - **v1.3 Game Progression** (2026-02-11): XP/leveling, class mastery, boss AI, abilities, combos, items, lifetime stats
 - **v2.0 UI Redesign & Mobile** (2026-02-19): JRPG design system, mobile responsive, security hardening, routing/SEO, lobby polish
+- **v3.0 Production Optimization** (2026-02-20): PostgreSQL persistence, graceful shutdown, health probes, hosting analysis
 
 ## Constraints
 
@@ -206,6 +209,16 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Server-state-driven game phases (URL reflects, doesn't drive) | Prevents state machine vs URL navigation conflicts | ✓ Good |
 | Server-side meta injection for all requests | Ensures social previews work without client-side JS | ✓ Good |
 | Three.js vendor chunk isolation (863KB) | Marketing pages load fast, game bundle lazy-loaded | ✓ Good |
+| Zod 4.x upgrade over staying on 3.x | Resolves drizzle-zod peer dependency, fixes TypeScript errors | ✓ Good |
+| Zod refinement for DATABASE_URL warning | Preserves MemStorage fallback while being loud about missing DB | ✓ Good |
+| instanceof PgStorage over env var check | More reliable type detection, leverages storage abstraction | ✓ Good |
+| Fail-fast on DB connectivity failure | Exit code 1 prevents limping along with broken database | ✓ Good |
+| 15-min session pruning interval | Balances database load with timely cleanup (industry standard) | ✓ Good |
+| Split health probes (livez/readyz) | Prevents restart loops from transient DB issues | ✓ Good |
+| 3s health check timeout | Balances responsiveness with network variability | ✓ Good |
+| ESLint no-console at warn (not error) | Avoids breaking build with 100+ operational console.log | ✓ Good |
+| AWS Lightsail $5/mo recommendation | 58% headroom for 2x growth, $240/yr savings vs Replit | ✓ Good |
+| Synthetic profiling over live load test | Deterministic values ensure reproducible benchmarks | ✓ Good |
 
 ---
-*Last updated: 2026-02-19 after v3.0 milestone start*
+*Last updated: 2026-02-20 after v3.0 milestone*

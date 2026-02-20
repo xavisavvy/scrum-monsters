@@ -144,3 +144,31 @@
 
 ---
 
+
+## v3.0 Production Optimization (Shipped: 2026-02-20)
+
+**Delivered:** Production-ready infrastructure with PostgreSQL persistence, graceful shutdown, split health probes, and data-driven hosting recommendation — making ScrumQuest deployable with confidence.
+
+**Phases completed:** 26-29 (4 phases, 9 plans)
+
+**Key accomplishments:**
+- Upgraded Zod 3.x to 4.3.6 resolving TypeScript compilation errors, replaced placeholder OG image, fixed Husky deprecation, removed debug console.log
+- Production PostgreSQL with connection pooling (configurable max/idle/connect), Zod environment validation with fail-fast startup, session persistence with 15-min pruning
+- Graceful shutdown with WebSocket client notification and 30s timeout, global unhandled rejection/exception handlers, structured startup config logging
+- Split Kubernetes health probes (livez/readyz) with 3s database connectivity timeout, backward-compatible /api/health endpoint
+- Resource profiling infrastructure: MetricsCollector with process/event loop/Prometheus sampling, synthetic profiling for reproducible benchmarks
+- Hosting cost comparison across 5 platforms (9 tiers), data-driven recommendation: AWS Lightsail $5/mo with 58% headroom for 2x growth
+
+**Stats:**
+- 46 files modified
+- +7,544 / -70 lines of TypeScript
+- 4 phases, 9 plans
+- 34 commits
+- 2 days from start to ship (2026-02-19 → 2026-02-20)
+
+**Git range:** `feat(26-02)` → `feat(29-03)`
+
+**What's next:** New milestone (feature work, hosting migration, or scale testing)
+
+---
+
