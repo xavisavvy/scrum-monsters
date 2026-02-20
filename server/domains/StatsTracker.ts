@@ -16,6 +16,7 @@ import type { ScopedEventBus } from '../events';
 import type { IStorage } from '../storage';
 import type { SessionSummary, StatsSessionCompletePayload } from '../../shared/statsTypes';
 import { createEmptySessionSummary } from '../../shared/statsTypes';
+import { dbLogger } from '../logger.js';
 import type {
   EstimationVoteCastPayload,
   EstimationFullConsensusReachedPayload,
@@ -270,7 +271,7 @@ export class StatsTracker {
             consensusRate,
             averageVotingSpeedMs: summary.averageVotingSpeedMs,
           }).catch((err) => {
-            console.error(`Failed to persist computed stats for player ${playerId}:`, err);
+            dbLogger.error({ err, playerId }, 'Failed to persist computed stats');
           });
         }
       }
@@ -371,7 +372,7 @@ export class StatsTracker {
       await this.storage.incrementUserStat(userId, stat as any, increment);
     } catch (err) {
       // Log but don't fail — persistence is best-effort
-      console.error(`Failed to persist stat ${stat} for player ${playerId}:`, err);
+      dbLogger.error({ err, playerId, stat }, 'Failed to persist stat');
     }
   }
 }

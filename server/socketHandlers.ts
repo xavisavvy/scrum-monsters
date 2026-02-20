@@ -3,6 +3,7 @@
 
 import { Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
+import { socketLogger } from './logger.js';
 
 export function setupTeamCompetitionHandlers(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
@@ -10,7 +11,7 @@ export function setupTeamCompetitionHandlers(
 ) {
   socket.on('player_performance', (data: { playerId: string; team: string; estimationTime: number; score: number; ticketId?: string }) => {
     try {
-      console.log(`Performance data received from ${data.playerId}:`, data);
+      socketLogger.debug({ playerId: data.playerId, data }, 'Performance data received');
       
       // Store performance data for later team stats calculation
       gameStateManager.trackPlayerPerformance(data.playerId, {
@@ -21,7 +22,7 @@ export function setupTeamCompetitionHandlers(
       });
       
     } catch (error) {
-      console.error('Error handling player_performance:', error);
+      socketLogger.error({ err: error }, 'Error handling player_performance');
       socket.emit('game_error', { message: 'Failed to track performance data' });
     }
   });

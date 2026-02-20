@@ -19,6 +19,7 @@ import type {
   EstimationFullConsensusReachedPayload,
   CombatPlayerRevivedPayload,
 } from '../events/eventTypes';
+import { dbLogger } from '../logger.js';
 
 /**
  * Dependencies required by ProgressionManager
@@ -356,7 +357,7 @@ export class ProgressionManager {
       await this.storage.updateUserProfile(userId, { totalXP, currentLevel: level });
     } catch (err) {
       // Log but don't fail — persistence is best-effort
-      console.error(`Failed to persist XP for player ${playerId}:`, err);
+      dbLogger.error({ err, playerId }, 'Failed to persist XP');
     }
   }
 
@@ -374,7 +375,7 @@ export class ProgressionManager {
         this.initializePlayer(lobbyId, playerId, profile.totalXP);
       }
     } catch (err) {
-      console.error(`Failed to load XP for player ${playerId}:`, err);
+      dbLogger.error({ err, playerId }, 'Failed to load XP');
     }
   }
 

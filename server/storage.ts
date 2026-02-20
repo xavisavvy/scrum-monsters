@@ -1,6 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { dbLogger } from './logger.js';
 import {
   users,
   oauthAccounts,
@@ -636,14 +637,14 @@ export class PgStorage implements IStorage {
 // Create storage instance based on environment
 function createStorage(): IStorage {
   if (process.env.DATABASE_URL) {
-    console.log("📦 Using PostgreSQL storage");
+    dbLogger.info('Using PostgreSQL storage');
     return new PgStorage(process.env.DATABASE_URL, {
       max: parseInt(process.env.DB_POOL_MAX || "10", 10),
       idle_timeout: parseInt(process.env.DB_POOL_IDLE_TIMEOUT || "60", 10),
       connect_timeout: parseInt(process.env.DB_POOL_CONNECT_TIMEOUT || "10", 10),
     });
   }
-  console.log("📦 Using in-memory storage (no DATABASE_URL set)");
+  dbLogger.info('Using in-memory storage (no DATABASE_URL set)');
   return new MemStorage();
 }
 

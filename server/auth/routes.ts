@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from "express";
 import passport from "passport";
 import bcrypt from "bcryptjs";
 import { storage } from "../storage.js";
+import { authLogger } from '../logger.js';
 
 const router = Router();
 
@@ -80,7 +81,7 @@ router.post("/register", async (req: Request, res: Response) => {
       },
       (err) => {
         if (err) {
-          console.error("Login error after registration:", err);
+          authLogger.error({ err }, 'Login error after registration');
           return res.status(500).json({ error: "Registration successful but login failed" });
         }
         res.status(201).json({
@@ -95,7 +96,7 @@ router.post("/register", async (req: Request, res: Response) => {
       }
     );
   } catch (err) {
-    console.error("Registration error:", err);
+    authLogger.error({ err }, 'Registration error');
     res.status(500).json({ error: "Registration failed" });
   }
 });
@@ -104,7 +105,7 @@ router.post("/register", async (req: Request, res: Response) => {
 router.post("/login", (req: Request, res: Response, next: NextFunction) => {
   passport.authenticate("local", (err: Error | null, user: Express.User | false, info: { message: string }) => {
     if (err) {
-      console.error("Login error:", err);
+      authLogger.error({ err }, 'Login error');
       return res.status(500).json({ error: "Login failed" });
     }
 
@@ -114,7 +115,7 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
 
     req.login(user, (loginErr) => {
       if (loginErr) {
-        console.error("Session login error:", loginErr);
+        authLogger.error({ err: loginErr }, 'Session login error');
         return res.status(500).json({ error: "Login failed" });
       }
       res.json({
@@ -134,12 +135,12 @@ router.post("/login", (req: Request, res: Response, next: NextFunction) => {
 router.post("/logout", (req: Request, res: Response) => {
   req.logout((err) => {
     if (err) {
-      console.error("Logout error:", err);
+      authLogger.error({ err }, 'Logout error');
       return res.status(500).json({ error: "Logout failed" });
     }
     req.session.destroy((sessionErr) => {
       if (sessionErr) {
-        console.error("Session destroy error:", sessionErr);
+        authLogger.error({ err: sessionErr }, 'Session destroy error');
       }
       res.clearCookie("connect.sid");
       res.json({ success: true });

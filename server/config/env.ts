@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { httpLogger } from '../logger.js';
 
 // Environment variable schema
 const envSchema = z.object({
@@ -14,7 +15,7 @@ const envSchema = z.object({
 }).refine((data) => {
   // Warn if DATABASE_URL is missing in production
   if (data.NODE_ENV === "production" && !data.DATABASE_URL) {
-    console.warn("⚠️  WARNING: DATABASE_URL is not set in production environment. Using in-memory storage (data will be lost on restart).");
+    httpLogger.warn('DATABASE_URL not set in production - using in-memory storage');
   }
   return true;
 });
@@ -32,7 +33,7 @@ export function validateEnv(): Env {
       const formatted = error.issues
         .map((err: z.ZodIssue) => `  - ${err.path.join(".")}: ${err.message}`)
         .join("\n");
-      console.error(`Environment validation failed:\n${formatted}`);
+      httpLogger.error({ errors: formatted }, 'Environment validation failed');
       process.exit(1);
     }
     throw error;

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { storage } from "../storage.js";
 import { isAuthenticated } from "./routes.js";
+import { authLogger } from '../logger.js';
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.get("/profile", isAuthenticated, async (req: Request, res: Response) => {
 
     res.json({ profile });
   } catch (err) {
-    console.error("Error fetching profile:", err);
+    authLogger.error({ err }, 'Error fetching profile');
     res.status(500).json({ error: "Failed to fetch profile" });
   }
 });
@@ -67,7 +68,7 @@ router.put("/profile", isAuthenticated, async (req: Request, res: Response) => {
 
     res.json({ profile });
   } catch (err) {
-    console.error("Error updating profile:", err);
+    authLogger.error({ err }, 'Error updating profile');
     res.status(500).json({ error: "Failed to update profile" });
   }
 });
@@ -86,7 +87,7 @@ router.get("/stats", isAuthenticated, async (req: Request, res: Response) => {
 
     res.json({ stats });
   } catch (err) {
-    console.error("Error fetching stats:", err);
+    authLogger.error({ err }, 'Error fetching stats');
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
@@ -101,7 +102,7 @@ router.get("/history", isAuthenticated, async (req: Request, res: Response) => {
 
     res.json({ history });
   } catch (err) {
-    console.error("Error fetching history:", err);
+    authLogger.error({ err }, 'Error fetching history');
     res.status(500).json({ error: "Failed to fetch history" });
   }
 });
@@ -121,7 +122,7 @@ router.get("/accounts", isAuthenticated, async (req: Request, res: Response) => 
 
     res.json({ accounts: safeAccounts });
   } catch (err) {
-    console.error("Error fetching accounts:", err);
+    authLogger.error({ err }, 'Error fetching accounts');
     res.status(500).json({ error: "Failed to fetch accounts" });
   }
 });
@@ -152,7 +153,7 @@ router.put("/display-name", isAuthenticated, async (req: Request, res: Response)
       },
     });
   } catch (err) {
-    console.error("Error updating display name:", err);
+    authLogger.error({ err }, 'Error updating display name');
     res.status(500).json({ error: "Failed to update display name" });
   }
 });

@@ -14,6 +14,7 @@
 
 import { createHmac, randomBytes } from 'crypto';
 import { ScopedEventBus } from '../events';
+import { gameLogger } from '../logger.js';
 import {
   Lobby,
   Player,
@@ -89,7 +90,7 @@ export class SessionManager {
       process.env.SESSION_SECRET || randomBytes(32).toString('hex');
 
     if (!process.env.SESSION_SECRET) {
-      console.warn(
+      gameLogger.warn(
         'SESSION_SECRET not set in environment. Using random secret (not suitable for production with multiple instances).'
       );
     }
@@ -217,15 +218,15 @@ export class SessionManager {
     let preservedAvatar: AvatarClass | undefined;
     let preservedTeam: TeamType | undefined;
     for (const stalePlayer of stalePlayersToRemove) {
-      console.log(`♻️ Removing stale disconnected player ${stalePlayer.name} (${stalePlayer.id}) before rejoin`);
+      gameLogger.info({ playerName: stalePlayer.name, playerId: stalePlayer.id }, 'Removing stale disconnected player before rejoin');
       // Preserve avatar and team selection from the old player
       if (stalePlayer.avatarClass && stalePlayer.avatarClass !== 'warrior') {
         preservedAvatar = stalePlayer.avatarClass;
-        console.log(`  📦 Preserving avatar: ${preservedAvatar}`);
+        gameLogger.debug({ preservedAvatar }, 'Preserving avatar');
       }
       if (stalePlayer.team) {
         preservedTeam = stalePlayer.team;
-        console.log(`  📦 Preserving team: ${preservedTeam}`);
+        gameLogger.debug({ preservedTeam }, 'Preserving team');
       }
       // Clean up the old player
       this.disconnectedPlayers.delete(stalePlayer.id);
