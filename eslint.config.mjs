@@ -183,7 +183,7 @@ export default [
       ],
 
       // General rules
-      "no-console": ["warn", { "allow": ["warn", "error"] }],
+      "no-console": ["error", { "allow": ["warn", "error"] }],
       "no-debugger": "warn",
       "no-unused-vars": "off", // Use TypeScript's version
       "prefer-const": "warn",
@@ -283,6 +283,7 @@ export default [
     rules: {
       "@typescript-eslint/no-explicit-any": "off",
       "@typescript-eslint/no-non-null-assertion": "off",
+      "no-console": "off",
     },
   },
 
@@ -297,6 +298,7 @@ export default [
       },
     },
     rules: {
+      "no-console": "off",
       "no-unused-vars": [
         "warn",
         {
@@ -305,6 +307,14 @@ export default [
           caughtErrorsIgnorePattern: "^_",
         },
       ],
+    },
+  },
+
+  // Profiling and utility scripts
+  {
+    files: ["tests/profiling/**/*.ts", "scripts/**/*.ts", "scripts/**/*.js"],
+    rules: {
+      "no-console": "off",
     },
   },
 ];
