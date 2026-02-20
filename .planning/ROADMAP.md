@@ -85,12 +85,11 @@ Plans:
   2. Client displays user-facing notification on server_shutdown WebSocket event before disconnect
   3. Production ArgoCD rollback workflow has valid ARGOCD_AUTH_TOKEN secret configured and tested
   4. All three changes deployed and verified in development environment
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 31-01: TBD
-- [ ] 31-02: TBD
-- [ ] 31-03: TBD
+- [ ] 31-01-PLAN.md — Remove zod-validation-error dependency and implement server_shutdown client handler
+- [ ] 31-02-PLAN.md — Configure ARGOCD_AUTH_TOKEN GitHub repository secret
 
 ## Progress
 
@@ -102,10 +101,10 @@ Plans:
 | 21-25 | v2.0 | 23/23 | Complete | 2026-02-19 |
 | 26-29 | v3.0 | 9/9 | Complete | 2026-02-20 |
 | 30 | v3.1 | 2/2 | Complete | 2026-02-20 |
-| 31 | v3.1 | 0/3 | Not started | - |
+| 31 | v3.1 | 0/2 | Not started | - |
 
 **Total: 6 milestones shipped, 30 phases complete, 113 plans**
-**Current: v3.1 Tech Debt Cleanup — 2/5 plans**
+**Current: v3.1 Tech Debt Cleanup — 2/4 plans**
 
 ---
 *Roadmap created: 2026-02-11*
