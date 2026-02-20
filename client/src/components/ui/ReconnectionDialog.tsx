@@ -16,7 +16,6 @@ export function ReconnectionDialog({ isOpen, onClose, onRefreshPage }: Reconnect
   if (!isOpen) return null;
 
   const handleRetry = () => {
-    console.log('🔄 Manual retry from dialog');
     manualRetry();
   };
 

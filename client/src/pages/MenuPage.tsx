@@ -52,14 +52,12 @@ export default function MenuPage() {
 
     // Try reconnection with token first (preserves avatar)
     if (getReconnectToken() && reconnectToLobby()) {
-      console.log('✅ Reconnecting with token (avatar preserved)');
       return;
     }
 
     // Fall back to join_lobby (new player, needs avatar selection)
     const savedName = PlayerNameStorage.loadName();
     if (savedName) {
-      console.log('⚠️ No reconnect token, joining as new player');
       emit('join_lobby', {
         lobbyId: lastLobby.lobbyId.toUpperCase(),
         playerName: savedName

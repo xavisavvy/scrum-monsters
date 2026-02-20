@@ -1193,23 +1193,16 @@ export function Lobby() {
   };
 
   const saveLobbyName = () => {
-    console.log('saveLobbyName called');
-    console.log('  editedLobbyName:', editedLobbyName);
-    console.log('  currentLobby?.name:', currentLobby?.name);
 
     const trimmedName = editedLobbyName.trim();
-    console.log('  trimmedName:', trimmedName);
 
     if (!trimmedName) {
-      console.log('  Empty name - skipping emit');
       setIsEditingLobbyName(false);
       return;
     }
     if (trimmedName !== currentLobby?.name) {
-      console.log('  Name changed - emitting update_lobby_name');
       emit('update_lobby_name', { name: trimmedName });
     } else {
-      console.log('  Name unchanged - skipping emit');
     }
     setIsEditingLobbyName(false);
   };

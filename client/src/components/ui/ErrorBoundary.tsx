@@ -26,11 +26,9 @@ export class ErrorBoundary extends Component<Props, State> {
     
     // For DOM manipulation errors during phase transitions, we'll reset the error immediately
     if (error.message.includes('insertBefore') || error.message.includes('DOM') || error.message.includes('Failed to execute')) {
-      console.log('🔄 DOM reconciliation error detected, auto-recovering immediately...');
       // Immediate recovery for DOM errors
       setTimeout(() => {
         this.setState({ hasError: false, error: undefined });
-        console.log('✅ DOM error recovery completed');
       }, 10); // Very fast recovery
     }
   }

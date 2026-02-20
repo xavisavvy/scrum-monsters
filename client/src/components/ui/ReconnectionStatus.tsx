@@ -76,7 +76,6 @@ export function ReconnectionStatus() {
   const { icon, title, message, variant, showRetry } = getStatusContent();
 
   const handleRetry = () => {
-    console.log('🔄 Manual retry triggered by user');
     manualRetry();
   };
 

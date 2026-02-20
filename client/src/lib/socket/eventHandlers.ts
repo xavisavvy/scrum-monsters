@@ -625,7 +625,6 @@ export function setupEventHandlers(socket: Socket): void {
     const { handleFullStateRefresh } = useEventSync.getState();
     const { setLobby } = useGameState.getState();
 
-    console.log('[EventHandlers] Received full state refresh');
     handleFullStateRefresh(data.lobby, data.seq);
     setLobby(data.lobby);
   });
@@ -633,9 +632,6 @@ export function setupEventHandlers(socket: Socket): void {
   socket.on('system:missed_events', (data: any) => {
     const { handleMissedEventsReplay } = useEventSync.getState();
 
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.log(`[EventHandlers] Received ${data.events.length} missed events`);
-    }
     handleMissedEventsReplay(data.events);
   });
 }
@@ -690,8 +686,4 @@ export function teardownEventHandlers(socket: Socket): void {
   // System events
   socket.off('system:full_state');
   socket.off('system:missed_events');
-
-  if (import.meta.env.DEV && localStorage.getItem('debug')) {
-    console.log('[EventHandlers] All event handlers removed');
-  }
 }

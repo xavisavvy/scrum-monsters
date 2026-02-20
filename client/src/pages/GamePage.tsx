@@ -69,7 +69,6 @@ export default function GamePage() {
     // Try reconnection with token first (preserves avatar)
     const token = getReconnectToken();
     if (token && reconnectToLobby()) {
-      console.log('✅ Attempting reconnection with token for', lobbyId);
       // Connection will be handled via lobby_sync event
       return;
     }
@@ -77,7 +76,6 @@ export default function GamePage() {
     // Fall back to join_lobby (new player, needs avatar selection)
     const savedName = PlayerNameStorage.loadName();
     if (savedName) {
-      console.log('⚠️ No reconnect token, joining as new player');
       fadeOutMenuMusic();
       emit('join_lobby', {
         lobbyId: lobbyId.toUpperCase(),
@@ -115,7 +113,6 @@ export default function GamePage() {
     });
 
     socket.on('lobby_sync', ({ lobby, yourPlayer }) => {
-      console.log('📥 GamePage received lobby sync from reconnection');
       setLobby(lobby);
       setPlayer(yourPlayer);
       setIsAttemptingJoin(false);
@@ -124,7 +121,6 @@ export default function GamePage() {
 
     socket.on('reconnect_response', ({ result, message, newHost }) => {
       if (result !== 'success') {
-        console.log('❌ Reconnection failed:', message);
         setIsAttemptingJoin(false);
 
         if (result === 'lobby_closed') {
@@ -160,7 +156,6 @@ export default function GamePage() {
       );
 
       if (shouldRemount) {
-        console.log(`🔄 REMOUNT: ${lastGamePhase} → ${lobby.gamePhase}`);
         setIsBattleUnmounting(true);
         setTimeout(() => {
           setBattleRemountKey(prev => prev + 1);
@@ -219,7 +214,6 @@ export default function GamePage() {
     });
 
     socket.on('quest_abandoned', ({ lobby }) => {
-      console.log('Quest abandoned - returning to lobby');
       setLobby(lobby);
     });
 
