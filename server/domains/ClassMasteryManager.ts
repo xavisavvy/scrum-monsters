@@ -26,6 +26,7 @@ import type {
   CombatPlayerRevivedPayload,
 } from '../events/eventTypes';
 import type { IStorage } from '../storage';
+import { dbLogger } from '../logger.js';
 
 /**
  * Dependencies required by ClassMasteryManager
@@ -284,7 +285,7 @@ export class ClassMasteryManager {
         );
       }
     } catch (err) {
-      console.error(`Failed to load class mastery for player ${playerId}:`, err);
+      dbLogger.error({ err, playerId }, 'Failed to load class mastery');
     }
   }
 
@@ -365,7 +366,7 @@ export class ClassMasteryManager {
       await this.storage.updateClassMastery(userId, avatarClass, classXP, currentTier);
     } catch (err) {
       // Log but don't fail — persistence is best-effort
-      console.error(`Failed to persist class XP for player ${playerId}, class ${avatarClass}:`, err);
+      dbLogger.error({ err, playerId, avatarClass }, 'Failed to persist class XP');
     }
   }
 }

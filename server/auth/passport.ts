@@ -5,6 +5,7 @@ import { Strategy as GitHubStrategy } from "passport-github2";
 import bcrypt from "bcryptjs";
 import { storage } from "../storage.js";
 import type { User } from "@shared/schema";
+import { authLogger } from '../logger.js';
 
 // Extend Express.User to include our User type
 declare global {
@@ -92,7 +93,7 @@ export function configurePassport() {
   // Google OAuth Strategy
   if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     const callbackURL = getCallbackURL("google");
-    console.log(`🔐 Google OAuth configured with callback: ${callbackURL}`);
+    authLogger.info({ callbackURL }, 'Google OAuth configured');
 
     passport.use(
       new GoogleStrategy(
@@ -125,13 +126,13 @@ export function configurePassport() {
       )
     );
   } else {
-    console.log("⚠️  Google OAuth not configured (missing GOOGLE_CLIENT_ID/SECRET)");
+    authLogger.warn('Google OAuth not configured - missing GOOGLE_CLIENT_ID/SECRET');
   }
 
   // GitHub OAuth Strategy
   if (process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET) {
     const callbackURL = getCallbackURL("github");
-    console.log(`🔐 GitHub OAuth configured with callback: ${callbackURL}`);
+    authLogger.info({ callbackURL }, 'GitHub OAuth configured');
 
     passport.use(
       new GitHubStrategy(
@@ -173,7 +174,7 @@ export function configurePassport() {
       )
     );
   } else {
-    console.log("⚠️  GitHub OAuth not configured (missing GITHUB_CLIENT_ID/SECRET)");
+    authLogger.warn('GitHub OAuth not configured - missing GITHUB_CLIENT_ID/SECRET');
   }
 
   return passport;
