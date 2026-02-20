@@ -70,11 +70,11 @@ See `.planning/milestones/v3.0-ROADMAP.md`
   2. ESLint no-console rule upgraded from warn to error with clean build
   3. Test files retain console.log for debugging (excluded from no-console rule)
   4. CI pipeline passes with zero no-console violations
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 30-01: TBD
-- [ ] 30-02: TBD
+- [ ] 30-01-PLAN.md — Migrate all server-side console.log/warn/error to Pino structured logging
+- [ ] 30-02-PLAN.md — Remove client-side console.log and upgrade ESLint no-console to error
 
 #### Phase 31: Dependency & Lifecycle Polish
 **Goal**: Remove unused dependencies, configure ArgoCD auth, implement server shutdown client handler
