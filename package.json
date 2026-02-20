@@ -21,6 +21,8 @@
     "test:load:http:full": "k6 run tests/load/http/average-load.test.js --out json=results-http-load.json",
     "test:load:ws": "k6 run tests/load/websocket/game-flow.test.js --out json=results-ws-game.json",
     "test:load:idle": "k6 run tests/load/websocket/idle-connection.test.js --out json=results-idle.json",
+    "profile": "tsx tests/profiling/run-profile.ts",
+    "profile:report": "tsx tests/profiling/generate-report.ts",
     "generate:api-types": "openapi-typescript specs/openapi.yaml -o shared/api-types.generated.ts",
     "lint:api-spec": "spectral lint specs/openapi.yaml --ruleset specs/.spectral.yaml",
     "lint:asyncapi-spec": "spectral lint specs/asyncapi.yaml --ruleset specs/.spectral.yaml",
