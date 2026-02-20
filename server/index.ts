@@ -1,7 +1,10 @@
+// Import logger first for error handlers
+import logger, { httpLogger } from "./logger.js";
+
 // Global error handlers — safety net for unhandled errors
 // MUST be at top of file before any other code
 process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
-  console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  httpLogger.fatal({ reason, promise }, 'Unhandled Rejection');
   // In production, exit to let container orchestrator restart
   // In development, keep running for debugging
   if (process.env.NODE_ENV === 'production') {
@@ -10,7 +13,7 @@ process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) =>
 });
 
 process.on('uncaughtException', (error: Error) => {
-  console.error('Uncaught Exception:', error);
+  httpLogger.fatal({ err: error }, 'Uncaught Exception');
   // Always exit on uncaught exception — process state is unreliable
   process.exit(1);
 });
@@ -25,7 +28,7 @@ import { configurePassport } from "./auth/passport.js";
 import { validateEnv } from "./config/env.js";
 import { checkDatabaseHealth } from "./db/health.js";
 import { storage, PgStorage } from "./storage.js";
-import logger from "./logger.js";
+import { dbLogger } from "./logger.js";
 
 // Validate environment variables (fail-fast on misconfiguration)
 const env = validateEnv();
@@ -51,11 +54,11 @@ if (process.env.DATABASE_URL) {
     createTableIfMissing: true,
     pruneSessionInterval: 900,    // Prune expired sessions every 15 minutes (seconds)
     ttl: 7 * 24 * 60 * 60,       // 7-day session lifetime (seconds) — matches cookie maxAge
-    errorLog: console.error.bind(console),
+    errorLog: dbLogger.error.bind(dbLogger),
   });
-  console.log("Using PostgreSQL session store (pruning every 15 min, 7-day TTL)");
+  dbLogger.info('Using PostgreSQL session store (pruning every 15 min, 7-day TTL)');
 } else {
-  console.log("Using in-memory session store (no DATABASE_URL set)");
+  httpLogger.info('Using in-memory session store (no DATABASE_URL set)');
 }
 
 // Create session middleware (exported for Socket.IO integration)
@@ -117,9 +120,9 @@ app.use((req, res, next) => {
   // Initialize Redis (optional - app works without it)
   const redisAvailable = await initializeRedis();
   if (redisAvailable) {
-    console.log('📦 Redis caching enabled');
+    dbLogger.info('Redis caching enabled');
   } else {
-    console.log('📦 Running without Redis cache (in-memory only)');
+    dbLogger.info('Running without Redis cache (in-memory only)');
   }
 
   // Verify database connectivity (fail-fast if DATABASE_URL set but DB unreachable)
@@ -135,10 +138,11 @@ app.use((req, res, next) => {
   server.headersTimeout = isReplitDeployment ? 96000 : 66000; // Slightly higher than keepAliveTimeout
   server.requestTimeout = 120000; // 2 minutes for long-running requests
 
-  console.log(`⚙️  Server timeouts configured:`);
-  console.log(`   - Keep-alive: ${server.keepAliveTimeout}ms`);
-  console.log(`   - Headers: ${server.headersTimeout}ms`);
-  console.log(`   - Request: ${server.requestTimeout}ms`);
+  httpLogger.info({
+    keepAlive: server.keepAliveTimeout,
+    headers: server.headersTimeout,
+    request: server.requestTimeout
+  }, 'Server timeouts configured');
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
@@ -183,11 +187,11 @@ app.use((req, res, next) => {
 
   // Graceful shutdown handling
   const gracefulShutdown = async (signal: string) => {
-    console.log(`\n${signal} received, shutting down gracefully...`);
+    httpLogger.info({ signal }, 'Graceful shutdown initiated');
 
     // Force exit after 30s to prevent hanging (Kubernetes SIGKILL at 30s)
     const forceExitTimeout = setTimeout(() => {
-      console.error('Shutdown timeout exceeded, forcing exit');
+      httpLogger.error('Shutdown timeout exceeded, forcing exit');
       process.exit(1);
     }, 30000);
     forceExitTimeout.unref(); // Don't keep event loop alive
@@ -214,9 +218,9 @@ app.use((req, res, next) => {
 
       // 4. Close database connections
       if (storage instanceof PgStorage) {
-        console.log("Closing database connections...");
+        dbLogger.info('Closing database connections');
         await storage.close();
-        console.log("Database connections closed");
+        dbLogger.info('Database connections closed');
       }
 
       // 5. Close HTTP server (stops accepting new requests)
@@ -225,10 +229,10 @@ app.use((req, res, next) => {
       });
 
       clearTimeout(forceExitTimeout);
-      console.log('Server closed');
+      httpLogger.info('Server closed');
       process.exit(0);
     } catch (error) {
-      console.error('Error during shutdown:', error);
+      httpLogger.error({ err: error }, 'Error during shutdown');
       process.exit(1);
     }
   };

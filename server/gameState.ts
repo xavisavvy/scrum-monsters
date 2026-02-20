@@ -2,6 +2,7 @@ import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, 
 import { TeamStatsManager } from './teamStatsManager.js';
 import { createHash, createHmac, randomBytes } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
+import { gameLogger } from './logger.js';
 
 interface RevivalSession {
   reviverId: string;
@@ -163,7 +164,7 @@ class GameStateManager {
     for (const playerId of expiredPlayers) {
       const disconnectedPlayer = this.disconnectedPlayers.get(playerId);
       if (disconnectedPlayer) {
-        console.log(`🔌 Player ${disconnectedPlayer.playerName} (${playerId}) grace period expired - removing permanently`);
+        gameLogger.info({ playerId, playerName: disconnectedPlayer.playerName }, 'Player grace period expired - removing permanently');
         this.disconnectedPlayers.delete(playerId);
         
         // Remove from lobby permanently
@@ -207,13 +208,13 @@ class GameStateManager {
     try {
       const token = this.reconnectTokens.get(tokenString);
       if (!token) {
-        console.log('🔑 Token not found in active tokens');
+        gameLogger.debug('Token not found in active tokens');
         return null;
       }
 
       // Check expiry
       if (Date.now() > token.expiresAt) {
-        console.log('🔑 Token expired');
+        gameLogger.debug('Token expired');
         this.reconnectTokens.delete(tokenString);
         return null;
       }
@@ -223,14 +224,14 @@ class GameStateManager {
       const expectedSignature = createHmac('sha256', this.TOKEN_SECRET).update(JSON.stringify(tokenData)).digest('hex');
       
       if (signature !== expectedSignature) {
-        console.log('🔑 Token signature invalid');
+        gameLogger.debug('Token signature invalid');
         this.reconnectTokens.delete(tokenString);
         return null;
       }
 
       return token;
     } catch (error) {
-      console.log('🔑 Token validation error:', error);
+      gameLogger.debug({ err: error }, 'Token validation error');
       return null;
     }
   }
@@ -276,7 +277,7 @@ class GameStateManager {
     // Set new host flag
     newHost.isHost = true;
 
-    console.log(`👑 Host transferred from ${oldHost?.name || 'unknown'} (${oldHostId}) to ${newHost.name} (${newHost.id})`);
+    gameLogger.info({ oldHostId, oldHostName: oldHost?.name, newHostId: newHost.id, newHostName: newHost.name }, 'Host transferred');
 
     return {
       newHostId: newHost.id,
@@ -335,7 +336,7 @@ class GameStateManager {
     // Store disconnected player but keep them in the lobby temporarily
     this.disconnectedPlayers.set(playerId, disconnectedPlayer);
 
-    console.log(`🔌 Player ${player.name} (${playerId}) disconnected - grace period: ${this.DISCONNECT_GRACE_PERIOD / 60000} minutes`);
+    gameLogger.info({ playerId, playerName: player.name, gracePeriodMinutes: this.DISCONNECT_GRACE_PERIOD / 60000 }, 'Player disconnected with grace period');
 
     // If this was the host, immediately transfer host privileges
     let hostTransfer: { oldHostId: string; newHostId: string; newHostName: string } | undefined;
@@ -420,7 +421,7 @@ class GameStateManager {
       }
     };
 
-    console.log(`🔌 Player ${token.playerName} (${token.playerId}) successfully reconnected to lobby ${token.lobbyId}`);
+    gameLogger.info({ playerId: token.playerId, playerName: token.playerName, lobbyId: token.lobbyId }, 'Player successfully reconnected');
 
     // Check if this player lost host status during disconnect
     let newHostName: string | undefined;
@@ -428,7 +429,7 @@ class GameStateManager {
       const currentHost = lobby.players.find(p => p.id === lobby.hostId);
       if (currentHost) {
         newHostName = currentHost.name;
-        console.log(`ℹ️ Player ${token.playerName} reconnected but is no longer host. Current host: ${currentHost.name}`);
+        gameLogger.info({ playerName: token.playerName, currentHostName: currentHost.name }, 'Player reconnected but is no longer host');
       }
     }
 
@@ -455,7 +456,7 @@ class GameStateManager {
     }
 
     if (expiredTokens.length > 0) {
-      console.log(`🔑 Cleaned up ${expiredTokens.length} expired reconnect tokens`);
+      gameLogger.debug({ expiredTokenCount: expiredTokens.length }, 'Cleaned up expired reconnect tokens');
     }
   }
 
@@ -893,23 +894,23 @@ class GameStateManager {
   }
 
   returnToLobby(playerId: string): Lobby | null {
-    console.log(`🏠 GameState: returnToLobby called for player ${playerId}`);
+    gameLogger.debug({ playerId }, 'returnToLobby called');
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) {
-      console.log('❌ No lobby found for player');
+      gameLogger.debug('No lobby found for player');
       return null;
     }
 
     const player = lobby.players.find(p => p.id === playerId);
     if (!player?.isHost) {
-      console.log('❌ Player is not host, cannot return to lobby');
+      gameLogger.debug('Player is not host, cannot return to lobby');
       return null;
     }
 
-    console.log(`🏠 Current lobby phase: ${lobby.gamePhase}`);
+    gameLogger.debug({ gamePhase: lobby.gamePhase }, 'Current lobby phase');
     // Only allow return to lobby from victory or game_over phase
     if (lobby.gamePhase !== 'victory' && lobby.gamePhase !== 'game_over') {
-      console.log('❌ Can only return to lobby from victory or game_over phase');
+      gameLogger.debug('Can only return to lobby from victory or game_over phase');
       return null;
     }
 
@@ -972,13 +973,13 @@ class GameStateManager {
       targetState.isDowned = true;
     }
 
-    console.log(`👁️ Spectator ${attacker.name} attacked ${target.name} for ${actualDamage} damage (modifier: ${modifier})`);
+    gameLogger.debug({ attackerName: attacker.name, targetName: target.name, damage: actualDamage, modifier }, 'Spectator attacked player');
 
     // Check for game over
     const gameOver = this.checkGameOver(lobby);
     if (gameOver) {
       lobby.gamePhase = 'game_over';
-      console.log('💀 GAME OVER - All developers/QA are downed!');
+      gameLogger.info('Game over - all developers/QA are downed');
     }
 
     return { lobby, targetHealth: targetState.hp, gameOver, modifier };
@@ -1008,7 +1009,7 @@ class GameStateManager {
       // If player was downed and healed, revive them
       if (playerState.isDowned && playerState.hp > 0) {
         playerState.isDowned = false;
-        console.log(`✨ Cleric ${healer.name} revived ${player.name}!`);
+        gameLogger.info({ healerName: healer.name, playerName: player.name }, 'Cleric revived player');
       }
 
       if (playerState.hp > oldHp) {
@@ -1016,7 +1017,7 @@ class GameStateManager {
       }
     }
 
-    console.log(`💫 Cleric ${healer.name} healed ${healedPlayers.length} party members!`);
+    gameLogger.info({ healerName: healer.name, healedCount: healedPlayers.length }, 'Cleric healed party');
 
     return { lobby, healedPlayers };
   }
@@ -1073,7 +1074,7 @@ class GameStateManager {
     const gameOver = this.checkGameOver(lobby);
     if (gameOver) {
       lobby.gamePhase = 'game_over';
-      console.log('💀 GAME OVER - All developers/QA are downed!');
+      gameLogger.info('Game over - all developers/QA are downed');
     }
 
     return { lobby, targetHealth: targetState.hp, gameOver };
@@ -1176,7 +1177,7 @@ class GameStateManager {
     // Final scaled health (minimum 1x base health)
     const scaledHealth = Math.round(baseHealth * participantScaling);
     
-    console.log(`🎯 Boss health scaling: ${activeParticipants} participants → ${participantScaling.toFixed(2)}x multiplier → ${scaledHealth} HP`);
+    gameLogger.debug({ activeParticipants, participantScaling, scaledHealth }, 'Boss health scaling calculated');
     
     // Available boss types with simplified sprite names
     const availableBosses = [
@@ -1284,14 +1285,14 @@ class GameStateManager {
 
     // Strategy 1: All players submitted (original logic)
     if (submittedPlayers.length === nonSpectatorPlayers.length && nonSpectatorPlayers.length > 0) {
-      console.log(`✅ All ${nonSpectatorPlayers.length} players voted - advancing to reveal`);
+      gameLogger.info({ playerCount: nonSpectatorPlayers.length }, 'All players voted - advancing to reveal');
       return true;
     }
 
     // Strategy 2: All connected players submitted (exclude disconnected)
     if (connectedPlayers.length > 0 && submittedPlayers.length === connectedPlayers.length) {
       const disconnectedCount = nonSpectatorPlayers.length - connectedPlayers.length;
-      console.log(`✅ All ${connectedPlayers.length} connected players voted (${disconnectedCount} disconnected) - advancing to reveal`);
+      gameLogger.info({ connectedCount: connectedPlayers.length, disconnectedCount }, 'All connected players voted - advancing to reveal');
       return true;
     }
 
@@ -1303,7 +1304,7 @@ class GameStateManager {
     if (timeElapsed >= minVotingTime && connectedPlayers.length >= 2) {
       const votePercentage = submittedPlayers.length / connectedPlayers.length;
       if (votePercentage >= 0.75) { // 75% threshold
-        console.log(`✅ Majority vote reached: ${submittedPlayers.length}/${connectedPlayers.length} (${Math.round(votePercentage * 100)}%) after ${Math.round(timeElapsed/1000)}s`);
+        gameLogger.info({ voted: submittedPlayers.length, total: connectedPlayers.length, percentage: Math.round(votePercentage * 100), seconds: Math.round(timeElapsed/1000) }, 'Majority vote reached');
         return true;
       }
     }
@@ -1338,7 +1339,7 @@ class GameStateManager {
     }, votingTimeoutMs);
     this.votingTimeouts.set(lobbyId, timeout);
 
-    console.log(`⏱️ Voting timeout started for lobby ${lobbyId} - 3 minutes until auto-advance`);
+    gameLogger.debug({ lobbyId }, 'Voting timeout started - 3 minutes until auto-advance');
   }
 
   // Handle voting timeout - force progression with available votes
@@ -1350,7 +1351,7 @@ class GameStateManager {
     const submittedPlayers = nonSpectatorPlayers.filter(p => p.hasSubmittedScore);
     const connectedPlayers = nonSpectatorPlayers.filter(p => !this.isPlayerDisconnected(p.id));
 
-    console.log(`⏰ Voting timeout reached for lobby ${lobbyId}: ${submittedPlayers.length}/${connectedPlayers.length} voted`);
+    gameLogger.info({ lobbyId, voted: submittedPlayers.length, total: connectedPlayers.length }, 'Voting timeout reached');
 
     // Force advancement if at least one person voted
     if (submittedPlayers.length > 0) {
@@ -1367,9 +1368,9 @@ class GameStateManager {
         this.io.to(lobbyId).emit('lobby_updated', { lobby });
       }
 
-      console.log(`✅ Auto-advanced to reveal phase with ${submittedPlayers.length} votes`);
+      gameLogger.info({ voteCount: submittedPlayers.length }, 'Auto-advanced to reveal phase');
     } else {
-      console.log(`❌ No votes submitted - keeping in battle phase`);
+      gameLogger.info('No votes submitted - keeping in battle phase');
     }
   }
 
@@ -1406,7 +1407,7 @@ class GameStateManager {
     lobby.gamePhase = 'reveal';
 
     const message = `Host forced voting progression with ${submittedPlayers.length}/${connectedPlayers.length} votes`;
-    console.log(`🚀 ${message} in lobby ${lobby.id}`);
+    gameLogger.info({ lobbyId: lobby.id, message }, 'Voting progression forced');
 
     return { lobby, message };
   }
@@ -1732,12 +1733,12 @@ class GameStateManager {
       const healAmount = 1 + modifier;
       lobby.boss.currentHealth = Math.min(lobby.boss.maxHealth, lobby.boss.currentHealth + healAmount);
       healedBoss = true;
-      console.log(`👁️ Spectator ${player.name} healed boss for ${healAmount} (modifier: ${modifier})`);
+      gameLogger.debug({ playerName: player.name, healAmount, modifier }, 'Spectator healed boss');
     } else if (player.team === 'developers' || player.team === 'qa') {
       // Developers and QA deal 15 - modifier damage (minimum 1)
       actualDamage = Math.max(1, 15 - modifier);
       lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - actualDamage);
-      console.log(`⚔️ ${player.team} ${player.name} dealt ${actualDamage} damage (modifier: ${modifier})`);
+      gameLogger.debug({ team: player.team, playerName: player.name, damage: actualDamage, modifier }, 'Player dealt damage to boss');
     }
 
     // Check if boss is defeated when health reaches 0
