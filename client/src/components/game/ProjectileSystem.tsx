@@ -11,7 +11,6 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
 
   useEffect(() => {
     if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.log('🎯 ProjectileSystem received projectiles:', projectiles);
     }
     setAnimatedProjectiles(projectiles);
   }, [projectiles]);

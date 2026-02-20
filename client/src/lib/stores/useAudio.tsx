@@ -164,8 +164,8 @@ export const useAudio = create<AudioState>((set, get) => ({
         // Unmuting - resume the audio if it was playing
         const wasPlaying = !menuMusic.paused || menuMusic.currentTime > 0;
         if (wasPlaying) {
-          menuMusic.play().catch(error => {
-            console.log("Menu music resume prevented:", error);
+          menuMusic.play().catch(() => {
+            // Menu music play prevented - non-critical, silently ignore
           });
           set({ isMenuMusicPlaying: true });
         }
@@ -177,15 +177,13 @@ export const useAudio = create<AudioState>((set, get) => ({
       if (newMutedState) {
         // Muting - pause the lobby music
         lobbyMusic.pause();
-        console.log("🎵 Lobby music muted");
       } else {
         // Unmuting - resume the lobby music if it was playing
         const wasPlaying = !lobbyMusic.paused || lobbyMusic.currentTime > 0;
         if (wasPlaying) {
-          lobbyMusic.play().catch(error => {
-            console.log("Lobby music resume prevented:", error);
+          lobbyMusic.play().catch(() => {
+            // Lobby music play prevented - non-critical, silently ignore
           });
-          console.log("🎵 Lobby music unmuted");
         }
       }
     }
@@ -197,8 +195,8 @@ export const useAudio = create<AudioState>((set, get) => ({
         walkingSound.pause();
       } else {
         // Unmuting - resume the walking sound
-        walkingSound.play().catch(error => {
-          console.log("Walking sound resume prevented:", error);
+        walkingSound.play().catch(() => {
+          // Walking sound play prevented - non-critical, silently ignore
         });
       }
     }
@@ -208,9 +206,6 @@ export const useAudio = create<AudioState>((set, get) => ({
 
     // Persist to localStorage
     saveMuteSettings(newMutedState, isBossMusicMuted);
-
-    // Log the change
-    console.log(`Sound ${newMutedState ? 'muted' : 'unmuted'}`);
   },
   
   playHit: () => {
@@ -218,17 +213,14 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (hitSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.log("Hit sound skipped (muted)");
-        }
         return;
       }
       
       // Clone the sound to allow overlapping playback
       const soundClone = hitSound.cloneNode() as HTMLAudioElement;
       soundClone.volume = 0.3;
-      soundClone.play().catch(error => {
-        console.log("Hit sound play prevented:", error);
+      soundClone.play().catch(() => {
+        // Hit sound play prevented - non-critical, silently ignore
       });
     }
   },
@@ -238,13 +230,12 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (successSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        console.log("Success sound skipped (muted)");
         return;
       }
       
       successSound.currentTime = 0;
-      successSound.play().catch(error => {
-        console.log("Success sound play prevented:", error);
+      successSound.play().catch(() => {
+        // Success sound play prevented - non-critical, silently ignore
       });
     }
   },
@@ -254,15 +245,14 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (buttonSelectSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        console.log("Button select sound skipped (muted)");
         return;
       }
       
       // Clone the sound to allow overlapping playback
       const soundClone = buttonSelectSound.cloneNode() as HTMLAudioElement;
       soundClone.volume = 0.5;
-      soundClone.play().catch(error => {
-        console.log("Button select sound play prevented:", error);
+      soundClone.play().catch(() => {
+        // Button select sound play prevented - non-critical, silently ignore
       });
     }
   },
@@ -272,17 +262,14 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (explosionSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.log("Explosion sound skipped (muted)");
-        }
         return;
       }
 
       // Clone the sound to allow overlapping playback
       const soundClone = explosionSound.cloneNode() as HTMLAudioElement;
       soundClone.volume = 0.6;
-      soundClone.play().catch(error => {
-        console.log("Explosion sound play prevented:", error);
+      soundClone.play().catch(() => {
+        // Explosion sound play prevented - non-critical, silently ignore
       });
     }
   },
@@ -292,15 +279,14 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (levelUpSound) {
       // If sound is muted, don't play anything
       if (isMuted) {
-        console.log("Level-up sound skipped (muted)");
         return;
       }
 
       // Clone the sound to allow overlapping playback
       const soundClone = levelUpSound.cloneNode() as HTMLAudioElement;
       soundClone.volume = 0.7;
-      soundClone.play().catch(error => {
-        console.log("Level-up sound play prevented:", error);
+      soundClone.play().catch(() => {
+        // Level-up sound play prevented - non-critical, silently ignore
       });
     }
   },
@@ -313,9 +299,8 @@ export const useAudio = create<AudioState>((set, get) => ({
       walkingSound.currentTime = 0;
       walkingSound.play().then(() => {
         set({ isWalkingSoundPlaying: true });
-        console.log("Walking sound started (looping)");
-      }).catch(error => {
-        console.log("Walking sound play prevented:", error);
+      }).catch(() => {
+        // Walking sound play prevented - non-critical, silently ignore
       });
     }
   },
@@ -326,7 +311,6 @@ export const useAudio = create<AudioState>((set, get) => ({
       walkingSound.pause();
       walkingSound.currentTime = 0;
       set({ isWalkingSoundPlaying: false });
-      console.log("Walking sound stopped");
     }
   },
   
@@ -335,8 +319,8 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (menuMusic && !isMuted) {
       menuMusic.loop = true;
       menuMusic.volume = 0.4;
-      menuMusic.play().catch(error => {
-        console.log("Menu music play prevented:", error);
+      menuMusic.play().catch(() => {
+        // Menu music play prevented - non-critical, silently ignore
       });
       set({ isMenuMusicPlaying: true });
     }
@@ -367,10 +351,10 @@ export const useAudio = create<AudioState>((set, get) => ({
             set({ fadeTimer: null });
           }
         }, 50); // Update every 50ms for smooth fade
-        
+
         set({ fadeTimer: fadeInterval });
-      }).catch(error => {
-        console.log("Menu music play prevented:", error);
+      }).catch(() => {
+        // Menu music play prevented - non-critical, silently ignore
         set({ fadeTimer: null });
       });
     }
@@ -476,8 +460,8 @@ export const useAudio = create<AudioState>((set, get) => ({
             }, 50);
             
             set({ fadeTimer: fadeInInterval });
-          }).catch(error => {
-            console.log("Track switch play prevented:", error);
+          }).catch(() => {
+            // Track switch play prevented - non-critical, silently ignore
             set({ isTransitioning: false, fadeTimer: null });
           });
         }
@@ -502,8 +486,6 @@ export const useAudio = create<AudioState>((set, get) => ({
         isTransitioning: false
       });
     }
-    
-    console.log(`Switched to track: ${nextTrack.name}`);
   },
   
   getCurrentTrackName: () => {
@@ -536,8 +518,8 @@ export const useAudio = create<AudioState>((set, get) => ({
           get().fadeInBossMusic();
         } else if (isBossMusicPlaying) {
           // Just resume if it was already playing
-          bossMusic.play().catch((error: any) => {
-            console.log("Boss music resume prevented:", error);
+          bossMusic.play().catch(() => {
+            // Boss music play prevented - non-critical, silently ignore
           });
           set({ isBossMusicPlaying: true });
         }
@@ -548,8 +530,6 @@ export const useAudio = create<AudioState>((set, get) => ({
 
     // Persist to localStorage
     saveMuteSettings(isMuted, newMutedState);
-
-    console.log(`Boss music ${newMutedState ? 'muted' : 'unmuted'}`);
   },
 
   playBossMusic: () => {
@@ -557,8 +537,8 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (bossMusic && !isBossMusicMuted) {
       bossMusic.loop = true;
       bossMusic.volume = 0.6;
-      bossMusic.play().catch((error: any) => {
-        console.log("Boss music play prevented:", error);
+      bossMusic.play().catch(() => {
+        // Boss music play prevented - non-critical, silently ignore
       });
       set({ isBossMusicPlaying: true });
     }
@@ -566,16 +546,14 @@ export const useAudio = create<AudioState>((set, get) => ({
 
   fadeInBossMusic: () => {
     const { bossMusic, isBossMusicMuted, isYoutubeAudioActive, isBossMusicPlaying, fadeTimer } = get();
-    
+
     // Don't play boss music if YouTube music is already active
     if (isYoutubeAudioActive) {
-      console.log("Boss music skipped - YouTube audio is active");
       return;
     }
-    
+
     // Don't restart if already playing
     if (isBossMusicPlaying && bossMusic && !bossMusic.paused) {
-      console.log("Boss music already playing - skipping restart");
       return;
     }
     
@@ -588,8 +566,8 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (bossMusic && !isBossMusicMuted) {
       bossMusic.volume = 0;
       bossMusic.loop = true;
-      bossMusic.play().catch((error: any) => {
-        console.log("Boss music fade in prevented:", error);
+      bossMusic.play().catch(() => {
+        // Boss music fade in prevented - non-critical, silently ignore
         set({ isBossMusicPlaying: false, fadeTimer: null });
         return;
       });
@@ -642,7 +620,6 @@ export const useAudio = create<AudioState>((set, get) => ({
   fadeOutBossMusicSlowly: () => {
     const { bossMusic } = get();
     if (bossMusic && !bossMusic.paused) {
-      console.log('🎵 Fading out boss music slowly over 5 seconds...');
       const startVolume = bossMusic.volume;
       const fadeOutInterval = setInterval(() => {
         if (bossMusic.volume > 0.01) {
@@ -653,7 +630,6 @@ export const useAudio = create<AudioState>((set, get) => ({
           bossMusic.volume = 0.6; // Reset volume for next play
           set({ isBossMusicPlaying: false });
           clearInterval(fadeOutInterval);
-          console.log('🎵 Boss music fade-out completed');
         }
       }, 50); // 50ms * 100 steps = 5000ms = 5 seconds
     }
@@ -689,13 +665,11 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (bossMusic && isBossMusicPlaying) {
       bossMusic.pause();
       set({ isBossMusicPlaying: false });
-      console.log("🎵 Boss music paused for YouTube");
     }
-    
+
     if (youtubePlayer && videoId) {
       youtubePlayer.loadVideoById(videoId);
       set({ isYoutubeAudioActive: true });
-      console.log("🎵 YouTube music started:", videoId);
     }
   },
 
@@ -704,10 +678,9 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (backgroundMusic && !isMuted) {
       backgroundMusic.loop = true;
       backgroundMusic.volume = 0.3;
-      backgroundMusic.play().catch((error: any) => {
-        console.log("Background music play prevented:", error);
+      backgroundMusic.play().catch(() => {
+        // Background music play prevented - non-critical, silently ignore
       });
-      console.log("🎵 Background music started");
     }
   },
 
@@ -716,7 +689,6 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (backgroundMusic) {
       backgroundMusic.pause();
       backgroundMusic.currentTime = 0;
-      console.log("🎵 Background music stopped");
     }
   },
 
@@ -725,10 +697,9 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (lobbyMusic && !isMuted) {
       lobbyMusic.loop = true;
       lobbyMusic.volume = 0.4;
-      lobbyMusic.play().catch((error: any) => {
-        console.log("Lobby music play prevented:", error);
+      lobbyMusic.play().catch(() => {
+        // Lobby music play prevented - non-critical, silently ignore
       });
-      console.log("🎵 Lobby music started");
     }
   },
 
@@ -737,7 +708,6 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (lobbyMusic) {
       lobbyMusic.pause();
       lobbyMusic.currentTime = 0;
-      console.log("🎵 Lobby music stopped");
     }
   },
 
@@ -746,8 +716,7 @@ export const useAudio = create<AudioState>((set, get) => ({
     if (youtubePlayer) {
       youtubePlayer.stopVideo();
       set({ isYoutubeAudioActive: false, youtubeUrl: '' }); // Clear URL here
-      console.log("🎵 YouTube music stopped");
-      
+
       // Resume boss music only if we're in battle and music isn't muted
       const { isBossMusicMuted, isBossMusicPlaying } = get();
       
@@ -756,9 +725,8 @@ export const useAudio = create<AudioState>((set, get) => ({
       const isInBattle = !!currentLobby;
       
       if (bossMusic && !isBossMusicMuted && !isBossMusicPlaying && isInBattle) {
-        console.log("🎵 Resuming boss music after YouTube stop");
-        bossMusic.play().catch((error: any) => {
-          console.log("Boss music resume prevented:", error);
+        bossMusic.play().catch(() => {
+          // Boss music play prevented - non-critical, silently ignore
         });
         set({ isBossMusicPlaying: true });
       }

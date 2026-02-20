@@ -19,7 +19,6 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
 
   const handleCheatAction = (cheatName: string, action: () => void) => {
     playButtonSelect();
-    console.log(`🎮 CHEAT ACTIVATED: ${cheatName}`);
     action();
     
     // Tattle-tell emote when using cheat (if in lobby or battle)

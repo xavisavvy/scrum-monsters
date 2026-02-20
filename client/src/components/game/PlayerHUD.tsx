@@ -26,7 +26,6 @@ export function PlayerHUD() {
   };
 
   const handleReturnHome = () => {
-    console.log('🏠 Return Home button clicked - emitting return_to_lobby event');
     emit('return_to_lobby');
   };
 

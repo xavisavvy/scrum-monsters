@@ -28,7 +28,6 @@ export class LobbySettingsStorage {
         // Fallback to cookies
         this.saveToCookies(settings);
       }
-      console.log('💾 Lobby settings saved to persistent storage');
     } catch (error) {
       console.warn('Failed to save lobby settings:', error);
     }
@@ -43,7 +42,6 @@ export class LobbySettingsStorage {
         const stored = localStorage.getItem(STORAGE_KEY);
         if (stored) {
           const parsed = JSON.parse(stored);
-          console.log('📂 Loaded lobby settings from localStorage');
           return this.validateSettings(parsed);
         }
       } else {
@@ -67,7 +65,6 @@ export class LobbySettingsStorage {
       } else {
         this.clearCookies();
       }
-      console.log('🗑️ Lobby settings cleared from persistent storage');
     } catch (error) {
       console.warn('Failed to clear lobby settings:', error);
     }
@@ -186,7 +183,6 @@ export class LobbySettingsStorage {
       console.warn('Failed to parse settings from cookies:', error);
     }
 
-    console.log('📂 Loaded lobby settings from cookies');
     return this.validateSettings(settings);
   }
 

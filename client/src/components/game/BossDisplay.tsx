@@ -98,7 +98,6 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
   // Handle boss death animation trigger
   useEffect(() => {
     if (boss.defeated && !deathAnimationStarted) {
-      console.log('🔥 Boss defeated! Starting epic death animation');
       setDeathAnimationStarted(true);
       setIsDeathAnimationActive(true);
       
@@ -136,7 +135,6 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       // Only trigger flicker for new attacks, not repeated renders
       if (latestAttack.id !== lastProcessedAttackId.current) {
         if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.log('🎨 Boss damage effect triggered for NEW attack:', latestAttack.id);
         }
         lastProcessedAttackId.current = latestAttack.id;
         setIsDamaged(true);
@@ -206,7 +204,6 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
                 <ExplosionAnimation 
                   isActive={isDeathAnimationActive} 
                   onComplete={() => {
-                    console.log('🎆 Explosion animation completed');
                   }}
                 />
               )}
@@ -308,7 +305,6 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
           <ExplosionAnimation 
             isActive={isDeathAnimationActive} 
             onComplete={() => {
-              console.log('🎆 Explosion animation completed (non-fullscreen)');
             }}
           />
         )}

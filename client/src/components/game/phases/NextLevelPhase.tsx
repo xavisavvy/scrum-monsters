@@ -121,11 +121,9 @@ export function NextLevelPhase({
                 <RetroButton 
                   onClick={() => {
                     setIsLoadingNextLevel(true);
-                    console.log('🔄 Starting staged next level transition...');
                     
                     // Stage 1: Show loading state immediately
                     setTimeout(() => {
-                      console.log('📤 Emitting proceed_next_level after staging delay');
                       emit('proceed_next_level');
                     }, 500); // Give React 500ms to update UI and prepare for transition
                   }}

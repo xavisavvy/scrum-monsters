@@ -37,18 +37,11 @@ export const useEventSync = create<EventSyncState>()(
 
       // Duplicate or old event - ignore but return true (no recovery needed)
       if (seq <= lastSeq) {
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.log(`[EventSync] Ignoring duplicate/old event ${event} seq=${seq}, lastSeq=${lastSeq}`);
-        }
         return true;
       }
 
       // Gap detected - store and trigger recovery
       if (seq > lastSeq + 1) {
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.warn(`[EventSync] Gap detected: expected ${lastSeq + 1}, got ${seq}. Storing event and triggering recovery.`);
-        }
-
         // Store out-of-order event
         const newPendingEvents = new Map(pendingEvents);
         newPendingEvents.set(seq, { event, data: payload });
@@ -61,9 +54,6 @@ export const useEventSync = create<EventSyncState>()(
       }
 
       // Expected sequence - process immediately
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log(`[EventSync] Processing event ${event} seq=${seq}`);
-      }
       set({ lastSeq: seq });
 
       // Check if we can now process any queued events
@@ -82,10 +72,6 @@ export const useEventSync = create<EventSyncState>()(
         const nextEvent = newPendingEvents.get(currentSeq + 1);
         if (!nextEvent) break;
 
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.log(`[EventSync] Processing queued event ${nextEvent.event} seq=${currentSeq + 1}`);
-        }
-
         // Remove from pending
         newPendingEvents.delete(currentSeq + 1);
         currentSeq++;
@@ -103,31 +89,18 @@ export const useEventSync = create<EventSyncState>()(
 
       // Skip if already recovering
       if (isRecovering) {
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-          console.log('[EventSync] Already recovering, skipping redundant request');
-        }
         return;
       }
 
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log(`[EventSync] Requesting missed events from seq=${lastSeq}`);
-      }
       set({ isRecovering: true });
       socket.emit('request_missed_events' as any, { lastSeq });
     },
 
     handleMissedEventsReplay: (events: Array<{ event: string; data: any }>) => {
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log(`[EventSync] Replaying ${events.length} missed events`);
-      }
-
       // Process each event in order
       events.forEach((evt) => {
         const { seq, ...payload } = evt.data;
         if (seq) {
-          if (import.meta.env.DEV && localStorage.getItem('debug')) {
-            console.log(`[EventSync] Replaying event ${evt.event} seq=${seq}`);
-          }
           set({ lastSeq: seq });
         }
       });
@@ -140,10 +113,6 @@ export const useEventSync = create<EventSyncState>()(
     },
 
     handleFullStateRefresh: (lobby: any, seq: number) => {
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log(`[EventSync] Full state refresh at seq=${seq}`);
-      }
-
       set({
         lastSeq: seq,
         pendingEvents: new Map(),
@@ -185,9 +154,6 @@ export const useEventSync = create<EventSyncState>()(
     },
 
     reset: () => {
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log('[EventSync] Resetting state');
-      }
       set({
         lastSeq: 0,
         pendingEvents: new Map(),

@@ -242,11 +242,9 @@ export function BattleScreen() {
   // Handle boss music when entering/leaving battle
   useEffect(() => {
     if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.log('🎵 Boss music effect triggered. Phase:', currentLobby?.gamePhase, 'Has Boss:', !!currentLobby?.boss);
     }
     if (currentLobby?.gamePhase === 'battle' && currentLobby?.boss) {
       if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        console.log('🎵 Starting boss music...');
       }
       // Fade in boss music when battle starts
       fadeInBossMusic();
@@ -544,7 +542,6 @@ export function BattleScreen() {
                           const summaryText = `${allResults}\n\nTotal Story Points: ${totalStoryPoints}`;
                           
                           navigator.clipboard.writeText(summaryText).then(() => {
-                            console.log('✅ All results copied to clipboard:', summaryText);
                             // Show temporary success feedback using React state
                             setCopyFeedback(prev => ({ ...prev, victory: true }));
                             const timeoutId = setTimeout(() => {
@@ -665,7 +662,6 @@ export function BattleScreen() {
                         const resultsText = `${lastCompletedTicket.title} - Developers voted ${devScore} QA voted ${qaScore}, with a combined sprint value of ${combinedValue}`;
                         
                         navigator.clipboard.writeText(resultsText).then(() => {
-                          console.log('✅ Results copied to clipboard:', resultsText);
                           // Show temporary success feedback using React state
                           setCopyFeedback(prev => ({ ...prev, nextLevel: true }));
                           const timeoutId = setTimeout(() => {

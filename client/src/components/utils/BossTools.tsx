@@ -91,19 +91,16 @@ export function BossTools({ onBack }: BossToolsProps) {
       }
       
       playHit();
-      console.log(`🎯 Boss attacked for ${damage} damage! Health: ${newHealth}/${bossHealth}`);
     }
   };
 
   const resetBoss = () => {
     setCurrentHealth(bossHealth);
     setIsDefeated(false);
-    console.log('🔄 Boss reset');
   };
 
   const testExplosion = () => {
     playExplosion();
-    console.log('💥 Explosion sound test');
   };
 
   return (
