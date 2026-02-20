@@ -103,11 +103,12 @@ Plans:
   2. Operator reads cost comparison table showing monthly costs for Replit vs Railway vs Render vs Fly.io vs AWS Lightsail at measured resource levels
   3. Operator receives clear recommendation (platform + tier) that fits $5-20/mo budget with headroom for 2x traffic growth
   4. Profiling identifies performance bottlenecks (event loop blocking, memory leaks, connection pool saturation) with actionable mitigation steps
-**Plans**: 2 plans
+**Plans**: 3 plans
 
 Plans:
-- [ ] 29-01-PLAN.md — Profiling infrastructure (MetricsCollector + run-profile orchestrator with cold start/steady state/teardown scenarios)
-- [ ] 29-02-PLAN.md — Cost analyzer, report generator, and CLI entrypoint for hosting analysis markdown
+- [x] 29-01-PLAN.md — Profiling infrastructure (MetricsCollector + run-profile orchestrator with cold start/steady state/teardown scenarios)
+- [x] 29-02-PLAN.md — Cost analyzer, report generator, and CLI entrypoint for hosting analysis markdown
+- [ ] 29-03-PLAN.md — Gap closure: synthetic profiling + report generation to produce actual hosting analysis artifacts
 
 ## Progress
 
