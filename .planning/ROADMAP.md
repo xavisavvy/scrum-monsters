@@ -61,7 +61,7 @@ See `.planning/milestones/v3.0-ROADMAP.md`
 
 **Milestone Goal:** Resolve all carried-forward tech debt items for a clean codebase baseline
 
-#### Phase 30: Logging Cleanup
+#### Phase 30: Logging Cleanup ✓ completed 2026-02-20
 **Goal**: Migrate console.log to Pino structured logging and enforce with ESLint
 **Depends on**: Phase 29
 **Requirements**: LOG-01, LOG-02
@@ -73,8 +73,8 @@ See `.planning/milestones/v3.0-ROADMAP.md`
 **Plans**: 2 plans
 
 Plans:
-- [ ] 30-01-PLAN.md — Migrate all server-side console.log/warn/error to Pino structured logging
-- [ ] 30-02-PLAN.md — Remove client-side console.log and upgrade ESLint no-console to error
+- [x] 30-01-PLAN.md — Migrate all server-side console.log/warn/error to Pino structured logging
+- [x] 30-02-PLAN.md — Remove client-side console.log and upgrade ESLint no-console to error
 
 #### Phase 31: Dependency & Lifecycle Polish
 **Goal**: Remove unused dependencies, configure ArgoCD auth, implement server shutdown client handler
@@ -101,12 +101,12 @@ Plans:
 | 15-20 | v1.3 | 28/28 | Complete | 2026-02-11 |
 | 21-25 | v2.0 | 23/23 | Complete | 2026-02-19 |
 | 26-29 | v3.0 | 9/9 | Complete | 2026-02-20 |
-| 30 | v3.1 | 0/2 | Not started | - |
+| 30 | v3.1 | 2/2 | Complete | 2026-02-20 |
 | 31 | v3.1 | 0/3 | Not started | - |
 
-**Total: 6 milestones shipped, 29 phases complete, 111 plans**
-**Current: v3.1 Tech Debt Cleanup — 0/5 plans**
+**Total: 6 milestones shipped, 30 phases complete, 113 plans**
+**Current: v3.1 Tech Debt Cleanup — 2/5 plans**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-20 — v3.1 Tech Debt Cleanup roadmap created*
+*Last updated: 2026-02-20 — Phase 30 Logging Cleanup complete*

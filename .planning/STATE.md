@@ -5,14 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-02-20)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 30 — Logging Cleanup
+**Current focus:** Phase 31 — Dependency & Lifecycle Polish
 
 ## Current Position
 
-Phase: 30 of 31 (Logging Cleanup)
-Plan: 2 of 2 in current phase
-Status: Complete
-Last activity: 2026-02-20 — Completed Phase 30 Plan 02 (Client Console Cleanup & ESLint Enforcement)
+Phase: 31 of 31 (Dependency & Lifecycle Polish)
+Plan: 0 of 3 in current phase
+Status: Ready to plan
+Last activity: 2026-02-20 — Phase 30 Logging Cleanup verified and complete
 
 Progress: [████████████████████████████░░] 97.8% (113/115 plans across all milestones)
 
@@ -40,9 +40,9 @@ Progress: [███████████████████████
 All decisions logged in PROJECT.md Key Decisions table.
 
 Recent decisions affecting current work:
-- Phase 27: ESLint no-console at warn (not error) — now addressed in Phase 30
+- Phase 30: ESLint no-console upgraded to error level — LOG-01/LOG-02 complete
 - Phase 28: Graceful shutdown with client notification — client handler missing, addressed in Phase 31
-- Phase 12: Pino structured logging — infrastructure exists, migration incomplete, addressed in Phase 30
+- Phase 30: Pino structured logging migration complete — 394 console statements migrated/removed
 
 ### Pending Todos
 
@@ -59,10 +59,10 @@ None. All v3.1 requirements are clear and achievable:
 ## Session Continuity
 
 Last session: 2026-02-20
-Stopped at: Completed Phase 30 Plan 02 - client console cleanup and ESLint no-console upgrade
+Stopped at: Phase 30 verified and complete
 Resume file: None
-Next action: Phase 30 complete. Continue with Phase 31 plans.
+Next action: Plan Phase 31 (Dependency & Lifecycle Polish)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-02-20 after Phase 30 Plan 02 completion*
+*Last updated: 2026-02-20 after Phase 30 verification passed*
