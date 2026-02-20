@@ -4,6 +4,7 @@ import { LobbySnapshot, ReconnectResponse, LobbySync, ClientToServerEvents, Serv
 import { useProgression } from './useProgression';
 import { useClassMastery } from './useClassMastery';
 import { useGameState } from './useGameState';
+import { toast } from 'sonner';
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
@@ -179,6 +180,13 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
 
       set({ isConnected: false });
 
+      // Check if this disconnect is from a planned server shutdown
+      const currentReconnection = get().reconnection;
+      if (currentReconnection.graceExpiresAt && Date.now() < currentReconnection.graceExpiresAt) {
+        // Planned shutdown - don't trigger reconnection, it's already scheduled
+        return;
+      }
+
       // Only attempt reconnection for unexpected disconnects
       if (reason === 'io server disconnect') {
         // Server initiated disconnect - don't retry
@@ -242,6 +250,40 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     socket.on('connection_lost', () => {
       set(state => ({
         reconnection: { ...state.reconnection, status: 'reconnecting' }
+      }));
+    });
+
+    socket.on('server_shutdown', (data: { message: string; reconnectDelayMs: number }) => {
+      // Show user-facing notification with shutdown info
+      toast.warning(data.message || 'Server shutting down for maintenance', {
+        duration: data.reconnectDelayMs || 30000,
+        description: `The server will be back shortly. Auto-reconnect in ${Math.round((data.reconnectDelayMs || 30000) / 1000)} seconds.`,
+        id: 'server-shutdown', // Prevent duplicate toasts
+      });
+
+      // Set a special state to suppress automatic reconnection attempts
+      // The disconnect event will fire after this, but we don't want it to trigger
+      // the normal reconnection flow since this is a planned shutdown
+      set(state => ({
+        reconnection: {
+          ...state.reconnection,
+          status: 'disconnected',
+          graceExpiresAt: Date.now() + (data.reconnectDelayMs || 30000),
+        }
+      }));
+
+      // Schedule a reconnection after the server's suggested delay
+      const reconnectTimeout = setTimeout(() => {
+        const { connect: reconnect } = get();
+        reconnect();
+      }, data.reconnectDelayMs || 30000);
+
+      // Store timeout so it can be cleared on manual disconnect
+      set(state => ({
+        reconnection: {
+          ...state.reconnection,
+          retryTimeout: reconnectTimeout,
+        }
       }));
     });
 
