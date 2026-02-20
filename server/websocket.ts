@@ -7,6 +7,7 @@ import type { RequestHandler } from 'express';
 import { randomBytes } from 'crypto';
 import { ClientToServerEvents, ServerToClientEvents, TeamType } from '../shared/gameEvents.js';
 import { gameState, setGameStateIO } from './gameState.js';
+import { socketLogger, gameLogger, authLogger } from './logger.js';
 import {
   sessionManager,
   estimationManager,
@@ -90,15 +91,17 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     upgradeTimeout: 30000
   });
 
-  console.log(`🔌 WebSocket server initialized (Replit: ${isReplitDeployment ? 'Production' : isReplitPreview ? 'Preview' : 'Local'})`);
-  console.log(`   - Ping interval: ${pingInterval}ms`);
-  console.log(`   - Ping timeout: ${pingTimeout}ms`);
-  console.log(`   - Connect timeout: ${connectTimeout}ms`);
+  socketLogger.info({
+    environment: isReplitDeployment ? 'Production' : isReplitPreview ? 'Preview' : 'Local',
+    pingInterval,
+    pingTimeout,
+    connectTimeout
+  }, 'WebSocket server initialized');
 
   // Share session with Socket.IO for authenticated user detection
   if (sessionMiddleware) {
     io.engine.use(sessionMiddleware);
-    console.log(`🔐 Session middleware attached to Socket.IO`);
+    socketLogger.info('Session middleware attached to Socket.IO');
   }
 
   // Pass the io instance to GameState for emitting events
@@ -106,7 +109,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   // Initialize ClientEventEmitter for fine-grained event delivery
   const clientEventEmitter = initializeClientEventEmitter(io);
-  console.log('ClientEventEmitter initialized for fine-grained events');
+  socketLogger.info('ClientEventEmitter initialized for fine-grained events');
 
   // ==========================================================================
   // EVENT BUS SUBSCRIPTIONS - Phase transition handlers
@@ -161,7 +164,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     // Keep lobby_updated: phase transitions need full state for completedTickets and currentTicket updates
     io.to(lobbyId).emit('lobby_updated', { lobby });
-    console.log(`Discussion ended in lobby ${lobbyId}: transitioned to ${lobby.gamePhase}`);
+    gameLogger.info({ lobbyId, newPhase: lobby.gamePhase }, 'Discussion ended, phase transition');
   });
 
   // Connection monitoring for Replit
@@ -199,18 +202,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       return lobby && lobby.hostId === s.data.playerId;
     });
 
-    console.log('📊 Connection Statistics:');
-    console.log(`   - Total connections since start: ${totalConnections}`);
-    console.log(`   - Currently active: ${activeConnections}`);
-    console.log(`   - Host connections: ${hostConnections.length}`);
-    console.log(`   - Active lobbies: ${(sessionManager as any).lobbies?.size || 0}`);
+    const disconnectReasonsObj: Record<string, number> = {};
+    disconnectReasons.forEach((count, reason) => {
+      disconnectReasonsObj[reason] = count;
+    });
 
-    if (disconnectReasons.size > 0) {
-      console.log('   - Disconnect reasons:');
-      disconnectReasons.forEach((count, reason) => {
-        console.log(`     - ${reason}: ${count}`);
-      });
-    }
+    socketLogger.info({
+      totalConnections,
+      activeConnections,
+      hostConnections: hostConnections.length,
+      activeLobbies: (sessionManager as any).lobbies?.size || 0,
+      disconnectReasons: disconnectReasonsObj
+    }, 'Connection statistics');
   }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
@@ -240,15 +243,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     if (req.session?.passport?.user) {
       const userId = req.session.passport.user;
       socket.data.userId = userId;
-      console.log(`🔐 Authenticated user connected: userId=${userId}`);
+      authLogger.info({ userId }, 'Authenticated user connected');
     }
 
-    console.log(`✅ Player connected: ${socket.id}`);
-    console.log(`   - Transport: ${transport}`);
-    console.log(`   - IP: ${forwardedFor}`);
-    console.log(`   - User-Agent: ${userAgent.substring(0, 50)}...`);
-    console.log(`   - Active connections: ${activeConnections}`);
-    console.log(`   - Authenticated: ${socket.data.userId ? `Yes (${socket.data.userId})` : 'No (guest)'}`);
+    socketLogger.info({
+      socketId: socket.id,
+      transport,
+      ip: forwardedFor,
+      userAgent: userAgent.substring(0, 100),
+      activeConnections,
+      authenticated: !!socket.data.userId,
+      userId: socket.data.userId
+    }, 'Player connected');
 
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
@@ -311,7 +317,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 timestamp: Date.now(),
               });
             } catch (err) {
-              console.error('Failed to sync progression for host:', err);
+              socketLogger.error({ err }, 'Failed to sync progression for host');
             }
           })();
 
@@ -330,14 +336,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 });
               }
             } catch (err) {
-              console.error('Failed to sync class mastery:', err);
+              socketLogger.error({ err }, 'Failed to sync class mastery');
             }
           })();
         }
 
-        console.log(`Lobby created: ${lobby.id} by ${hostName}`);
+        socketLogger.info({ lobbyId: lobby.id, hostName }, 'Lobby created');
       } catch (error) {
-        console.error('Error creating lobby:', error);
+        socketLogger.error({ err: error }, 'Error creating lobby');
         if (error instanceof SessionError) {
           socket.emit('game_error', { message: error.message });
         } else {
@@ -371,7 +377,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('lobby_joined', { lobby, player });
         } else {
           // Late joiner - skip directly to current phase
-          console.log(`⚡ Late joiner ${playerName} joining active ${currentPhase} phase`);
+          socketLogger.info({ playerName, currentPhase }, 'Late joiner entering active phase');
 
           // Emit lobby_joined first for state setup
           socket.emit('lobby_joined', { lobby, player });
@@ -381,7 +387,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             // Emit battle_started to transition client to battle screen
             if (lobby.boss) {
               socket.emit('battle_started', { lobby, boss: lobby.boss });
-              console.log(`🎮 Late joiner ${playerName} advanced to battle phase`);
+              socketLogger.info({ playerName }, 'Late joiner advanced to battle phase');
             }
           }
         }
@@ -414,7 +420,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 timestamp: Date.now(),
               });
             } catch (err) {
-              console.error('Failed to sync progression for player:', err);
+              socketLogger.error({ err }, 'Failed to sync progression for player');
             }
           })();
 
@@ -433,7 +439,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 });
               }
             } catch (err) {
-              console.error('Failed to sync class mastery:', err);
+              socketLogger.error({ err }, 'Failed to sync class mastery');
             }
           })();
         }
@@ -443,14 +449,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Removed lobby_updated: session:player_joined event emitted by sessionManager.joinLobby
 
-        console.log(`Player ${playerName} joined lobby ${lobbyId} in phase ${currentPhase}`);
+        socketLogger.info({ playerName, lobbyId, currentPhase }, 'Player joined lobby');
       } catch (error) {
         if (error instanceof LobbyNotFoundError) {
           socket.emit('game_error', { message: 'Lobby not found' });
         } else if (error instanceof SessionError) {
           socket.emit('game_error', { message: error.message });
         } else {
-          console.error('Unexpected error in join_lobby:', error);
+          socketLogger.error({ err: error }, 'Unexpected error in join_lobby');
           socket.emit('game_error', { message: 'Failed to join lobby' });
         }
       }
@@ -515,7 +521,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         } else if (error instanceof SessionError) {
           socket.emit('game_error', { message: error.message });
         } else {
-          console.error('Unexpected error in assign_team:', error);
+          socketLogger.error({ err: error }, 'Unexpected error in assign_team');
           socket.emit('game_error', { message: 'Failed to assign team' });
         }
       }
@@ -549,7 +555,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
               // Add to estimation eligible voters
               estimationManager.addEligibleVoter(lobby.id, playerId, team);
-              console.log(`Spectator ${playerId} switched to ${team}, minion killed`);
+              gameLogger.info({ playerId, team }, 'Spectator switched to voter, minion killed');
             }
           }
 
@@ -557,7 +563,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (oldTeam !== 'spectators' && team === 'spectators') {
             // Remove from estimation (they can't vote as spectator)
             estimationManager.removeEligibleVoter(lobby.id, playerId);
-            console.log(`Voter ${playerId} switched to spectator, removed from estimation`);
+            gameLogger.info({ playerId }, 'Voter switched to spectator, removed from estimation');
           }
         }
 
@@ -566,7 +572,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (error instanceof SessionError) {
           socket.emit('game_error', { message: error.message });
         } else {
-          console.error('Unexpected error in change_own_team:', error);
+          socketLogger.error({ err: error }, 'Unexpected error in change_own_team');
           socket.emit('game_error', { message: 'Failed to change team' });
         }
       }
@@ -587,7 +593,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
       io.to(lobby.id).emit('lobby_updated', { lobby });
-      console.log(`Host ${playerId} added ${tickets.length} ticket(s) to lobby ${lobby.id}`);
+      socketLogger.info({ playerId, ticketCount: tickets.length, lobbyId: lobby.id }, 'Host added tickets');
     });
 
     socket.on('remove_ticket', ({ ticketId }) => {
@@ -605,7 +611,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
       io.to(lobby.id).emit('lobby_updated', { lobby });
-      console.log(`Host ${playerId} removed ticket ${ticketId} from lobby ${lobby.id}`);
+      socketLogger.info({ playerId, ticketId, lobbyId: lobby.id }, 'Host removed ticket');
     });
 
     // Explicit leave lobby (user clicked back to menu)
@@ -614,7 +620,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
 
-      console.log(`🚪 Player ${playerId} explicitly leaving lobby ${lobbyId}`);
+      socketLogger.info({ playerId, lobbyId }, 'Player explicitly leaving lobby');
 
       // Capture player info before removal
       const lobby = sessionManager.getPlayerLobby(playerId);
@@ -641,35 +647,35 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     // Update lobby name (host only)
     socket.on('update_lobby_name', ({ name }) => {
-      console.log(`📝 update_lobby_name received with name: "${name}"`);
+      socketLogger.debug({ name }, 'update_lobby_name received');
 
       const playerId = socket.data.playerId;
       if (!playerId) {
-        console.log('❌ update_lobby_name: No playerId on socket');
+        socketLogger.debug('update_lobby_name: No playerId on socket');
         return;
       }
 
       const lobby = sessionManager.getPlayerLobby(playerId);
       if (!lobby) {
-        console.log(`❌ update_lobby_name: No lobby found for player ${playerId}`);
+        socketLogger.debug({ playerId }, 'update_lobby_name: No lobby found for player');
         return;
       }
 
       const player = lobby.players.find(p => p.id === playerId);
       if (!player?.isHost) {
-        console.log(`❌ update_lobby_name: Player ${playerId} is not host`);
+        socketLogger.debug({ playerId }, 'update_lobby_name: Player is not host');
         return;
       }
 
       const trimmedName = name?.trim();
       if (!trimmedName || trimmedName.length > 50) {
-        console.log(`❌ update_lobby_name: Invalid name (empty or too long): "${trimmedName}"`);
+        socketLogger.debug({ trimmedName }, 'update_lobby_name: Invalid name');
         return;
       }
 
       lobby.name = trimmedName;
       io.to(lobby.id).emit('lobby_updated', { lobby });
-      console.log(`✅ Host ${playerId} renamed lobby to "${trimmedName}"`);
+      socketLogger.info({ playerId, lobbyName: trimmedName }, 'Host renamed lobby');
     });
 
     // Lobby movement events for 2D sidescroller playground
@@ -681,7 +687,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Validate that player is in lobby phase
       const lobby = gameState.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
-        console.log(`Player ${playerId} tried to move but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
+        socketLogger.debug({ playerId, gamePhase: lobby?.gamePhase }, 'Player tried to move but lobby is not in lobby phase');
         return;
       }
 
@@ -702,7 +708,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Validate that player is in lobby phase
       const lobby = gameState.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
-        console.log(`Player ${playerId} tried to jump but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
+        socketLogger.debug({ playerId, gamePhase: lobby?.gamePhase }, 'Player tried to jump but lobby is not in lobby phase');
         return;
       }
 
@@ -740,13 +746,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Validate that player is in lobby phase
       const lobby = gameState.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'lobby') {
-        console.log(`Player ${playerId} tried to emote but lobby is not in lobby phase: ${lobby?.gamePhase || 'not found'}`);
+        socketLogger.debug({ playerId, gamePhase: lobby?.gamePhase }, 'Player tried to emote but lobby is not in lobby phase');
         return;
       }
 
       // Validate message length to prevent spam
       if (!message || message.length > 100) {
-        console.log(`Player ${playerId} sent invalid emote message: ${message?.length || 0} characters`);
+        socketLogger.debug({ playerId, messageLength: message?.length || 0 }, 'Player sent invalid emote message');
         return;
       }
 
@@ -758,7 +764,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         y
       });
 
-      console.log(`Player ${playerId} emoted in lobby ${lobbyId}: "${message.trim()}"`);
+      socketLogger.debug({ playerId, lobbyId, message: message.trim() }, 'Player emoted in lobby');
     });
 
     socket.on('toggle_ready', (data) => {
@@ -786,7 +792,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Broadcast updated lobby state to all players
       io.to(lobbyId).emit('lobby_updated', { lobby });
-      console.log(`Player ${playerId} toggled ready to ${ready} in lobby ${lobbyId}`);
+      socketLogger.debug({ playerId, lobbyId, ready }, 'Player toggled ready');
     });
 
     // Handle battle emotes
@@ -798,13 +804,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Validate that player is in battle phase
       const lobby = gameState.getLobby(lobbyId);
       if (!lobby || lobby.gamePhase !== 'battle') {
-        console.log(`Player ${playerId} tried to battle emote but lobby is not in battle phase: ${lobby?.gamePhase || 'not found'}`);
+        socketLogger.debug({ playerId, gamePhase: lobby?.gamePhase }, 'Player tried to battle emote but lobby is not in battle phase');
         return;
       }
 
       // Validate message length to prevent spam
       if (!message || message.length > 100) {
-        console.log(`Player ${playerId} sent invalid battle emote message: ${message?.length || 0} characters`);
+        socketLogger.debug({ playerId, messageLength: message?.length || 0 }, 'Player sent invalid battle emote message');
         return;
       }
 
@@ -816,36 +822,36 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         y 
       });
       
-      console.log(`Player ${playerId} battle emoted in lobby ${lobbyId}: "${message.trim()}"`);
+      socketLogger.debug({ playerId, lobbyId, message: message.trim() }, 'Player battle emoted');
     });
 
     socket.on('start_battle', () => {
       const playerId = socket.data.playerId;
-      console.log(`🎮 start_battle received from socket ${socket.id}, playerId: ${playerId}`);
+      socketLogger.debug({ socketId: socket.id, playerId }, 'start_battle received');
 
       if (!playerId) {
-        console.log('❌ No playerId found in socket data');
+        socketLogger.debug('No playerId found in socket data');
         return;
       }
 
       // Use sessionManager to get the lobby (not gameState which has stale mappings)
       const lobby = sessionManager.getPlayerLobby(playerId);
       if (!lobby) {
-        console.log(`❌ No lobby found for player ${playerId} via sessionManager`);
+        socketLogger.debug({ playerId }, 'No lobby found for player via sessionManager');
         return;
       }
 
       // Check if player is host
       const player = lobby.players.find(p => p.id === playerId);
       if (!player?.isHost) {
-        console.log(`❌ Player ${playerId} is not host, cannot start battle`);
+        socketLogger.debug({ playerId }, 'Player is not host, cannot start battle');
         socket.emit('game_error', { message: 'Only the host can start the battle' });
         return;
       }
 
       // Check if there are tickets
       if (!lobby.tickets || lobby.tickets.length === 0) {
-        console.log(`❌ No tickets in lobby ${lobby.id}`);
+        socketLogger.debug({ lobbyId: lobby.id }, 'No tickets in lobby');
         socket.emit('game_error', { message: 'Add at least one ticket before starting' });
         return;
       }
@@ -853,29 +859,29 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Check if there's at least one non-spectator player
       const activeVoters = lobby.players.filter(p => p.team !== 'spectators');
       if (activeVoters.length === 0) {
-        console.log(`❌ No active voters in lobby ${lobby.id}`);
+        socketLogger.debug({ lobbyId: lobby.id }, 'No active voters in lobby');
         socket.emit('game_error', { message: 'At least one player must be on a voting team' });
         return;
       }
 
-      console.log(`🎮 Starting battle for lobby ${lobby.id} with ${lobby.tickets.length} tickets`);
+      gameLogger.info({ lobbyId: lobby.id, ticketCount: lobby.tickets.length }, 'Starting battle');
       const result = gameState.startBattle(playerId, lobby.tickets);
       if (result) {
         if ('error' in result) {
           // Send error message to the client
-          console.log(`❌ Battle start error: ${result.error}`);
+          gameLogger.warn({ error: result.error }, 'Battle start error');
           socket.emit('game_error', { message: result.error });
         } else {
           const { lobby: updatedLobby, boss } = result;
 
-          console.log(`✅ Battle started successfully for lobby ${updatedLobby.id}`);
+          gameLogger.info({ lobbyId: updatedLobby.id }, 'Battle started successfully');
           // Removed lobby_updated: battle_started event contains lobby
 
           // Start the battle (synchronous - relies on socket.io event ordering)
           io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
         }
       } else {
-        console.log(`❌ startBattle returned null/undefined`);
+        gameLogger.warn('startBattle returned null/undefined');
       }
     });
 
@@ -1043,7 +1049,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         projectileId: randomBytes(8).toString('hex').substring(0, 13)
       });
 
-      console.log(`🚀 Broadcasting projectile from ${player.name}: ${emoji} to ${targetPlayerId ? 'player' : 'boss'}`);
+      socketLogger.debug({ playerName: player.name, emoji, targetType: targetPlayerId ? 'player' : 'boss' }, 'Broadcasting projectile');
     });
 
     socket.on('proceed_next_level', () => {
@@ -1106,7 +1112,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Keep lobby_updated: major state reset (new ticket, reset combat/estimation)
         io.to(lobbyId).emit('lobby_updated', { lobby });
-        console.log(`Proceed to next level in lobby ${lobbyId}: ticket ${nextTicket.id}`);
+        gameLogger.info({ lobbyId, ticketId: nextTicket.id }, 'Proceed to next level');
       } catch (error) {
         socket.emit('game_error', { message: (error as Error).message });
       }
@@ -1125,21 +1131,21 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     socket.on('return_to_lobby', () => {
-      console.log('🏠 Server received return_to_lobby event');
+      socketLogger.debug('Server received return_to_lobby event');
       const playerId = socket.data.playerId;
       if (!playerId) {
-        console.log('❌ No playerId found for return_to_lobby');
+        socketLogger.debug('No playerId found for return_to_lobby');
         return;
       }
 
-      console.log(`🏠 Processing return_to_lobby for player: ${playerId}`);
+      socketLogger.debug({ playerId }, 'Processing return_to_lobby for player');
       const lobby = gameState.returnToLobby(playerId);
       if (lobby) {
-        console.log(`✅ Returned to lobby: ${lobby.id}, new phase: ${lobby.gamePhase}`);
+        gameLogger.info({ lobbyId: lobby.id, newPhase: lobby.gamePhase }, 'Returned to lobby');
         // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
       } else {
-        console.log('❌ Failed to return to lobby - gameState.returnToLobby returned null');
+        gameLogger.warn('Failed to return to lobby - gameState.returnToLobby returned null');
       }
     });
 
@@ -1190,7 +1196,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Broadcast to all players in the lobby
       io.to(lobbyId).emit('youtube_play_synced', { videoId, url });
-      console.log(`Host ${playerId} started YouTube music: ${url}`);
+      socketLogger.debug({ playerId, url }, 'Host started YouTube music');
     });
 
     socket.on('youtube_stop', () => {
@@ -1208,7 +1214,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Broadcast to all players in the lobby
       io.to(lobbyId).emit('youtube_stop_synced');
-      console.log(`Host ${playerId} stopped YouTube music`);
+      socketLogger.debug({ playerId }, 'Host stopped YouTube music');
     });
 
     socket.on('advancePhaseNow', ({ lobbyId, playerId }) => {
@@ -1233,12 +1239,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
           io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
 
-          console.log(`Host ${playerId} manually advanced phase in lobby ${lobbyId}`);
+          gameLogger.info({ playerId, lobbyId }, 'Host manually advanced phase');
         } else {
           socket.emit('game_error', { message: 'Cannot advance phase - consensus not reached' });
         }
       } catch (error) {
-        console.error('Error in advancePhaseNow:', error);
+        socketLogger.error({ err: error }, 'Error in advancePhaseNow');
         socket.emit('game_error', { message: 'Failed to advance phase' });
       }
     });
@@ -1261,7 +1267,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Notify everyone about the forced progression
           io.to(lobbyId).emit('game_error', { message });
 
-          console.log(`${message} in lobby ${lobbyId}`);
+          gameLogger.info({ lobbyId, message }, 'Forced voting progression');
 
           // If phase changed to reveal, trigger reveal logic
           if (lobby.gamePhase === 'reveal') {
@@ -1277,7 +1283,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           socket.emit('game_error', { message: 'Cannot force voting progression - insufficient permissions or invalid state' });
         }
       } catch (error) {
-        console.error('Error in forceVotingProgression:', error);
+        socketLogger.error({ err: error }, 'Error in forceVotingProgression');
         socket.emit('game_error', { message: 'Failed to force voting progression' });
       }
     });
@@ -1342,7 +1348,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const { lobby, healedPlayers } = result;
         io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
         // Removed lobby_updated: party_healed event contains all necessary info
-        console.log(`💫 Priest ${playerId} healed party`);
+        gameLogger.info({ playerId }, 'Priest healed party');
       }
     });
 
@@ -1430,7 +1436,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (lobby) {
         // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
         io.to(lobby.id).emit('lobby_updated', { lobby });
-        console.log(`Estimation settings updated by ${playerId} in lobby ${lobby.id}`);
+        gameLogger.info({ playerId, lobbyId: lobby.id }, 'Estimation settings updated');
       }
     });
 
@@ -1478,7 +1484,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                   timestamp: Date.now(),
                 });
               } catch (err) {
-                console.error('Failed to sync progression on reconnect:', err);
+                socketLogger.error({ err }, 'Failed to sync progression on reconnect');
               }
             })();
 
@@ -1497,7 +1503,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                   });
                 }
               } catch (err) {
-                console.error('Failed to sync class mastery:', err);
+                socketLogger.error({ err }, 'Failed to sync class mastery');
               }
             })();
           }
@@ -1510,14 +1516,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Keep lobby_updated for reconnection notifications (not yet covered by fine-grained events)
           socket.to(lobbyId).emit('lobby_updated', { lobby: lobbySync.lobby });
 
-          console.log(`✅ Player ${lobbySync.yourPlayer.name} (${playerId}) reconnected successfully`);
+          socketLogger.info({ playerId, playerName: lobbySync.yourPlayer.name }, 'Player reconnected successfully');
         } else {
           // Send failed reconnection response
           socket.emit('reconnect_response', response);
-          console.log(`❌ Reconnection failed: ${response.message}`);
+          socketLogger.warn({ message: response.message }, 'Reconnection failed');
         }
       } catch (error) {
-        console.error('Error handling reconnect:', error);
+        socketLogger.error({ err: error }, 'Error handling reconnect');
         socket.emit('reconnect_response', {
           result: 'server_error',
           message: 'Server error during reconnection'
@@ -1530,7 +1536,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Simply acknowledge - the act of receiving this message resets infrastructure idle timers
       const playerId = socket.data.playerId;
       if (playerId) {
-        console.log(`💓 Heartbeat received from ${playerId}`);
+        socketLogger.debug({ playerId }, 'Heartbeat received');
       }
     });
 
@@ -1538,7 +1544,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     socket.on('request_missed_events', ({ lastSeq }) => {
       const lobbyId = socket.data.lobbyId;
       if (!lobbyId) {
-        console.warn('request_missed_events: No lobbyId in socket data');
+        socketLogger.warn('request_missed_events: No lobbyId in socket data');
         return;
       }
 
@@ -1547,14 +1553,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       if (missedEvents === null) {
         // Gap too large, send full state refresh
-        console.log(`Gap too large for ${lobbyId}, sending full state`);
+        socketLogger.info({ lobbyId }, 'Gap too large, sending full state');
         const lobby = sessionManager.getLobby(lobbyId);
         if (lobby) {
           emitter.sendFullState(lobbyId, lobby, socket.id);
         }
       } else if (missedEvents.length > 0) {
         // Send missed events
-        console.log(`Sending ${missedEvents.length} missed events to ${socket.id}`);
+        socketLogger.debug({ missedEventCount: missedEvents.length, socketId: socket.id }, 'Sending missed events');
         socket.emit('system:missed_events', { events: missedEvents });
       }
       // If missedEvents is empty array, client is caught up - no action needed
@@ -1592,14 +1598,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Broadcast estimation started
         io.to(lobbyId).emit('estimation_started' as any, { ticketId });
-        console.log(`Estimation started for ticket ${ticketId} in lobby ${lobbyId}`);
+        gameLogger.info({ ticketId, lobbyId }, 'Estimation started');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can start estimation' });
         } else if (error instanceof LobbyNotFoundError) {
           socket.emit('game_error', { message: 'Lobby not found' });
         } else {
-          console.error('Start estimation error:', error);
+          socketLogger.error({ err: error }, 'Start estimation error');
           socket.emit('game_error', { message: 'Failed to start estimation' });
         }
       }
@@ -1633,7 +1639,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const visibility = estimationManager.getAllVoteVisibility(lobbyId);
         io.to(lobbyId).emit('vote_state_updated' as any, visibility);
 
-        console.log(`Player ${playerId} voted ${vote} on team ${player.team}`);
+        gameLogger.debug({ playerId, vote, team: player.team }, 'Player voted');
       } catch (error) {
         if (error instanceof EstimationNotActiveError) {
           socket.emit('game_error', { message: 'No active estimation' });
@@ -1644,7 +1650,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         } else if (error instanceof LobbyNotFoundError) {
           socket.emit('game_error', { message: 'Lobby not found' });
         } else {
-          console.error('Vote error:', error);
+          socketLogger.error({ err: error }, 'Vote error');
           socket.emit('game_error', { message: 'Failed to submit vote' });
         }
       }
@@ -1678,7 +1684,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const visibility = estimationManager.getAllVoteVisibility(lobbyId);
         io.to(lobbyId).emit('vote_state_updated' as any, visibility);
 
-        console.log(`Player ${playerId} changed vote to ${newVote} during discussion`);
+        gameLogger.debug({ playerId, newVote }, 'Player changed vote during discussion');
       } catch (error) {
         if (error instanceof NotInDiscussionPhaseError) {
           socket.emit('game_error', { message: 'Can only change vote during discussion phase' });
@@ -1689,7 +1695,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         } else if (error instanceof InvalidVoteValueError) {
           socket.emit('game_error', { message: error.message });
         } else {
-          console.error('Change vote error:', error);
+          socketLogger.error({ err: error }, 'Change vote error');
           socket.emit('game_error', { message: 'Failed to change vote' });
         }
       }
@@ -1715,12 +1721,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Broadcast timer state
         io.to(lobbyId).emit('timer_paused' as any, { team });
-        console.log(`Host paused voting timer for team ${team}`);
+        gameLogger.info({ team }, 'Host paused voting timer');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can pause the timer' });
         } else {
-          console.error('Pause timer error:', error);
+          socketLogger.error({ err: error }, 'Pause timer error');
           socket.emit('game_error', { message: 'Failed to pause timer' });
         }
       }
@@ -1746,12 +1752,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Broadcast timer state
         io.to(lobbyId).emit('timer_resumed' as any, { team });
-        console.log(`Host resumed voting timer for team ${team}`);
+        gameLogger.info({ team }, 'Host resumed voting timer');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can resume the timer' });
         } else {
-          console.error('Resume timer error:', error);
+          socketLogger.error({ err: error }, 'Resume timer error');
           socket.emit('game_error', { message: 'Failed to resume timer' });
         }
       }
@@ -1778,12 +1784,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Broadcast timer state
         io.to(lobbyId).emit('timer_extended' as any, { team, additionalSeconds });
-        console.log(`Host extended voting timer for team ${team} by ${additionalSeconds}s`);
+        gameLogger.info({ team, additionalSeconds }, 'Host extended voting timer');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can extend the timer' });
         } else {
-          console.error('Extend timer error:', error);
+          socketLogger.error({ err: error }, 'Extend timer error');
           socket.emit('game_error', { message: 'Failed to extend timer' });
         }
       }
@@ -1809,7 +1815,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         // Broadcast forced estimate
         io.to(lobbyId).emit('estimate_forced' as any, { team, consensusValue: result.consensusValue });
-        console.log(`Host forced estimate for team ${team}: ${result.consensusValue}`);
+        gameLogger.info({ team, consensusValue: result.consensusValue }, 'Host forced estimate');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can force an estimate' });
@@ -1827,7 +1833,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         } else if (error instanceof EstimationNotActiveError) {
           socket.emit('game_error', { message: 'No active estimation' });
         } else {
-          console.error('Force estimate error:', error);
+          socketLogger.error({ err: error }, 'Force estimate error');
           socket.emit('game_error', { message: 'Failed to force estimate' });
         }
       }
@@ -1854,14 +1860,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Broadcast phase change
         const visibility = estimationManager.getAllVoteVisibility(lobbyId);
         io.to(lobbyId).emit('vote_state_updated' as any, visibility);
-        console.log(`Team ${team} entered discussion phase`);
+        gameLogger.info({ team }, 'Team entered discussion phase');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
           socket.emit('game_error', { message: 'Only the host can start discussion' });
         } else if (error instanceof EstimationNotActiveError) {
           socket.emit('game_error', { message: 'No active estimation' });
         } else {
-          console.error('Enter discussion error:', error);
+          socketLogger.error({ err: error }, 'Enter discussion error');
           socket.emit('game_error', { message: 'Failed to enter discussion phase' });
         }
       }
@@ -1891,7 +1897,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         }
 
         estimationManager.hostFinalizeEstimate(lobbyId, playerId, data.estimate);
-        console.log(`Host finalized estimate with value ${data.estimate} in lobby ${lobbyId}`);
+        gameLogger.info({ lobbyId, estimate: data.estimate }, 'Host finalized estimate');
       } catch (error) {
         socket.emit('game_error', { message: (error as Error).message });
       }
@@ -1922,7 +1928,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
       combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0, lobby.boss?.sprite);
 
-      console.log(`Combat initialized for lobby ${data.lobbyId}`);
+      gameLogger.info({ lobbyId: data.lobbyId }, 'Combat initialized');
     });
 
     // Player heals teammate
@@ -1933,7 +1939,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (!playerId || !lobbyId) return;
 
         combatManager.playerHealTeammate(lobbyId, playerId, data.targetId);
-        console.log(`Player ${playerId} healed ${data.targetId}`);
+        gameLogger.debug({ playerId, targetId: data.targetId }, 'Player healed teammate');
       } catch (error) {
         if (error instanceof CombatNotActiveError || error instanceof NotHealerClassError) {
           socket.emit('game_error', { code: (error as any).code, message: error.message });
@@ -1970,7 +1976,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
 
       // Success - events emitted by AbilityManager and effect handlers in domains/index.ts
-      console.log(`Player ${playerId} used ability ${abilityId}`);
+      gameLogger.debug({ playerId, abilityId }, 'Player used ability');
     });
 
     socket.on('use_item', ({ itemType }: { itemType: string }) => {
@@ -1994,7 +2000,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         return;
       }
 
-      console.log(`Player ${playerId} used item ${itemType}`);
+      gameLogger.debug({ playerId, itemType }, 'Player used item');
     });
 
     // Start revival
@@ -2008,7 +2014,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (!started) {
           socket.emit('game_error', { code: 'REVIVAL_CONDITIONS_NOT_MET', message: 'Cannot start revival' });
         } else {
-          console.log(`Player ${playerId} started reviving ${data.targetId}`);
+          gameLogger.debug({ playerId, targetId: data.targetId }, 'Player started reviving');
         }
       } catch (error) {
         if (error instanceof RevivalNotAllowedError) {
@@ -2025,7 +2031,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (!playerId) return;
 
       combatManager.cancelRevival(playerId, 'player_cancelled');
-      console.log(`Player ${playerId} cancelled revival`);
+      gameLogger.debug({ playerId }, 'Player cancelled revival');
     });
 
     // Attack minion (player targeting spectator minion)
@@ -2042,7 +2048,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         );
 
         // Combat events are emitted by CombatManager, no additional emit needed
-        console.log(`Player ${playerId} attacked minion ${data.minionPlayerId} for ${damage} damage`);
+        gameLogger.debug({ playerId, minionPlayerId: data.minionPlayerId, damage }, 'Player attacked minion');
       } catch (error) {
         socket.emit('game_error', { message: (error as Error).message });
       }
@@ -2060,11 +2066,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = lobbyId ? sessionManager.getLobby(lobbyId) : null;
       const isHost = lobby && lobby.hostId === playerId;
 
-      console.log(`❌ Player disconnected: ${socket.id}`);
-      console.log(`   - Reason: ${reason}`);
-      console.log(`   - Is Host: ${isHost ? 'YES ⚠️' : 'no'}`);
-      console.log(`   - Lobby: ${lobbyId || 'none'}`);
-      console.log(`   - Active connections: ${activeConnections}`);
+      socketLogger.info({
+        socketId: socket.id,
+        reason,
+        isHost,
+        lobbyId,
+        activeConnections
+      }, 'Player disconnected');
 
       if (playerId) {
         // Use SessionManager reconnection system
@@ -2076,7 +2084,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           io.to(lobbyId).emit('player_disconnected', { playerId });
 
           const graceMinutes = Math.floor((disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
-          console.log(`🔄 Player ${disconnectedPlayer.playerName} (${playerId}) can reconnect for ${graceMinutes} minutes`);
+          socketLogger.info({
+            playerId,
+            playerName: disconnectedPlayer.playerName,
+            graceMinutes
+          }, 'Player can reconnect during grace period');
 
           // If host was transferred, notify all players and update lobby
           if (hostTransfer) {
@@ -2094,7 +2106,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
               io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
             }
 
-            console.log(`👑 Host transferred from ${hostTransfer.oldHostId} → ${hostTransfer.newHostName} (${hostTransfer.newHostId})`);
+            socketLogger.info({
+              oldHostId: hostTransfer.oldHostId,
+              newHostId: hostTransfer.newHostId,
+              newHostName: hostTransfer.newHostName
+            }, 'Host transferred due to disconnect');
           }
         } else {
           // Fallback to old behavior if reconnection setup fails
@@ -2104,7 +2120,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             // Keep lobby_updated for player removal fallback (not yet covered by fine-grained events)
             io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
           }
-          console.log(`⚠️ Player ${playerId} removed immediately (reconnection unavailable)`);
+          socketLogger.warn({ playerId }, 'Player removed immediately (reconnection unavailable)');
         }
       }
     });

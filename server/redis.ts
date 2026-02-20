@@ -1,4 +1,5 @@
 import { Redis } from '@upstash/redis';
+import { dbLogger } from './logger.js';
 
 let redisClient: Redis | null = null;
 let isConnected = false;
@@ -14,8 +15,7 @@ export async function initializeRedis(): Promise<boolean> {
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
 
   if (!url || !token) {
-    console.log('⚠️  Upstash Redis credentials not configured - running without cache');
-    console.log('   Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to enable caching');
+    dbLogger.warn('Upstash Redis credentials not configured - running without cache. Set UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN to enable caching');
     return false;
   }
 
@@ -27,11 +27,10 @@ export async function initializeRedis(): Promise<boolean> {
 
     await redisClient.ping();
     isConnected = true;
-    console.log('✅ Upstash Redis initialized successfully');
+    dbLogger.info('Upstash Redis initialized successfully');
     return true;
   } catch (error) {
-    console.log('⚠️  Upstash Redis connection failed - running without cache');
-    console.error('   Error:', error instanceof Error ? error.message : error);
+    dbLogger.warn({ err: error instanceof Error ? error : new Error(String(error)) }, 'Upstash Redis connection failed - running without cache');
     redisClient = null;
     isConnected = false;
     return false;
@@ -57,7 +56,7 @@ export async function cacheLobby(lobbyId: string, lobbyData: any): Promise<void>
       JSON.stringify(lobbyData)
     );
   } catch (error) {
-    console.error('Redis cache lobby error:', error);
+    dbLogger.error({ err: error }, 'Redis cache lobby error');
   }
 }
 
@@ -69,7 +68,7 @@ export async function getCachedLobby(lobbyId: string): Promise<any | null> {
     const data = await client.get(`lobby:${lobbyId}`);
     return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
   } catch (error) {
-    console.error('Redis get lobby error:', error);
+    dbLogger.error({ err: error }, 'Redis get lobby error');
     return null;
   }
 }
@@ -81,7 +80,7 @@ export async function deleteCachedLobby(lobbyId: string): Promise<void> {
   try {
     await client.del(`lobby:${lobbyId}`);
   } catch (error) {
-    console.error('Redis delete lobby error:', error);
+    dbLogger.error({ err: error }, 'Redis delete lobby error');
   }
 }
 
@@ -104,7 +103,7 @@ export async function cachePlayerSession(
       playerId
     );
   } catch (error) {
-    console.error('Redis cache player session error:', error);
+    dbLogger.error({ err: error }, 'Redis cache player session error');
   }
 }
 
@@ -116,7 +115,7 @@ export async function getCachedPlayerSession(playerId: string): Promise<any | nu
     const data = await client.get(`player:${playerId}`);
     return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
   } catch (error) {
-    console.error('Redis get player session error:', error);
+    dbLogger.error({ err: error }, 'Redis get player session error');
     return null;
   }
 }
@@ -129,7 +128,7 @@ export async function getPlayerIdByToken(reconnectToken: string): Promise<string
     const playerId = await client.get(`token:${reconnectToken}`);
     return playerId as string | null;
   } catch (error) {
-    console.error('Redis get player by token error:', error);
+    dbLogger.error({ err: error }, 'Redis get player by token error');
     return null;
   }
 }
@@ -145,7 +144,7 @@ export async function deletePlayerSession(playerId: string): Promise<void> {
     }
     await client.del(`player:${playerId}`);
   } catch (error) {
-    console.error('Redis delete player session error:', error);
+    dbLogger.error({ err: error }, 'Redis delete player session error');
   }
 }
 
@@ -160,7 +159,7 @@ export async function cacheGameState(lobbyId: string, gameState: any): Promise<v
       JSON.stringify(gameState)
     );
   } catch (error) {
-    console.error('Redis cache game state error:', error);
+    dbLogger.error({ err: error }, 'Redis cache game state error');
   }
 }
 
@@ -172,7 +171,7 @@ export async function getCachedGameState(lobbyId: string): Promise<any | null> {
     const data = await client.get(`game:${lobbyId}`);
     return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
   } catch (error) {
-    console.error('Redis get game state error:', error);
+    dbLogger.error({ err: error }, 'Redis get game state error');
     return null;
   }
 }
@@ -185,14 +184,14 @@ export async function getAllActiveLobbies(): Promise<string[]> {
     const keys = await client.keys('lobby:*');
     return keys.map(key => key.replace('lobby:', ''));
   } catch (error) {
-    console.error('Redis get all lobbies error:', error);
+    dbLogger.error({ err: error }, 'Redis get all lobbies error');
     return [];
   }
 }
 
 export async function shutdownRedis(): Promise<void> {
   if (redisClient) {
-    console.log('🔴 Upstash Redis connection closed');
+    dbLogger.info('Upstash Redis connection closed');
     redisClient = null;
     isConnected = false;
   }
