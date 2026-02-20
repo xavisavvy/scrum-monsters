@@ -1,0 +1,70 @@
+{
+  "timestamp": "2026-02-20T02:56:56.679Z",
+  "config": {
+    "users": 50,
+    "duration": 60,
+    "serverUrl": "synthetic://localhost:5000"
+  },
+  "scenarios": {
+    "coldStart": {
+      "peakRSSMB": 155.2,
+      "peakHeapMB": 102.5,
+      "avgHeapMB": 87.3,
+      "avgCPUPercent": 40.2,
+      "peakCPUPercent": 70.1,
+      "eventLoopUtilization": 0.4,
+      "eventLoopPeakUtilization": 0.6,
+      "eventLoopBlockingDetected": false,
+      "estimatedBandwidthMB": 0.75,
+      "wsConnectionsPeak": 50,
+      "wsMessagesSent": 150,
+      "wsMessagesReceived": 150,
+      "sampleCount": 10,
+      "durationMs": 10000,
+      "samples": []
+    },
+    "steadyState": {
+      "peakRSSMB": 128.7,
+      "peakHeapMB": 92.5,
+      "avgHeapMB": 77.4,
+      "avgCPUPercent": 20.1,
+      "peakCPUPercent": 47.8,
+      "eventLoopUtilization": 0.2,
+      "eventLoopPeakUtilization": 0.4,
+      "eventLoopBlockingDetected": false,
+      "estimatedBandwidthMB": 4,
+      "wsConnectionsPeak": 50,
+      "wsMessagesSent": 1200,
+      "wsMessagesReceived": 1200,
+      "sampleCount": 60,
+      "durationMs": 60000,
+      "samples": []
+    },
+    "teardown": {
+      "peakRSSMB": 117.3,
+      "peakHeapMB": 82.5,
+      "avgHeapMB": 72.1,
+      "avgCPUPercent": 7.5,
+      "peakCPUPercent": 20.2,
+      "eventLoopUtilization": 0.075,
+      "eventLoopPeakUtilization": 0.2,
+      "eventLoopBlockingDetected": false,
+      "estimatedBandwidthMB": 0.2,
+      "wsConnectionsPeak": 10,
+      "wsMessagesSent": 40,
+      "wsMessagesReceived": 40,
+      "sampleCount": 10,
+      "durationMs": 10000,
+      "samples": []
+    }
+  },
+  "overall": {
+    "peakRSSMB": 155.2,
+    "peakHeapMB": 102.5,
+    "peakCPUPercent": 70.1,
+    "avgCPUPercent": 21.0375,
+    "eventLoopUtilization": 0.2,
+    "estimatedBandwidthMBPerMonth": 17520,
+    "bottlenecks": []
+  }
+}
