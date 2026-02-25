@@ -131,11 +131,8 @@ app.use((req, res, next) => {
   const server = await registerRoutes(app);
 
   // Configure server timeouts for production stability
-  // Replit-specific: More generous timeouts for their proxy layer
-  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
-
-  server.keepAliveTimeout = isReplitDeployment ? 95000 : 65000; // 95s for Replit (> 90s ping cycle)
-  server.headersTimeout = isReplitDeployment ? 96000 : 66000; // Slightly higher than keepAliveTimeout
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000; // Slightly higher than keepAliveTimeout
   server.requestTimeout = 120000; // 2 minutes for long-running requests
 
   httpLogger.info({
@@ -162,9 +159,7 @@ app.use((req, res, next) => {
   }
 
   // Serve the app (both API and client)
-  // Use port 5000 for Replit, 5001 for local development
-  const isReplit = process.env.REPLIT_DEPLOYMENT === '1' || process.env.REPLIT_DEV_DOMAIN;
-  const port = isReplit ? 5000 : env.PORT;
+  const port = env.PORT;
   server.listen({
     port,
     host: process.env.HOST || "0.0.0.0",

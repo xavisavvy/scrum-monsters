@@ -13,9 +13,9 @@ const envSchema = z.object({
   ALLOWED_ORIGINS: z.string().optional(),
   HOST: z.string().default("0.0.0.0"),
 }).refine((data) => {
-  // Warn if DATABASE_URL is missing in production
   if (data.NODE_ENV === "production" && !data.DATABASE_URL) {
-    httpLogger.warn('DATABASE_URL not set in production - using in-memory storage');
+    httpLogger.error('DATABASE_URL is required in production. Set it in .env and restart.');
+    process.exit(1);
   }
   return true;
 });
