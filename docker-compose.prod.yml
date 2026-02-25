@@ -1,0 +1,69 @@
+# Production Docker Compose stack for ScrumMonsters
+# Usage: docker compose -f docker-compose.prod.yml --env-file .env up -d
+# Requires: .env file at /opt/scrummonsters/.env (see runbook.md for format)
+# Note: Port 81 (NPM admin) should be removed from Lightsail firewall after TLS setup
+
+services:
+  app:
+    build: .
+    image: scrummonsters:latest
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SESSION_SECRET: ${SESSION_SECRET}
+      PORT: "5000"
+      ALLOWED_ORIGINS: https://scrummonsters.com
+      OAUTH_CALLBACK_BASE_URL: https://scrummonsters.com
+      # Optional OAuth providers — uncomment and set values in .env to enable
+      # GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      # GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      # GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      # GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      # Optional Upstash Redis — uncomment if using
+      # UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
+      # UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:5000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "81:81"   # NPM admin UI — remove this port from Lightsail firewall after TLS setup
+    volumes:
+      - npm_data:/data
+      - npm_letsencrypt:/etc/letsencrypt
+    environment:
+      TZ: America/New_York
+
+volumes:
+  postgres_data:    # Named volume — Docker manages location; use docker volume commands for backup
+  npm_data:
+  npm_letsencrypt:
