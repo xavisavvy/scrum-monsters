@@ -7,7 +7,7 @@
 set -e
 
 REMOTE_USER="ubuntu"
-REMOTE_HOST=""          # Fill in after provisioning (Lightsail static IP)
+REMOTE_HOST="34.199.135.244"
 SSH_KEY="$HOME/.ssh/lightsail_scrummonsters"
 REMOTE_DIR="/opt/scrummonsters"
 
