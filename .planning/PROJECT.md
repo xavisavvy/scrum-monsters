@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, React Router v7 clean URLs with SEO, and production-ready PostgreSQL persistence with graceful lifecycle management.
+A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, React Router v7 clean URLs with SEO, production-ready PostgreSQL persistence with graceful lifecycle management, and structured Pino logging with CI-enforced code quality.
 
 ## Core Value
 
@@ -89,18 +89,14 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ Resource profiling infrastructure with MetricsCollector — v3.0
 - ✓ Hosting cost comparison across 5 platforms (9 tiers) — v3.0
 - ✓ Data-driven hosting recommendation (AWS Lightsail $5/mo) — v3.0
+- ✓ All 394 console.log statements migrated/removed (228 server → Pino, 166 client removed) — v3.1
+- ✓ ESLint no-console upgraded from warn to error with CI enforcement — v3.1
+- ✓ Unused zod-validation-error dependency removed — v3.1
+- ✓ Graceful server shutdown client notifications with auto-reconnect — v3.1
 
 ### Active
 
-## Current Milestone: v3.1 Tech Debt Cleanup
-
-**Goal:** Resolve all carried-forward tech debt items for a clean codebase baseline
-
-**Target features:**
-- Configure ARGOCD_AUTH_TOKEN for production rollback workflow
-- Migrate console.log statements to Pino structured logging (ESLint no-console → error)
-- Remove unused zod-validation-error package
-- Implement server_shutdown client handler for graceful disconnect UX
+(No active milestone — planning next)
 
 ### Out of Scope
 
@@ -121,7 +117,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ## Context
 
-**Current State (post-v3.0):**
+**Current State (post-v3.1):**
 - ~60,300 lines of TypeScript across client/server/shared
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager, ProgressionManager, ClassMasteryManager, AbilityManager, ComboManager, ItemManager, StatsTracker
 - EventBus-based coordination with scoped subscriptions
@@ -133,8 +129,9 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Modern routing: React Router v7, server-side SEO, Three.js code splitting, clean URLs
 - Production security: rate limiting, CSRF, secure randomness, GitHub Actions permissions
 - Production database: PostgreSQL with connection pooling, Zod env validation, fail-fast startup
-- Server lifecycle: graceful shutdown with client notification, split health probes (livez/readyz), global error handlers
-- Comprehensive CI/CD: ESLint, Playwright E2E/visual/a11y, Vitest coverage (615 tests)
+- Server lifecycle: graceful shutdown with client notification and auto-reconnect UX, split health probes (livez/readyz), global error handlers
+- Structured logging: Pino JSON logs (5 logger types), ESLint no-console at error level, zero unstructured console output
+- Comprehensive CI/CD: ESLint (no-console enforced), Playwright E2E/visual/a11y, Vitest coverage (615 tests)
 - Security scanning: CodeQL SAST, gitleaks, audit-ci, license-checker
 - Kubernetes deployment: Kustomize overlays, ArgoCD GitOps, cert-manager TLS
 - Observability: Prometheus metrics, Grafana dashboards, Loki logs, startup config logging
@@ -147,10 +144,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Scale: handles 50 concurrent users, 58% headroom for 2x growth
 
 **Known tech debt:**
-- ARGOCD_AUTH_TOKEN secret not yet configured for production rollback workflow
-- ESLint no-console set to warn (100+ operational console.log statements)
-- zod-validation-error peer dependency mismatch (unused package retained)
-- server_shutdown client handler not implemented (existing disconnect logic works)
+- ARGOCD_AUTH_TOKEN secret not yet configured for production rollback workflow (blocked on ArgoCD deployment)
 
 ## Shipped Milestones
 
@@ -160,6 +154,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - **v1.3 Game Progression** (2026-02-11): XP/leveling, class mastery, boss AI, abilities, combos, items, lifetime stats
 - **v2.0 UI Redesign & Mobile** (2026-02-19): JRPG design system, mobile responsive, security hardening, routing/SEO, lobby polish
 - **v3.0 Production Optimization** (2026-02-20): PostgreSQL persistence, graceful shutdown, health probes, hosting analysis
+- **v3.1 Tech Debt Cleanup** (2026-02-24): Pino structured logging, ESLint no-console enforcement, dependency cleanup, shutdown UX
 
 ## Constraints
 
@@ -227,6 +222,12 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | ESLint no-console at warn (not error) | Avoids breaking build with 100+ operational console.log | ✓ Good |
 | AWS Lightsail $5/mo recommendation | 58% headroom for 2x growth, $240/yr savings vs Replit | ✓ Good |
 | Synthetic profiling over live load test | Deterministic values ensure reproducible benchmarks | ✓ Good |
+| Object-first Pino API for all server logs | Structured JSON, parseable by Prometheus/Loki | ✓ Good |
+| Silent catch for non-critical client errors | Audio autoplay errors expected, no logger needed | ✓ Good |
+| ESLint no-console at error with exemptions | CI enforcement prevents regression, tests/scripts exempt | ✓ Good |
+| Sonner toast for shutdown notifications | Non-blocking UX, already integrated | ✓ Good |
+| Grace period timestamp for reconnection | Robust against race conditions between server_shutdown and disconnect | ✓ Good |
+| Defer ARGO-01 to FUTURE-ENHANCEMENTS | No ArgoCD host deployed, workflow_dispatch prevents accidents | ✓ Good |
 
 ---
-*Last updated: 2026-02-20 after v3.0 milestone*
+*Last updated: 2026-02-24 after v3.1 milestone*

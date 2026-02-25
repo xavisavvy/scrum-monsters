@@ -7,7 +7,7 @@
 - ✅ **v1.3 Game Progression** — Phases 15-20 (shipped 2026-02-11)
 - ✅ **v2.0 UI Redesign & Mobile** — Phases 21-25 (shipped 2026-02-19)
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
-- 🚧 **v3.1 Tech Debt Cleanup** — Phases 30-31 (in progress)
+- ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
 
 ## Phases
 
@@ -57,39 +57,15 @@ See `.planning/milestones/v3.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v3.1 Tech Debt Cleanup (In Progress)
+<details>
+<summary>✅ v3.1 Tech Debt Cleanup (Phases 30-31) — SHIPPED 2026-02-24</summary>
 
-**Milestone Goal:** Resolve all carried-forward tech debt items for a clean codebase baseline
+See `.planning/milestones/v3.1-ROADMAP.md`
 
-#### Phase 30: Logging Cleanup ✓ completed 2026-02-20
-**Goal**: Migrate console.log to Pino structured logging and enforce with ESLint
-**Depends on**: Phase 29
-**Requirements**: LOG-01, LOG-02
-**Success Criteria** (what must be TRUE):
-  1. All operational console.log statements replaced with appropriate Pino logger calls (httpLogger, socketLogger, gameLogger, dbLogger)
-  2. ESLint no-console rule upgraded from warn to error with clean build
-  3. Test files retain console.log for debugging (excluded from no-console rule)
-  4. CI pipeline passes with zero no-console violations
-**Plans**: 2 plans
+- [x] Phase 30: Logging Cleanup (2/2 plans) — completed 2026-02-20
+- [x] Phase 31: Dependency & Lifecycle Polish (1/2 plans, 1 deferred) — completed 2026-02-24
 
-Plans:
-- [x] 30-01-PLAN.md — Migrate all server-side console.log/warn/error to Pino structured logging
-- [x] 30-02-PLAN.md — Remove client-side console.log and upgrade ESLint no-console to error
-
-#### Phase 31: Dependency & Lifecycle Polish
-**Goal**: Remove unused dependencies, configure ArgoCD auth, implement server shutdown client handler
-**Depends on**: Phase 30
-**Requirements**: DEP-01, LIFE-01, ARGO-01
-**Success Criteria** (what must be TRUE):
-  1. zod-validation-error package removed with no broken imports or functionality
-  2. Client displays user-facing notification on server_shutdown WebSocket event before disconnect
-  3. Production ArgoCD rollback workflow has valid ARGOCD_AUTH_TOKEN secret configured and tested
-  4. All three changes deployed and verified in development environment
-**Plans**: 2 plans
-
-Plans:
-- [ ] 31-01-PLAN.md — Remove zod-validation-error dependency and implement server_shutdown client handler
-- [ ] 31-02-PLAN.md — Configure ARGOCD_AUTH_TOKEN GitHub repository secret
+</details>
 
 ## Progress
 
@@ -101,11 +77,10 @@ Plans:
 | 21-25 | v2.0 | 23/23 | Complete | 2026-02-19 |
 | 26-29 | v3.0 | 9/9 | Complete | 2026-02-20 |
 | 30 | v3.1 | 2/2 | Complete | 2026-02-20 |
-| 31 | v3.1 | 0/2 | Not started | - |
+| 31 | v3.1 | 1/2 (1 deferred) | Complete | 2026-02-24 |
 
-**Total: 6 milestones shipped, 30 phases complete, 113 plans**
-**Current: v3.1 Tech Debt Cleanup — 2/4 plans**
+**Total: 7 milestones shipped, 31 phases complete, 114 plans (1 deferred)**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-20 — Phase 30 Logging Cleanup complete*
+*Last updated: 2026-02-24 — v3.1 archived*

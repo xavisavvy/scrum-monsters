@@ -1,5 +1,31 @@
 # Project Milestones: ScrumQuest
 
+## v3.1 Tech Debt Cleanup (Shipped: 2026-02-24)
+
+**Delivered:** Clean codebase baseline — migrated 394 console statements to Pino structured logging, enforced ESLint no-console at error level, removed unused dependencies, and completed graceful server shutdown client UX.
+
+**Phases completed:** 30-31 (2 phases, 4 plans completed, 1 deferred)
+
+**Key accomplishments:**
+- Migrated 228 server console.log/warn/error statements to Pino structured logging across 17 files using 5 logger types
+- Removed 166 client-side console.log statements across 20 files
+- Upgraded ESLint no-console from warn to error with CI enforcement and targeted exemptions
+- Removed unused zod-validation-error dependency (peer dependency mismatch with Zod 4.x)
+- Implemented graceful server shutdown client notifications with sonner toast and auto-reconnect
+
+**Stats:**
+- 2 phases, 4 plans completed (1 deferred: ARGO-01)
+- 394 console statements addressed (228 server migrated, 166 client removed)
+- 5 days from start to ship (2026-02-20 → 2026-02-24)
+
+**Git range:** `feat(30-01)` → `docs(31-01)`
+
+**Deferred:** ARGO-01 (ArgoCD auth token) — no ArgoCD host deployed, tracked in FUTURE-ENHANCEMENTS.md
+
+**What's next:** Next milestone planning or feature work
+
+---
+
 ## v1.2 SDLC Best Practices (Shipped: 2026-02-03)
 
 **Delivered:** Engineering best practices for PR workflow, security scanning, test quality gates, database migrations, API contracts, load testing, and deployment safety.
