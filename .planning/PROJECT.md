@@ -96,7 +96,18 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(No active milestone — planning next)
+## Current Milestone: v4.0 Hosting & Deployment
+
+**Goal:** Deploy ScrumQuest to AWS Lightsail with Docker containers, custom domain, TLS, full CI/CD pipeline, and production observability — while keeping Replit as a dev/demo fallback.
+
+**Target features:**
+- Dockerfile + Docker Compose (app + PostgreSQL sidecar)
+- AWS Lightsail instance provisioning
+- Custom domain with TLS certificates
+- Full CI/CD pipeline (auto-deploy staging, manual prod promote, rollback)
+- Full observability stack (Prometheus, Grafana, log aggregation)
+- Automated PostgreSQL backups (pg_dump cron)
+- Replit compatibility preserved (no changes needed)
 
 ### Out of Scope
 
@@ -230,4 +241,4 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | Defer ARGO-01 to FUTURE-ENHANCEMENTS | No ArgoCD host deployed, workflow_dispatch prevents accidents | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 after v3.1 milestone*
+*Last updated: 2026-02-24 after v4.0 milestone start*
