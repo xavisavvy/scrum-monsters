@@ -51,19 +51,16 @@ type SocketData = {
 
 export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: RequestHandler | null) {
   // Configure CORS based on environment
-  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
-  const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
-
   const allowedOrigins = process.env.ALLOWED_ORIGINS
     ? process.env.ALLOWED_ORIGINS.split(',').map(o => o.trim())
-    : (process.env.NODE_ENV === 'production' || isReplitDeployment
+    : (process.env.NODE_ENV === 'production'
         ? ['https://scrummonsters.com', 'https://www.scrummonsters.com']
         : '*');
 
   // Office network compatible: More frequent pings to keep connections alive through corporate proxies
-  const pingTimeout = isReplitDeployment ? 60000 : 45000; // 60s/45s - faster detection of dead connections
-  const pingInterval = isReplitDeployment ? 20000 : 20000; // 20s - under most proxy idle timeouts (30-60s)
-  const connectTimeout = isReplitDeployment ? 45000 : 30000; // 45s/30s for initial connection
+  const pingTimeout = 45000; // faster detection of dead connections
+  const pingInterval = 20000; // 20s - under most proxy idle timeouts (30-60s)
+  const connectTimeout = 30000; // initial connection timeout
 
   const io = new SocketIOServer<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>(httpServer, {
     cors: {
@@ -71,7 +68,6 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       methods: ["GET", "POST"],
       credentials: true
     },
-    // Replit-optimized timeout configuration
     pingTimeout,
     pingInterval,
     connectTimeout,
@@ -79,20 +75,17 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     allowUpgrades: true, // Allow upgrading from polling to websocket
     perMessageDeflate: false, // Disable compression for better performance
     httpCompression: false,
-    // Handle proxy headers (critical for Replit)
     path: '/socket.io/',
     serveClient: false,
-    // Replit-specific: Trust proxy headers
     allowEIO3: true, // Support older clients
     cookie: false, // Disable cookies for stateless scaling
     // Max HTTP buffer size for polling fallback
     maxHttpBufferSize: 1e6, // 1MB
-    // Replit autoscale: Be more forgiving with upgrades
     upgradeTimeout: 30000
   });
 
   socketLogger.info({
-    environment: isReplitDeployment ? 'Production' : isReplitPreview ? 'Preview' : 'Local',
+    environment: process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
     pingInterval,
     pingTimeout,
     connectTimeout
@@ -264,22 +257,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         gameState.syncPlayerToLobby(lobby.hostId, lobby);
 
         // Get the correct host based on environment
-        const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === '1';
-        const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
-        const isLocalDevelopment = !isReplitDeployment && !isReplitPreview;
-
-        let host: string;
-        if (isReplitDeployment) {
-          // Published/Production environment on Replit
-          host = 'https://scrummonsters.com';
-        } else if (isReplitPreview) {
-          // Replit preview/development environment
-          host = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-        } else {
-          // Local development - use configured port
-          const port = process.env.PORT || '5001';
-          host = `http://localhost:${port}`;
-        }
+        const host = process.env.NODE_ENV === 'production'
+          ? 'https://scrummonsters.com'
+          : `http://localhost:${process.env.PORT || '5001'}`;
         const inviteLink = `${host}/join/${lobby.id}`;
 
         // Store player-socket mapping

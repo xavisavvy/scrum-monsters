@@ -182,18 +182,7 @@ export function configurePassport() {
 
 // Helper to determine callback URL based on environment
 function getCallbackURL(provider: string): string {
-  const isReplitDeployment = process.env.REPLIT_DEPLOYMENT === "1";
-  const isReplitPreview = process.env.REPLIT_DEV_DOMAIN && !isReplitDeployment;
-
-  let baseUrl: string;
-  if (isReplitDeployment) {
-    baseUrl = "https://scrummonsters.com";
-  } else if (isReplitPreview) {
-    baseUrl = `https://${process.env.REPLIT_DEV_DOMAIN}`;
-  } else {
-    baseUrl = "http://localhost:5000";
-  }
-
+  const baseUrl = process.env.OAUTH_CALLBACK_BASE_URL || 'http://localhost:5000';
   return `${baseUrl}/api/auth/${provider}/callback`;
 }
 
