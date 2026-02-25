@@ -1,317 +1,351 @@
 # Project Research Summary
 
-**Project:** ScrumQuest v3.0 — Hosting Optimization & PostgreSQL Production Setup
-**Domain:** Real-time multiplayer application infrastructure upgrade
-**Researched:** 2026-02-19
+**Project:** ScrumQuest — Docker + AWS Lightsail Deployment
+**Domain:** Production Docker Compose deployment to single VPS with CI/CD, TLS, observability, and data backups
+**Researched:** 2026-02-24
 **Confidence:** HIGH
+
+---
 
 ## Executive Summary
 
-ScrumQuest is a production-ready real-time multiplayer estimation game with a solid architectural foundation. The v3.0 milestone focuses on infrastructure maturation: transitioning from development-only PostgreSQL setup to production-ready database operations, selecting optimal hosting platforms for cost/performance balance, and implementing resource profiling to prevent production issues.
+ScrumQuest's migration from Replit to production hosting on AWS Lightsail is **technically low-risk and organizationally straightforward**. The existing stack already has a multi-stage Dockerfile, docker-compose.yml with health checks, GitHub Actions CI, Prometheus `/metrics` endpoint, and Pino structured logging. The missing pieces are operational: automated deployment workflow, TLS certificate management, database backups, and on-instance observability. No architectural refactoring is required.
 
-The recommended approach leverages **existing infrastructure strengths** — ScrumQuest already has IStorage abstraction with both in-memory and PostgreSQL implementations, Drizzle ORM schema for 7 tables, Kubernetes manifests, and session persistence via connect-pg-simple. The migration to production PostgreSQL is **environment-variable driven, not code-driven**. For hosting, the research recommends **Render.com ($7/month) + Neon PostgreSQL (free tier with scale-to-zero)** for MVP testing ($7-14/month total), with a clear path to Kubernetes for high-traffic production. This balances operational simplicity with cost control while maintaining compatibility with the existing Kubernetes infrastructure.
+**The recommended path** is a Lightsail Micro instance ($10/mo) with Docker Compose, an Nginx reverse proxy for TLS termination via Let's Encrypt, GitHub Actions CI/CD deploying to the instance via SSH, automated daily pg_dump to S3, and a lightweight on-instance monitoring stack (Prometheus + Grafana). With containerized PostgreSQL as a sidecar (no managed DB fee), total cost lands at $15-20/mo — equal to or less than current Replit spend — while gaining full control, backups, and observability. The 1GB RAM constraint is manageable: app (~300MB), PostgreSQL (~150MB), monitoring (~150MB), and OS overhead (~100MB) fit within budget when Prometheus retention and memory limits are properly configured.
 
-Key risks center on **connection pool exhaustion** (prevent with proper sizing: `max: 10-20` connections based on CPU cores), **memory leaks** in long-running Node.js processes (detect with Clinic.js HeapProfiler), and **database migration failures** (mitigate with staging tests + advisory locks). The research provides clear prevention strategies, monitoring approaches, and mitigation paths for 11 identified pitfalls across critical/moderate/minor severity levels.
+**The primary risk** is not infrastructure complexity but operational correctness on first deploy: graceful shutdown must be implemented before the first production deployment (dropped WebSocket connections during deploys cause user churn), secrets must never touch git (one mistake exposes the database), and monitoring containers must have memory limits or they will starve the app. These are all solvable within the first two phases.
+
+---
 
 ## Key Findings
 
 ### Recommended Stack
 
-The hosting optimization research identified **managed platforms** as the optimal choice for v3.0 MVP launch, with a clear upgrade path to Kubernetes at scale.
+Both research streams agreed on the same core approach with minor differences in tooling choices. Where they differed, this summary prefers the more conservative and battle-tested recommendation.
 
 **Core technologies:**
-- **Render.com ($7/month)**: Primary hosting platform — native WebSocket support without timeouts, persistent connections, service-based scaling, managed databases with automatic backups. Best balance of simplicity and production features.
-- **Neon PostgreSQL (free tier)**: Serverless database with scale-to-zero — 0.5GB storage, 100 CU-hours/month free, autoscaling, connection pooling built-in. Ideal for development/MVP with $0 cost when idle.
-- **Clinic.js + autocannon**: Resource profiling suite — automated performance analysis identifying event loop delays, CPU bottlenecks, memory leaks with actionable recommendations. Use in staging before production deploys.
-- **PM2**: Process management — memory limit auto-restart (`max_memory_restart: 500M`), cluster mode for multi-core utilization, zero-downtime reloads, real-time dashboard.
-- **socket.io-prometheus**: Custom WebSocket metrics — tracks concurrent connections, room counts, event throughput. Integrates with existing Prometheus/Grafana monitoring stack.
 
-**Version compatibility verified:**
-- postgres@^3.4.8 with drizzle-orm@^0.45.1 (already installed)
-- prom-client@^15.1.3 with socket.io@^4.8.3 (already installed)
-- Clinic.js with Node.js 18+ (current: tsx@^4.21.0)
+- **AWS Lightsail Micro ($10/mo)**: 1 vCPU, 1GB RAM, 40GB disk — sufficient for 50 concurrent users. Includes 1TB/mo free data transfer, critical for WebSocket-heavy games. Lightsail Instances preferred over Lightsail Containers ($40+/mo) given budget constraint.
+- **Docker + Docker Compose 2.24+**: Already in use locally. Production-viable for single-instance; handles PostgreSQL, Redis, app, monitoring sidecars via `restart: unless-stopped` and health checks.
+- **Node.js 22 (node:22-slim image)**: Node 20 reaches EOL April 30, 2026. node:22-slim has better musl compatibility vs. alpine and 30% smaller than full node image.
+- **Nginx Proxy Manager (Docker container)**: GUI-based reverse proxy with built-in Let's Encrypt automation and WebSocket support. Lower error rate than hand-crafted nginx config. Requires explicit `Upgrade` and `Connection` header forwarding for Socket.IO. Caddy is a valid alternative with simpler config and better cert renewal automation.
+- **Let's Encrypt via certbot or Caddy**: Free, automated 90-day renewal. Caddy was recommended by one research thread specifically for reducing TLS operational risk (fully automatic, no cron dependency).
+- **GitHub Actions + AWS CLI**: Existing CI (lint, test, build) extended with a `deploy-lightsail.yml` workflow. Staging auto-deploys on push to main; production requires manual `workflow_dispatch`. GitHub OIDC for AWS avoids long-lived access keys in secrets.
+- **GHCR (GitHub Container Registry)**: Free for GitHub repos, authenticated automatically via `GITHUB_TOKEN`. Tag strategy: `latest`, `sha-<commit>`, and semantic versions for rollback support.
+- **PostgreSQL 16-alpine (sidecar)**: Containerized on same instance saves $15/mo vs. managed Lightsail DB. Acceptable for fewer than 500 concurrent users; migrate to managed at scale. Named Docker volume for persistence.
+- **Redis 7-alpine (optional)**: Session store and Socket.IO adapter. Can be omitted on 512MB instance; recommended on 1GB instance. Required for future horizontal scaling.
+- **Prometheus 2.54+ + Grafana 10+**: On-instance containers, bound to `127.0.0.1` only. Access via SSH tunnel. Prometheus retention set to 7 days to limit disk and memory. Grafana uses SQLite backend.
+- **postgres-backup-s3 sidecar**: Community Docker image (`eeshugerman/postgres-backup-s3`) for automated daily pg_dump to S3 at 2am UTC. 30-day retention via S3 lifecycle policy.
 
-**Critical configuration:**
-- PostgreSQL connection pooling: `max: 10` for serverless (Neon), `max: 20` for dedicated instances (Railway/Render)
-- PM2 memory limits: `max_memory_restart: '500M'` prevents OOM crashes
-- Socket.IO compression: `perMessageDeflate: { threshold: 1024 }` reduces bandwidth 60-80%
+**Versions verified (February 2026):**
+
+| Tool | Recommended Version |
+|------|---------------------|
+| Node.js image | `node:22-slim` |
+| PostgreSQL | `postgres:16-alpine` |
+| Redis | `redis:7-alpine` |
+| Prometheus | `prom/prometheus:v2.54.1` |
+| Grafana | `grafana/grafana:10.2.2` |
+| Docker Compose | `2.24+` |
+| AWS CLI | `v2.33.26+` |
+
+**Alternatives explicitly rejected:**
+
+- Lightsail Containers: $40+/mo minimum, exceeds budget
+- ECS Fargate or EKS: Overkill, $50+/mo, requires ops team knowledge
+- Datadog or New Relic: $50+/mo, incompatible with budget
+- CloudWatch Logs: $0.50/GB ingestion cost; Docker native logs are sufficient
+- ArgoCD or GitOps: GitHub Actions CI is sufficient; ArgoCD adds operational burden for single team
+- Kubernetes: Existing k8s manifests in repo are preserved as reference but not used for this deployment target
 
 ### Expected Features
 
-Research identified **8 table stakes** features for production readiness and **7 differentiators** for operational excellence.
+Research converged tightly on a prioritized feature hierarchy. Both research threads identified identical table-stakes items.
 
-**Must have (table stakes):**
-- **PostgreSQL Connection Pooling** — sized by formula: `(core_count * 2) + spindle_count` per instance. With 5 instances + 100-conn limit = 20 conns/instance max.
-- **Session Persistence (PostgreSQL)** — users stay logged in across server restarts. Already implemented via connect-pg-simple with `createTableIfMissing: true`.
-- **Database Migrations (Production)** — versioned migrations with `drizzle-kit generate` + `drizzle-orm migrate()` for audit trail and rollback. Migration job already exists in k8s/base/migration-job.yaml.
-- **Graceful Shutdown** — listen for SIGTERM/SIGINT, close HTTP server, drain active connections (with timeout), close DB pool.
-- **Memory Leak Detection** — run Clinic.js HeapProfiler in staging to identify leaks before production (constantly increasing Heap Used = leak).
-- **Automated Database Backups** — daily backups minimum, 7 daily + 4 weekly retention, pg_dump with gzip compression.
-- **Environment-Based Config** — validate required env vars on startup (DATABASE_URL, RECONNECT_TOKEN_SECRET), fail fast if missing.
-- **Basic Health Checks** — enhancement to existing `/api/health`: add database connectivity check (`SELECT 1` query).
+**Must have (table stakes — all required before production launch):**
 
-**Should have (competitive):**
-- **Redis Adapter for Horizontal Scaling** — only needed above 10K concurrent connections. Uses Redis Pub/Sub to route messages between Socket.IO servers. Defer to Phase 4+.
-- **Clinic.js Performance Suite** — four tools (Doctor, BubbleProf, Flame, HeapProfiler) for automated performance analysis. Run in CI/staging before production deploys.
-- **V8 Garbage Collection Tuning** — reduce GC pauses 30-50% with `--max-semi-space-size=64` flag. Profile first with `--trace-gc`.
-- **Database Query Optimization** — indexes on frequently queried columns (userId, lobbyId, createdAt) for 10x+ faster lookups.
-- **WebSocket Compression** — built-in Socket.IO feature, enable with `perMessageDeflate: { threshold: 1024 }`.
-- **Prometheus Custom Dashboards** — pre-built Grafana dashboards for WebSocket metrics (connections, messages/sec, room occupancy, battle phase distribution).
-- **Automated Database Cleanup Jobs** — weekly cleanup: `DELETE FROM sessions WHERE expire < NOW()`, keep estimation_history last 90 days.
+- HTTPS on custom domain (non-self-signed TLS via Let's Encrypt)
+- Health checks and container auto-restart (`restart: unless-stopped`)
+- Graceful shutdown (SIGTERM handler, drains WebSocket connections for 30s before exit)
+- Database persistence (named Docker volumes)
+- Automated database backups (daily pg_dump to S3)
+- Basic monitoring (Prometheus scraping `/metrics`, Grafana dashboards)
+- Uptime alerts (email notification within 5 min of downtime via Healthchecks.io or AlertManager)
+- Automated CI/CD deployments (staging: auto on push; prod: manual trigger)
+- Rollback capability (prior image tag redeploy in under 5 min)
+- Secrets management (.env file not in git; GitHub Actions OIDC for AWS)
 
-**Defer (v2+):**
-- **Socket.IO State Recovery** — complements existing reconnection tokens. Server remembers room memberships + pending messages during disconnect. Already have reconnection system that works.
-- **Connection Rate Limiting** — prevent abuse/DDoS. Add when abuse detected or before public launch.
+**Should have (high-value differentiators, after table stakes):**
 
-**Anti-features (explicitly avoid):**
-- Custom database connection manager (use postgres.js pooling)
-- In-memory session store in production (catastrophic on restart/scale)
-- Serverless/Lambda for WebSocket (cold starts on every reconnection >1s)
-- Custom profiling tools (use mature Clinic.js suite)
+- Zero-downtime deployments (blue-green via `docker-compose up -d --no-deps --build app`)
+- Real-time observability dashboard (Prometheus + Grafana, Socket.IO-specific metrics)
+- Automated database migrations run before app starts (Drizzle migrate, not `db:push`)
+- Post-deploy smoke tests (existing Playwright E2E tests in CI)
+
+**Defer to v2+ (not essential at fewer than 100 users):**
+
+- Multi-region deployment
+- Auto-scaling (requires Redis adapter and horizontal app instances)
+- APM tools (Datadog, New Relic)
+- Distributed tracing (Jaeger, Tempo)
+- Service mesh (Istio, Linkerd)
+- Managed PostgreSQL on Lightsail RDS (revisit at 500+ concurrent users)
+
+**Constraints to design around (single-VPS inherent limitations):**
+
+- Single point of failure: 99.5% uptime is realistic target (not 99.9%). Design for fast recovery via backups, not HA.
+- Disk shared by app and database: Monitor at 80%, critical at 90%. Configure log rotation.
+- No horizontal scaling without Redis adapter refactor.
 
 ### Architecture Approach
 
-ScrumQuest has a **clear data persistence boundary** already implemented: ephemeral game state (lobbies, combat, votes) in memory Maps, permanent user data (profiles, stats, history, sessions) in PostgreSQL via IStorage abstraction. The migration from MemStorage to PgStorage is **environment-variable driven** (`DATABASE_URL` presence), not a code migration.
+The production topology is a single Lightsail Micro instance running a Docker Compose stack. Internet traffic hits port 443 via Nginx Proxy Manager (TLS termination), which forwards HTTP internally to the app container on port 5000. PostgreSQL and Redis are internal-only services on the `scrumquest` bridge network. Prometheus and Grafana bind to `127.0.0.1` only and are accessed via SSH tunnel. A `postgres-backup-s3` sidecar runs pg_dump nightly. A systemd service unit file ensures Docker Compose restarts automatically on VPS reboot.
 
-**Major components:**
-1. **gameState.ts** — lobby lifecycle, player management, game phases. In-memory Map, ephemeral (cleared on restart).
-2. **storage.ts** — user CRUD, stats, estimation history, OAuth accounts. PostgreSQL via IStorage interface, survives restarts.
-3. **SessionManager** — authentication, session handling. PostgreSQL sessions table via connect-pg-simple when DATABASE_URL set.
-4. **ProgressionManager** — XP, levels, class mastery. Persisted to PostgreSQL after battles via IStorage.
-5. **Connection Pool (postgres.js)** — pooling configuration: size 10-20 based on instance type, idle timeout 30s, max lifetime 1 hour.
+**Major components and their responsibilities:**
 
-**Integration patterns:**
-- **Game completion → persistence flow**: Add hooks in `completeConsensus()` to call `storage.recordEstimation()` for each player, then `ProgressionManager.awardXP()`. Requires player → userId mapping on join.
-- **Connection pooling setup**: Add `{ max: 10, idle_timeout: 30, connect_timeout: 10 }` to postgres() call in storage.ts (currently missing explicit pool config).
-- **Migration system**: Already production-ready with k8s migration-job.yaml (ArgoCD PreSync hook, wave 5 before app deployment).
+1. **Nginx Proxy Manager** — TLS termination, Let's Encrypt cert lifecycle, WebSocket header forwarding, HTTP-to-HTTPS redirect
+2. **ScrumQuest App (Node.js)** — Game logic, Socket.IO WebSocket events, Express API, Prometheus metrics on `/metrics`, health check on `/api/health`
+3. **PostgreSQL 16** — Persistent storage for user data, game results, sessions (`connect-pg-simple`). Named volume for data persistence. Health check via `pg_isready`.
+4. **Redis 7** — Session store and Socket.IO adapter (required for future horizontal scaling). Optional at 512MB, recommended at 1GB.
+5. **postgres-backup-s3** — Scheduled daily pg_dump to S3. Auto-deletes backups older than 30 days.
+6. **Prometheus + Grafana** — On-instance monitoring. Prometheus scrapes `/metrics` every 60s (not default 15s to reduce memory pressure). Grafana bound to localhost, accessible via SSH tunnel.
+7. **Certbot container or Caddy** — TLS certificate renewal automation. Caddy preferred for lower operational risk; certbot with volume persistence is valid alternative.
+8. **Systemd service** — Ensures `docker-compose up -d` runs on VPS reboot.
+9. **GitHub Actions CI/CD** — Build, test, push image to GHCR, deploy to Lightsail via SSH and `docker-compose up -d --no-deps --build app`. Staging auto on push; prod manual.
 
-**Hosting platform compatibility:**
-- **Current Kubernetes**: 3 replicas (prod), 512Mi/1Gi resources, PostgreSQL StatefulSet with 5Gi PVC. Cost: $50-100/month cluster.
-- **Alternative Render**: Web service ($7/month) + managed PostgreSQL ($7-20/month). Sticky sessions built-in for WebSocket. Cost: $14-27/month.
-- **Migration path**: Start with Render for MVP (<1000 users), migrate to Kubernetes when traffic justifies cluster cost (1000+ concurrent users).
+**Key patterns to follow:**
+
+- App container runs as non-root user (`USER nodejs`)
+- Secrets passed as environment variables from `.env` file (never in git)
+- All internal services use Docker Compose DNS names (`postgres`, `redis`, `prometheus`)
+- External ports 80 and 443 only. Database (5432), Redis (6379), Prometheus (9090), Grafana (3000) bind to `127.0.0.1`
+- Drizzle migration job runs before app starts on each deployment
+
+**State management:**
+
+- In-memory game state (lobbies, combat) is ephemeral — acceptable for WebSocket-based game (users rejoin on app restart)
+- Session state is in PostgreSQL via `connect-pg-simple` — persists across app restarts
+- Database backups protect persistent data with RTO approximately 15-30 min, RPO 24 hours
 
 ### Critical Pitfalls
 
-Research identified 11 pitfalls across 3 severity levels. Top 5 by impact:
+Both research threads identified identical top pitfalls with the same prevention strategies. Listed in priority order:
 
-1. **Connection Pool Exhaustion (CRITICAL)** — all PostgreSQL connections in use, new queries timeout. **Prevention:** Size pool by formula `(core_count * 2) + spindle_count`, set `connect_timeout: 10000` to fail fast, monitor with Prometheus (alert when >90% utilization). **Detection:** "connection acquisition timeout" errors, `pool.totalCount === pool.max`, query latency spikes (p95 >200ms).
+1. **Graceful shutdown not implemented** — Docker sends SIGTERM, app exits immediately, all WebSocket connections drop, in-progress games crash. Prevention: Add SIGTERM handler in `server/index.ts` that drains connections for 30s before exit. Use `CMD ["node", "dist/index.js"]` in Dockerfile (not `npm start` — npm does not forward signals). Set `stop_grace_period: 45s` in docker-compose.yml. Test by deploying during active game. This must ship before the first production deployment.
 
-2. **Memory Leaks in Long-Running Processes (CRITICAL)** — Node.js accumulates unreleased objects over hours/days, heap grows until OOM crash. **Prevention:** Run Clinic.js HeapProfiler in staging (`clinic heapprofiler -- node dist/index.js`) for 30+ minutes, always call `socket.off()` in cleanup, set PM2 memory limit `max_memory_restart: '500M'`. **Detection:** Process RSS grows >100MB/hour continuously, constantly increasing heapUsed, Clinic.js flame graph shows accumulating allocations.
+2. **Monitoring stack consumes all RAM on 1GB VPS** — Prometheus without memory limits can balloon to 400MB+, starving the app. Prevention: Set Docker memory limits on Prometheus (256MB) and Grafana (256MB). Configure Prometheus retention: `--storage.tsdb.retention.time=7d` and `--storage.tsdb.retention.size=500MB`. Increase scrape interval to 60s. Never use per-player label cardinality on Prometheus metrics (high cardinality explodes memory).
 
-3. **Unhandled Promise Rejections (CRITICAL)** — async errors crash entire process in production. Database failures, network timeouts, validation errors all terminate server if not caught. **Prevention:** Global handler `process.on('unhandledRejection', (err) => { logger.error(err); })`, wrap all async operations in try/catch, test error paths (disconnect database during query). **Detection:** Process exits with code 1 unexpectedly, "UnhandledPromiseRejectionWarning" in logs, PM2 shows frequent restarts.
+3. **Secrets committed to git** — DATABASE_URL or SESSION_SECRET in docker-compose.yml or .env file pushed to repo exposes production credentials. Prevention: Verify `.gitignore` includes `.env` before first commit. Use `git check-ignore .env` to confirm. Use environment variable substitution in docker-compose.yml (`${DATABASE_URL}`) never hardcoded values.
 
-4. **Database Migration Failures (CRITICAL)** — schema changes fail mid-deployment, database left in inconsistent state. **Prevention:** Test ALL migrations in staging first, use Drizzle's migration tracking table (`__drizzle_migrations`), lock migration execution with PostgreSQL advisory locks, wrap in transactions. **Detection:** Deployment fails with SQL syntax errors, tables half-created, `__drizzle_migrations` shows partial application.
+4. **TLS certificate renewal failure** — Let's Encrypt certs expire after 90 days. If renewal automation fails silently, HTTPS breaks for all users. Prevention: Use Caddy (handles renewal automatically) or ensure certbot container has persistent volume for cert storage. Set Prometheus alert for cert expiry under 14 days. Test renewal in staging before production.
 
-5. **Event Loop Blocking (MODERATE)** — synchronous operations block event loop, WebSocket message processing stops, players experience lag. **Prevention:** Use async file operations (`fs.promises` not `fs.readFileSync`), offload heavy computation to worker threads, monitor event loop lag with Prometheus (alert >100ms), parse JSON incrementally for payloads >1MB. **Detection:** `process_event_loop_lag_seconds` metric spikes, players report lag during voting/battle, Clinic.js Doctor shows "Event Loop" bottleneck.
+5. **Database connection exhaustion on app restart** — App creates PostgreSQL connections but doesn't close them on SIGTERM. After multiple restarts, PostgreSQL reports "too many connections." Prevention: Include `await db.end()` in SIGTERM handler. Monitor `pg_stat_activity` count in Prometheus. Alert if connections exceed 80% of max.
 
-**Phase-specific warnings:**
-- **Phase 1 (Database Foundation)**: Watch for PIT-01 (Pool Exhaustion), PIT-04 (Migration Failures) — test migrations in staging, size pool based on CPU cores.
-- **Phase 2 (Reliability)**: Watch for PIT-03 (Unhandled Rejections), PIT-07 (Backup Failure) — add global error handler, test restoration monthly.
-- **Phase 3 (Performance)**: Watch for PIT-02 (Memory Leaks), PIT-05 (Event Loop Blocking) — run Clinic.js in staging, monitor event loop lag.
+6. **No rollback strategy** — Bad deploy pushed to prod with no quick way to revert. Prevention: Tag GHCR images with `sha-<commit>` (not just `latest`). Keep last 5 image tags in registry. GitHub Actions `workflow_dispatch` with `rollback_version` input parameter.
+
+---
 
 ## Implications for Roadmap
 
-Based on research, v3.0 milestone should be structured as **3 sequential phases** (Database Foundation → Reliability & Monitoring → Performance Optimization) with Phase 4+ deferred post-launch.
+Both research streams independently converged on the same 4-5 phase structure. This synthesis merges them into a definitive recommended structure.
 
-### Phase 1: Database Foundation (Week 1)
-**Rationale:** Can't go to production without reliable database setup. These are blocking requirements that must complete before any deployment.
-**Delivers:** Production-ready PostgreSQL with connection pooling, versioned migrations, persistent sessions, environment-specific configuration.
-**Addresses:**
-- PostgreSQL Connection Pooling (FEATURES.md table stakes)
-- Database Migrations Production (FEATURES.md table stakes)
-- Session Persistence PostgreSQL (FEATURES.md table stakes)
-- Environment-Based Config (FEATURES.md table stakes)
+### Phase 1: Infrastructure Foundation
 
-**Avoids:**
-- PIT-01 (Connection Pool Exhaustion) via proper pool sizing
-- PIT-04 (Database Migration Failures) via staging tests + advisory locks
-- PIT-10 (Dev/Prod Database Bleeding) via environment validation
+**Rationale:** Cannot deploy or test anything without working infrastructure, HTTPS, and auto-restart. This phase is the unblocking prerequisite for all subsequent phases.
 
-**Implementation notes:**
-- Add explicit pool config to storage.ts: `{ max: 10, idle_timeout: 30, connect_timeout: 10 }`
-- Migration system already exists (k8s/base/migration-job.yaml), verify ArgoCD PreSync hook
-- Session persistence already implemented (connect-pg-simple), just needs DATABASE_URL set
-- Add startup validation for required env vars (DATABASE_URL, RECONNECT_TOKEN_SECRET, NODE_ENV)
+**Delivers:** ScrumQuest running on AWS Lightsail with HTTPS, custom domain, and auto-restart on VPS reboot.
 
-### Phase 2: Reliability & Monitoring (Week 2)
-**Rationale:** Production reliability essentials before accepting real users. Monitoring prevents issues, graceful shutdown prevents data loss, backups enable disaster recovery.
-**Delivers:** Production-ready error handling, health checks with database connectivity, automated backups with restoration testing, graceful shutdown on deployments.
-**Uses:**
-- PM2 for process management (STACK.md)
-- Prometheus + Grafana (existing k8s/infrastructure/monitoring/)
-- pg_dump for backups (STACK.md)
+**Addresses (from FEATURES.md):**
+- HTTPS on custom domain
+- Health checks and auto-restart
+- Database persistence
+- Secrets management
 
-**Implements:**
-- Graceful Shutdown (FEATURES.md table stakes)
-- Enhanced Health Checks with DB connectivity (FEATURES.md table stakes)
-- CPU/Event Loop Monitoring (FEATURES.md table stakes)
-- Automated Database Backups (FEATURES.md table stakes)
+**Implements (from ARCHITECTURE.md):**
+- Lightsail Micro instance provisioning
+- Docker Compose production stack (app, postgres, redis, nginx-proxy-manager)
+- Systemd service unit for auto-start
+- DNS routing to Lightsail IP
 
-**Avoids:**
-- PIT-03 (Unhandled Promise Rejections) via global error handler
-- PIT-07 (Backup Failure Silent) via alerting + monthly restoration tests
-- PIT-11 (Aggressive Health Check Timeouts) via generous 5-10s timeout
+**Avoids (from PITFALLS.md):**
+- Secrets in git (.gitignore + env var substitution)
+- Missing health checks (already in Dockerfile + Compose, verify correct)
 
-**Implementation notes:**
-- Add global handler: `process.on('unhandledRejection', (err) => { logger.error(err); })`
-- Enhance `/api/health`: add `await db.query('SELECT 1')` with try/catch
-- Set up PM2 with `max_memory_restart: '500M'` in ecosystem.config.cjs
-- Schedule backup job (node-schedule or cron): daily pg_dump, compress with gzip, 7 daily + 4 weekly retention
+**Research flag:** Minimal. DNS setup is provider-specific (15 min lookup). Standard patterns for Lightsail provisioning and Nginx Proxy Manager setup.
 
-### Phase 3: Performance Optimization (Week 3)
-**Rationale:** Performance improvements with high ROI and low complexity. Do these before scaling features to establish baselines and prevent issues at scale.
-**Delivers:** Indexed database queries, reduced bandwidth via compression, optimized garbage collection, memory leak detection in staging environment.
-**Uses:**
-- Clinic.js for profiling (STACK.md)
-- socket.io-prometheus for WebSocket metrics (STACK.md)
-- V8 GC tuning flags (STACK.md)
+---
 
-**Implements:**
-- Database Query Optimization (FEATURES.md differentiator)
-- WebSocket Compression (FEATURES.md differentiator)
-- V8 Garbage Collection Tuning (FEATURES.md differentiator)
-- Memory Leak Detection (FEATURES.md table stakes)
+### Phase 2: Production Hardening
 
-**Avoids:**
-- PIT-02 (Memory Leaks) via Clinic.js HeapProfiler in staging
-- PIT-05 (Event Loop Blocking) via monitoring + async operations
-- PIT-08 (Environment Variable Leakage) via sanitized error logging
+**Rationale:** Must complete before accepting real users. Graceful shutdown and backups prevent catastrophic data loss. Not optional.
 
-**Implementation notes:**
-- Add indexes to schema: `index('user_stats_user_id_idx').on(userStats.userId)`, similar for estimationHistory, sessions
-- Enable Socket.IO compression: `perMessageDeflate: { threshold: 1024 }` in server/websocket.ts
-- Add V8 flags to start script: `--max-semi-space-size=64` (profile first with `--trace-gc`)
-- Run Clinic.js in staging: `clinic heapprofiler -- node dist/index.js` for 30+ minutes under load
+**Delivers:** Deployments that do not drop connections, automated data protection, and uptime alerts.
 
-### Phase 4+: Scaling (Post-Launch, Deferred)
-**Rationale:** These features support scale beyond initial launch requirements (budget: $5-20/mo → likely <1000 users initially). Validate product-market fit first, then scale infrastructure.
-**Deferred features:**
-- Redis Adapter for Horizontal Scaling (FEATURES.md differentiator) — only needed above 10K concurrent connections
-- Socket.IO State Recovery (FEATURES.md differentiator) — already have reconnection system that works
-- Connection Rate Limiting (FEATURES.md differentiator) — add when abuse detected or before public launch
-- Prometheus Custom Dashboards (FEATURES.md differentiator) — build incrementally as monitoring needs grow
-- Automated Database Cleanup Jobs (FEATURES.md differentiator) — schedule after 1 month of production data
+**Addresses (from FEATURES.md):**
+- Graceful shutdown (SIGTERM handler)
+- Automated database backups
+- Rollback capability
+- Uptime alerts
 
-**Trigger for Phase 4:** Either (1) concurrent connections approaching 5K on single instance, or (2) hosting costs exceed $50/month, or (3) evidence of abuse requiring rate limiting.
+**Implements (from ARCHITECTURE.md):**
+- SIGTERM handler in `server/index.ts` with 30s drain window
+- `stop_grace_period: 45s` in docker-compose.yml
+- postgres-backup-s3 sidecar with daily S3 uploads
+- Image tagging strategy (sha + semver) in GitHub Actions
+- Healthchecks.io or AlertManager integration
+
+**Avoids (from PITFALLS.md):**
+- Graceful shutdown not implemented (Critical Pitfall 1)
+- No rollback strategy (Critical Pitfall 6)
+- No database backups
+
+**Research flag:** Graceful shutdown for Socket.IO needs testing — drain logic for in-progress games requires verification. The 30s drain window is standard, but ScrumQuest-specific connection lifecycle may have edge cases.
+
+---
+
+### Phase 3: CI/CD Pipeline
+
+**Rationale:** Manual SSH deploys are error-prone and slow. GitHub Actions automation is required for sustainable operations. Depends on stable infrastructure from Phases 1-2.
+
+**Delivers:** Automated staging deployments on push to main, manual production deployments via GitHub Actions UI, post-deploy smoke tests.
+
+**Addresses (from FEATURES.md):**
+- Automated deployments (staging auto, prod manual)
+- Post-deploy validation (Playwright E2E smoke tests)
+- Zero-downtime deployments via `--no-deps --build`
+
+**Implements (from ARCHITECTURE.md):**
+- `.github/workflows/deploy-lightsail.yml`
+- GitHub OIDC for AWS (no stored access keys)
+- GHCR image push with SHA and semver tags
+- SSH-based deployment to Lightsail instance
+- Drizzle migration job before app container start
+
+**Avoids (from PITFALLS.md):**
+- Database migrations not coordinated with deployments (run migrate before app start)
+- Secrets in GitHub Actions (OIDC eliminates stored AWS credentials)
+
+**Research flag:** GitHub Actions OIDC IAM role configuration for Lightsail is well-documented but requires AWS console walkthrough during implementation. Standard pattern overall.
+
+---
+
+### Phase 4: Observability
+
+**Rationale:** After CI/CD is working and production is stable, monitoring surfaces memory trends, error rates, and game-specific metrics that inform future optimization decisions.
+
+**Delivers:** Prometheus + Grafana dashboards accessible via SSH tunnel, uptime monitoring, game-specific metrics.
+
+**Addresses (from FEATURES.md):**
+- Performance monitoring (CPU, memory, latency)
+- WebSocket real-time metrics (active lobbies, player count)
+- Error rate alerting
+
+**Implements (from ARCHITECTURE.md):**
+- Prometheus container bound to 127.0.0.1:9090
+- Grafana container bound to 127.0.0.1:3000
+- prometheus.yml scrape config targeting `app:5000/metrics`
+- Grafana dashboards: system health, application metrics, database connections, infrastructure
+- SSH tunnel runbook for accessing dashboards
+
+**Avoids (from PITFALLS.md):**
+- Monitoring stack consuming all RAM (memory limits, 7-day retention, 60s scrape interval, no per-player metric cardinality)
+
+**Research flag:** Prometheus memory behavior on 1GB instance under real traffic should be validated empirically. Monitor `docker stats` for first 48 hours after enabling Prometheus. Standard stack otherwise.
+
+---
+
+### Phase 5: Backup Verification and Disaster Recovery
+
+**Rationale:** Backups are only as good as the last successful restore test. This phase proves data recovery works end-to-end and documents runbooks for incident response.
+
+**Delivers:** Validated backup and restore workflow, documented incident response runbook, RTO/RPO SLAs defined.
+
+**Addresses (from FEATURES.md):**
+- Backup restore tested (not just "backups exist")
+- Runbooks for common incidents
+- TLS certificate renewal tested
+
+**Implements (from ARCHITECTURE.md):**
+- End-to-end pg_restore test from S3 backup
+- S3 lifecycle policy (auto-delete after 30 days)
+- Incident response runbook (restart, restore, rollback procedures)
+- TLS certificate renewal test in staging
+
+**Avoids (from PITFALLS.md):**
+- TLS renewal failure (test renewal before cert expires)
+- Backup restore failure when needed (monthly test restore)
+
+**Research flag:** Standard pattern. No additional research needed.
+
+---
 
 ### Phase Ordering Rationale
 
-- **Sequential, not parallel**: Each phase builds on the previous. Can't optimize performance (Phase 3) without reliable monitoring (Phase 2). Can't monitor effectively without stable database (Phase 1).
-- **Database first**: Connection pooling, migrations, sessions are foundational. Without these, app crashes or loses data on restart. Everything else depends on stable database.
-- **Reliability before optimization**: Add error handling and monitoring (Phase 2) before performance tuning (Phase 3). Need monitoring baselines to measure optimization impact.
-- **Defer scaling features**: Redis adapter, state recovery, rate limiting only matter above 1000 concurrent users. MVP target: <100 users. Don't pay complexity cost until needed.
+- **Phase 1 blocks all others**: Without running infrastructure, nothing else can be tested or deployed.
+- **Phase 2 must precede real users**: Graceful shutdown protects active sessions; backups protect data. Both are non-negotiable before production traffic.
+- **Phase 3 after infrastructure is stable**: CI/CD automation is harder to debug when infrastructure is still shifting. Validate docker-compose manually first.
+- **Phase 4 after CI/CD**: Observability is more useful once the deployment pipeline is automated — you can watch metrics across multiple deploys.
+- **Phase 5 last**: Backup validation and DR runbooks are confirmation work, not blocking. postgres-backup-s3 was set up in Phase 2; this phase validates it.
 
-**Critical path dependencies:**
-```
-Phase 1: Database Foundation
-  ├─> Connection Pooling → Session Persistence
-  └─> Database Migrations → Automated Backups (Phase 2)
+### Research Flags Summary
 
-Phase 2: Reliability & Monitoring
-  ├─> Graceful Shutdown → Health Checks
-  └─> Error Handling → Monitoring Setup
-      └─> Performance Optimization (Phase 3)
+| Phase | Research Needed | Standard Patterns |
+|-------|----------------|-------------------|
+| Phase 1 | DNS provider-specific routing (15 min lookup) | Lightsail provisioning, Nginx Proxy Manager, docker-compose production |
+| Phase 2 | Socket.IO graceful drain testing for game session edge cases | SIGTERM patterns, pg_dump to S3, Healthchecks.io setup |
+| Phase 3 | GitHub OIDC IAM role config walkthrough | GitHub Actions deploy workflows, GHCR tagging, Drizzle migrations |
+| Phase 4 | Prometheus memory validation under real traffic | Prometheus + Grafana on Docker, SSH tunnel access |
+| Phase 5 | None | pg_restore from S3, cert renewal testing, runbook templates |
 
-Phase 3: Performance Optimization
-  ├─> Query Optimization → Memory Leak Detection
-  └─> GC Tuning → WebSocket Compression
-```
-
-### Research Flags
-
-**Needs deeper research during planning:**
-- **Phase 4+ (Horizontal Scaling)**: Redis adapter configuration for Socket.IO, sticky session setup on load balancers, pub/sub message routing patterns. Current research covers concepts but not implementation details. Use `/gsd:research-phase` when implementing.
-
-**Standard patterns (skip research-phase):**
-- **Phase 1 (Database Foundation)**: Well-documented patterns. Drizzle migrations already configured, connection pooling is standard postgres.js config, session persistence already implemented. Follow existing codebase patterns.
-- **Phase 2 (Reliability & Monitoring)**: Prometheus/Grafana already set up (k8s/infrastructure/monitoring/), pg_dump is standard PostgreSQL tooling, PM2 has extensive documentation. No novel research needed.
-- **Phase 3 (Performance Optimization)**: Clinic.js has official docs with clear usage, V8 GC tuning is well-documented, Socket.IO compression is single config flag. Straightforward implementation.
-
-**Knowledge gaps to fill during execution:**
-- **Hosting platform selection**: Research provides options (Render/Fly.io/Railway), but final decision needs budget clarity and traffic projections. Determine during Phase 1 planning.
-- **Backup storage provider**: Research mentions S3 for backup uploads but doesn't specify Neon/Render managed backup capabilities. Investigate native backup features before implementing custom solution.
-- **PM2 cluster mode compatibility**: Research mentions cluster mode but doesn't detail Socket.IO sticky session compatibility. Verify sticky sessions work with PM2 cluster before enabling.
+---
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All hosting platforms verified with 2026 pricing (Render, Railway, Fly.io, Neon). PostgreSQL services confirmed with current free tier limits. Profiling tools (Clinic.js, PM2) actively maintained with recent documentation. Version compatibility verified against existing package.json. |
-| Features | HIGH | Feature categorization based on production Node.js/Socket.IO best practices from authoritative sources (Socket.IO official docs, Node.js guides, PostgreSQL documentation). Table stakes vs differentiators validated against multiple hosting platform incident reports and scaling case studies. |
-| Architecture | HIGH | ScrumQuest codebase reviewed directly (storage.ts, gameState.ts, server/index.ts). IStorage abstraction already implemented with both MemStorage and PgStorage. Kubernetes manifests exist for PostgreSQL StatefulSet. Migration job configured in k8s/base/. Architecture patterns match industry-standard separation of ephemeral state (memory) vs persistent data (database). |
-| Pitfalls | HIGH | Pitfalls sourced from production Node.js incident reports (memory leaks, connection exhaustion), PostgreSQL best practices (migration failures, pool sizing), and Socket.IO scaling documentation (sticky sessions, event loop blocking). All 11 pitfalls include detection methods and mitigation strategies verified against multiple sources. |
+| Stack | HIGH | Official AWS docs, Docker docs, GitHub Actions patterns all verified Feb 2026. Node 22 EOL confirmed. All tool versions current. |
+| Features | HIGH | Table-stakes features are industry-standard for production Docker deployments. Differentiator features (zero-downtime, game metrics) are well-documented extensions. |
+| Architecture | HIGH | Single-VPS Docker Compose pattern is mature. Graceful shutdown, health check, and reverse proxy patterns are established Node.js best practices. |
+| Pitfalls | HIGH | Both research threads identified identical top pitfalls from independent sources. Prevention strategies are standard practice with clear implementation paths. |
+| Cost | MEDIUM | Based on AWS pricing and estimated ScrumQuest load. Actual cost depends on traffic volume and backup size growth. Projections are conservative. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-**Budget and traffic projections:**
-- Research provides 3 cost tiers ($5-10/mo, $15-20/mo, $20+/mo) but doesn't know actual budget or expected launch traffic.
-- **Action during planning:** Determine budget constraints and initial user projections. If budget <$15/mo → use Neon free tier + Railway. If budget $15-30/mo → use Render + Neon. If existing cluster available → keep Kubernetes.
+- **Socket.IO graceful drain timing**: The 30s drain window is the standard recommendation, but ScrumQuest has in-game WebSocket state (lobbies, combat). Phase 2 must test what happens to a game in-progress during a deploy. May need longer drain window or client-side reconnect-and-rejoin logic.
+- **Prometheus cardinality audit**: Before enabling Prometheus in production, audit `server/metrics.ts` for any per-player or per-lobby label usage. High-cardinality labels will exhaust memory on 1GB instance within days.
+- **Replit compatibility**: The existing Replit workflow must remain unbroken. Deployment changes should be production-only additions, not modifications to dev environment behavior. The `.env` file approach and `npm run dev` command must continue working as-is on Replit.
+- **Redis optionality**: Both research threads noted Redis is optional at fewer than 100 users. The docker-compose.yml should make Redis easy to disable for RAM-constrained deployments.
 
-**Hosting platform migration strategy:**
-- Research recommends Render for simplicity but ScrumQuest already has Kubernetes manifests.
-- **Action during planning:** Decide whether to (1) migrate to managed platform for operational simplicity, or (2) keep Kubernetes deployment and apply database/monitoring improvements. Not a technical gap — a business decision between OpEx (managed) vs CapEx (Kubernetes).
-
-**Multi-instance Socket.IO testing:**
-- Research identifies need for Redis adapter and sticky sessions when scaling horizontally, but doesn't detail testing procedure.
-- **Action during Phase 4 planning:** Set up staging environment with 2+ instances, verify reconnection works, monitor for "transport error" logs. Document sticky session requirements for each hosting platform (Fly.io: automatic, Render: best-effort, Railway: needs config).
-
-**Backup restoration validation:**
-- Research recommends monthly backup restoration tests but doesn't specify automation approach.
-- **Action during Phase 2 execution:** Create staging restoration script: (1) download latest backup, (2) restore to temporary database, (3) run test queries to validate data integrity, (4) alert if restoration fails. Schedule via GitHub Actions or cron.
+---
 
 ## Sources
 
 ### Primary (HIGH confidence)
 
-**Hosting Platforms:**
-- [Render.com Pricing](https://render.com/pricing) — 2026 pricing, WebSocket support
-- [Render WebSocket Documentation](https://render.com/docs/websocket) — Persistent connection details
-- [Railway Pricing 2026](https://railway.com/pricing) — $5/month Hobby tier
-- [Fly.io Pricing](https://fly.io/pricing/) — Global deployment costs
-- [AWS Lightsail Pricing](https://aws.amazon.com/lightsail/pricing/) — Node.js blueprint
-
-**Managed PostgreSQL:**
-- [Neon Pricing 2026](https://neon.com/pricing) — Free tier, scale-to-zero
-- [Neon Plans Documentation](https://neon.com/docs/introduction/plans) — Connection limits
-- [Neon Serverless Postgres Pricing Analysis](https://vela.simplyblock.io/articles/neon-serverless-postgres-pricing-2026/) — 2025 pricing cuts
-- [Supabase vs Neon Comparison](https://www.bytebase.com/blog/neon-vs-supabase/) — Feature comparison
-
-**Resource Profiling:**
-- [Clinic.js Official Site](https://clinicjs.org/) — Memory profiling suite
-- [Clinic.js GitHub](https://github.com/clinicjs/node-clinic) — Documentation
-- [Node.js Memory Profiling Guide](https://oneuptime.com/blog/post/2026-01-26-nodejs-memory-leak-profiling/view) — 2026 best practices
-- [PM2 Monitoring Documentation](https://pm2.keymetrics.io/docs/usage/monitoring/) — Real-time dashboard
-
-**Socket.IO & WebSocket:**
-- [Socket.IO Performance Tuning](https://socket.io/docs/v4/performance-tuning/) — Official optimization guide
-- [Socket.IO Multi-Node Scaling](https://socket.io/docs/v4/using-multiple-nodes/) — Redis adapter
-- [Socket.IO Redis Adapter](https://socket.io/docs/v4/redis-adapter/) — Configuration
-
-**Database & ORM:**
-- [Drizzle ORM Migrations](https://orm.drizzle.team/docs/migrations) — Official docs
-- [Drizzle PostgreSQL Best Practices](https://gist.github.com/productdevbook/7c9ce3bbeb96b3fabc3c7c2aa2abc717) — Connection pooling
-- [Node.js Connection Pooling Guide](https://oneuptime.com/blog/post/2026-01-06-nodejs-connection-pooling-postgresql-mysql/view) — Pool sizing
-- [node-postgres Pooling](https://node-postgres.com/features/pooling) — postgres.js features
+- [AWS Lightsail Documentation](https://docs.aws.amazon.com/lightsail/latest/userguide/) — instance types, pricing, container services, firewall rules
+- [Docker Compose Production Guide](https://docs.docker.com/compose/how-tos/production/) — production-specific configuration patterns
+- [Node.js LTS Release Schedule](https://nodejs.org/en/about/previous-releases) — Node 20 EOL April 2026 confirmed
+- [GitHub Actions AWS OIDC](https://docs.github.com/en/actions/security-for-github-actions/security-hardening-your-deployments/configuring-openid-connect-in-amazon-web-services) — keyless AWS authentication
+- [Socket.IO Memory Usage Docs](https://socket.io/docs/v4/memory-usage/) — connection lifecycle and cleanup
 
 ### Secondary (MEDIUM confidence)
 
-**Platform Comparisons:**
-- [Render vs Fly.io Comparison](https://render.com/articles/render-vs-fly-io) — Feature/cost analysis
-- [Railway vs Render (2026)](https://northflank.com/blog/railway-vs-render) — Developer experience
-- [Deployment Platforms Comparison](https://www.jasonsy.dev/blog/comparing-deployment-platforms-2025) — WebSocket support
+- [postgres-backup-s3 (eeshugerman)](https://github.com/eeshugerman/postgres-backup-s3) — community Docker image for automated pg_dump to S3; not official but widely used
+- [Nick Janetakis — Production Docker Compose patterns](https://nickjanetakis.com/blog/best-practices-around-production-ready-web-apps-with-docker-compose) — verified Feb 2026
+- [Deploy Docker Compose with zero downtime via GitHub Actions](https://jmh.me/blog/zero-downtime-docker-compose-deploy) — `--no-deps --build` rolling update pattern
+- [Automating AWS Lightsail deployments with GitHub Actions](https://medium.com/@lukhee/automating-aws-lightsail-deployments-with-github-actions-53c73c9a1c1f) — CI/CD patterns for Lightsail instances
 
-**Performance & Monitoring:**
-- [Node.js Application Monitoring Tools 2026](https://betterstack.com/community/comparisons/nodejs-application-monitoring-tools/) — Tool comparison
-- [Profiling Node.js Applications](https://betterstack.com/community/guides/scaling-nodejs/profiling-nodejs-applications/) — Techniques
-- [Prometheus, Loki, Grafana Integration 2026](https://johal.in/cloud-native-observability-stack-prometheus-grafana-loki-and-tempo-integration-for-full-stack-monitoring-2026-3/) — Full stack monitoring
+### Tertiary (supports specific decisions)
 
-**Load Testing:**
-- [k6 WebSocket Documentation](https://grafana.com/docs/k6/latest/using-k6/protocols/websockets/) — Native support
-- [autocannon npm package](https://www.npmjs.com/package/autocannon) — HTTP benchmarking
-- [Load Testing Node.js Apps](https://v-checha.medium.com/load-testing-tools-for-node-js-developers-98291ed75a4b) — Tool comparison
+- [Nginx Proxy Manager](https://github.com/NginxProxyManager/nginx-proxy-manager) — GUI-based reverse proxy with Let's Encrypt
+- [Prometheus + Grafana on Docker](https://codersociety.com/blog/articles/nodejs-application-monitoring-with-prometheus-and-grafana) — on-instance monitoring setup
+- [PgBouncer connection pooling](https://oneuptime.com/blog/post/2026-02-02-postgresql-pgbouncer-pooling/) — connection pool layer for high-connection scenarios
+- [Docker Graceful Shutdown](https://oneuptime.com/blog/post/2026-01-16-docker-graceful-shutdown-signals/) — SIGTERM handling patterns for Node.js
 
 ---
-*Research completed: 2026-02-19*
-*Ready for roadmap: YES*
+
+*Research completed: 2026-02-24*
+*Synthesized from: STACK-deployment.md, STACK-docker-deployment.md, FEATURES-deployment.md, FEATURES-docker-deployment.md, ARCHITECTURE-deployment.md, ARCHITECTURE-docker-deployment.md, PITFALLS-deployment.md, PITFALLS-docker-deployment.md, SUMMARY-deployment.md, SUMMARY-docker-deployment.md*
+*Ready for roadmap: yes*

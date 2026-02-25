@@ -80,33 +80,33 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | — | Pending |
-| INFRA-02 | — | Pending |
-| INFRA-03 | — | Pending |
-| INFRA-04 | — | Pending |
-| INFRA-05 | — | Pending |
-| HARD-01 | — | Pending |
-| HARD-02 | — | Pending |
-| HARD-03 | — | Pending |
-| HARD-04 | — | Pending |
-| CICD-01 | — | Pending |
-| CICD-02 | — | Pending |
-| CICD-03 | — | Pending |
-| CICD-04 | — | Pending |
-| CICD-05 | — | Pending |
-| OBS-01 | — | Pending |
-| OBS-02 | — | Pending |
-| OBS-03 | — | Pending |
-| OBS-04 | — | Pending |
-| DR-01 | — | Pending |
-| DR-02 | — | Pending |
-| DR-03 | — | Pending |
+| INFRA-01 | Phase 32 | Pending |
+| INFRA-02 | Phase 32 | Pending |
+| INFRA-03 | Phase 32 | Pending |
+| INFRA-04 | Phase 32 | Pending |
+| INFRA-05 | Phase 32 | Pending |
+| HARD-01 | Phase 33 | Pending |
+| HARD-02 | Phase 33 | Pending |
+| HARD-03 | Phase 33 | Pending |
+| HARD-04 | Phase 33 | Pending |
+| CICD-01 | Phase 34 | Pending |
+| CICD-02 | Phase 34 | Pending |
+| CICD-03 | Phase 34 | Pending |
+| CICD-04 | Phase 34 | Pending |
+| CICD-05 | Phase 34 | Pending |
+| OBS-01 | Phase 35 | Pending |
+| OBS-02 | Phase 35 | Pending |
+| OBS-03 | Phase 35 | Pending |
+| OBS-04 | Phase 35 | Pending |
+| DR-01 | Phase 36 | Pending |
+| DR-02 | Phase 36 | Pending |
+| DR-03 | Phase 36 | Pending |
 
 **Coverage:**
 - v4.0 requirements: 21 total
-- Mapped to phases: 0
-- Unmapped: 21
+- Mapped to phases: 21
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 after initial definition*
+*Last updated: 2026-02-24 — traceability complete, all 21 requirements mapped to Phases 32-36*
