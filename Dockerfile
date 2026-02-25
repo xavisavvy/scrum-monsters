@@ -29,6 +29,9 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
+# Copy drizzle config + schema for db:push
+COPY --from=builder /app/drizzle.config.ts ./
+COPY --from=builder /app/shared ./shared
 
 # Set ownership
 RUN chown -R scrumquest:nodejs /app
