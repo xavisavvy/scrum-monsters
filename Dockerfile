@@ -10,6 +10,7 @@ RUN npm ci --legacy-peer-deps
 
 # Copy source and build
 COPY . .
+ENV NODE_OPTIONS="--max-old-space-size=1024"
 RUN npm run build
 
 # Stage 2: Production
