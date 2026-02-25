@@ -52,7 +52,6 @@
   "dependencies": {
     "@fontsource/inter": "^5.2.8",
     "@jridgewell/trace-mapping": "^0.3.25",
-    "@neondatabase/serverless": "^0.10.4",
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-aspect-ratio": "^1.1.8",
@@ -158,9 +157,9 @@
     "@commitlint/config-conventional": "^20.4.1",
     "@eslint/js": "^9.17.0",
     "@playwright/test": "^1.58.2",
-    "@replit/vite-plugin-runtime-error-modal": "^0.0.4",
     "@stoplight/spectral-cli": "^6.15.0",
     "@tailwindcss/typography": "^0.5.19",
+    "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",

@@ -82,7 +82,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   reconnection: {
     status: 'disconnected',
     attempt: 0,
-    maxAttempts: 12, // Up to ~13 minutes of retries (Replit containers can sleep)
+    maxAttempts: 12, // Up to ~13 minutes of retries
     nextRetryIn: 0
   },
   lastLobbySnapshot: null,
@@ -104,15 +104,9 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       set({ heartbeatInterval: null });
     }
 
-    // Detect if we're on Replit production (scrummonsters.com domain)
-    const isReplitProduction = window.location.hostname.includes('scrummonsters.com') ||
-                               window.location.hostname.includes('.replit.dev') ||
-                               window.location.hostname.includes('.repl.co');
-
-    // Replit-optimized settings: More forgiving timeouts
     const socket = io(window.location.origin, {
-      transports: ['websocket', 'polling'], // Allow fallback to polling (important for Replit)
-      timeout: isReplitProduction ? 60000 : 45000, // 60s for Replit production
+      transports: ['websocket', 'polling'], // Allow fallback to polling if WebSocket unavailable
+      timeout: 45000,
       reconnection: false, // Disable automatic reconnection, we handle it ourselves
       path: '/socket.io/',
       upgrade: true, // Allow upgrading transport
@@ -121,15 +115,8 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
       randomizationFactor: 0.5,
-      // Replit-specific: Force new connection (don't reuse)
       forceNew: false,
-      // Add extra headers for Replit proxy
-      extraHeaders: isReplitProduction ? {
-        'X-Requested-With': 'XMLHttpRequest'
-      } : undefined
     });
-
-    // Connecting to WebSocket with Replit-optimized settings
 
     socket.on('connect', () => {
       // Connected to server successfully
@@ -149,7 +136,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         clearTimeout(reconnection.retryTimeout);
       }
 
-      // Start heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
+      // Start heartbeat to prevent infrastructure timeouts (~2min idle limit on proxies)
       const { heartbeatInterval } = get();
       if (heartbeatInterval) {
         clearInterval(heartbeatInterval);
@@ -194,7 +181,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
           reconnection: { ...state.reconnection, status: 'failed' }
         }));
       } else if (reason === 'transport close' || reason === 'transport error' || reason === 'ping timeout') {
-        // Network issues common on Replit - always retry
+        // Network issues - always retry
         const { attemptReconnection } = get();
         attemptReconnection();
       } else {
