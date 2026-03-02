@@ -98,6 +98,39 @@ body {
     right: auto !important;
     transform: translateX(-50%) !important;
   }
+
+  /* Fullscreen overlay until player votes */
+  .battle-sidebar.sidebar-fullscreen {
+    max-height: 100vh;
+    height: 100% !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    border-top: none;
+    z-index: 60;
+  }
+
+  /* Hide the toggle button when fullscreen — no escape until voted */
+  .battle-sidebar.sidebar-fullscreen ~ .battle-sidebar-toggle {
+    display: none;
+  }
+}
+
+/* ===== Orientation: Portrait Tablet ===== */
+@media (orientation: portrait) and (min-width: 768px) and (max-width: 1024px) {
+  .battle-sidebar.sidebar-fullscreen {
+    width: 100% !important;
+    max-height: 100vh;
+    height: 100% !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+  }
+
+  .battle-sidebar.sidebar-fullscreen ~ .battle-sidebar-toggle {
+    display: none;
+  }
 }
 
 /* ===== Orientation: Landscape Mobile ===== */

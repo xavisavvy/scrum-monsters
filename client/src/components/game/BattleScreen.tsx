@@ -50,13 +50,18 @@ export function BattleScreen() {
   const isMountedRef = useRef(true);
 
   // Helper function to render collapsible sidebar
-  const renderCollapsibleSidebar = (content: React.ReactNode) => (
+  const renderCollapsibleSidebar = (content: React.ReactNode, fullscreenUntilVoted = false) => {
+    const hasVoted = currentPlayer?.hasSubmittedScore ?? false;
+    const isSmallScreen = viewport.viewportWidth < 768;
+    const showFullscreen = fullscreenUntilVoted && !hasVoted && isSmallScreen;
+
+    return (
     <div className="fixed right-0 top-0 z-50" style={{ height: '80vh', marginTop: '10vh' }}>
       {/* Sidebar Panel */}
       <div
         className={`battle-sidebar bg-black bg-opacity-95 border-l-2 border-retro-border border-t-2 border-b-2 h-full transition-all duration-300 ease-in-out overflow-hidden shadow-2xl ${
-          sidebarExpanded ? 'w-[30vw]' : 'w-0'
-        }`}
+          sidebarExpanded ? 'w-[50vw]' : 'w-0'
+        } ${showFullscreen ? 'sidebar-fullscreen' : ''}`}
         data-no-shoot
       >
         <div className="h-full overflow-y-auto p-4 text-white">
@@ -83,6 +88,14 @@ export function BattleScreen() {
       </button>
     </div>
   );
+  };
+
+  // Auto-expand sidebar on battle start (small screens get fullscreen overlay)
+  useEffect(() => {
+    if (currentLobby?.gamePhase === 'battle' && viewport.viewportWidth < 768) {
+      setSidebarExpanded(true);
+    }
+  }, [currentLobby?.gamePhase, viewport.viewportWidth]);
 
   // Hide root page scrollbar during battle phases using CSS class to avoid React conflicts
   useEffect(() => {
@@ -306,11 +319,11 @@ export function BattleScreen() {
             <BossDisplay boss={currentLobby.boss} onAttack={handleBossAttack} fullscreen />
             
             {/* Collapsible Sidebar */}
-            {renderCollapsibleSidebar(<ScoreSubmission />)}
+            {renderCollapsibleSidebar(<ScoreSubmission />, true)}
 
             {/* Timer Display - Top Left */}
             <TimerDisplay />
-            
+
             {/* Boss Music Controls - Top Right */}
             <div
               className="absolute top-6 right-6 z-40"
