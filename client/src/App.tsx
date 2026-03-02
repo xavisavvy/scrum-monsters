@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Outlet, useSearchParams, useLocation } from 'react-router';
+import { Outlet, useLocation } from 'react-router';
 import { HelmetProvider } from 'react-helmet-async';
-import { toast } from 'sonner';
 import { Toaster } from '@/components/ui/sonner';
 import { DeveloperMenu } from '@/components/ui/DeveloperMenu';
 import { UserMenu } from '@/components/auth/UserMenu';
@@ -31,7 +30,6 @@ function App() {
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   const [showReconnectionDialog, setShowReconnectionDialog] = useState(false);
-  const [searchParams] = useSearchParams();
   const location = useLocation();
 
   const { socket, connect, disconnect, isConnected, reconnection } = useWebSocket();
@@ -59,23 +57,6 @@ function App() {
     checkAuth();
   }, [checkAuth]);
 
-  // Handle OAuth redirect params
-  useEffect(() => {
-    const authStatus = searchParams.get('auth');
-    const authProvider = searchParams.get('provider');
-
-    if (authStatus === 'success' && authProvider) {
-      toast.success(`Signed in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
-        duration: 3000,
-      });
-      // Refresh auth state
-      checkAuth();
-    } else if (authStatus === 'error' && authProvider) {
-      toast.error(`Failed to sign in with ${authProvider.charAt(0).toUpperCase() + authProvider.slice(1)}`, {
-        duration: 5000,
-      });
-    }
-  }, [searchParams, checkAuth]);
 
   // Developer menu hotkey
   useBacktickKey(() => {

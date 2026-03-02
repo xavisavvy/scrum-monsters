@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { storage } from "../storage.js";
-import { isAuthenticated } from "./routes.js";
+import { isAuthenticated, getUserId } from "./auth0.js";
 import { authLogger } from '../logger.js';
 
 const router = Router();
@@ -8,7 +8,8 @@ const router = Router();
 // Get user profile
 router.get("/profile", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = await getUserId(req);
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const profile = await storage.getUserProfile(userId);
 
     if (!profile) {
@@ -27,7 +28,8 @@ router.get("/profile", isAuthenticated, async (req: Request, res: Response) => {
 // Update user profile
 router.put("/profile", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = await getUserId(req);
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const { preferredAvatar, preferredTeam, audioEnabled, musicVolume, sfxVolume, settings } = req.body;
 
     // Validate team if provided
@@ -76,7 +78,8 @@ router.put("/profile", isAuthenticated, async (req: Request, res: Response) => {
 // Get user stats
 router.get("/stats", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = await getUserId(req);
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const stats = await storage.getUserStats(userId);
 
     if (!stats) {
@@ -95,7 +98,8 @@ router.get("/stats", isAuthenticated, async (req: Request, res: Response) => {
 // Get estimation history
 router.get("/history", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = await getUserId(req);
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const limit = parseInt(req.query.limit as string) || 50;
 
     const history = await storage.getEstimationHistory(userId, Math.min(limit, 100));
@@ -107,30 +111,11 @@ router.get("/history", isAuthenticated, async (req: Request, res: Response) => {
   }
 });
 
-// Get connected OAuth accounts
-router.get("/accounts", isAuthenticated, async (req: Request, res: Response) => {
-  try {
-    const userId = req.user!.id;
-    const accounts = await storage.getUserOAuthAccounts(userId);
-
-    // Don't expose tokens
-    const safeAccounts = accounts.map((acc) => ({
-      id: acc.id,
-      provider: acc.provider,
-      createdAt: acc.createdAt,
-    }));
-
-    res.json({ accounts: safeAccounts });
-  } catch (err) {
-    authLogger.error({ err }, 'Error fetching accounts');
-    res.status(500).json({ error: "Failed to fetch accounts" });
-  }
-});
-
 // Update display name
 router.put("/display-name", isAuthenticated, async (req: Request, res: Response) => {
   try {
-    const userId = req.user!.id;
+    const userId = await getUserId(req);
+    if (!userId) return res.status(401).json({ error: "Not authenticated" });
     const { displayName } = req.body;
 
     if (!displayName || displayName.length < 2 || displayName.length > 50) {

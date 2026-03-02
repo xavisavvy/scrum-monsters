@@ -17,17 +17,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/lib/stores/useAuth";
-import { User, LogOut, BarChart3, Settings } from "lucide-react";
-import { AuthDialog } from "./AuthDialog";
+import { User, LogOut, BarChart3 } from "lucide-react";
 
 export function UserMenu() {
-  const { user, stats, logout, isLoading } = useAuth();
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
+  const { user, stats, login, logout, isLoading } = useAuth();
   const [showStatsDialog, setShowStatsDialog] = useState(false);
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   // Get initials for avatar fallback
   const getInitials = () => {
@@ -48,18 +42,15 @@ export function UserMenu() {
   // If not logged in, show sign in button
   if (!user) {
     return (
-      <>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowAuthDialog(true)}
-          className="gap-2"
-        >
-          <User className="h-4 w-4" />
-          Sign In
-        </Button>
-        <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
-      </>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={login}
+        className="gap-2"
+      >
+        <User className="h-4 w-4" />
+        Sign In
+      </Button>
     );
   }
 
@@ -94,7 +85,7 @@ export function UserMenu() {
             <span>Stats</span>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout} disabled={isLoading}>
+          <DropdownMenuItem onClick={logout} disabled={isLoading}>
             <LogOut className="mr-2 h-4 w-4" />
             <span>Log out</span>
           </DropdownMenuItem>

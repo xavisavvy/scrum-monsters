@@ -6,24 +6,12 @@ import { z } from "zod";
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
-  password: text("password"), // Nullable for OAuth-only users
   email: text("email").unique(),
   displayName: text("display_name"),
   avatarUrl: text("avatar_url"),
+  auth0Sub: text("auth0_sub").unique(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
-});
-
-// OAuth accounts - links external providers to users (many-to-one)
-export const oauthAccounts = pgTable("oauth_accounts", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  provider: text("provider").notNull(), // 'google' | 'github'
-  providerAccountId: text("provider_account_id").notNull(),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  expiresAt: timestamp("expires_at"),
-  createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
 // User profiles - game preferences and settings
@@ -94,19 +82,10 @@ export const classMasteryProgress = pgTable("class_mastery_progress", {
 // Schemas for validation
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
-  password: true,
   email: true,
   displayName: true,
   avatarUrl: true,
-});
-
-export const insertOAuthAccountSchema = createInsertSchema(oauthAccounts).pick({
-  userId: true,
-  provider: true,
-  providerAccountId: true,
-  accessToken: true,
-  refreshToken: true,
-  expiresAt: true,
+  auth0Sub: true,
 });
 
 export const insertUserProfileSchema = createInsertSchema(userProfiles).pick({
@@ -156,9 +135,6 @@ export const insertClassMasteryProgressSchema = createInsertSchema(classMasteryP
 // Types
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
-
-export type InsertOAuthAccount = z.infer<typeof insertOAuthAccountSchema>;
-export type OAuthAccount = typeof oauthAccounts.$inferSelect;
 
 export type InsertUserProfile = z.infer<typeof insertUserProfileSchema>;
 export type UserProfile = typeof userProfiles.$inferSelect;

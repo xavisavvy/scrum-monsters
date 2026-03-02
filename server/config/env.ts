@@ -12,6 +12,12 @@ const envSchema = z.object({
   DB_POOL_CONNECT_TIMEOUT: z.coerce.number().default(10),
   ALLOWED_ORIGINS: z.string().optional(),
   HOST: z.string().default("0.0.0.0"),
+  // Auth0 (optional — enables authentication)
+  AUTH0_ISSUER_BASE_URL: z.string().url().optional(),
+  AUTH0_CLIENT_ID: z.string().optional(),
+  AUTH0_CLIENT_SECRET: z.string().optional(),
+  AUTH0_SECRET: z.string().min(32).optional(),
+  BASE_URL: z.string().url().optional(),
 }).refine((data) => {
   if (data.NODE_ENV === "production" && !data.DATABASE_URL) {
     httpLogger.error('DATABASE_URL is required in production. Set it in .env and restart.');
