@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -19,6 +20,7 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
   const [isProcessing, setIsProcessing] = useState(false);
   const { emit, socket } = useWebSocket();
   const { currentLobby } = useGameState();
+  const navigate = useNavigate();
 
   // Normalize room ID for display
   const displayRoomId = roomId.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -30,6 +32,23 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
       setPlayerName(savedName);
     }
   }, []);
+
+  // Listen for lobby_created/lobby_joined and navigate to game page
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleNavigate = ({ lobby }: { lobby: { id: string } }) => {
+      onLobbyCreatedOrJoined();
+      navigate(`/game/${lobby.id}`);
+    };
+
+    socket.on('lobby_created', handleNavigate);
+    socket.on('lobby_joined', handleNavigate);
+    return () => {
+      socket.off('lobby_created', handleNavigate);
+      socket.off('lobby_joined', handleNavigate);
+    };
+  }, [socket, navigate, onLobbyCreatedOrJoined]);
 
   // Check if lobby already exists when component mounts
   useEffect(() => {
@@ -68,9 +87,6 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
         customLobbyId: roomId
       }
     });
-
-    // onLobbyCreatedOrJoined will be called when server responds
-    setTimeout(() => setIsProcessing(false), 1000);
   };
 
   const handleJoinLobby = () => {
@@ -88,9 +104,6 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
       lobbyId: roomId.toUpperCase(),
       playerName: playerName.trim()
     });
-
-    // onLobbyCreatedOrJoined will be called when server responds
-    setTimeout(() => setIsProcessing(false), 1000);
   };
 
   // If checking, show loading state
