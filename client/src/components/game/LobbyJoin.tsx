@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -13,7 +14,8 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: Readonly<L
   const [lobbyId, setLobbyId] = useState(initialLobbyId || '');
   const [playerName, setPlayerName] = useState('');
   const [isJoining, setIsJoining] = useState(false);
-  const { emit } = useWebSocket();
+  const { socket, emit } = useWebSocket();
+  const navigate = useNavigate();
 
   // Load saved player name on mount
   useEffect(() => {
@@ -22,6 +24,19 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: Readonly<L
       setPlayerName(savedName);
     }
   }, []);
+
+  // Listen for lobby_joined and navigate to game page
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLobbyJoined = ({ lobby }: { lobby: { id: string } }) => {
+      onLobbyJoined();
+      navigate(`/game/${lobby.id}`);
+    };
+
+    socket.on('lobby_joined', handleLobbyJoined);
+    return () => { socket.off('lobby_joined', handleLobbyJoined); };
+  }, [socket, navigate, onLobbyJoined]);
 
   const handleJoinLobby = () => {
     if (!lobbyId.trim() || !playerName.trim()) return;
@@ -35,9 +50,6 @@ export function LobbyJoin({ lobbyId: initialLobbyId, onLobbyJoined }: Readonly<L
       lobbyId: lobbyId.trim().toUpperCase(),
       playerName: playerName.trim()
     });
-
-    // onLobbyJoined will be called when server responds
-    setTimeout(() => setIsJoining(false), 1000);
   };
 
   return (

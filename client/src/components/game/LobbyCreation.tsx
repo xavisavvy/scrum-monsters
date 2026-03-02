@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -13,7 +14,8 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
   const [lobbyName, setLobbyName] = useState('');
   const [hostName, setHostName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
-  const { emit } = useWebSocket();
+  const { socket, emit } = useWebSocket();
+  const navigate = useNavigate();
 
   // Load saved player name on mount
   useEffect(() => {
@@ -22,6 +24,19 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
       setHostName(savedName);
     }
   }, []);
+
+  // Listen for lobby_created and navigate to game page
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleLobbyCreated = ({ lobby }: { lobby: { id: string } }) => {
+      onLobbyCreated();
+      navigate(`/game/${lobby.id}`);
+    };
+
+    socket.on('lobby_created', handleLobbyCreated);
+    return () => { socket.off('lobby_created', handleLobbyCreated); };
+  }, [socket, navigate, onLobbyCreated]);
 
   const handleCreateLobby = () => {
     if (!lobbyName.trim() || !hostName.trim()) return;
@@ -39,9 +54,6 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
       hostName: hostName.trim(),
       initialSettings: savedSettings
     });
-
-    // onLobbyCreated will be called when server responds
-    setTimeout(() => setIsCreating(false), 1000);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
