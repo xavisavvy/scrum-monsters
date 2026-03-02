@@ -232,9 +232,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     // Extract authenticated user from session (if available)
     // The session is attached via express-session middleware sharing
+    // Auth0 bridge middleware writes userId to req.session.userId
     const req = socket.request as any;
-    if (req.session?.passport?.user) {
-      const userId = req.session.passport.user;
+    if (req.session?.userId) {
+      const userId = req.session.userId;
       socket.data.userId = userId;
       authLogger.info({ userId }, 'Authenticated user connected');
     }

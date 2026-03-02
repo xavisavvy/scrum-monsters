@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket.js";
 import authRoutes from "./auth/routes.js";
 import profileRoutes from "./auth/profileRoutes.js";
-import { authLimiter, profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
+import { profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 import { storage, PgStorage } from './storage.js';
 
@@ -21,9 +21,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const httpServer = createServer(app);
 
   // Rate limiting (applied before route handlers)
-  // authLimiter only on login/register — OAuth routes use state param for CSRF
-  app.use('/api/auth/login', authLimiter);
-  app.use('/api/auth/register', authLimiter);
   app.use('/api/user', profileLimiter);
   app.use('/api', apiLimiter);
 
@@ -34,11 +31,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // CSRF protection on state-changing endpoints
-  // OAuth routes (/api/auth/google, /api/auth/github) excluded — they use OAuth state param
   // GET/HEAD/OPTIONS automatically skipped by csrfSynchronisedProtection
-  app.use('/api/auth/login', csrfSynchronisedProtection);
-  app.use('/api/auth/register', csrfSynchronisedProtection);
-  app.use('/api/auth/logout', csrfSynchronisedProtection);
   app.use('/api/user', csrfSynchronisedProtection);
 
   // Mount auth routes

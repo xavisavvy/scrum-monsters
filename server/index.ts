@@ -24,7 +24,7 @@ import connectPgSimple from "connect-pg-simple";
 import { registerRoutes, setSessionMiddleware } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeRedis, shutdownRedis, isRedisConnected } from "./redis";
-import { configurePassport } from "./auth/passport.js";
+import { configureAuth0, syncAuth0ToSession } from "./auth/auth0.js";
 import { validateEnv } from "./config/env.js";
 import { checkDatabaseHealth } from "./db/health.js";
 import { storage, PgStorage } from "./storage.js";
@@ -81,10 +81,14 @@ app.use(sessionMiddleware);
 // Share session middleware with routes for Socket.IO
 setSessionMiddleware(sessionMiddleware);
 
-// Initialize Passport
-const passport = configurePassport();
-app.use(passport.initialize());
-app.use(passport.session());
+// Initialize Auth0 (only if configured)
+if (process.env.AUTH0_CLIENT_ID && process.env.AUTH0_ISSUER_BASE_URL && process.env.AUTH0_SECRET) {
+  app.use(configureAuth0());
+  app.use(syncAuth0ToSession());
+  httpLogger.info('Auth0 authentication enabled');
+} else {
+  httpLogger.info('Auth0 not configured — running without authentication');
+}
 
 app.use((req, res, next) => {
   const start = Date.now();

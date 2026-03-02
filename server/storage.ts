@@ -4,15 +4,12 @@ import postgres from "postgres";
 import { dbLogger } from './logger.js';
 import {
   users,
-  oauthAccounts,
   userProfiles,
   userStats,
   estimationHistory,
   classMasteryProgress,
   type User,
   type InsertUser,
-  type OAuthAccount,
-  type InsertOAuthAccount,
   type UserProfile,
   type InsertUserProfile,
   type UserStats,
@@ -28,22 +25,9 @@ export interface IStorage {
   getUser(id: number): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByAuth0Sub(auth0Sub: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, data: Partial<InsertUser>): Promise<User | undefined>;
-
-  // OAuth methods
-  getOAuthAccount(provider: string, providerAccountId: string): Promise<OAuthAccount | undefined>;
-  findOrCreateOAuthUser(
-    provider: string,
-    profile: {
-      id: string;
-      email?: string;
-      displayName?: string;
-      avatarUrl?: string;
-    }
-  ): Promise<User>;
-  linkOAuthAccount(userId: number, account: InsertOAuthAccount): Promise<OAuthAccount>;
-  getUserOAuthAccounts(userId: number): Promise<OAuthAccount[]>;
 
   // Profile methods
   getUserProfile(userId: number): Promise<UserProfile | undefined>;
@@ -69,13 +53,11 @@ export interface IStorage {
 // In-memory storage implementation (default when no DATABASE_URL)
 export class MemStorage implements IStorage {
   private users: Map<number, User>;
-  private oauthAccounts: Map<number, OAuthAccount>;
   private userProfiles: Map<number, UserProfile>;
   private userStatsMap: Map<number, UserStats>;
   private estimationHistoryList: EstimationHistory[];
   private classMasteryMap: Map<number, ClassMasteryProgress>;
   private currentUserId: number;
-  private currentOAuthId: number;
   private currentProfileId: number;
   private currentStatsId: number;
   private currentHistoryId: number;
@@ -83,13 +65,11 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.users = new Map();
-    this.oauthAccounts = new Map();
     this.userProfiles = new Map();
     this.userStatsMap = new Map();
     this.estimationHistoryList = [];
     this.classMasteryMap = new Map();
     this.currentUserId = 1;
-    this.currentOAuthId = 1;
     this.currentProfileId = 1;
     this.currentStatsId = 1;
     this.currentHistoryId = 1;
@@ -113,16 +93,22 @@ export class MemStorage implements IStorage {
     );
   }
 
+  async getUserByAuth0Sub(auth0Sub: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.auth0Sub === auth0Sub
+    );
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const id = this.currentUserId++;
     const now = new Date();
     const user: User = {
       id,
       username: insertUser.username,
-      password: insertUser.password || null,
       email: insertUser.email || null,
       displayName: insertUser.displayName || null,
       avatarUrl: insertUser.avatarUrl || null,
+      auth0Sub: insertUser.auth0Sub || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -140,83 +126,6 @@ export class MemStorage implements IStorage {
     };
     this.users.set(id, updated);
     return updated;
-  }
-
-  // OAuth methods
-  async getOAuthAccount(provider: string, providerAccountId: string): Promise<OAuthAccount | undefined> {
-    return Array.from(this.oauthAccounts.values()).find(
-      (acc) => acc.provider === provider && acc.providerAccountId === providerAccountId
-    );
-  }
-
-  async findOrCreateOAuthUser(
-    provider: string,
-    profile: { id: string; email?: string; displayName?: string; avatarUrl?: string }
-  ): Promise<User> {
-    // Check if OAuth account exists
-    const existingAccount = await this.getOAuthAccount(provider, profile.id);
-    if (existingAccount) {
-      const user = await this.getUser(existingAccount.userId);
-      if (user) return user;
-    }
-
-    // Check if user exists by email
-    if (profile.email) {
-      const existingUser = await this.getUserByEmail(profile.email);
-      if (existingUser) {
-        // Link OAuth account to existing user
-        await this.linkOAuthAccount(existingUser.id, {
-          userId: existingUser.id,
-          provider,
-          providerAccountId: profile.id,
-        });
-        return existingUser;
-      }
-    }
-
-    // Create new user
-    const username = profile.email?.split("@")[0] || `${provider}_${profile.id}`;
-    const user = await this.createUser({
-      username,
-      email: profile.email,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-    });
-
-    // Link OAuth account
-    await this.linkOAuthAccount(user.id, {
-      userId: user.id,
-      provider,
-      providerAccountId: profile.id,
-    });
-
-    // Create default profile and stats
-    await this.createUserProfile({ userId: user.id });
-    await this.createUserStats({ userId: user.id });
-
-    return user;
-  }
-
-  async linkOAuthAccount(userId: number, account: InsertOAuthAccount): Promise<OAuthAccount> {
-    const id = this.currentOAuthId++;
-    const oauthAccount: OAuthAccount = {
-      id,
-      userId,
-      provider: account.provider,
-      providerAccountId: account.providerAccountId,
-      accessToken: account.accessToken || null,
-      refreshToken: account.refreshToken || null,
-      expiresAt: account.expiresAt || null,
-      createdAt: new Date(),
-    };
-    this.oauthAccounts.set(id, oauthAccount);
-    return oauthAccount;
-  }
-
-  async getUserOAuthAccounts(userId: number): Promise<OAuthAccount[]> {
-    return Array.from(this.oauthAccounts.values()).filter(
-      (acc) => acc.userId === userId
-    );
   }
 
   // Profile methods
@@ -413,13 +322,18 @@ export class PgStorage implements IStorage {
     return result[0];
   }
 
+  async getUserByAuth0Sub(auth0Sub: string): Promise<User | undefined> {
+    const result = await this.db.select().from(users).where(eq(users.auth0Sub, auth0Sub)).limit(1);
+    return result[0];
+  }
+
   async createUser(insertUser: InsertUser): Promise<User> {
     const result = await this.db.insert(users).values({
       username: insertUser.username,
-      password: insertUser.password || null,
       email: insertUser.email || null,
       displayName: insertUser.displayName || null,
       avatarUrl: insertUser.avatarUrl || null,
+      auth0Sub: insertUser.auth0Sub || null,
     }).returning();
     return result[0];
   }
@@ -430,81 +344,6 @@ export class PgStorage implements IStorage {
       .where(eq(users.id, id))
       .returning();
     return result[0];
-  }
-
-  // OAuth methods
-  async getOAuthAccount(provider: string, providerAccountId: string): Promise<OAuthAccount | undefined> {
-    const result = await this.db.select().from(oauthAccounts)
-      .where(and(
-        eq(oauthAccounts.provider, provider),
-        eq(oauthAccounts.providerAccountId, providerAccountId)
-      ))
-      .limit(1);
-    return result[0];
-  }
-
-  async findOrCreateOAuthUser(
-    provider: string,
-    profile: { id: string; email?: string; displayName?: string; avatarUrl?: string }
-  ): Promise<User> {
-    // Check if OAuth account exists
-    const existingAccount = await this.getOAuthAccount(provider, profile.id);
-    if (existingAccount) {
-      const user = await this.getUser(existingAccount.userId);
-      if (user) return user;
-    }
-
-    // Check if user exists by email
-    if (profile.email) {
-      const existingUser = await this.getUserByEmail(profile.email);
-      if (existingUser) {
-        // Link OAuth account to existing user
-        await this.linkOAuthAccount(existingUser.id, {
-          userId: existingUser.id,
-          provider,
-          providerAccountId: profile.id,
-        });
-        return existingUser;
-      }
-    }
-
-    // Create new user
-    const username = profile.email?.split("@")[0] || `${provider}_${profile.id}`;
-    const user = await this.createUser({
-      username,
-      email: profile.email,
-      displayName: profile.displayName,
-      avatarUrl: profile.avatarUrl,
-    });
-
-    // Link OAuth account
-    await this.linkOAuthAccount(user.id, {
-      userId: user.id,
-      provider,
-      providerAccountId: profile.id,
-    });
-
-    // Create default profile and stats
-    await this.createUserProfile({ userId: user.id });
-    await this.createUserStats({ userId: user.id });
-
-    return user;
-  }
-
-  async linkOAuthAccount(userId: number, account: InsertOAuthAccount): Promise<OAuthAccount> {
-    const result = await this.db.insert(oauthAccounts).values({
-      userId,
-      provider: account.provider,
-      providerAccountId: account.providerAccountId,
-      accessToken: account.accessToken || null,
-      refreshToken: account.refreshToken || null,
-      expiresAt: account.expiresAt || null,
-    }).returning();
-    return result[0];
-  }
-
-  async getUserOAuthAccounts(userId: number): Promise<OAuthAccount[]> {
-    return await this.db.select().from(oauthAccounts).where(eq(oauthAccounts.userId, userId));
   }
 
   // Profile methods
