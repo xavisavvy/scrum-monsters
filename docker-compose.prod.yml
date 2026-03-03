@@ -51,7 +51,7 @@ services:
       retries: 5
 
   postgres-backup:
-    image: eeshugerman/postgres-backup-s3:17
+    image: eeshugerman/postgres-backup-s3:16
     environment:
       SCHEDULE: "0 2 * * *"
       BACKUP_KEEP_DAYS: "7"
