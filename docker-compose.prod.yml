@@ -5,8 +5,7 @@
 
 services:
   app:
-    build: .
-    image: scrummonsters:latest
+    image: ghcr.io/xavisavvy/scrum-monsters:${APP_IMAGE_TAG:-latest}
     stop_grace_period: 45s
     restart: unless-stopped
     ports:
@@ -50,6 +49,25 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  postgres-backup:
+    image: eeshugerman/postgres-backup-s3:17
+    environment:
+      SCHEDULE: "0 2 * * *"
+      BACKUP_KEEP_DAYS: "7"
+      S3_REGION: us-east-1
+      S3_ACCESS_KEY_ID: ${BACKUP_S3_ACCESS_KEY_ID}
+      S3_SECRET_ACCESS_KEY: ${BACKUP_S3_SECRET_ACCESS_KEY}
+      S3_BUCKET: ${BACKUP_S3_BUCKET}
+      S3_PREFIX: scrummonsters
+      POSTGRES_HOST: postgres
+      POSTGRES_DATABASE: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest

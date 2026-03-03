@@ -63,7 +63,7 @@ jobs:
             # Branch name
             type=ref,event=branch
             # Short SHA
-            type=sha,prefix=
+            type=sha,prefix=sha-
             # Latest for main branch
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             # Semantic version from tags
