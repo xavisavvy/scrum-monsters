@@ -205,6 +205,11 @@ app.use((req, res, next) => {
         });
         // Wait for clients to receive notification
         await new Promise(resolve => setTimeout(resolve, 2000));
+
+        // Close Socket.IO connections (server.close() alone does NOT close WebSockets)
+        await new Promise<void>((resolve) => {
+          io.close(() => resolve());
+        });
       }
 
       // 2. Stop accepting new connections and clean up intervals
