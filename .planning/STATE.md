@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 33 of 36 (Production Hardening)
-Plan: 0 of 3 in current phase (not yet planned)
-Status: Ready for planning
-Last activity: 2026-03-02 — Phase 32 complete, verified, all 3 plans shipped
+Plan: 1 of 3 in current phase (33-01 complete)
+Status: In progress
+Last activity: 2026-03-02 — 33-01 complete (graceful shutdown, GHCR image pull, backup sidecar, rollback runbook)
 
-Progress: [██░░░░░░░░] 20% (v4.0, 3/15 plans complete)
+Progress: [███░░░░░░░] 27% (v4.0, 4/15 plans complete)
 
 ## Performance Metrics
 
@@ -57,10 +57,18 @@ Key decisions for v4.0:
 - Lightsail static IP: 34.199.135.244, instance: scrummonsters-prod [32-03]
 - VPS reboot auto-restart verified working via systemd unit [32-03]
 - OAUTH_CALLBACK_BASE_URL is orphaned after Auth0 migration — clean up in Phase 33 (replace with BASE_URL) [32-03 verification]
+- io.close() must be called explicitly in graceful shutdown — server.close() does NOT close WebSocket connections (Socket.IO 4.x confirmed) [33-01]
+- stop_grace_period: 45s = 30s Node.js force-exit + 15s Docker buffer — prevents SIGKILL race [33-01]
+- GHCR image pull on VPS, build in CI — 1GB VPS cannot reliably build TypeScript/Vite (600-800MB peak) [33-01]
+- APP_IMAGE_TAG env var controls rollback — sha-XXXXXX tag pinning without touching docker-compose.prod.yml [33-01]
+- postgres-backup-s3:17 sidecar for daily automated backups — version matches postgres:17-alpine for pg_dump compatibility [33-01]
 
 ### Pending Todos
 
-- Clean up OAUTH_CALLBACK_BASE_URL → BASE_URL in docker-compose.prod.yml (orphaned after Auth0 migration)
+- (DONE in 33-01) Clean up OAUTH_CALLBACK_BASE_URL → BASE_URL in docker-compose.prod.yml
+- Provision S3 bucket for postgres-backup-s3 sidecar (Plan 33-02)
+- Set up GHCR auth on VPS via PAT with read:packages scope (Plan 33-02)
+- Configure UptimeRobot uptime monitoring (Plan 33-02)
 
 ### Blockers/Concerns
 
@@ -70,10 +78,10 @@ Key decisions for v4.0:
 ## Session Continuity
 
 Last session: 2026-03-02
-Stopped at: Phase 32 complete and verified. Ready for Phase 33 planning.
+Stopped at: Completed 33-01-PLAN.md (graceful shutdown, GHCR image, backup sidecar, rollback runbook)
 Resume file: None
-Next action: `/gsd:plan-phase 33`
+Next action: Execute 33-02-PLAN.md (infrastructure provisioning: S3 bucket, GHCR auth, UptimeRobot)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-02 — Phase 32 complete (3/3 plans, verification passed 4/4)*
+*Last updated: 2026-03-02 — 33-01 complete (2/2 tasks, all verification passed)*
