@@ -109,12 +109,11 @@ Plans:
   2. A pg_dump file appears in S3 every day at 2am UTC and files older than 30 days are automatically deleted
   3. Rolling back to the previous deploy by specifying a prior image tag completes in under 5 minutes
   4. When the app goes down, an email alert arrives within 5 minutes
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 33-01: Add stop_grace_period: 45s to docker-compose.yml, verify SIGTERM handler drain behavior with active Socket.IO connections, test during live game
-- [ ] 33-02: Add postgres-backup-s3 sidecar to docker-compose.yml, configure S3 bucket with 30-day lifecycle policy, verify first backup upload
-- [ ] 33-03: Define GHCR image tagging strategy (sha + semver), document rollback procedure, configure uptime alerting (Healthchecks.io or AlertManager)
+- [ ] 33-01-PLAN.md — Fix graceful shutdown (io.close()), add stop_grace_period, switch to GHCR image pull, add backup sidecar, update deploy.sh and runbook
+- [ ] 33-02-PLAN.md — Provision S3 bucket/IAM user/GHCR auth/UptimeRobot, deploy, verify all four success criteria end-to-end
 
 ---
 
@@ -190,7 +189,7 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 | 30 | v3.1 | 2/2 | Complete | 2026-02-20 |
 | 31 | v3.1 | 1/2 (1 deferred) | Complete | 2026-02-24 |
 | 32. Infrastructure Foundation | v4.0 | 3/3 | Complete | 2026-03-02 |
-| 33. Production Hardening | v4.0 | 0/3 | Not started | - |
+| 33. Production Hardening | v4.0 | 0/2 | Not started | - |
 | 34. CI/CD Pipeline | v4.0 | 0/3 | Not started | - |
 | 35. Observability | v4.0 | 0/3 | Not started | - |
 | 36. Disaster Recovery | v4.0 | 0/3 | Not started | - |
@@ -199,4 +198,4 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-02 — Phase 32 complete (3/3 plans, verification passed)*
+*Last updated: 2026-03-02 — Phase 33 planned (2 plans)*
