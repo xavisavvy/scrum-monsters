@@ -12,6 +12,9 @@ Covers: initial VPS setup, deploy procedure, and what deploy.sh does step by ste
 | Restart stack | SSH in, then: `cd /opt/scrummonsters && sudo systemctl restart scrummonsters` |
 | NPM admin UI | SSH tunnel: `ssh -L 81:localhost:81 ubuntu@<ip>` then visit http://localhost:81 |
 | Check app health | `curl https://scrummonsters.com/api/health` |
+| Rollback to prior version | SSH in, then: `APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml pull app && docker compose -f docker-compose.prod.yml up -d --no-deps app` |
+| Trigger manual backup | SSH in, then: `docker compose -f docker-compose.prod.yml exec postgres-backup sh -c '/backup.sh'` |
+| View backup logs | SSH in, then: `docker compose -f docker-compose.prod.yml logs -f postgres-backup` |
 
 ---
 
@@ -151,7 +154,10 @@ NODE_ENV=production
 PORT=5000
 SESSION_SECRET=<generate: openssl rand -base64 48>
 ALLOWED_ORIGINS=https://scrummonsters.com
-OAUTH_CALLBACK_BASE_URL=https://scrummonsters.com
+BASE_URL=https://scrummonsters.com
+
+# App image tag (default: latest, set to sha-XXXXXX for rollback)
+APP_IMAGE_TAG=latest
 
 # OAuth providers (optional — remove lines if not using)
 # GOOGLE_CLIENT_ID=
@@ -162,6 +168,11 @@ OAUTH_CALLBACK_BASE_URL=https://scrummonsters.com
 # Upstash Redis (optional — remove lines if not using)
 # UPSTASH_REDIS_REST_URL=
 # UPSTASH_REDIS_REST_TOKEN=
+
+# S3 Backup (required for postgres-backup sidecar)
+BACKUP_S3_ACCESS_KEY_ID=<from AWS IAM user>
+BACKUP_S3_SECRET_ACCESS_KEY=<from AWS IAM user>
+BACKUP_S3_BUCKET=<your-backup-bucket-name>
 ```
 
 Generate strong secrets before filling in:
@@ -343,17 +354,19 @@ Pulls the latest code from the `main` branch on GitHub into the VPS working dire
 
 **Why this order:** Code must be updated before building the Docker image, so the build picks up the latest changes.
 
-### Step 2/4: docker compose build app
+### Step 2/4: docker compose pull app
 
 ```bash
-docker compose -f docker-compose.prod.yml build app
+docker compose -f docker-compose.prod.yml pull app
 ```
 
-Rebuilds only the `app` container image from the updated source code. The multi-stage Dockerfile runs `npm run build` inside the builder stage, which produces the compiled server (`dist/index.js`) and the Vite-bundled client assets (`dist/public/`).
+Pulls the pre-built `app` container image from GitHub Container Registry (GHCR). The image was already built and pushed by the `docker.yml` GitHub Actions workflow when the commit landed on `main`.
 
-**Why only the `app` service:** `postgres` and `nginx-proxy-manager` are third-party images with no custom build step. Rebuilding them would be pointless and would reset any config NPM has stored.
+**Why pull instead of build:** Building TypeScript/Vite on the 1 GB Lightsail instance uses 600-800 MB of RAM, leaving little headroom. Pulling a pre-built image takes seconds and uses negligible memory.
 
-**Memory note:** The TypeScript/Vite build is memory-intensive. On the 1 GB Lightsail instance, the build may use 600-800 MB temporarily. If it fails with an out-of-memory error, add a 1 GB swap file: `sudo fallocate -l 1G /swapfile && sudo chmod 600 /swapfile && sudo mkswap /swapfile && sudo swapon /swapfile`. For Phase 34, CI/CD will build images on GitHub Actions and push pre-built images to avoid this.
+**Why only the `app` service:** `postgres` and `nginx-proxy-manager` are third-party images with no custom build step. Pulling them would restart services unnecessarily and would reset any config NPM has stored.
+
+**Image source:** `ghcr.io/xavisavvy/scrum-monsters` — tagged with `latest` and `sha-XXXXXXX` (short commit SHA). The `APP_IMAGE_TAG` env var controls which tag is used (default: `latest`).
 
 ### Step 3/4: docker compose run --rm app npm run db:push
 
@@ -427,5 +440,113 @@ Verify OAuth works by visiting `https://scrummonsters.com` and signing in with G
 
 ---
 
-*Runbook version: Phase 32 — Initial VPS Deploy*
-*Last updated: 2026-02-24*
+---
+
+## Part 5: Rollback Procedure
+
+If a deploy introduces a regression, roll back to a prior image tag in under 5 minutes.
+
+### 5.1 Find Available Tags
+
+List images already downloaded on the VPS:
+
+```bash
+docker image ls ghcr.io/xavisavvy/scrum-monsters --format "table {{.Tag}}\t{{.CreatedAt}}"
+```
+
+To see all published tags, visit the [GitHub Packages page](https://github.com/xavisavvy/scrum-monsters/pkgs/container/scrum-monsters). Tags are in the format `sha-XXXXXXX` (short commit SHA) and `latest`.
+
+### 5.2 Roll Back
+
+**Option A — Inline (temporary, reverts on next deploy):**
+
+```bash
+cd /opt/scrummonsters
+APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml pull app
+APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml up -d --no-deps app
+```
+
+**Option B — Persist in .env (survives future `./deploy.sh` runs):**
+
+```bash
+# Edit .env and set: APP_IMAGE_TAG=sha-XXXXXX
+nano /opt/scrummonsters/.env
+docker compose -f docker-compose.prod.yml pull app
+docker compose -f docker-compose.prod.yml up -d --no-deps app
+```
+
+### 5.3 Verify Rollback
+
+```bash
+curl https://scrummonsters.com/api/health
+docker compose -f docker-compose.prod.yml logs --tail=50 app
+```
+
+### 5.4 Roll Forward
+
+Once the fix is deployed via GitHub Actions and you are ready to return to latest:
+
+```bash
+# Remove APP_IMAGE_TAG from .env (or set it back to latest)
+nano /opt/scrummonsters/.env
+./deploy.sh
+```
+
+---
+
+## Part 6: Database Backups
+
+### 6.1 How It Works
+
+The `postgres-backup-s3` sidecar container runs `pg_dump` at 2am UTC daily (cron: `0 2 * * *`). It uploads a gzipped SQL dump to the configured S3 bucket under the `scrummonsters/` prefix. Backups are retained for 7 days locally; configure S3 Lifecycle Policy for longer retention (see Part 02 of Phase 33 for provisioning steps).
+
+### 6.2 Trigger Manual Backup
+
+```bash
+docker compose -f docker-compose.prod.yml exec postgres-backup sh -c '/backup.sh'
+```
+
+### 6.3 View Backup Logs
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f postgres-backup
+```
+
+### 6.4 Restore From Backup
+
+Full restore procedure (downloading from S3, restoring into PostgreSQL, verifying data integrity) is covered in Phase 36: Disaster Recovery. Do not attempt a restore without following that runbook.
+
+---
+
+## Part 7: GHCR Authentication
+
+The VPS must authenticate to GitHub Container Registry once to pull private images. This is a one-time setup.
+
+### 7.1 Create a GitHub PAT
+
+1. Go to [GitHub → Settings → Developer settings → Personal access tokens → Tokens (classic)](https://github.com/settings/tokens)
+2. Click **Generate new token (classic)**
+3. Set expiration to **No expiration** (or your org policy)
+4. Select scope: **read:packages** only
+5. Click **Generate token** and copy it immediately
+
+### 7.2 Log In on the VPS
+
+```bash
+echo "YOUR_PAT" | docker login ghcr.io -u YOUR_GITHUB_USERNAME --password-stdin
+```
+
+Replace `YOUR_PAT` with the token from step 7.1 and `YOUR_GITHUB_USERNAME` with your GitHub username. Docker saves the credentials to `~/.docker/config.json`.
+
+### 7.3 Verify
+
+```bash
+docker pull ghcr.io/xavisavvy/scrum-monsters:latest
+```
+
+If this succeeds without an authentication error, the VPS is authorized to pull images.
+
+---
+
+*Runbook version: Phase 33 — Production Hardening*
+*Last updated: 2026-03-02*

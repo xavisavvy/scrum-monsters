@@ -19,8 +19,8 @@ ssh -i "$SSH_KEY" "$REMOTE_USER@$REMOTE_HOST" << 'EOF'
   echo "[1/4] Pulling latest code..."
   cd /opt/scrummonsters && git pull origin main
 
-  echo "[2/4] Building Docker image..."
-  docker compose -f docker-compose.prod.yml build app
+  echo "[2/4] Pulling latest Docker image from GHCR..."
+  docker compose -f docker-compose.prod.yml pull app
 
   echo "[3/4] Running database migrations..."
   docker compose -f docker-compose.prod.yml run --rm app npm run db:push
