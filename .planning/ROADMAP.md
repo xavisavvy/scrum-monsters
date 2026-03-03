@@ -72,7 +72,7 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 
 **Milestone Goal:** Deploy ScrumMonsters to AWS Lightsail with Docker containers, custom domain HTTPS, full CI/CD pipeline, production observability, automated backups, and verified disaster recovery — with a clean break from Replit.
 
-- [ ] **Phase 32: Infrastructure Foundation** — Lightsail instance live, custom domain HTTPS, Docker Compose stack auto-starting
+- [x] **Phase 32: Infrastructure Foundation** — Lightsail instance live, custom domain HTTPS, Docker Compose stack auto-starting (completed 2026-03-02)
 - [ ] **Phase 33: Production Hardening** — Graceful deploys, daily DB backups, rollback capability, uptime alerting
 - [ ] **Phase 34: CI/CD Pipeline** — Automated staging deploys, manual prod promotes, OIDC auth, post-deploy smoke tests
 - [ ] **Phase 35: Observability** — Prometheus + Grafana dashboards, log aggregation, all services localhost-only
@@ -93,9 +93,9 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 **Plans**: 3 plans
 
 Plans:
-- [ ] 32-01-PLAN.md — Strip all Replit-specific code, harden DATABASE_URL env validation, remove dead dependencies
-- [ ] 32-02-PLAN.md — Write docker-compose.prod.yml (3-service stack), deploy.sh script, and operations runbook
-- [ ] 32-03-PLAN.md — Provision Lightsail VPS, configure DNS (Route 53 A record), set up HTTPS via Nginx Proxy Manager
+- [x] 32-01-PLAN.md — Strip all Replit-specific code, harden DATABASE_URL env validation, remove dead dependencies
+- [x] 32-02-PLAN.md — Write docker-compose.prod.yml (3-service stack), deploy.sh script, and operations runbook
+- [x] 32-03-PLAN.md — Provision Lightsail VPS, configure DNS (Route 53 A record), set up HTTPS via Nginx Proxy Manager
 
 ---
 
@@ -189,14 +189,14 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 | 26-29 | v3.0 | 9/9 | Complete | 2026-02-20 |
 | 30 | v3.1 | 2/2 | Complete | 2026-02-20 |
 | 31 | v3.1 | 1/2 (1 deferred) | Complete | 2026-02-24 |
-| 32. Infrastructure Foundation | v4.0 | 0/3 | Planned | - |
+| 32. Infrastructure Foundation | v4.0 | 3/3 | Complete | 2026-03-02 |
 | 33. Production Hardening | v4.0 | 0/3 | Not started | - |
 | 34. CI/CD Pipeline | v4.0 | 0/3 | Not started | - |
 | 35. Observability | v4.0 | 0/3 | Not started | - |
 | 36. Disaster Recovery | v4.0 | 0/3 | Not started | - |
 
-**Total: 7 milestones shipped, 31 phases complete, 114 plans (1 deferred) + 5 phases planned for v4.0**
+**Total: 7 milestones shipped, 32 phases complete, 117 plans (1 deferred) + 4 phases remaining for v4.0**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-02-24 — Phase 32 plans created (3 plans)*
+*Last updated: 2026-03-02 — Phase 32 complete (3/3 plans, verification passed)*
