@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 33 of 36 (Production Hardening)
-Plan: 1 of 3 in current phase (33-01 complete)
-Status: In progress
-Last activity: 2026-03-02 — 33-01 complete (graceful shutdown, GHCR image pull, backup sidecar, rollback runbook)
+Phase: 33 of 36 (Production Hardening) -- COMPLETE
+Plan: 2 of 2 in current phase (33-01, 33-02 complete)
+Status: Phase 33 complete, ready for Phase 34
+Last activity: 2026-03-03 — 33-02 complete (infrastructure provisioned, all 4 success criteria verified live)
 
-Progress: [███░░░░░░░] 27% (v4.0, 4/15 plans complete)
+Progress: [███░░░░░░░] 33% (v4.0, 5/15 plans complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [███░░░░░░░] 27% (v4.0, 4/15 plans complete)
 | v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 4/5 (1 deferred) | Complete | 2026-02-24 |
-| v4.0 Hosting & Deployment | 32-36 | 3/15 | In Progress | — |
+| v4.0 Hosting & Deployment | 32-36 | 5/15 | In Progress | — |
 
 ## Accumulated Context
 
@@ -62,26 +62,29 @@ Key decisions for v4.0:
 - GHCR image pull on VPS, build in CI — 1GB VPS cannot reliably build TypeScript/Vite (600-800MB peak) [33-01]
 - APP_IMAGE_TAG env var controls rollback — sha-XXXXXX tag pinning without touching docker-compose.prod.yml [33-01]
 - postgres-backup-s3:17 sidecar for daily automated backups — version matches postgres:17-alpine for pg_dump compatibility [33-01]
+- Custom pg17 backup sidecar replaces eeshugerman/postgres-backup-s3 — upstream lacks :17 tag, pg_dump v16 refuses Postgres 17 server [33-02]
+- Route 53 + CloudWatch + SNS for uptime alerting instead of UptimeRobot — AWS-native, 30s interval, no third-party dependency [33-02]
+- IAM backup user has GetObject + ListBucket in addition to PutObject — enables restore verification and backup listing [33-02]
 
 ### Pending Todos
 
 - (DONE in 33-01) Clean up OAUTH_CALLBACK_BASE_URL → BASE_URL in docker-compose.prod.yml
-- Provision S3 bucket for postgres-backup-s3 sidecar (Plan 33-02)
-- Set up GHCR auth on VPS via PAT with read:packages scope (Plan 33-02)
-- Configure UptimeRobot uptime monitoring (Plan 33-02)
+- (DONE in 33-02) Provision S3 bucket scrummonsters-backups with 30-day lifecycle policy
+- (DONE in 33-02) Set up GHCR auth on VPS via PAT with read:packages scope
+- (DONE in 33-02) Configure uptime alerting via Route 53 + CloudWatch + SNS (replaced UptimeRobot)
 
 ### Blockers/Concerns
 
-- [Phase 33] Graceful shutdown SIGTERM drain with active Socket.IO games needs live-game testing — 30s window may need tuning
+- (RESOLVED in 33-02) Graceful shutdown verified: 2.566s clean exit with io.close() drain — 30s window adequate
 - [Phase 35] Prometheus cardinality audit of server/metrics.ts required before enabling in production (high-cardinality labels exhaust 1GB RAM)
 
 ## Session Continuity
 
-Last session: 2026-03-02
-Stopped at: Completed 33-01-PLAN.md (graceful shutdown, GHCR image, backup sidecar, rollback runbook)
+Last session: 2026-03-03
+Stopped at: Completed 33-02-PLAN.md — Phase 33 Production Hardening complete (all 4 criteria verified)
 Resume file: None
-Next action: Execute 33-02-PLAN.md (infrastructure provisioning: S3 bucket, GHCR auth, UptimeRobot)
+Next action: Plan Phase 34
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-02 — 33-01 complete (2/2 tasks, all verification passed)*
+*Last updated: 2026-03-03 — 33-02 complete (2/2 tasks, all 4 Phase 33 success criteria verified live)*
