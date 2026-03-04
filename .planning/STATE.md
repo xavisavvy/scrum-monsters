@@ -10,11 +10,11 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 34 of 36 (CI/CD Pipeline) -- IN PROGRESS
-Plan: 1 of 3 in current phase (34-01 complete)
-Status: 34-01 complete — deploy workflow and smoke tests created
-Last activity: 2026-03-04 — 34-01 complete (deploy-lightsail.yml, smoke tests, Playwright config updated)
+Plan: 2 of 3 in current phase (34-01, 34-02 complete)
+Status: Wave 1 complete — workflow + infrastructure provisioned, ready for Wave 2 (E2E verification)
+Last activity: 2026-03-04 — 34-02 complete (OIDC, IAM role, SSH key, GitHub secrets/environments provisioned)
 
-Progress: [███░░░░░░░] 40% (v4.0, 6/15 plans complete)
+Progress: [████░░░░░░] 47% (v4.0, 7/15 plans complete)
 
 ## Performance Metrics
 
@@ -86,10 +86,10 @@ Key decisions for v4.0 (Phase 34):
 ## Session Continuity
 
 Last session: 2026-03-04
-Stopped at: Completed 34-01-PLAN.md — deploy-lightsail.yml workflow, Playwright smoke tests, config updated
+Stopped at: Wave 1 complete (34-01, 34-02). Starting Wave 2 (34-03 E2E verification)
 Resume file: None
-Next action: Execute 34-02 (GitHub repository secrets and environment protection setup)
+Next action: Execute 34-03 (push to main, verify full pipeline E2E)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-04 — 34-01 complete (2/2 tasks, deploy-lightsail.yml + smoke tests + playwright config)*
+*Last updated: 2026-03-04 — 34-02 complete (OIDC + IAM + SSH key + GitHub secrets/environments provisioned)*
