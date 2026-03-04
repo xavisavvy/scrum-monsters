@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 33 of 36 (Production Hardening) -- COMPLETE
-Plan: 2 of 2 in current phase (33-01, 33-02 complete)
-Status: Phase 33 complete, ready for Phase 34
-Last activity: 2026-03-03 — 33-02 complete (infrastructure provisioned, all 4 success criteria verified live)
+Phase: 34 of 36 (CI/CD Pipeline) -- IN PROGRESS
+Plan: 1 of 3 in current phase (34-01 complete)
+Status: 34-01 complete — deploy workflow and smoke tests created
+Last activity: 2026-03-04 — 34-01 complete (deploy-lightsail.yml, smoke tests, Playwright config updated)
 
-Progress: [███░░░░░░░] 33% (v4.0, 5/15 plans complete)
+Progress: [███░░░░░░░] 40% (v4.0, 6/15 plans complete)
 
 ## Performance Metrics
 
@@ -40,7 +40,7 @@ Progress: [███░░░░░░░] 33% (v4.0, 5/15 plans complete)
 
 All decisions logged in PROJECT.md Key Decisions table.
 
-Key decisions for v4.0:
+Key decisions for v4.0 (Phase 34):
 - AWS Lightsail $5/mo recommended (58% headroom for 2x growth)
 - Docker Compose sidecar PostgreSQL (not managed DB — saves $15/mo)
 - Nginx Proxy Manager for TLS (GUI-based, built-in Let's Encrypt)
@@ -65,6 +65,11 @@ Key decisions for v4.0:
 - Custom pg17 backup sidecar replaces eeshugerman/postgres-backup-s3 — upstream lacks :17 tag, pg_dump v16 refuses Postgres 17 server [33-02]
 - Route 53 + CloudWatch + SNS for uptime alerting instead of UptimeRobot — AWS-native, 30s interval, no third-party dependency [33-02]
 - IAM backup user has GetObject + ListBucket in addition to PutObject — enables restore verification and backup listing [33-02]
+- deploy-lightsail.yml uses workflow_run trigger (not push) to chain Docker build -> staging deploy atomically [34-01]
+- cancel-in-progress: false on deploy concurrency — never cancel SSH deploy mid-execution [34-01]
+- drizzle-kit push --force in CI deploy steps — prevents interactive prompts hanging the job [34-01]
+- Playwright BASE_URL env var controls test target: unset = local webServer, set = live URL with no local server [34-01]
+- @smoke test tag pattern for post-deploy Playwright tests — selective runs against production without full E2E suite [34-01]
 
 ### Pending Todos
 
@@ -80,11 +85,11 @@ Key decisions for v4.0:
 
 ## Session Continuity
 
-Last session: 2026-03-03
-Stopped at: Completed 33-02-PLAN.md — Phase 33 Production Hardening complete (all 4 criteria verified)
+Last session: 2026-03-04
+Stopped at: Completed 34-01-PLAN.md — deploy-lightsail.yml workflow, Playwright smoke tests, config updated
 Resume file: None
-Next action: Plan Phase 34
+Next action: Execute 34-02 (GitHub repository secrets and environment protection setup)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-03 — 33-02 complete (2/2 tasks, all 4 Phase 33 success criteria verified live)*
+*Last updated: 2026-03-04 — 34-01 complete (2/2 tasks, deploy-lightsail.yml + smoke tests + playwright config)*
