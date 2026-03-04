@@ -1,0 +1,142 @@
+name: Deploy to Lightsail
+
+on:
+  workflow_run:
+    workflows: ["Docker"]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy to"
+        required: true
+        default: "production"
+        type: choice
+        options:
+          - production
+
+concurrency:
+  group: deploy-${{ github.event.workflow_run.head_branch || github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  REMOTE_HOST: "34.199.135.244"
+  REMOTE_USER: "ubuntu"
+  REMOTE_DIR: "/opt/scrummonsters"
+
+jobs:
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'
+    environment:
+      name: staging
+      url: https://scrummonsters.com
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: us-east-1
+          role-session-name: GitHubActions-Staging-Deploy
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/scrummonsters
+            echo "[1/4] Pulling latest Docker image from GHCR..."
+            docker compose -f docker-compose.prod.yml pull app
+            echo "[2/4] Running Drizzle migrations..."
+            docker compose -f docker-compose.prod.yml run --rm app npx drizzle-kit push --force
+            echo "[3/4] Restarting app container (no-deps preserves postgres + NPM)..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps app
+            echo "[4/4] Health check..."
+            sleep 15
+            curl --fail --silent --show-error https://scrummonsters.com/api/health
+            echo ""
+            echo "Staging deploy complete."
+
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name == 'workflow_dispatch'
+    environment:
+      name: production
+      url: https://scrummonsters.com
+
+    steps:
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_OIDC_ROLE_ARN }}
+          aws-region: us-east-1
+          role-session-name: GitHubActions-Prod-Deploy
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ env.REMOTE_HOST }}
+          username: ${{ env.REMOTE_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            set -e
+            cd /opt/scrummonsters
+            echo "[1/4] Pulling latest Docker image from GHCR..."
+            docker compose -f docker-compose.prod.yml pull app
+            echo "[2/4] Running Drizzle migrations..."
+            docker compose -f docker-compose.prod.yml run --rm app npx drizzle-kit push --force
+            echo "[3/4] Restarting app container (no-deps preserves postgres + NPM)..."
+            docker compose -f docker-compose.prod.yml up -d --no-deps app
+            echo "[4/4] Health check..."
+            sleep 15
+            curl --fail --silent --show-error https://scrummonsters.com/api/health
+            echo ""
+            echo "Production deploy complete."
+
+  smoke-test:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [deploy-staging, deploy-prod]
+    if: always() && (needs.deploy-staging.result == 'success' || needs.deploy-prod.result == 'success')
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        env:
+          BASE_URL: https://scrummonsters.com
+        run: npx playwright test --grep @smoke --project=chromium
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: smoke-test-report
+          path: playwright-report/
+          retention-days: 7
