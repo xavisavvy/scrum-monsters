@@ -68,7 +68,7 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 
 </details>
 
-### 🚧 v4.0 Hosting & Deployment (In Progress)
+### v4.0 Hosting & Deployment (In Progress)
 
 **Milestone Goal:** Deploy ScrumMonsters to AWS Lightsail with Docker containers, custom domain HTTPS, full CI/CD pipeline, production observability, automated backups, and verified disaster recovery — with a clean break from Replit.
 
@@ -128,12 +128,12 @@ Plans:
   3. The GitHub Actions workflow authenticates to AWS via OIDC — no AWS access key secrets stored in GitHub
   4. After each deployment, a Playwright E2E smoke test runs and its pass/fail status is visible in the GitHub Actions run
   5. Drizzle migrations run and complete before the app container starts on each deploy
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 34-01: Create deploy-lightsail.yml GitHub Actions workflow (build, tag, push to GHCR, SSH deploy to staging on push to main)
-- [ ] 34-02: Configure GitHub OIDC for AWS authentication (IAM role, trust policy, no stored access keys), add workflow_dispatch prod deploy job
-- [ ] 34-03: Wire Drizzle migration step before app container start, add post-deploy Playwright smoke test job
+- [ ] 34-01-PLAN.md — Create deploy-lightsail.yml workflow (staging via workflow_run, prod via workflow_dispatch), update Playwright config for live URL, create smoke tests, disable old K8s deploy.yml
+- [ ] 34-02-PLAN.md — Generate SSH deploy key, provision AWS OIDC identity provider + IAM role, add GitHub secrets and environments
+- [ ] 34-03-PLAN.md — End-to-end pipeline verification: push to main triggers staging deploy, smoke tests pass, prod is manual-only
 
 ---
 
@@ -198,4 +198,4 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-03 — Phase 33 complete (2/2 plans, all 4 success criteria verified)*
+*Last updated: 2026-03-04 — Phase 34 planned (3 plans in 2 waves)*
