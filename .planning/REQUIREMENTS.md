@@ -9,18 +9,18 @@ Requirements for hosting & deployment milestone. Each maps to roadmap phases.
 
 ### Infrastructure Setup
 
-- [ ] **INFRA-01**: Lightsail Micro instance provisioned with firewall rules (ports 80, 443, 22 only)
-- [ ] **INFRA-02**: Production docker-compose.yml runs app, PostgreSQL, and Nginx Proxy Manager containers
-- [ ] **INFRA-03**: Custom domain points to Lightsail with HTTPS via Let's Encrypt (Nginx Proxy Manager)
-- [ ] **INFRA-04**: Systemd service unit auto-starts Docker Compose on VPS reboot
-- [ ] **INFRA-05**: Secrets managed via .env file (never in git), env var substitution in docker-compose.yml
+- [x] **INFRA-01**: Lightsail Micro instance provisioned with firewall rules (ports 80, 443, 22 only)
+- [x] **INFRA-02**: Production docker-compose.yml runs app, PostgreSQL, and Nginx Proxy Manager containers
+- [x] **INFRA-03**: Custom domain points to Lightsail with HTTPS via Let's Encrypt (Nginx Proxy Manager)
+- [x] **INFRA-04**: Systemd service unit auto-starts Docker Compose on VPS reboot
+- [x] **INFRA-05**: Secrets managed via .env file (never in git), env var substitution in docker-compose.yml
 
 ### Production Hardening
 
-- [ ] **HARD-01**: SIGTERM handler drains WebSocket connections for 30s before exit (no dropped games during deploys)
-- [ ] **HARD-02**: postgres-backup-s3 sidecar runs daily pg_dump to S3 with 30-day retention
-- [ ] **HARD-03**: GHCR images tagged with sha + semver for rollback to prior version in under 5 min
-- [ ] **HARD-04**: Uptime alerts notify via email within 5 min of downtime
+- [x] **HARD-01**: SIGTERM handler drains WebSocket connections for 30s before exit (no dropped games during deploys)
+- [x] **HARD-02**: postgres-backup-s3 sidecar runs daily pg_dump to S3 with 30-day retention
+- [x] **HARD-03**: GHCR images tagged with sha + semver for rollback to prior version in under 5 min
+- [x] **HARD-04**: Uptime alerts notify via email within 5 min of downtime
 
 ### CI/CD Pipeline
 
@@ -80,15 +80,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| INFRA-01 | Phase 32 | Pending |
-| INFRA-02 | Phase 32 | Pending |
-| INFRA-03 | Phase 32 | Pending |
-| INFRA-04 | Phase 32 | Pending |
-| INFRA-05 | Phase 32 | Pending |
-| HARD-01 | Phase 33 | Pending |
-| HARD-02 | Phase 33 | Pending |
-| HARD-03 | Phase 33 | Pending |
-| HARD-04 | Phase 33 | Pending |
+| INFRA-01 | Phase 32 | Complete |
+| INFRA-02 | Phase 32 | Complete |
+| INFRA-03 | Phase 32 | Complete |
+| INFRA-04 | Phase 32 | Complete |
+| INFRA-05 | Phase 32 | Complete |
+| HARD-01 | Phase 33 | Complete |
+| HARD-02 | Phase 33 | Complete |
+| HARD-03 | Phase 33 | Complete |
+| HARD-04 | Phase 33 | Complete |
 | CICD-01 | Phase 34 | Pending |
 | CICD-02 | Phase 34 | Pending |
 | CICD-03 | Phase 34 | Pending |
@@ -109,4 +109,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-02-24*
-*Last updated: 2026-02-24 — traceability complete, all 21 requirements mapped to Phases 32-36*
+*Last updated: 2026-03-03 — Phase 32 (INFRA) and Phase 33 (HARD) requirements complete*

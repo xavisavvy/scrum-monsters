@@ -73,7 +73,7 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 **Milestone Goal:** Deploy ScrumMonsters to AWS Lightsail with Docker containers, custom domain HTTPS, full CI/CD pipeline, production observability, automated backups, and verified disaster recovery — with a clean break from Replit.
 
 - [x] **Phase 32: Infrastructure Foundation** — Lightsail instance live, custom domain HTTPS, Docker Compose stack auto-starting (completed 2026-03-02)
-- [ ] **Phase 33: Production Hardening** — Graceful deploys, daily DB backups, rollback capability, uptime alerting
+- [x] **Phase 33: Production Hardening** — Graceful deploys, daily DB backups, rollback capability, uptime alerting (completed 2026-03-03)
 - [ ] **Phase 34: CI/CD Pipeline** — Automated staging deploys, manual prod promotes, OIDC auth, post-deploy smoke tests
 - [ ] **Phase 35: Observability** — Prometheus + Grafana dashboards, log aggregation, all services localhost-only
 - [ ] **Phase 36: Disaster Recovery** — Backup restore verified end-to-end, TLS renewal tested, incident runbook complete
@@ -112,8 +112,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 33-01-PLAN.md — Fix graceful shutdown (io.close()), add stop_grace_period, switch to GHCR image pull, add backup sidecar, update deploy.sh and runbook
-- [ ] 33-02-PLAN.md — Provision S3 bucket/IAM user/GHCR auth/UptimeRobot, deploy, verify all four success criteria end-to-end
+- [x] 33-01-PLAN.md — Fix graceful shutdown (io.close()), add stop_grace_period, switch to GHCR image pull, add backup sidecar, update deploy.sh and runbook
+- [x] 33-02-PLAN.md — Provision S3 bucket/IAM user/GHCR auth/Route 53 health check, deploy, verify all four success criteria end-to-end
 
 ---
 
@@ -189,7 +189,7 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 | 30 | v3.1 | 2/2 | Complete | 2026-02-20 |
 | 31 | v3.1 | 1/2 (1 deferred) | Complete | 2026-02-24 |
 | 32. Infrastructure Foundation | v4.0 | 3/3 | Complete | 2026-03-02 |
-| 33. Production Hardening | v4.0 | 0/2 | Not started | - |
+| 33. Production Hardening | v4.0 | 2/2 | Complete | 2026-03-03 |
 | 34. CI/CD Pipeline | v4.0 | 0/3 | Not started | - |
 | 35. Observability | v4.0 | 0/3 | Not started | - |
 | 36. Disaster Recovery | v4.0 | 0/3 | Not started | - |
@@ -198,4 +198,4 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-02 — Phase 33 planned (2 plans)*
+*Last updated: 2026-03-03 — Phase 33 complete (2/2 plans, all 4 success criteria verified)*
