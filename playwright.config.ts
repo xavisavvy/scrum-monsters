@@ -22,8 +22,8 @@ export default defineConfig({
   ],
   // Shared settings for all projects
   use: {
-    // Base URL for navigation actions
-    baseURL: "http://localhost:5000",
+    // Base URL for navigation actions — reads from env for live URL targeting
+    baseURL: process.env.BASE_URL || "http://localhost:5000",
     // Collect trace on first retry
     trace: "on-first-retry",
     // Take screenshots on failure
@@ -54,15 +54,17 @@ export default defineConfig({
     // },
   ],
 
-  // Run local dev server before starting tests
-  webServer: {
-    command: "npm run dev",
-    url: "http://localhost:5000",
-    reuseExistingServer: !process.env.CI,
-    timeout: 120 * 1000,
-    stdout: "pipe",
-    stderr: "pipe",
-  },
+  // Run local dev server before starting tests — skip when targeting a live URL
+  webServer: process.env.BASE_URL
+    ? undefined
+    : {
+        command: "npm run dev",
+        url: "http://localhost:5000",
+        reuseExistingServer: !process.env.CI,
+        timeout: 120 * 1000,
+        stdout: "pipe",
+        stderr: "pipe",
+      },
 
   // Timeouts
   timeout: 30 * 1000,
