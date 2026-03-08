@@ -63,7 +63,7 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --no-deps app
             echo "[4/4] Health check..."
             sleep 15
-            curl --fail --silent --show-error https://scrummonsters.com/api/health
+            curl --fail --silent --show-error http://localhost:5000/api/health
             echo ""
             echo "Staging deploy complete."
 
@@ -101,7 +101,7 @@ jobs:
             docker compose -f docker-compose.prod.yml up -d --no-deps app
             echo "[4/4] Health check..."
             sleep 15
-            curl --fail --silent --show-error https://scrummonsters.com/api/health
+            curl --fail --silent --show-error http://localhost:5000/api/health
             echo ""
             echo "Production deploy complete."
 
