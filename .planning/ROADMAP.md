@@ -147,12 +147,12 @@ Plans:
   2. A Grafana dashboard shows active lobbies, connected player count, WebSocket connections, and error rates with data flowing in real-time
   3. Logs from every Docker container (app, postgres, nginx, prometheus, grafana) are viewable from a single location without SSH-ing into individual containers
   4. Grafana and Prometheus ports (3000, 9090) are bound to 127.0.0.1 — the dashboards are not accessible from the public internet without an SSH tunnel
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 35-01: Add Prometheus and Grafana containers to docker-compose.yml (bound to 127.0.0.1, memory-limited, 60s scrape interval, 7-day retention)
-- [ ] 35-02: Configure Grafana dashboards for game metrics (active lobbies, players, WebSocket connections, error rates), document SSH tunnel access procedure
-- [ ] 35-03: Configure Docker log aggregation (Loki or structured docker logs viewer), verify all container logs accessible from single interface
+- [ ] 35-01-PLAN.md — Wire /metrics endpoint, fix cardinality, add Prometheus/Grafana/Dozzle to docker-compose with memory limits
+- [ ] 35-02-PLAN.md — Create Grafana provisioning files and ScrumQuest dashboard JSON
+- [ ] 35-03-PLAN.md — Deploy monitoring stack to VPS, verify all OBS requirements end-to-end, update runbook
 
 ---
 
