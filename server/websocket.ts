@@ -40,6 +40,7 @@ import {
   validatePayload,
   ToggleReadyPayloadSchema,
 } from '../shared/socket-schemas.js';
+import { updateWebsocketMetrics } from "./metrics.js";
 
 type InterServerEvents = {};
 type SocketData = {
@@ -249,6 +250,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       authenticated: !!socket.data.userId,
       userId: socket.data.userId
     }, 'Player connected');
+
+    // Update Prometheus WebSocket connection gauge
+    updateWebsocketMetrics(io.sockets.sockets.size);
 
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
@@ -2039,6 +2043,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       activeConnections--;
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
+
+      // Update Prometheus WebSocket connection gauge
+      updateWebsocketMetrics(io.sockets.sockets.size);
 
       // Track disconnect reasons for monitoring
       disconnectReasons.set(reason, (disconnectReasons.get(reason) || 0) + 1);

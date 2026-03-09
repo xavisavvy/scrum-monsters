@@ -6,6 +6,7 @@ import profileRoutes from "./auth/profileRoutes.js";
 import { profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 import { storage, PgStorage } from './storage.js';
+import { getMetrics, getMetricsContentType, metricsMiddleware } from "./metrics.js";
 
 // Import session middleware from index (circular import avoided by lazy loading)
 let sessionMiddlewareRef: RequestHandler | null = null;
@@ -19,6 +20,19 @@ export function getSessionMiddleware(): RequestHandler | null {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server first
   const httpServer = createServer(app);
+
+  // Prometheus metrics endpoint — before rate limiter so Prometheus can always scrape
+  app.get('/metrics', async (_req, res) => {
+    try {
+      res.set('Content-Type', getMetricsContentType());
+      res.end(await getMetrics());
+    } catch (err) {
+      res.status(500).end(String(err));
+    }
+  });
+
+  // HTTP metrics middleware — after /metrics route to avoid self-referential noise
+  app.use(metricsMiddleware());
 
   // Rate limiting (applied before route handlers)
   app.use('/api/user', profileLimiter);
