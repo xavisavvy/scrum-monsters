@@ -9,17 +9,17 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 34 of 36 (CI/CD Pipeline) -- COMPLETE
-Plan: 3 of 3 in current phase (34-01, 34-02, 34-03 complete)
-Status: Phase 34 complete -- all 5 CICD requirements verified end-to-end
-Last activity: 2026-03-09 — 34-03 complete (E2E pipeline verification: push-to-main -> staging deploy -> smoke tests)
+Phase: 35 of 36 (Monitoring & Observability)
+Plan: 2 of 3 in current phase (35-02 complete)
+Status: Executing Phase 35 -- Grafana provisioning and dashboard complete
+Last activity: 2026-03-09 — 35-02 complete (Grafana provisioning + 10-panel dashboard)
 
-Progress: [█████░░░░░] 53% (v4.0, 8/15 plans complete)
+Progress: [██████░░░░] 60% (v4.0, 9/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
-- Total plans completed: 117
+- Total plans completed: 118
 - Total milestones shipped: 7
 
 **By Milestone:**
@@ -32,13 +32,18 @@ Progress: [█████░░░░░] 53% (v4.0, 8/15 plans complete)
 | v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 4/5 (1 deferred) | Complete | 2026-02-24 |
-| v4.0 Hosting & Deployment | 32-36 | 8/15 | In Progress | — |
+| v4.0 Hosting & Deployment | 32-36 | 9/15 | In Progress | — |
 
 ## Accumulated Context
 
 ### Decisions
 
 All decisions logged in PROJECT.md Key Decisions table.
+
+Key decisions for v4.0 (Phase 35):
+- Name-based Grafana datasource reference matching provisioned datasource name [35-02]
+- Stable dashboard UID scrumquest-main for bookmarkable URLs and API access [35-02]
+- 30s dashboard refresh interval aligns with Prometheus scrape interval [35-02]
 
 Key decisions for v4.0 (Phase 34):
 - AWS Lightsail $5/mo recommended (58% headroom for 2x growth)
@@ -87,10 +92,10 @@ Key decisions for v4.0 (Phase 34):
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 34-03-PLAN.md — Phase 34 (CI/CD Pipeline) fully complete
+Stopped at: Completed 35-02-PLAN.md — Grafana provisioning and dashboard
 Resume file: None
-Next action: Begin Phase 35 (Monitoring & Observability)
+Next action: Continue Phase 35 with 35-03 (docker-compose observability stack integration)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-09 — 34-03 complete (E2E pipeline verification passed, Phase 34 complete)*
+*Last updated: 2026-03-09 — 35-02 complete (Grafana provisioning + 10-panel ScrumQuest dashboard)*
