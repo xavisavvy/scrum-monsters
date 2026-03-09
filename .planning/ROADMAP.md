@@ -74,7 +74,7 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 
 - [x] **Phase 32: Infrastructure Foundation** — Lightsail instance live, custom domain HTTPS, Docker Compose stack auto-starting (completed 2026-03-02)
 - [x] **Phase 33: Production Hardening** — Graceful deploys, daily DB backups, rollback capability, uptime alerting (completed 2026-03-03)
-- [ ] **Phase 34: CI/CD Pipeline** — Automated staging deploys, manual prod promotes, OIDC auth, post-deploy smoke tests
+- [x] **Phase 34: CI/CD Pipeline** — Automated staging deploys, manual prod promotes, OIDC auth, post-deploy smoke tests (completed 2026-03-09)
 - [ ] **Phase 35: Observability** — Prometheus + Grafana dashboards, log aggregation, all services localhost-only
 - [ ] **Phase 36: Disaster Recovery** — Backup restore verified end-to-end, TLS renewal tested, incident runbook complete
 
@@ -131,9 +131,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 34-01-PLAN.md — Create deploy-lightsail.yml workflow (staging via workflow_run, prod via workflow_dispatch), update Playwright config for live URL, create smoke tests, disable old K8s deploy.yml
-- [ ] 34-02-PLAN.md — Generate SSH deploy key, provision AWS OIDC identity provider + IAM role, add GitHub secrets and environments
-- [ ] 34-03-PLAN.md — End-to-end pipeline verification: push to main triggers staging deploy, smoke tests pass, prod is manual-only
+- [x] 34-01-PLAN.md — Create deploy-lightsail.yml workflow (staging via workflow_run, prod via workflow_dispatch), update Playwright config for live URL, create smoke tests, disable old K8s deploy.yml
+- [x] 34-02-PLAN.md — Generate SSH deploy key, provision AWS OIDC identity provider + IAM role, add GitHub secrets and environments
+- [x] 34-03-PLAN.md — End-to-end pipeline verification: push to main triggers staging deploy, smoke tests pass, prod is manual-only
 
 ---
 
@@ -190,12 +190,12 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 | 31 | v3.1 | 1/2 (1 deferred) | Complete | 2026-02-24 |
 | 32. Infrastructure Foundation | v4.0 | 3/3 | Complete | 2026-03-02 |
 | 33. Production Hardening | v4.0 | 2/2 | Complete | 2026-03-03 |
-| 34. CI/CD Pipeline | v4.0 | 0/3 | Not started | - |
+| 34. CI/CD Pipeline | v4.0 | 3/3 | Complete | 2026-03-09 |
 | 35. Observability | v4.0 | 0/3 | Not started | - |
 | 36. Disaster Recovery | v4.0 | 0/3 | Not started | - |
 
-**Total: 7 milestones shipped, 32 phases complete, 117 plans (1 deferred) + 4 phases remaining for v4.0**
+**Total: 7 milestones shipped, 33 phases complete, 120 plans (1 deferred) + 2 phases remaining for v4.0**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-04 — Phase 34 planned (3 plans in 2 waves)*
+*Last updated: 2026-03-09 — Phase 34 complete (CI/CD pipeline verified E2E)*
