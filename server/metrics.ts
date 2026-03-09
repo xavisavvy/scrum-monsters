@@ -248,15 +248,31 @@ export function recordGameCompletion(victory: boolean): void {
 }
 
 /**
+ * Normalize route for Prometheus labels to prevent high-cardinality label explosion.
+ * Dynamic path segments are replaced with parameter placeholders.
+ */
+function normalizeRoute(req: any): string {
+  if (req.route?.path) return req.route.path;
+  const path: string = req.path;
+  if (path.startsWith('/join/')) return '/join/:lobbyId';
+  if (path.startsWith('/room/')) return '/room/:roomId';
+  if (path.startsWith('/assets/')) return '/assets/*';
+  if (path.match(/\.(js|css|png|jpg|svg|woff2?|ico|map|json)$/)) return '/static/*';
+  if (path === '/') return '/';
+  if (path.startsWith('/api/')) return path;  // API routes are fixed, safe
+  return '/other';  // Catch-all for SPA routes served by Vite
+}
+
+/**
  * Express middleware for HTTP metrics
  */
 export function metricsMiddleware() {
   return (req: any, res: any, next: any) => {
     const startTime = Date.now();
-    const route = req.route?.path || req.path;
 
     res.on("finish", () => {
       const duration = (Date.now() - startTime) / 1000;
+      const route = normalizeRoute(req);
       const labels = {
         method: req.method,
         route: route,
