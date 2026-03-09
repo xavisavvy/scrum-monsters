@@ -766,6 +766,30 @@ export class SessionManager {
     // Check disconnectedPlayer record exists and not expired
     const disconnectedPlayer = this.disconnectedPlayers.get(token.playerId);
     if (!disconnectedPlayer) {
+      // Player was never disconnected — check if they're still in the lobby
+      // This happens when the host creates a lobby and GamePage auto-reconnects
+      // before any disconnect occurred (race between lobby_created and GamePage mount)
+      const stillInLobby = lobby.players.find((p) => p.id === token.playerId);
+      if (stillInLobby) {
+        // Re-sync: generate new token and return success without restoring state
+        const newReconnectToken = this.generateReconnectToken(
+          token.playerId,
+          token.lobbyId,
+          token.playerName
+        );
+        this.reconnectTokens.delete(tokenString);
+        this.recordPlayerActivity(token.playerId);
+        return {
+          result: 'success',
+          lobbySync: {
+            lobby,
+            yourPlayer: stillInLobby,
+            reconnectToken: newReconnectToken,
+            stateChanges: {},
+            pendingActions: {},
+          },
+        };
+      }
       return {
         result: 'grace_expired',
         message: 'Reconnection grace period expired',
