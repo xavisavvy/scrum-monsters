@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v4.0 Hosting & Deployment — Phase 33: Production Hardening
+**Current focus:** v4.0 Hosting & Deployment — Phase 35: Monitoring & Observability
 
 ## Current Position
 
-Phase: 34 of 36 (CI/CD Pipeline) -- IN PROGRESS
-Plan: 2 of 3 in current phase (34-01, 34-02 complete)
-Status: Wave 1 complete — workflow + infrastructure provisioned, ready for Wave 2 (E2E verification)
-Last activity: 2026-03-04 — 34-02 complete (OIDC, IAM role, SSH key, GitHub secrets/environments provisioned)
+Phase: 34 of 36 (CI/CD Pipeline) -- COMPLETE
+Plan: 3 of 3 in current phase (34-01, 34-02, 34-03 complete)
+Status: Phase 34 complete -- all 5 CICD requirements verified end-to-end
+Last activity: 2026-03-09 — 34-03 complete (E2E pipeline verification: push-to-main -> staging deploy -> smoke tests)
 
-Progress: [████░░░░░░] 47% (v4.0, 7/15 plans complete)
+Progress: [█████░░░░░] 53% (v4.0, 8/15 plans complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [████░░░░░░] 47% (v4.0, 7/15 plans complete)
 | v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 4/5 (1 deferred) | Complete | 2026-02-24 |
-| v4.0 Hosting & Deployment | 32-36 | 5/15 | In Progress | — |
+| v4.0 Hosting & Deployment | 32-36 | 8/15 | In Progress | — |
 
 ## Accumulated Context
 
@@ -70,6 +70,7 @@ Key decisions for v4.0 (Phase 34):
 - drizzle-kit push --force in CI deploy steps — prevents interactive prompts hanging the job [34-01]
 - Playwright BASE_URL env var controls test target: unset = local webServer, set = live URL with no local server [34-01]
 - @smoke test tag pattern for post-deploy Playwright tests — selective runs against production without full E2E suite [34-01]
+- Full CI/CD pipeline verified E2E: push -> docker.yml -> deploy-lightsail.yml -> staging deploy + smoke tests [34-03]
 
 ### Pending Todos
 
@@ -85,11 +86,11 @@ Key decisions for v4.0 (Phase 34):
 
 ## Session Continuity
 
-Last session: 2026-03-04
-Stopped at: Wave 1 complete (34-01, 34-02). Starting Wave 2 (34-03 E2E verification)
+Last session: 2026-03-09
+Stopped at: Completed 34-03-PLAN.md — Phase 34 (CI/CD Pipeline) fully complete
 Resume file: None
-Next action: Execute 34-03 (push to main, verify full pipeline E2E)
+Next action: Begin Phase 35 (Monitoring & Observability)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-04 — 34-02 complete (OIDC + IAM + SSH key + GitHub secrets/environments provisioned)*
+*Last updated: 2026-03-09 — 34-03 complete (E2E pipeline verification passed, Phase 34 complete)*
