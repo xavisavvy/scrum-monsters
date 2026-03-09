@@ -12,6 +12,7 @@ Covers: initial VPS setup, deploy procedure, and what deploy.sh does step by ste
 | Restart stack | SSH in, then: `cd /opt/scrummonsters && sudo systemctl restart scrummonsters` |
 | NPM admin UI | SSH tunnel: `ssh -L 81:localhost:81 ubuntu@<ip>` then visit http://localhost:81 |
 | Check app health | `curl https://scrummonsters.com/api/health` |
+| Monitoring UIs | SSH tunnel: `ssh -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 -L 9999:127.0.0.1:9999 ubuntu@<ip>` |
 | Rollback to prior version | SSH in, then: `APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml pull app && docker compose -f docker-compose.prod.yml up -d --no-deps app` |
 | Trigger manual backup | SSH in, then: `docker compose -f docker-compose.prod.yml exec postgres-backup sh -c '/backup.sh'` |
 | View backup logs | SSH in, then: `docker compose -f docker-compose.prod.yml logs -f postgres-backup` |
@@ -548,5 +549,63 @@ If this succeeds without an authentication error, the VPS is authorized to pull 
 
 ---
 
-*Runbook version: Phase 33 — Production Hardening*
-*Last updated: 2026-03-02*
+## Part 8: Monitoring Access
+
+All monitoring services are bound to `127.0.0.1` on the VPS and are **not accessible from the public internet**. Access them via SSH tunnel.
+
+### 8.1 Open SSH Tunnel
+
+Open a single SSH tunnel that forwards all three monitoring ports:
+
+```bash
+ssh -i ~/.ssh/lightsail_scrummonsters \
+  -L 3001:127.0.0.1:3001 \
+  -L 9090:127.0.0.1:9090 \
+  -L 9999:127.0.0.1:9999 \
+  ubuntu@34.199.135.244
+```
+
+Leave this terminal open while accessing the monitoring UIs.
+
+### 8.2 Access Monitoring UIs
+
+With the SSH tunnel active, open these URLs in your browser:
+
+| Service | URL | Purpose |
+|---------|-----|---------|
+| Grafana | http://localhost:3001 | Metrics dashboards (active lobbies, players, WebSocket connections, error rates) |
+| Prometheus | http://localhost:9090 | Raw metrics queries and scrape target status |
+| Dozzle | http://localhost:9999 | Real-time Docker container log viewer |
+
+### 8.3 Grafana Credentials
+
+- **Username:** `admin`
+- **Password:** See `GRAFANA_ADMIN_PASSWORD` in `/opt/scrummonsters/.env` on the VPS
+
+To retrieve the password:
+```bash
+ssh -i ~/.ssh/lightsail_scrummonsters ubuntu@34.199.135.244 "grep GRAFANA_ADMIN_PASSWORD /opt/scrummonsters/.env"
+```
+
+### 8.4 Services Overview
+
+| Service | Internal Port | Tunnel Port | Image | Purpose |
+|---------|--------------|-------------|-------|---------|
+| Prometheus | 9090 | 9090 | prom/prometheus | Scrapes /metrics at 60s intervals, 7-day retention |
+| Grafana | 3000 (mapped to 3001) | 3001 | grafana/grafana-oss | Pre-built ScrumQuest dashboard with 10 metric panels |
+| Dozzle | 8080 (mapped to 9999) | 9999 | amir20/dozzle | Shows logs from all Docker containers in one UI |
+
+### 8.5 Memory Limits
+
+| Service | Memory Limit | Typical Usage |
+|---------|-------------|---------------|
+| Prometheus | 128 MB | 40-60 MB |
+| Grafana | 128 MB | 80-100 MB |
+| Dozzle | 32 MB | 15-20 MB |
+
+Total monitoring overhead: ~150-180 MB of the 1 GB VPS budget.
+
+---
+
+*Runbook version: Phase 35 — Monitoring & Observability*
+*Last updated: 2026-03-09*
