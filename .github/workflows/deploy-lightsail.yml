@@ -130,7 +130,7 @@ jobs:
 
       - name: Run smoke tests
         env:
-          BASE_URL: https://scrummonsters.com
+          BASE_URL: http://34.199.135.244:5000
         run: npx playwright test --grep @smoke --project=chromium
 
       - name: Upload test results
