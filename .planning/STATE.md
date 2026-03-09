@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 ## Current Position
 
 Phase: 35 of 36 (Monitoring & Observability)
-Plan: 2 of 3 in current phase (35-02 complete)
-Status: Executing Phase 35 -- Grafana provisioning and dashboard complete
-Last activity: 2026-03-09 — 35-02 complete (Grafana provisioning + 10-panel dashboard)
+Plan: 2 of 3 in current phase (35-01, 35-02 complete)
+Status: Executing Phase 35 -- metrics endpoint wired, monitoring stack configured
+Last activity: 2026-03-09 — 35-01 complete (metrics endpoint + Prometheus/Grafana/Dozzle in docker-compose)
 
-Progress: [██████░░░░] 60% (v4.0, 9/15 plans complete)
+Progress: [██████░░░░] 67% (v4.0, 10/15 plans complete)
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
-- Total plans completed: 118
+- Total plans completed: 119
 - Total milestones shipped: 7
 
 **By Milestone:**
@@ -32,7 +32,7 @@ Progress: [██████░░░░] 60% (v4.0, 9/15 plans complete)
 | v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 4/5 (1 deferred) | Complete | 2026-02-24 |
-| v4.0 Hosting & Deployment | 32-36 | 9/15 | In Progress | — |
+| v4.0 Hosting & Deployment | 32-36 | 10/15 | In Progress | — |
 
 ## Accumulated Context
 
@@ -41,6 +41,10 @@ Progress: [██████░░░░] 60% (v4.0, 9/15 plans complete)
 All decisions logged in PROJECT.md Key Decisions table.
 
 Key decisions for v4.0 (Phase 35):
+- Metrics endpoint placed before rate limiter so Prometheus scrapes are never throttled [35-01]
+- normalizeRoute() prevents high-cardinality label explosion in metricsMiddleware [35-01]
+- All monitoring ports bound to 127.0.0.1 — access via SSH tunnel only [35-01]
+- Prometheus 7d retention + 512MB size cap fits 1GB VPS memory budget [35-01]
 - Name-based Grafana datasource reference matching provisioned datasource name [35-02]
 - Stable dashboard UID scrumquest-main for bookmarkable URLs and API access [35-02]
 - 30s dashboard refresh interval aligns with Prometheus scrape interval [35-02]
@@ -87,15 +91,15 @@ Key decisions for v4.0 (Phase 34):
 ### Blockers/Concerns
 
 - (RESOLVED in 33-02) Graceful shutdown verified: 2.566s clean exit with io.close() drain — 30s window adequate
-- [Phase 35] Prometheus cardinality audit of server/metrics.ts required before enabling in production (high-cardinality labels exhaust 1GB RAM)
+- (RESOLVED in 35-01) Prometheus cardinality audit complete — normalizeRoute() prevents label explosion from dynamic paths
 
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 35-02-PLAN.md — Grafana provisioning and dashboard
+Stopped at: Completed 35-01-PLAN.md — metrics endpoint + monitoring infrastructure
 Resume file: None
-Next action: Continue Phase 35 with 35-03 (docker-compose observability stack integration)
+Next action: Execute 35-03-PLAN.md (remaining Phase 35 plan)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-09 — 35-02 complete (Grafana provisioning + 10-panel ScrumQuest dashboard)*
+*Last updated: 2026-03-09 — 35-01 complete (metrics endpoint wired, Prometheus/Grafana/Dozzle in docker-compose)*
