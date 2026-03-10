@@ -165,12 +165,12 @@ Plans:
   1. A pg_restore from an S3 backup file completes successfully and the restored data is queryable — the full restore path is proven to work
   2. Let's Encrypt certificate renewal completes without errors in the staging environment (verified before the cert expires in production)
   3. The incident runbook exists and covers restart, restore, rollback, and at least three common failure scenarios with step-by-step recovery instructions
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
-- [ ] 36-01: Execute end-to-end pg_restore test from S3 backup (download, restore, verify data integrity), document exact commands
-- [ ] 36-02: Force certificate renewal in staging environment, verify renewal automation works, set Prometheus alert for cert expiry under 14 days
-- [ ] 36-03: Write incident response runbook (restart procedure, restore from backup, rollback to prior image, common failures: OOM, disk full, DB connection exhaustion, cert expiry)
+- [ ] 36-01-PLAN.md — Create restore-from-s3.sh script and execute end-to-end database restore test from S3 backup
+- [ ] 36-02-PLAN.md — Add Blackbox Exporter for TLS cert monitoring, verify Let's Encrypt renewal mechanism, set Prometheus cert expiry alerts
+- [ ] 36-03-PLAN.md — Write Part 9: Incident Response in runbook (restart, restore, rollback, common failure scenarios)
 
 ---
 
@@ -198,4 +198,4 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-09 — Phase 35 complete (Observability: Prometheus, Grafana, Dozzle deployed and verified)*
+*Last updated: 2026-03-09 -- Phase 36 planned (3 plans in 2 waves)*
