@@ -5,16 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-02-24)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v4.0 Hosting & Deployment — Phase 35: Monitoring & Observability
+**Current focus:** v4.0 Hosting & Deployment — Phase 36: Disaster Recovery
 
 ## Current Position
 
 Phase: 36 of 36 (Disaster Recovery)
-Plan: 2 of 3 in current phase (36-01 pending, 36-02 complete)
-Status: Executing Phase 36 -- TLS cert monitoring deployed and verified
-Last activity: 2026-03-10 — 36-02 complete (Blackbox Exporter + TLS cert alert rules deployed)
+Plan: 2 of 3 in current phase (36-01 complete, 36-02 complete, 36-03 in progress)
+Status: Executing Phase 36 — Wave 1 complete, launching Wave 2
+Last activity: 2026-03-10 — 36-01 + 36-02 verified (S3 restore tested, TLS monitoring deployed)
 
-Progress: [████████░░] 80% (v4.0, 12/15 plans complete)
+Progress: [█████████░] 87% (v4.0, 13/15 plans complete)
 
 ## Performance Metrics
 
@@ -52,6 +52,9 @@ Key decisions for v4.0 (Phase 35):
 - Dashboard renamed ScrumQuest to ScrumMonsters to match project branding [35-03]
 
 Key decisions for v4.0 (Phase 36):
+- gunzip|psql for restore (not pg_restore) — backup format is plain-text SQL [36-01]
+- Restore script sources /opt/scrummonsters/.env — no hardcoded secrets [36-01]
+- Drop/create DB connects to postgres db, not target db — avoids active connection errors [36-01]
 - Blackbox Exporter memory capped at 32MB (actual ~14MB) — fits 1GB VPS budget [36-02]
 - TLS alert thresholds at 14 days (warning) and 7 days (critical) — ample response window [36-02]
 - NPM handles Let's Encrypt renewal automatically — no cron or certbot needed [36-02]
@@ -104,10 +107,10 @@ Key decisions for v4.0 (Phase 34):
 ## Session Continuity
 
 Last session: 2026-03-10
-Stopped at: Completed 36-02-PLAN.md — TLS cert monitoring deployed and verified
+Stopped at: Wave 1 complete (36-01 + 36-02 verified), launching Wave 2 (36-03)
 Resume file: None
-Next action: Continue Phase 36 (36-03 remaining)
+Next action: Execute 36-03 (incident runbook)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-10 — 36-02 complete (TLS cert monitoring deployed, Blackbox Exporter + alert rules verified)*
+*Last updated: 2026-03-10 — 36-01 + 36-02 complete (S3 restore verified, TLS monitoring deployed)*
