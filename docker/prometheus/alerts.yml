@@ -1,0 +1,20 @@
+groups:
+  - name: tls
+    rules:
+      - alert: TLSCertExpiringSoon
+        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-tls"} - time()) / 86400 < 14
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "TLS certificate expires in {{ $value | humanizeDuration }}"
+          description: "Certificate for {{ $labels.instance }} expires in less than 14 days."
+
+      - alert: TLSCertExpiryCritical
+        expr: (probe_ssl_earliest_cert_expiry{job="blackbox-tls"} - time()) / 86400 < 7
+        for: 1h
+        labels:
+          severity: critical
+        annotations:
+          summary: "TLS certificate expires in {{ $value | humanizeDuration }}"
+          description: "Certificate for {{ $labels.instance }} expires in less than 7 days."

@@ -88,6 +88,7 @@ services:
       - "127.0.0.1:9090:9090"
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./docker/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -132,6 +133,22 @@ services:
       - "127.0.0.1:9999:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+        reservations:
+          memory: 16M
+
+  blackbox-exporter:
+    image: prom/blackbox-exporter:latest
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9115:9115"
+    volumes:
+      - ./docker/blackbox/blackbox.yml:/config/blackbox.yml:ro
+    command:
+      - '--config.file=/config/blackbox.yml'
     deploy:
       resources:
         limits:
