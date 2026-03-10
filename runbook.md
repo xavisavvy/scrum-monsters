@@ -607,5 +607,420 @@ Total monitoring overhead: ~150-180 MB of the 1 GB VPS budget.
 
 ---
 
-*Runbook version: Phase 35 — Monitoring & Observability*
+## Part 9: Incident Response
+
+This section covers how to restart services, restore a database, roll back to a prior image, and diagnose common failures. Follow these procedures step-by-step during an incident.
+
+### 9.1 Restart Procedures
+
+#### Full Stack Restart
+
+Restart all containers (app, postgres, nginx-proxy-manager, monitoring, backup):
+
+```bash
+cd /opt/scrummonsters
+sudo systemctl restart scrummonsters
+```
+
+Or equivalently with Docker Compose:
+
+```bash
+cd /opt/scrummonsters
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml --env-file .env up -d
+```
+
+> **Note:** A full stack restart will briefly disconnect all active WebSocket sessions. Players will need to reconnect (the client handles this automatically via reconnection logic).
+
+#### App-Only Restart
+
+Restart only the Node.js application container. Keeps the database, NPM reverse proxy, and monitoring services running:
+
+```bash
+docker compose -f docker-compose.prod.yml restart app
+```
+
+Use this when the app is misbehaving but the database and proxy are healthy.
+
+#### Single Service Restart
+
+Restart any individual service by name:
+
+```bash
+docker compose -f docker-compose.prod.yml restart <service-name>
+```
+
+Valid service names:
+
+| Service | Description |
+|---------|-------------|
+| `app` | Node.js application |
+| `postgres` | PostgreSQL database |
+| `postgres-backup` | Automated S3 backup sidecar |
+| `nginx-proxy-manager` | Reverse proxy and TLS termination |
+| `prometheus` | Metrics collection |
+| `grafana` | Metrics dashboards |
+| `dozzle` | Real-time log viewer |
+| `blackbox-exporter` | TLS and endpoint probe exporter |
+
+#### Post-Restart Verification
+
+After any restart, verify the stack is healthy:
+
+```bash
+# Check all containers are running
+docker compose -f docker-compose.prod.yml ps
+
+# Check app health endpoint
+curl https://scrummonsters.com/api/health
+```
+
+Expected: all containers show `Up` status, health check returns HTTP 200 with JSON body.
+
+---
+
+### 9.2 Restore Database from S3 Backup
+
+Use this procedure to restore the PostgreSQL database from a backup stored in S3. This is a destructive operation — the current database will be dropped and replaced.
+
+#### Prerequisites
+
+- SSH access to the VPS
+- `aws` CLI available on the host (installed during initial setup)
+- The restore script at `/opt/scrummonsters/docker/postgres-backup/restore-from-s3.sh`
+- Environment variables configured in `/opt/scrummonsters/.env` (BACKUP_S3_BUCKET, BACKUP_S3_ACCESS_KEY_ID, BACKUP_S3_SECRET_ACCESS_KEY, POSTGRES_USER, POSTGRES_DB)
+
+#### Step 1: List Available Backups
+
+```bash
+source /opt/scrummonsters/.env
+export AWS_ACCESS_KEY_ID="${BACKUP_S3_ACCESS_KEY_ID}"
+export AWS_SECRET_ACCESS_KEY="${BACKUP_S3_SECRET_ACCESS_KEY}"
+aws s3 ls s3://${BACKUP_S3_BUCKET}/scrummonsters/ --region us-east-1
+```
+
+Backups are named `scrummonsters_<timestamp>.sql.gz`. Pick the backup you want to restore.
+
+#### Step 2: Run the Restore Script
+
+```bash
+cd /opt/scrummonsters
+./docker/postgres-backup/restore-from-s3.sh scrummonsters/<filename>
+```
+
+Example:
+
+```bash
+./docker/postgres-backup/restore-from-s3.sh scrummonsters/scrummonsters_2026-03-09T02:00:00.sql.gz
+```
+
+#### What the Restore Script Does
+
+The script performs these steps automatically:
+
+1. **Downloads** the backup file from S3 to `/tmp/restore.sql.gz`
+2. **Stops** the app container (prevents writes during restore)
+3. **Drops and recreates** the database (connects to the `postgres` admin database to avoid active connection errors on the target database)
+4. **Restores** via `gunzip | psql` — decompresses the backup and pipes it directly into PostgreSQL
+5. **Verifies** data integrity by checking table count and user count
+6. **Restarts** the app container and checks the health endpoint
+
+> **CRITICAL:** The restore uses `psql` (not `pg_restore`) because backups are created by `pg_dump` in plain-text SQL format. Using `pg_restore` on a plain-text dump will fail.
+
+#### Step 3: Post-Restore Verification
+
+The script verifies automatically, but you can also check manually:
+
+```bash
+# Check table counts
+docker compose -f docker-compose.prod.yml exec postgres psql -U scrummonsters -d scrummonsters -c \
+  "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public' AND table_type = 'BASE TABLE';"
+
+# Check row counts in key tables
+docker compose -f docker-compose.prod.yml exec postgres psql -U scrummonsters -d scrummonsters -c \
+  "SELECT COUNT(*) FROM users;"
+
+# Check app health
+curl https://scrummonsters.com/api/health
+```
+
+> **Cross-reference:** See Part 6 (Database Backups) for the backup schedule (daily at 2am UTC) and how to trigger a manual backup.
+
+---
+
+### 9.3 Rollback to Prior Image
+
+When to rollback: app is crash-looping after a deploy, health checks are failing, or users report a regression introduced by the latest release.
+
+> **Cross-reference:** See Part 5 (Rollback Procedure) for the full rollback workflow including finding tags and rolling forward. This section provides the quick incident-response version.
+
+#### Quick Rollback
+
+Find the last known-good image tag:
+
+```bash
+docker image ls ghcr.io/xavisavvy/scrum-monsters --format "table {{.Tag}}\t{{.CreatedAt}}"
+```
+
+Roll back by setting `APP_IMAGE_TAG` inline:
+
+```bash
+APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml pull app
+APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml up -d --no-deps app
+```
+
+Replace `sha-XXXXXX` with the tag of the known-good image.
+
+#### Timing
+
+A rollback takes under 2 minutes: the image pull is near-instant if it was previously downloaded, and the container restart takes seconds.
+
+#### After Rollback
+
+1. Verify: `curl https://scrummonsters.com/api/health`
+2. Investigate the issue in the bad release
+3. Fix, merge to main, and let CI/CD deploy the fix
+4. Remove the pinned `APP_IMAGE_TAG` from `.env` (or set it back to `latest`) to resume normal deploys
+
+---
+
+### 9.4 Common Failure Scenarios
+
+Each scenario includes **Symptoms**, **Diagnosis**, **Fix**, and **Verify** steps.
+
+#### Scenario 1: OOM Kill
+
+**Symptoms:**
+- Container stops unexpectedly
+- App unresponsive, health check failing
+- Other containers may be affected
+
+**Diagnosis:**
+
+```bash
+# Check kernel OOM killer logs
+dmesg | grep -i oom
+
+# Check if specific container was OOM-killed
+docker inspect <container-name> | grep OOMKilled
+
+# Check current memory usage of all containers
+docker stats --no-stream
+```
+
+**Fix:**
+
+1. Identify which container was killed from the `dmesg` output
+2. If the app container was killed, restart it:
+   ```bash
+   docker compose -f docker-compose.prod.yml up -d app
+   ```
+3. If OOM kills are recurring, review memory limits. Consider reducing Prometheus retention (`--storage.tsdb.retention.size`) or lowering Grafana's memory limit. The total stack should stay under 900 MB on the 1 GB VPS.
+
+**Verify:**
+
+```bash
+docker stats --no-stream
+# All containers should be running, total memory under 900 MB
+docker compose -f docker-compose.prod.yml ps
+curl https://scrummonsters.com/api/health
+```
+
+---
+
+#### Scenario 2: Disk Full
+
+**Symptoms:**
+- Database write errors in app logs
+- Backup failures (postgres-backup logs show S3 upload errors or pg_dump failures)
+- Container creation fails with "no space left on device"
+
+**Diagnosis:**
+
+```bash
+# Check filesystem usage
+df -h
+
+# Check Docker disk usage
+docker system df
+
+# Check Docker data directory size
+du -sh /var/lib/docker/
+```
+
+**Fix:**
+
+1. Prune unused Docker resources:
+   ```bash
+   docker system prune -f
+   docker image prune -a -f
+   ```
+   > **Warning:** `docker image prune -a -f` removes ALL unused images, including old rollback tags. Only run this if you do not need to roll back to a prior version.
+
+2. Check for leftover restore files:
+   ```bash
+   ls -lah /tmp/restore*
+   rm -f /tmp/restore*
+   ```
+
+3. If Prometheus data is large, consider reducing retention:
+   ```bash
+   # Check Prometheus data size
+   docker compose -f docker-compose.prod.yml exec prometheus du -sh /prometheus
+   ```
+
+**Verify:**
+
+```bash
+df -h
+# Root partition should show >20% free space
+```
+
+---
+
+#### Scenario 3: Database Connection Exhaustion
+
+**Symptoms:**
+- App logs show "too many connections" errors
+- New WebSocket connections fail
+- Existing games may still work (already-established connections are unaffected)
+
+**Diagnosis:**
+
+```bash
+# Check total connection count
+docker compose -f docker-compose.prod.yml exec postgres psql -U scrummonsters -d scrummonsters -c \
+  "SELECT count(*) FROM pg_stat_activity;"
+
+# Check connections grouped by state
+docker compose -f docker-compose.prod.yml exec postgres psql -U scrummonsters -d scrummonsters -c \
+  "SELECT state, count(*) FROM pg_stat_activity GROUP BY state;"
+```
+
+**Fix:**
+
+Restart the app container to release all connections:
+
+```bash
+docker compose -f docker-compose.prod.yml restart app
+```
+
+If the problem recurs frequently, investigate for connection leaks in the application code (connections not being returned to the pool).
+
+**Verify:**
+
+```bash
+# Connection count should drop after restart
+docker compose -f docker-compose.prod.yml exec postgres psql -U scrummonsters -d scrummonsters -c \
+  "SELECT count(*) FROM pg_stat_activity;"
+
+# New connections should work
+curl https://scrummonsters.com/api/health
+```
+
+---
+
+#### Scenario 4: TLS Certificate Expiry
+
+**Symptoms:**
+- Browser shows security warning when visiting scrummonsters.com
+- HTTPS connections fail or are rejected
+- Prometheus `TLSCertExpiringSoon` alert fires (configured at 14 days warning, 7 days critical)
+
+**Diagnosis:**
+
+```bash
+echo | openssl s_client -connect scrummonsters.com:443 -servername scrummonsters.com 2>/dev/null | openssl x509 -noout -dates
+```
+
+Check the `notAfter` date. If it is in the past or within 7 days, the certificate needs renewal.
+
+**Fix:**
+
+1. Verify port 80 is open in the Lightsail firewall (required for Let's Encrypt HTTP-01 challenge — do NOT close this port)
+
+2. Check NPM renewal logs:
+   ```bash
+   docker compose -f docker-compose.prod.yml logs nginx-proxy-manager | grep -i "renew\|certbot\|certificate"
+   ```
+
+3. If NPM auto-renewal failed, manually re-request the certificate:
+   - Open an SSH tunnel to NPM admin:
+     ```bash
+     ssh -L 81:localhost:81 ubuntu@34.199.135.244
+     ```
+   - Open `http://localhost:81` in your browser
+   - Go to **SSL Certificates**, delete the expired certificate, and request a new one
+   - Ensure **Force SSL** and **HTTP/2 Support** are checked
+
+4. Do NOT close port 80 after renewal — Let's Encrypt HTTP-01 requires it permanently for future renewals
+
+**Verify:**
+
+```bash
+# Check new certificate dates
+echo | openssl s_client -connect scrummonsters.com:443 -servername scrummonsters.com 2>/dev/null | openssl x509 -noout -dates
+
+# Browser should load without security warnings
+curl https://scrummonsters.com/api/health
+```
+
+---
+
+#### Scenario 5: App Crash Loop
+
+**Symptoms:**
+- Health check fails repeatedly
+- Container restarts every ~30 seconds
+- `docker ps` shows the app container in a restarting state
+
+**Diagnosis:**
+
+```bash
+# Check recent app logs for startup errors
+docker compose -f docker-compose.prod.yml logs --tail=100 app
+```
+
+Common causes: database connection failure, missing environment variables, uncaught exceptions in new code.
+
+**Fix:**
+
+1. **If caused by a recent deploy:** Roll back to the prior image (see Section 9.3):
+   ```bash
+   APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml pull app
+   APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml up -d --no-deps app
+   ```
+
+2. **If the database is down:** Check and restart PostgreSQL first:
+   ```bash
+   docker compose -f docker-compose.prod.yml exec postgres pg_isready
+   # If not ready:
+   docker compose -f docker-compose.prod.yml restart postgres
+   # Wait for postgres to be healthy, then restart app:
+   docker compose -f docker-compose.prod.yml restart app
+   ```
+
+3. **If environment variables are missing or wrong:**
+   ```bash
+   docker compose -f docker-compose.prod.yml config
+   ```
+   This shows the resolved compose config with all env vars substituted. Check that `DATABASE_URL`, `SESSION_SECRET`, and other required variables are present and correct.
+
+**Verify:**
+
+```bash
+# App should be running (not restarting)
+docker ps
+
+# Health check should return 200
+curl https://scrummonsters.com/api/health
+```
+
+---
+
+*End of Part 9: Incident Response*
+
+---
+
+*Runbook version: Phase 36 — Disaster Recovery*
 *Last updated: 2026-03-09*
