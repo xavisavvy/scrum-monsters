@@ -1,7 +1,7 @@
 {
-  "uid": "scrumquest-main",
-  "title": "ScrumQuest",
-  "tags": ["scrumquest", "production"],
+  "uid": "scrummonsters-main",
+  "title": "ScrumMonsters",
+  "tags": ["scrummonsters", "production"],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
