@@ -75,7 +75,7 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 - [x] **Phase 32: Infrastructure Foundation** — Lightsail instance live, custom domain HTTPS, Docker Compose stack auto-starting (completed 2026-03-02)
 - [x] **Phase 33: Production Hardening** — Graceful deploys, daily DB backups, rollback capability, uptime alerting (completed 2026-03-03)
 - [x] **Phase 34: CI/CD Pipeline** — Automated staging deploys, manual prod promotes, OIDC auth, post-deploy smoke tests (completed 2026-03-09)
-- [ ] **Phase 35: Observability** — Prometheus + Grafana dashboards, log aggregation, all services localhost-only
+- [x] **Phase 35: Observability** — Prometheus + Grafana dashboards, log aggregation, all services localhost-only (completed 2026-03-09)
 - [ ] **Phase 36: Disaster Recovery** — Backup restore verified end-to-end, TLS renewal tested, incident runbook complete
 
 ---
@@ -150,9 +150,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 35-01-PLAN.md — Wire /metrics endpoint, fix cardinality, add Prometheus/Grafana/Dozzle to docker-compose with memory limits
-- [ ] 35-02-PLAN.md — Create Grafana provisioning files and ScrumQuest dashboard JSON
-- [ ] 35-03-PLAN.md — Deploy monitoring stack to VPS, verify all OBS requirements end-to-end, update runbook
+- [x] 35-01-PLAN.md — Wire /metrics endpoint, fix cardinality, add Prometheus/Grafana/Dozzle to docker-compose with memory limits
+- [x] 35-02-PLAN.md — Create Grafana provisioning files and ScrumMonsters dashboard JSON
+- [x] 35-03-PLAN.md — Deploy monitoring stack to VPS, verify all OBS requirements end-to-end, update runbook
 
 ---
 
@@ -191,11 +191,11 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 | 32. Infrastructure Foundation | v4.0 | 3/3 | Complete | 2026-03-02 |
 | 33. Production Hardening | v4.0 | 2/2 | Complete | 2026-03-03 |
 | 34. CI/CD Pipeline | v4.0 | 3/3 | Complete | 2026-03-09 |
-| 35. Observability | v4.0 | 0/3 | Not started | - |
+| 35. Observability | v4.0 | 3/3 | Complete | 2026-03-09 |
 | 36. Disaster Recovery | v4.0 | 0/3 | Not started | - |
 
-**Total: 7 milestones shipped, 33 phases complete, 120 plans (1 deferred) + 2 phases remaining for v4.0**
+**Total: 7 milestones shipped, 34 phases complete, 123 plans (1 deferred) + 1 phase remaining for v4.0**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-09 — Phase 34 complete (CI/CD pipeline verified E2E)*
+*Last updated: 2026-03-09 — Phase 35 complete (Observability: Prometheus, Grafana, Dozzle deployed and verified)*
