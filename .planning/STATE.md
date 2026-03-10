@@ -9,12 +9,12 @@ See: .planning/PROJECT.md (updated 2026-02-24)
 
 ## Current Position
 
-Phase: 35 of 36 (Monitoring & Observability)
-Plan: 3 of 3 in current phase (35-01, 35-02, 35-03 complete)
-Status: Phase 35 COMPLETE -- monitoring stack deployed and verified on VPS
-Last activity: 2026-03-09 — 35-03 complete (monitoring stack deployed, all OBS requirements verified)
+Phase: 36 of 36 (Disaster Recovery)
+Plan: 2 of 3 in current phase (36-01 pending, 36-02 complete)
+Status: Executing Phase 36 -- TLS cert monitoring deployed and verified
+Last activity: 2026-03-10 — 36-02 complete (Blackbox Exporter + TLS cert alert rules deployed)
 
-Progress: [███████░░░] 73% (v4.0, 11/15 plans complete)
+Progress: [████████░░] 80% (v4.0, 12/15 plans complete)
 
 ## Performance Metrics
 
@@ -32,7 +32,7 @@ Progress: [███████░░░] 73% (v4.0, 11/15 plans complete)
 | v2.0 UI Redesign & Mobile | 21-25 | 23 | Complete | 2026-02-19 |
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 4/5 (1 deferred) | Complete | 2026-02-24 |
-| v4.0 Hosting & Deployment | 32-36 | 11/15 | In Progress | — |
+| v4.0 Hosting & Deployment | 32-36 | 12/15 | In Progress | — |
 
 ## Accumulated Context
 
@@ -50,6 +50,12 @@ Key decisions for v4.0 (Phase 35):
 - 30s dashboard refresh interval aligns with Prometheus scrape interval [35-02]
 - Healthcheck uses 127.0.0.1 not localhost — Alpine wget resolves to IPv6 [::1] but Node listens IPv4 [35-03]
 - Dashboard renamed ScrumQuest to ScrumMonsters to match project branding [35-03]
+
+Key decisions for v4.0 (Phase 36):
+- Blackbox Exporter memory capped at 32MB (actual ~14MB) — fits 1GB VPS budget [36-02]
+- TLS alert thresholds at 14 days (warning) and 7 days (critical) — ample response window [36-02]
+- NPM handles Let's Encrypt renewal automatically — no cron or certbot needed [36-02]
+- Prometheus alert rules in dedicated alerts.yml referenced via rule_files directive [36-02]
 
 Key decisions for v4.0 (Phase 34):
 - AWS Lightsail $5/mo recommended (58% headroom for 2x growth)
@@ -97,11 +103,11 @@ Key decisions for v4.0 (Phase 34):
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: Completed 35-03-PLAN.md — Phase 35 complete, monitoring stack deployed and verified
+Last session: 2026-03-10
+Stopped at: Completed 36-02-PLAN.md — TLS cert monitoring deployed and verified
 Resume file: None
-Next action: Begin Phase 36 (final phase of v4.0)
+Next action: Continue Phase 36 (36-03 remaining)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-09 — 35-03 complete (monitoring stack deployed to VPS, all OBS requirements verified)*
+*Last updated: 2026-03-10 — 36-02 complete (TLS cert monitoring deployed, Blackbox Exporter + alert rules verified)*
