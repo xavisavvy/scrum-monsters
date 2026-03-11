@@ -1,12 +1,21 @@
 import React from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { RetroCard } from '@/components/ui/retro-card';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { TeamType } from '@/lib/gameTypes';
 
 export function TeamScoreboard() {
   const { currentLobby } = useGameState();
 
-  if (!currentLobby?.teamCompetition) return null;
+  if (!currentLobby?.teamCompetition) {
+    return (
+      <EmptyState
+        icon="⚔️"
+        title="No Team Battle"
+        message="Team competition activates with enough players"
+      />
+    );
+  }
 
   const { developers, qa } = currentLobby.teamCompetition;
 

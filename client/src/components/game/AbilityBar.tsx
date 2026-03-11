@@ -2,6 +2,7 @@ import React from 'react';
 import { CLASS_ABILITY_CONFIGS } from '@shared/abilityTypes';
 import { MasteryTier } from '@shared/classMasteryTypes';
 import { AbilityButton } from './AbilityButton';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAbilities } from '@/lib/stores/useAbilities';
 import { useClassMastery } from '@/lib/stores/useClassMastery';
@@ -17,7 +18,15 @@ export function AbilityBar() {
 
   const playerClass = currentPlayer.avatar;
   const config = CLASS_ABILITY_CONFIGS[playerClass];
-  if (!config) return null;
+  if (!config) {
+    return (
+      <EmptyState
+        icon="🔮"
+        title="No Abilities"
+        message="This class has no special abilities yet"
+      />
+    );
+  }
 
   // Get mastery tier for unlock checks
   const masteryData = getMasteryForClass(playerClass);

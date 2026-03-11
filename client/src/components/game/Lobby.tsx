@@ -29,6 +29,8 @@ import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { motion } from 'framer-motion';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { PlayerListSkeleton } from '@/components/ui/LoadingSkeleton';
 
 // CSS Animation for spectator pulsing effect
 const spectatorStyles = `
@@ -1666,7 +1668,17 @@ export function Lobby() {
     );
   };
 
-  if (!currentLobby) return null;
+  if (!currentLobby) {
+    return (
+      <div className="retro-container relative overflow-x-hidden">
+        <div className="max-w-4xl mx-auto p-4 sm:p-6 relative z-10">
+          <RetroCard title="Battle Teams">
+            <PlayerListSkeleton count={3} />
+          </RetroCard>
+        </div>
+      </div>
+    );
+  }
 
   // Determine screen shake animation based on intensity
   const shakeAnimation = screenShake > 0 ? `screenShake${screenShake} 0.1s ease-in-out` : 'none';
@@ -1948,6 +1960,13 @@ export function Lobby() {
               <p className="text-sm text-gray-400 mb-4">
                 Click a team to join. Your current team is highlighted.
               </p>
+              {currentLobby.players.length === 0 && (
+                <EmptyState
+                  icon="👥"
+                  title="No Adventurers Yet"
+                  message="Share the lobby code to invite your party!"
+                />
+              )}
               <div className="space-y-3">
                 {Object.entries(TEAM_NAMES).map(([teamKey, teamName]) => {
                   const team = teamKey as TeamType;
