@@ -5,21 +5,21 @@
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 38 complete — next: Phase 39
+**Current focus:** Phase 39 in progress — Tutorial Foundation
 
 ## Current Position
 
-Phase: 38 of 40 (Interaction Feedback & Transitions)
-Plan: 3 of 3 in current phase
-Status: Phase 38 complete
-Last activity: 2026-03-11 — Completed phase 38
+Phase: 39 of 40 (Tutorial Foundation)
+Plan: 1 of 2 in current phase
+Status: Executing phase 39
+Last activity: 2026-03-11 — Completed 39-01
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
-- Total plans completed: 135 (1 deferred)
+- Total plans completed: 136 (1 deferred)
 - Total milestones shipped: 8
 
 **By Milestone:**
@@ -33,7 +33,7 @@ Progress: [██████████] 100%
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
-| v5.0 UX & Onboarding | 37-40 | 5/9 | In progress | - |
+| v5.0 UX & Onboarding | 37-40 | 6/9 | In progress | - |
 
 ## Accumulated Context
 
@@ -52,6 +52,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [38-02] Settings saved toast uses shared ID across timer/jira/estimation to prevent triple-stacking
 - [38-02] Reconnection toast in useWebSocket reconnect_response handler (confirmed success)
 - [38-02] Ability toast fires on ability:used server event for all lobby players
+- [39-01] zustand persist partialize excludes all runtime state from localStorage
+- [39-01] useHintTarget uses RAF loop for moving elements, one-shot for static
+- [39-01] Resize listener debounced to 100ms to avoid layout thrash
 
 ### Pending Todos
 
@@ -66,10 +69,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Phase 38 complete
+Stopped at: Completed 39-01-PLAN.md
 Resume file: None
-Next action: `/gsd:plan-phase 39`
+Next action: Execute 39-02-PLAN.md
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-11 — Completed phase 38 (interaction feedback & transitions)*
+*Last updated: 2026-03-11 — Completed 39-01 (tutorial state & hint targets)*
