@@ -89,7 +89,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
   3. User sees a JRPG-styled error fallback with retry button when any phase component crashes, and the rest of the app continues working
   4. User can click "New Game" on the victory screen and it works (server handler exists and responds)
   5. Developer menu Character Tools and Boss Tools buttons either function correctly or are removed
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
 - [ ] 37-01: Empty states and loading skeletons
