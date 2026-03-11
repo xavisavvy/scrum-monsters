@@ -1,10 +1,11 @@
 import React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
+import { motion, useReducedMotion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { useAudio } from '@/lib/stores/useAudio';
 
 const gameButtonVariants = cva(
-  'jrpg-btn inline-flex items-center justify-center font-jrpg font-bold uppercase cursor-pointer transition-all duration-200 border-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none',
+  'jrpg-btn inline-flex items-center justify-center font-jrpg font-bold uppercase cursor-pointer border-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none',
   {
     variants: {
       variant: {
@@ -33,8 +34,12 @@ export interface GameButtonProps
   playSound?: boolean;
 }
 
+const springTransition = { type: 'spring' as const, stiffness: 400, damping: 17 };
+
 export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
-  ({ className, variant, size, playSound = true, onClick, children, ...props }, ref) => {
+  ({ className, variant, size, playSound = true, onClick, children, disabled, ...props }, ref) => {
+    const prefersReducedMotion = useReducedMotion();
+
     const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
       if (playSound) {
         useAudio.getState().playButtonSelect();
@@ -42,15 +47,21 @@ export const GameButton = React.forwardRef<HTMLButtonElement, GameButtonProps>(
       onClick?.(e);
     };
 
+    const shouldAnimate = !disabled && !prefersReducedMotion;
+
     return (
-      <button
+      <motion.button
         ref={ref}
         className={cn(gameButtonVariants({ variant, size }), className)}
         onClick={handleClick}
-        {...props}
+        disabled={disabled}
+        whileTap={shouldAnimate ? { scale: 0.92 } : undefined}
+        whileHover={shouldAnimate ? { scale: 1.03 } : undefined}
+        transition={springTransition}
+        {...(props as React.ComponentProps<typeof motion.button>)}
       >
         {children}
-      </button>
+      </motion.button>
     );
   }
 );
