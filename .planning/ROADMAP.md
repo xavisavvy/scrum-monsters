@@ -73,7 +73,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 **Milestone Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback.
 
 - [x] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes (completed 2026-03-11)
-- [ ] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions
+- [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)
 - [ ] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu
 - [ ] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes
 
@@ -107,9 +107,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 38-01: Button animations and vote card feedback
-- [ ] 38-02: Toast notifications and ability confirmation
-- [ ] 38-03: JRPG phase transition interstitials
+- [x] 38-01: Button animations and vote card feedback
+- [x] 38-02: Toast notifications and ability confirmation
+- [x] 38-03: JRPG phase transition interstitials
 
 ### Phase 39: Tutorial Foundation
 **Goal**: Tutorial infrastructure is built and verified — isolated store, overlay system, hint targeting, and help menu — ready for content
@@ -156,12 +156,12 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 | 30-31 | v3.1 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | 32-36 | v4.0 | 14/14 | Complete | 2026-03-11 |
 | 37. State Polish & Bug Fixes | v5.0 | 2/2 | Complete | 2026-03-11 |
-| 38. Interaction Feedback & Transitions | v5.0 | 0/3 | Not started | - |
+| 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 0/2 | Not started | - |
 
-**Total: 8 milestones shipped, 37 phases complete, 132 plans (1 deferred) | v5.0: 1/4 phases complete, 2/9 plans done**
+**Total: 8 milestones shipped, 38 phases complete, 135 plans (1 deferred) | v5.0: 2/4 phases complete, 5/9 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-11 — Phase 37 complete*
+*Last updated: 2026-03-11 — Phase 38 complete*
