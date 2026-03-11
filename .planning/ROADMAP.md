@@ -8,7 +8,7 @@
 - ✅ **v2.0 UI Redesign & Mobile** — Phases 21-25 (shipped 2026-02-19)
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
 - ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
-- 🚧 **v4.0 Hosting & Deployment** — Phases 32-36 (in progress)
+- ✅ **v4.0 Hosting & Deployment** — Phases 32-36 (shipped 2026-03-10)
 
 ## Phases
 
@@ -76,7 +76,7 @@ See `.planning/milestones/v3.1-ROADMAP.md`
 - [x] **Phase 33: Production Hardening** — Graceful deploys, daily DB backups, rollback capability, uptime alerting (completed 2026-03-03)
 - [x] **Phase 34: CI/CD Pipeline** — Automated staging deploys, manual prod promotes, OIDC auth, post-deploy smoke tests (completed 2026-03-09)
 - [x] **Phase 35: Observability** — Prometheus + Grafana dashboards, log aggregation, all services localhost-only (completed 2026-03-09)
-- [ ] **Phase 36: Disaster Recovery** — Backup restore verified end-to-end, TLS renewal tested, incident runbook complete
+- [x] **Phase 36: Disaster Recovery** — Backup restore verified end-to-end, TLS renewal tested, incident runbook complete (completed 2026-03-10)
 
 ---
 
@@ -168,9 +168,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 36-01-PLAN.md — Create restore-from-s3.sh script and execute end-to-end database restore test from S3 backup
-- [ ] 36-02-PLAN.md — Add Blackbox Exporter for TLS cert monitoring, verify Let's Encrypt renewal mechanism, set Prometheus cert expiry alerts
-- [ ] 36-03-PLAN.md — Write Part 9: Incident Response in runbook (restart, restore, rollback, common failure scenarios)
+- [x] 36-01-PLAN.md — Create restore-from-s3.sh script and execute end-to-end database restore test from S3 backup
+- [x] 36-02-PLAN.md — Add Blackbox Exporter for TLS cert monitoring, verify Let's Encrypt renewal mechanism, set Prometheus cert expiry alerts
+- [x] 36-03-PLAN.md — Write Part 9: Incident Response in runbook (restart, restore, rollback, common failure scenarios)
 
 ---
 
@@ -192,10 +192,10 @@ Phases execute in numeric order: 32 → 33 → 34 → 35 → 36
 | 33. Production Hardening | v4.0 | 2/2 | Complete | 2026-03-03 |
 | 34. CI/CD Pipeline | v4.0 | 3/3 | Complete | 2026-03-09 |
 | 35. Observability | v4.0 | 3/3 | Complete | 2026-03-09 |
-| 36. Disaster Recovery | v4.0 | 0/3 | Not started | - |
+| 36. Disaster Recovery | v4.0 | 3/3 | Complete | 2026-03-10 |
 
-**Total: 7 milestones shipped, 34 phases complete, 123 plans (1 deferred) + 1 phase remaining for v4.0**
+**Total: 8 milestones shipped, 36 phases complete, 126 plans (1 deferred)**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-09 -- Phase 36 planned (3 plans in 2 waves)*
+*Last updated: 2026-03-10 -- Phase 36 complete, v4.0 milestone shipped*
