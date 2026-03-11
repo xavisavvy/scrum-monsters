@@ -141,7 +141,7 @@ export function ScoreSubmission() {
               Choose your story point estimate (or ? if you're unsure):
             </p>
             
-            <div className="fibonacci-grid" key={currentTicket?.id}>
+            <div className="fibonacci-grid" key={currentTicket?.id} data-hint-target="vote-cards">
               {getScoringOptions().map(option => (
                 <motion.div
                   key={option}
