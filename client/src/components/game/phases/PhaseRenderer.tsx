@@ -3,6 +3,7 @@ import { GamePhase, Lobby } from '@shared/gameEvents';
 import { PhaseRegistry } from './PhaseRegistry';
 import { PhaseTransition } from './PhaseTransition';
 import { PhaseComponentProps } from './index';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 
 interface PhaseRendererProps {
   lobby: Lobby;
@@ -96,7 +97,12 @@ export function PhaseRenderer({
       fromPhase={previousPhase}
       toPhase={currentPhase}
     >
-      <PhaseComponent {...phaseProps} />
+      <ErrorBoundary
+        phaseName={currentPhase}
+        resetKey={currentPhase}
+      >
+        <PhaseComponent {...phaseProps} />
+      </ErrorBoundary>
     </PhaseTransition>
   );
 }
