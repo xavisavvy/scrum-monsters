@@ -1,0 +1,115 @@
+RESEARCH COMPLETE: Docker/Lightsail Deployment & Observability Architecture
+
+Project: ScrumQuest (Real-time multiplayer scrum poker)
+Research Date: 2026-02-24
+Status: COMPLETE
+Confidence: HIGH
+
+MAIN RESEARCH FILE CREATED:
+- .planning/research/DEPLOYMENT_ARCHITECTURE.md (Comprehensive 350+ line document)
+
+This single comprehensive file covers all research domains:
+
+SECTIONS INCLUDED:
+1. Executive Summary (key decisions, integration points)
+2. Deployment Topology (detailed diagram + resource budget)
+3. Data Flow: CI/CD Pipeline (GitHub Actions → ECR → Lightsail)
+4. Component Boundaries (App, PostgreSQL, Redis, Prometheus, Loki, Promtail, Grafana, Node Exporter, Nginx, Cron)
+5. Patterns to Follow (8 best practices with examples)
+6. Anti-Patterns to Avoid (8 common mistakes to prevent)
+7. Scalability Considerations (capacity limits, when to scale)
+8. Replit Compatibility (no breaking changes)
+9. New Files & Configurations (detailed table of what to create)
+10. Deployment Roadmap (5-phase plan with timelines)
+11. Sources & References (12 authoritative links)
+
+KEY FINDINGS:
+
+Stack:
+- Docker + Docker Compose (single-instance orchestration)
+- PostgreSQL 16-alpine (200M limit) + Redis 7-alpine (50M limit)
+- Prometheus (100M, 7-day retention) + Loki (75M) + Grafana (80M)
+- Nginx reverse proxy (host-level, 30M)
+- Node.js 20-alpine app (128M limit with 64M V8 heap)
+- All existing code preserved (no breaking changes)
+
+Architecture:
+- Single Lightsail instance (1GB RAM, 1 vCPU, $5/mo)
+- 10 Docker containers orchestrated by docker-compose.yml
+- Health checks gate service startup (prevents cascading failures)
+- Graceful shutdown reuses existing 30s SIGTERM handler
+- PostgreSQL named volume survives restarts
+- Logging to stdout + Promtail → Loki (no file-based logs)
+- Reverse proxy (Nginx) handles TLS + routing
+
+Data Flow:
+1. Developer: git push main
+2. GitHub Actions: lint, test, build, docker build, push to ECR
+3. Lightsail: docker-compose pull && docker-compose up -d
+4. Prometheus scrapes app /metrics every 15s
+5. Loki receives logs from Promtail, searchable in Grafana
+6. Daily 2 AM cron: pg_dump → gzipped backup (7-day retention)
+
+Pitfalls Identified:
+- CRITICAL: 1GB RAM constraint requires strict memory limits (683 MB container requests max)
+- Any container exceeding limit = OOM kill (cascading failures if not isolated)
+- No health checks = zombie containers (appear running but broken)
+- File-based logs in containers = lost on restart (use stdout)
+- Unbounded memory usage = system pressure/OOM (use limits)
+- Manual deployments = human error at scale (automate)
+
+Replit Compatibility:
+- PRESERVED: npm run dev still works on Replit
+- PRESERVED: In-memory storage fallback (no DATABASE_URL needed)
+- PRESERVED: All existing code unchanged
+- NEW (deployment-only): Docker/Compose configs not in Replit runtime
+
+Roadmap Implications:
+- Phase 1 (Weeks 1-2): Foundation - docker-compose.yml + Lightsail + manual deploy
+- Phase 2 (Weeks 2-3): Observability - Prometheus + Loki + Grafana dashboards
+- Phase 3 (Weeks 3-4): CI/CD - GitHub Actions → ECR → auto-deploy
+- Phase 4 (Weeks 4-5): Maintenance - backups + TLS renewal + alerts
+- Phase 5+ (When scaling needed): Multi-instance + managed services (RDS, ElastiCache)
+
+Resource Budget (1GB Total):
+- OS/systemd: 150 MB
+- Docker daemon: 50 MB
+- Container requests: 683 MB (strict discipline)
+- Safety margin: 141 MB (~17% overage tolerance)
+
+Critical Success Factors:
+1. Memory limits enforced from day 1 (OOM kills are hard to debug)
+2. Health checks on all services (prevents broken deployments)
+3. Graceful shutdown tested (30s window for cleanup)
+4. Logs centralized in Loki (not in containers)
+5. Backups automated (daily pg_dump with retention)
+6. Monitoring dashboards created (visibility = early warning)
+
+Integration Points with Existing Architecture:
+✓ Reuses existing Dockerfile (multi-stage build)
+✓ Reuses existing /api/health/readyz and /api/health/livez probes
+✓ Reuses existing 30s SIGTERM graceful shutdown handler
+✓ Reuses existing PostgreSQL session store (connect-pg-simple)
+✓ Reuses existing Pino JSON logging (outputs to stdout)
+✓ Reuses existing Prometheus /metrics endpoint (prom-client)
+✓ Reuses existing Socket.IO (WebSocket transport, no Redis adapter needed for single instance)
+
+NEXT STEPS:
+1. Review DEPLOYMENT_ARCHITECTURE.md (comprehensive reference)
+2. Create docker-compose.yml with Phase 1 services (app + postgres + redis)
+3. Set up Lightsail instance + SSH + Docker installation
+4. Deploy manually and verify (curl /api/health/readyz)
+5. Create Phase 2 observability components (Prometheus + Loki + Grafana)
+6. Automate Phase 3 (GitHub Actions CI/CD)
+
+The research provides everything needed to begin implementation:
+- Exact memory limits for each service
+- Health check configurations
+- Docker Compose syntax examples
+- GitHub Actions workflow template
+- Cron backup syntax
+- Nginx reverse proxy configuration
+- Monitoring queries and dashboards outline
+- Scaling triggers and strategies
+
+All recommendations are HIGH CONFIDENCE (verified against existing codebase + official sources).
