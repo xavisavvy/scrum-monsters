@@ -1,9 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { GamePhase, Lobby } from '@shared/gameEvents';
 import { PhaseRegistry } from './PhaseRegistry';
 import { PhaseTransition } from './PhaseTransition';
+import { PhaseInterstitial } from './PhaseInterstitial';
 import { PhaseComponentProps } from './index';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { usePhaseInterstitial } from '@/lib/hooks/usePhaseInterstitial';
 
 interface PhaseRendererProps {
   lobby: Lobby;
@@ -34,7 +36,17 @@ export function PhaseRenderer({
 }: PhaseRendererProps) {
   
   const currentPhase = lobby.gamePhase;
-  
+  const { activeInterstitial, triggerInterstitial, dismiss } = usePhaseInterstitial();
+
+  // Trigger interstitial on actual phase changes (not re-renders)
+  const prevPhaseRef = useRef(currentPhase);
+  useEffect(() => {
+    if (prevPhaseRef.current !== currentPhase) {
+      triggerInterstitial(currentPhase);
+      prevPhaseRef.current = currentPhase;
+    }
+  }, [currentPhase, triggerInterstitial]);
+
   // Validate phase requirements
   const validation = PhaseRegistry.validatePhase(currentPhase, {
     hasBoss: !!lobby.boss,
@@ -92,18 +104,26 @@ export function PhaseRenderer({
   // Render the phase with transition support.
   // AnimatePresence in PhaseTransition handles animation via key={toPhase} —
   // isTransitioning is kept in the interface for backward compat but not passed.
+  // PhaseInterstitial is a SIBLING overlay (not inside PhaseTransition) to avoid
+  // AnimatePresence mode="wait" conflicts.
   return (
-    <PhaseTransition
-      fromPhase={previousPhase}
-      toPhase={currentPhase}
-    >
-      <ErrorBoundary
-        phaseName={currentPhase}
-        resetKey={currentPhase}
+    <>
+      <PhaseInterstitial
+        activeInterstitial={activeInterstitial}
+        onDismiss={dismiss}
+      />
+      <PhaseTransition
+        fromPhase={previousPhase}
+        toPhase={currentPhase}
       >
-        <PhaseComponent {...phaseProps} />
-      </ErrorBoundary>
-    </PhaseTransition>
+        <ErrorBoundary
+          phaseName={currentPhase}
+          resetKey={currentPhase}
+        >
+          <PhaseComponent {...phaseProps} />
+        </ErrorBoundary>
+      </PhaseTransition>
+    </>
   );
 }
 
