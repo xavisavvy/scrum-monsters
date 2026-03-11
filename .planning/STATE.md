@@ -5,14 +5,16 @@
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** v5.0 UX & Onboarding
+**Current focus:** Phase 37 — State Polish & Bug Fixes
 
 ## Current Position
 
-Phase: Not started (defining requirements)
-Plan: —
-Status: Defining requirements
-Last activity: 2026-03-11 — Milestone v5.0 started
+Phase: 37 of 40 (State Polish & Bug Fixes)
+Plan: 0 of 2 in current phase
+Status: Ready to plan
+Last activity: 2026-03-11 — v5.0 roadmap created
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -31,6 +33,7 @@ Last activity: 2026-03-11 — Milestone v5.0 started
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
+| v5.0 UX & Onboarding | 37-40 | 0/9 | In progress | - |
 
 ## Accumulated Context
 
@@ -40,19 +43,21 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ### Pending Todos
 
-(None — cleared at milestone completion)
+(None)
 
 ### Blockers/Concerns
 
-(None — cleared at milestone completion)
+- Phase 39: Tutorial overlay positioning on 3D/R3F elements needs prototyping (hint targets lack DOM rects)
+- Phase 39: Radix Popover collision detection behavior with game layout needs validation
+- Phase 40: Mobile hint positioning needs device testing (D-pad overlap risk)
 
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Defining v5.0 requirements
+Stopped at: Roadmap created for v5.0
 Resume file: None
-Next action: Define requirements and create roadmap
+Next action: `/gsd:plan-phase 37`
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-11 — v5.0 milestone started*
+*Last updated: 2026-03-11 — v5.0 roadmap created*
