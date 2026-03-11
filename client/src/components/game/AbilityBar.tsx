@@ -43,7 +43,7 @@ export function AbilityBar() {
   };
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-center" data-hint-target="ability-bar">
       <AbilityButton
         ability={config.ability_1}
         isUnlocked={isTierAtLeast(config.ability_1.tier)}

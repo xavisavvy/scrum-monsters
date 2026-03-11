@@ -37,10 +37,10 @@ export function PlayerHUD() {
   const showReturnHomeButton = isHost && currentLobby.gamePhase === 'victory';
 
   return (
-    <div className="player-hud pb-safe">
+    <div className="player-hud pb-safe" data-hint-target="player-hud">
       <div className="flex justify-between items-center">
         {/* Player Info */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4" data-hint-target="player-info">
           {(() => {
             const avatarImage = getAvatarImage(currentPlayer.avatar);
             if (avatarImage) {
