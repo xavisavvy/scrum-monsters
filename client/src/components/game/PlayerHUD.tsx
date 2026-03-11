@@ -7,6 +7,7 @@ import { AVATAR_CLASSES } from '@/lib/gameTypes';
 import { getAvatarImage } from '@/lib/avatarImages';
 import { AbandonQuestModal } from './AbandonQuestModal';
 import { XPBar } from './XPBar';
+import { HelpMenu } from '@/components/tutorial/HelpMenu';
 
 export function PlayerHUD() {
   const { currentLobby, currentPlayer } = useGameState();
@@ -92,6 +93,7 @@ export function PlayerHUD() {
 
         {/* Host Controls */}
         <div className="flex gap-2 items-center">
+          <HelpMenu />
           {showAbandonButton && (
             <RetroButton
               onClick={handleAbandonQuest}
