@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { AbilityDefinition } from '@shared/abilityTypes';
 import { MasteryTier } from '@shared/classMasteryTypes';
 import { useAbilities } from '@/lib/stores/useAbilities';
@@ -19,7 +20,9 @@ export function AbilityButton({
   disabled = false,
 }: AbilityButtonProps) {
   const { isOnCooldown, getCooldownProgress, getRemainingSeconds } = useAbilities();
+  const prefersReducedMotion = useReducedMotion();
 
+  const [justActivated, setJustActivated] = useState(false);
   const [progress, setProgress] = useState(0);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const animationFrameRef = useRef<number | null>(null);
@@ -79,6 +82,8 @@ export function AbilityButton({
   const handleClick = () => {
     if (!isUnlocked || isCooling || disabled) return;
     onActivate(ability.id);
+    setJustActivated(true);
+    setTimeout(() => setJustActivated(false), 300);
   };
 
   const isDisabled = !isUnlocked || isCooling || disabled;
@@ -125,6 +130,16 @@ export function AbilityButton({
           <span className="text-lg">&#x1F512;</span>
           <span className="text-[10px] text-gray-400">{requiredTier}</span>
         </div>
+      )}
+
+      {/* Activation flash overlay */}
+      {justActivated && !prefersReducedMotion && (
+        <motion.div
+          className="absolute inset-0 rounded-lg bg-white/40 pointer-events-none"
+          initial={{ opacity: 1 }}
+          animate={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+        />
       )}
     </button>
   );
