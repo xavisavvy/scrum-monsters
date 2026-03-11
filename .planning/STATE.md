@@ -12,7 +12,7 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 Phase: 38 of 40 (Interaction Feedback & Transitions)
 Plan: 3 of 3 in current phase
 Status: Executing phase 38
-Last activity: 2026-03-11 — Completed 38-03-PLAN.md
+Last activity: 2026-03-11 — Completed 38-01-PLAN.md
 
 Progress: [██████████] 100%
 
@@ -47,6 +47,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [37-02] Used resetKey={currentPhase} on ErrorBoundary to auto-recover on phase transitions
 - [38-03] PhaseInterstitial rendered as sibling to PhaseTransition to avoid AnimatePresence mode=wait conflicts
 - [38-03] useReducedMotion makes triggerInterstitial a no-op for accessibility
+- [38-01] Cast rest props via React.ComponentProps<typeof motion.button> to resolve React/framer-motion event handler type conflicts
+- [38-01] Key vote card grid on currentTicket.id to auto-reset glow state on ticket change
 
 ### Pending Todos
 
@@ -61,10 +63,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Completed 38-03-PLAN.md
+Stopped at: Completed 38-01-PLAN.md
 Resume file: None
-Next action: Continue phase 38 (plans 01-02 still need execution)
+Next action: Execute 38-02-PLAN.md
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-11 — Completed 38-03 (phase interstitials)*
+*Last updated: 2026-03-11 — Completed 38-01 (button press & vote card animations)*
