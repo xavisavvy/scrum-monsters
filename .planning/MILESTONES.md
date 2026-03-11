@@ -198,3 +198,32 @@
 
 ---
 
+
+## v4.0 Hosting & Deployment (Shipped: 2026-03-11)
+
+**Delivered:** Production hosting on AWS Lightsail with Docker Compose, custom domain HTTPS, full CI/CD pipeline, Prometheus/Grafana observability, automated S3 backups, and verified disaster recovery — a clean break from Replit.
+
+**Phases completed:** 32-36 (5 phases, 14 plans)
+
+**Key accomplishments:**
+- Deployed to AWS Lightsail ($5/mo) with Docker Compose 3-service stack, custom domain HTTPS via Nginx Proxy Manager, systemd auto-restart on reboot
+- Graceful shutdown with 30s WebSocket drain (io.close()), daily PostgreSQL backups to S3 with 30-day retention, GHCR image rollback in under 5 minutes
+- Full CI/CD pipeline: auto-deploy staging on push to main, manual prod promote via workflow_dispatch, AWS OIDC auth (no stored keys), post-deploy smoke tests
+- Prometheus + Grafana monitoring (10-panel dashboard), Dozzle log aggregation, all monitoring ports localhost-only via SSH tunnel
+- Verified disaster recovery: end-to-end S3 database restore proven, Blackbox Exporter TLS cert monitoring, incident runbook covering 5 failure scenarios
+
+**Stats:**
+- 5 phases, 14 plans
+- 88 files modified
+- +11,465 / -1,703 lines
+- 54 commits
+- 14 days from start to ship (2026-02-24 → 2026-03-10)
+
+**Git range:** `feat(32-02)` → `feat(36-03)`
+
+**Tech debt accepted:** CI/CD doesn't git pull compose changes (manual deploy.sh needed), Grafana metric name mismatch (1 panel), deploy.sh vs CI/CD not documented
+
+**What's next:** Next milestone planning (`/gsd:new-milestone`)
+
+---
+
