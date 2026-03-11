@@ -10,16 +10,16 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 ## Current Position
 
 Phase: 37 of 40 (State Polish & Bug Fixes)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-03-11 — v5.0 roadmap created
+Plan: 2 of 2 in current phase
+Status: Phase 37 complete
+Last activity: 2026-03-11 — Completed 37-02-PLAN.md
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
-- Total plans completed: 130 (1 deferred)
+- Total plans completed: 132 (1 deferred)
 - Total milestones shipped: 8
 
 **By Milestone:**
@@ -33,13 +33,16 @@ Progress: [░░░░░░░░░░] 0%
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
-| v5.0 UX & Onboarding | 37-40 | 0/9 | In progress | - |
+| v5.0 UX & Onboarding | 37-40 | 2/9 | In progress | - |
 
 ## Accumulated Context
 
 ### Decisions
 
 All decisions logged in PROJECT.md Key Decisions table.
+
+- [37-02] Reused abandonQuest for restart_game handler to preserve ticket backlog while resetting game state
+- [37-02] Used resetKey={currentPhase} on ErrorBoundary to auto-recover on phase transitions
 
 ### Pending Todos
 
@@ -54,10 +57,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Roadmap created for v5.0
+Stopped at: Completed 37-02-PLAN.md
 Resume file: None
-Next action: `/gsd:plan-phase 37`
+Next action: `/gsd:plan-phase 38`
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-11 — v5.0 roadmap created*
+*Last updated: 2026-03-11 — Completed phase 37 (state polish & bug fixes)*
