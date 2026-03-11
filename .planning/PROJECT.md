@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, React Router v7 clean URLs with SEO, production-ready PostgreSQL persistence with graceful lifecycle management, and structured Pino logging with CI-enforced code quality.
+A real-time multiplayer scrum poker estimation game with JRPG-style boss battles, RPG progression, and a polished mobile-responsive UI. Teams estimate story points while battling monsters with class abilities, team combos, and combat items. Full-stack TypeScript with Socket.IO for real-time sync, React Three Fiber for 3D graphics, JRPG design tokens with WCAG AA compliance, React Router v7 clean URLs with SEO, production-ready PostgreSQL persistence with graceful lifecycle management, structured Pino logging, and production hosting on AWS Lightsail with Docker Compose, CI/CD pipeline, and full observability.
 
 ## Core Value
 
@@ -93,21 +93,25 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - ✓ ESLint no-console upgraded from warn to error with CI enforcement — v3.1
 - ✓ Unused zod-validation-error dependency removed — v3.1
 - ✓ Graceful server shutdown client notifications with auto-reconnect — v3.1
+- ✓ Lightsail instance with firewall (80, 443, 22), Docker Compose 3-service stack — v4.0
+- ✓ Custom domain HTTPS via Nginx Proxy Manager + Let's Encrypt — v4.0
+- ✓ Systemd auto-start on VPS reboot, secrets via .env (never in git) — v4.0
+- ✓ SIGTERM handler drains WebSocket connections for 30s (io.close()) — v4.0
+- ✓ Daily PostgreSQL backups to S3 with 30-day retention — v4.0
+- ✓ GHCR image tags (sha + semver) with rollback in under 5 minutes — v4.0
+- ✓ Route 53 + CloudWatch + SNS uptime alerting within 5 minutes — v4.0
+- ✓ CI/CD: auto-deploy staging on push to main, manual prod via workflow_dispatch — v4.0
+- ✓ AWS OIDC auth for GitHub Actions (no stored long-lived keys) — v4.0
+- ✓ Post-deploy Playwright smoke tests, Drizzle migrations before app start — v4.0
+- ✓ Prometheus + Grafana dashboards (10 panels), Dozzle log aggregation — v4.0
+- ✓ All monitoring ports localhost-only (SSH tunnel access) — v4.0
+- ✓ End-to-end S3 database restore verified working — v4.0
+- ✓ Blackbox Exporter TLS certificate monitoring with Prometheus alerts — v4.0
+- ✓ Incident runbook: restart, restore, rollback, 5 failure scenarios — v4.0
 
 ### Active
 
-## Current Milestone: v4.0 Hosting & Deployment
-
-**Goal:** Deploy ScrumQuest to AWS Lightsail with Docker containers, custom domain, TLS, full CI/CD pipeline, and production observability — while keeping Replit as a dev/demo fallback.
-
-**Target features:**
-- Dockerfile + Docker Compose (app + PostgreSQL sidecar)
-- AWS Lightsail instance provisioning
-- Custom domain with TLS certificates
-- Full CI/CD pipeline (auto-deploy staging, manual prod promote, rollback)
-- Full observability stack (Prometheus, Grafana, log aggregation)
-- Automated PostgreSQL backups (pg_dump cron)
-- Replit compatibility preserved (no changes needed)
+(No active requirements — define in next milestone)
 
 ### Out of Scope
 
@@ -123,13 +127,16 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Full SSR framework (Next.js) — overkill, vite-react-ssg handles marketing pages
 - Player collision physics in lobby — fun but non-essential, high implementation cost
 - Native mobile app (PWA/React Native) — responsive web sufficient for now
-- Actual hosting migration — v3.0 profiled and recommended; migration is separate effort
 - Database read replicas — premature optimization for current scale
+- Kubernetes production deployment — Docker Compose on single VPS sufficient at current scale
+- ECS Fargate or EKS — exceeds budget, requires ops team knowledge
+- Datadog/New Relic APM — incompatible with $5-20/mo budget
+- Multi-region deployment — premature, single region sufficient for current user base
 
 ## Context
 
-**Current State (post-v3.1):**
-- ~60,300 lines of TypeScript across client/server/shared
+**Current State (post-v4.0):**
+- ~62,000 lines of TypeScript across client/server/shared
 - Domain-separated architecture: SessionManager, EstimationManager, CombatManager, ProgressionManager, ClassMasteryManager, AbilityManager, ComboManager, ItemManager, StatsTracker
 - EventBus-based coordination with scoped subscriptions
 - Fine-grained events with 80-95% bandwidth reduction
@@ -140,22 +147,28 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - Modern routing: React Router v7, server-side SEO, Three.js code splitting, clean URLs
 - Production security: rate limiting, CSRF, secure randomness, GitHub Actions permissions
 - Production database: PostgreSQL with connection pooling, Zod env validation, fail-fast startup
-- Server lifecycle: graceful shutdown with client notification and auto-reconnect UX, split health probes (livez/readyz), global error handlers
+- Server lifecycle: graceful shutdown with 30s WebSocket drain (io.close()), split health probes (livez/readyz), global error handlers
 - Structured logging: Pino JSON logs (5 logger types), ESLint no-console at error level, zero unstructured console output
 - Comprehensive CI/CD: ESLint (no-console enforced), Playwright E2E/visual/a11y, Vitest coverage (615 tests)
 - Security scanning: CodeQL SAST, gitleaks, audit-ci, license-checker
-- Kubernetes deployment: Kustomize overlays, ArgoCD GitOps, cert-manager TLS
-- Observability: Prometheus metrics, Grafana dashboards, Loki logs, startup config logging
-- Hosting analysis: AWS Lightsail $5/mo recommended (58% headroom for 2x growth)
+- Production hosting: AWS Lightsail $5/mo, Docker Compose (app + postgres + nginx proxy manager)
+- CI/CD pipeline: auto-deploy staging on push, manual prod promote, AWS OIDC, post-deploy smoke tests
+- Observability: Prometheus + Grafana (10-panel dashboard), Dozzle logs, all monitoring localhost-only
+- Disaster recovery: daily S3 backups, verified restore, TLS cert monitoring, incident runbook
 
 **Deployment:**
-- Currently live on Replit
-- Recommended migration: AWS Lightsail $5/mo ($240/yr savings vs Replit)
+- Live at https://scrummonsters.com on AWS Lightsail ($5/mo)
+- Static IP: 34.199.135.244 (scrummonsters-prod instance)
+- CI/CD: push to main → staging auto-deploy → manual prod promote
+- Monitoring: SSH tunnel to localhost:9090 (Prometheus), :3001 (Grafana), :9999 (Dozzle)
 - Budget: $5-20/mo
 - Scale: handles 50 concurrent users, 58% headroom for 2x growth
 
 **Known tech debt:**
-- ARGOCD_AUTH_TOKEN secret not yet configured for production rollback workflow (blocked on ArgoCD deployment)
+- CI/CD doesn't git pull compose changes on VPS (manual deploy.sh needed for config changes)
+- Grafana metric name mismatch: 1 of 10 panels shows "No data" (heap_used vs heap_size_used)
+- deploy.sh vs CI/CD deploy not documented (which to use when)
+- No Terraform/IaC — infrastructure provisioned via console (future ADV-02)
 
 ## Shipped Milestones
 
@@ -166,6 +179,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - **v2.0 UI Redesign & Mobile** (2026-02-19): JRPG design system, mobile responsive, security hardening, routing/SEO, lobby polish
 - **v3.0 Production Optimization** (2026-02-20): PostgreSQL persistence, graceful shutdown, health probes, hosting analysis
 - **v3.1 Tech Debt Cleanup** (2026-02-24): Pino structured logging, ESLint no-console enforcement, dependency cleanup, shutdown UX
+- **v4.0 Hosting & Deployment** (2026-03-11): AWS Lightsail hosting, Docker Compose, CI/CD pipeline, Prometheus/Grafana observability, S3 backups, disaster recovery
 
 ## Constraints
 
@@ -173,6 +187,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 - **Real-time**: Must maintain low-latency multiplayer sync
 - **Backward compatibility**: None required — clean slate on types acceptable
 - **Testing**: Maintain test coverage, add tests for new features
+- **Budget**: $5-20/mo hosting (AWS Lightsail)
 
 ## Key Decisions
 
@@ -230,15 +245,23 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | 15-min session pruning interval | Balances database load with timely cleanup (industry standard) | ✓ Good |
 | Split health probes (livez/readyz) | Prevents restart loops from transient DB issues | ✓ Good |
 | 3s health check timeout | Balances responsiveness with network variability | ✓ Good |
-| ESLint no-console at warn (not error) | Avoids breaking build with 100+ operational console.log | ✓ Good |
+| ESLint no-console at error with exemptions | CI enforcement prevents regression, tests/scripts exempt | ✓ Good |
 | AWS Lightsail $5/mo recommendation | 58% headroom for 2x growth, $240/yr savings vs Replit | ✓ Good |
-| Synthetic profiling over live load test | Deterministic values ensure reproducible benchmarks | ✓ Good |
 | Object-first Pino API for all server logs | Structured JSON, parseable by Prometheus/Loki | ✓ Good |
 | Silent catch for non-critical client errors | Audio autoplay errors expected, no logger needed | ✓ Good |
-| ESLint no-console at error with exemptions | CI enforcement prevents regression, tests/scripts exempt | ✓ Good |
 | Sonner toast for shutdown notifications | Non-blocking UX, already integrated | ✓ Good |
 | Grace period timestamp for reconnection | Robust against race conditions between server_shutdown and disconnect | ✓ Good |
 | Defer ARGO-01 to FUTURE-ENHANCEMENTS | No ArgoCD host deployed, workflow_dispatch prevents accidents | ✓ Good |
+| Docker Compose over Kubernetes for production | Single VPS, 50 concurrent users, K8s is overkill | ✓ Good |
+| Nginx Proxy Manager over Caddy/Traefik | GUI-based TLS, built-in Let's Encrypt, low ops overhead | ✓ Good |
+| io.close() before server.close() in shutdown | Socket.IO 4.x server.close() does NOT close WS connections | ✓ Good |
+| Custom pg17 backup sidecar | Upstream lacks :17 tag, pg_dump v16 refuses Postgres 17 | ✓ Good |
+| Route 53 + CloudWatch + SNS over UptimeRobot | AWS-native, 30s interval, no third-party dependency | ✓ Good |
+| workflow_run trigger for deploy chaining | Atomic Docker build → staging deploy without manual coordination | ✓ Good |
+| AWS OIDC over stored access keys | Short-lived credentials, no secret rotation needed | ✓ Good |
+| All monitoring ports localhost-only | Defense in depth, SSH tunnel required for access | ✓ Good |
+| Blackbox Exporter for TLS monitoring | Probe-based cert expiry alerts, 32MB memory cap | ✓ Good |
+| gunzip|psql for restore (not pg_restore) | Backup format is plain-text SQL, not custom format | ✓ Good |
 
 ---
-*Last updated: 2026-02-24 after v4.0 milestone start*
+*Last updated: 2026-03-11 after v4.0 milestone*
