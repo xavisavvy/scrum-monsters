@@ -6,6 +6,7 @@ import { PhaseInterstitial } from './PhaseInterstitial';
 import { PhaseComponentProps } from './index';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { usePhaseInterstitial } from '@/lib/hooks/usePhaseInterstitial';
+import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
 
 interface PhaseRendererProps {
   lobby: Lobby;
@@ -112,6 +113,7 @@ export function PhaseRenderer({
         activeInterstitial={activeInterstitial}
         onDismiss={dismiss}
       />
+      <TutorialOverlay />
       <PhaseTransition
         fromPhase={previousPhase}
         toPhase={currentPhase}
