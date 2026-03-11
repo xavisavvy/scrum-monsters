@@ -12,14 +12,14 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 Phase: 38 of 40 (Interaction Feedback & Transitions)
 Plan: 3 of 3 in current phase
 Status: Executing phase 38
-Last activity: 2026-03-11 — Completed 38-01-PLAN.md
+Last activity: 2026-03-11 — Completed 38-02-PLAN.md
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
-- Total plans completed: 133 (1 deferred)
+- Total plans completed: 134 (1 deferred)
 - Total milestones shipped: 8
 
 **By Milestone:**
@@ -33,7 +33,7 @@ Progress: [██████████] 100%
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
-| v5.0 UX & Onboarding | 37-40 | 3/9 | In progress | - |
+| v5.0 UX & Onboarding | 37-40 | 4/9 | In progress | - |
 
 ## Accumulated Context
 
@@ -49,6 +49,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [38-03] useReducedMotion makes triggerInterstitial a no-op for accessibility
 - [38-01] Cast rest props via React.ComponentProps<typeof motion.button> to resolve React/framer-motion event handler type conflicts
 - [38-01] Key vote card grid on currentTicket.id to auto-reset glow state on ticket change
+- [38-02] Settings saved toast uses shared ID across timer/jira/estimation to prevent triple-stacking
+- [38-02] Reconnection toast in useWebSocket reconnect_response handler (confirmed success)
+- [38-02] Ability toast fires on ability:used server event for all lobby players
 
 ### Pending Todos
 
@@ -63,10 +66,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: Completed 38-01-PLAN.md
+Stopped at: Completed 38-02-PLAN.md
 Resume file: None
-Next action: Execute 38-02-PLAN.md
+Next action: Execute 38-03-PLAN.md (already complete per SUMMARY)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-11 — Completed 38-01 (button press & vote card animations)*
+*Last updated: 2026-03-11 — Completed 38-02 (toast notifications & ability flash)*
