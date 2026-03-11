@@ -104,7 +104,7 @@ Plans:
   2. User receives toast notifications for key events: score submitted, reconnected, settings saved, ability used
   3. User sees a brief confirmation flash and cooldown progress indicator when activating a combat ability
   4. User sees JRPG interstitial screens during phase transitions (e.g., "Encounter!", "Victory!", "Tallying results...") that are short and non-blocking
-**Plans**: TBD
+**Plans**: 3 plans
 
 Plans:
 - [ ] 38-01: Button animations and vote card feedback
