@@ -41,6 +41,8 @@ Progress: [██████████] 100%
 
 All decisions logged in PROJECT.md Key Decisions table.
 
+- [37-01] EmptyState uses RetroCard wrapper for consistent JRPG theming
+- [37-01] BattleLoadingSpinner uses framer-motion rotating shield instead of CSS animation
 - [37-02] Reused abandonQuest for restart_game handler to preserve ticket backlog while resetting game state
 - [37-02] Used resetKey={currentPhase} on ErrorBoundary to auto-recover on phase transitions
 
