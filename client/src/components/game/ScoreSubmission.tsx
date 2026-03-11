@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES } from '@/lib/gameTypes';
 
+const voteCardSpring = { type: 'spring' as const, stiffness: 300, damping: 20 };
+const selectedGlow = { scale: 1.05, boxShadow: '0 0 20px rgba(234, 179, 8, 0.6)' };
+const unselectedGlow = { scale: 1, boxShadow: '0 0 0px rgba(0, 0, 0, 0)' };
+
 export function ScoreSubmission() {
   const [selectedScore, setSelectedScore] = useState<number | string | '?' | null>(null);
   const [hasSubmitted, setHasSubmitted] = useState(false);
   const { emit } = useWebSocket();
   const { currentLobby, currentPlayer } = useGameState();
+  const prefersReducedMotion = useReducedMotion();
 
   // Get the scoring options based on the lobby's estimation scale
   const getScoringOptions = (): (number | string)[] => {
@@ -129,32 +135,38 @@ export function ScoreSubmission() {
               Choose your story point estimate (or ? if you're unsure):
             </p>
             
-            <div className="fibonacci-grid">
+            <div className="fibonacci-grid" key={currentTicket?.id}>
               {getScoringOptions().map(option => (
-                <RetroButton
+                <motion.div
                   key={option}
-                  className={`fibonacci-button ${
-                    selectedScore === option ? 'bg-yellow-600' : ''
-                  }`}
-                  onClick={() => setSelectedScore(option)}
-                  variant={selectedScore === option ? 'accent' : 'primary'}
-                  title={typeof option === 'string' ? `T-shirt size: ${getScoreDisplayText(option)}` : undefined}
+                  animate={prefersReducedMotion ? {} : (selectedScore === option ? selectedGlow : unselectedGlow)}
+                  transition={voteCardSpring}
                 >
-                  {getScoreDisplayText(option)}
-                </RetroButton>
+                  <RetroButton
+                    className="fibonacci-button w-full"
+                    onClick={() => setSelectedScore(option)}
+                    variant={selectedScore === option ? 'accent' : 'primary'}
+                    title={typeof option === 'string' ? `T-shirt size: ${getScoreDisplayText(option)}` : undefined}
+                  >
+                    {getScoreDisplayText(option)}
+                  </RetroButton>
+                </motion.div>
               ))}
               {/* Add "Don't Know" option */}
-              <RetroButton
+              <motion.div
                 key="unknown"
-                className={`fibonacci-button ${
-                  selectedScore === '?' ? 'bg-purple-600' : ''
-                }`}
-                onClick={() => setSelectedScore('?')}
-                variant={selectedScore === '?' ? 'accent' : 'primary'}
-                title="I don't know / No opinion"
+                animate={prefersReducedMotion ? {} : (selectedScore === '?' ? selectedGlow : unselectedGlow)}
+                transition={voteCardSpring}
               >
-                ?
-              </RetroButton>
+                <RetroButton
+                  className="fibonacci-button w-full"
+                  onClick={() => setSelectedScore('?')}
+                  variant={selectedScore === '?' ? 'accent' : 'primary'}
+                  title="I don't know / No opinion"
+                >
+                  ?
+                </RetroButton>
+              </motion.div>
             </div>
             
             <div className="text-center">
