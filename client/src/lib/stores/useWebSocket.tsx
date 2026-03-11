@@ -224,6 +224,11 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         set(state => ({
           reconnection: { ...state.reconnection, status: 'connected', attempt: 0 }
         }));
+        toast.info('Reconnected!', {
+          description: 'You have rejoined the session',
+          duration: 2500,
+          id: 'reconnected',
+        });
       } else {
         console.error('Reconnection failed:', response.message);
         clearStoredReconnectToken();

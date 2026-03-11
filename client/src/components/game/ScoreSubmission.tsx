@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
+import { toast } from 'sonner';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
@@ -69,6 +70,11 @@ export function ScoreSubmission() {
 
     emit('submit_score', { score: scoreToSubmit });
     setHasSubmitted(true);
+    toast.success('Estimate Submitted!', {
+      description: `You voted ${selectedScore} story points`,
+      duration: 2000,
+      id: 'score-submitted',
+    });
   };
 
   const currentTicket = currentLobby?.currentTicket;

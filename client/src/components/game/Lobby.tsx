@@ -29,6 +29,7 @@ import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PlayerListSkeleton } from '@/components/ui/LoadingSkeleton';
 
@@ -1616,12 +1617,22 @@ export function Lobby() {
     emit('update_timer_settings', { timerSettings });
     // Save to persistent storage for future lobbies
     LobbySettingsStorage.updateTimerSettings(timerSettings);
+    toast.success('Settings Saved', {
+      description: 'Timer settings have been updated',
+      duration: 2000,
+      id: 'settings-saved',
+    });
   };
 
   const updateJiraSettings = (jiraSettings: JiraSettings) => {
     emit('update_jira_settings', { jiraSettings });
     // Save to persistent storage for future lobbies
     LobbySettingsStorage.updateJiraSettings(jiraSettings);
+    toast.success('Settings Saved', {
+      description: 'Jira settings have been updated',
+      duration: 2000,
+      id: 'settings-saved',
+    });
   };
 
   const updateEstimationSettings = (estimationSettings: EstimationSettings) => {
@@ -1629,6 +1640,11 @@ export function Lobby() {
     emit('update_estimation_settings', { estimationSettings });
     // Save to persistent storage for future lobbies
     LobbySettingsStorage.updateEstimationSettings(estimationSettings);
+    toast.success('Settings Saved', {
+      description: 'Estimation settings have been updated',
+      duration: 2000,
+      id: 'settings-saved',
+    });
   };
 
   // Helper function to safely get avatar class from player
