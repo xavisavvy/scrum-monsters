@@ -13,6 +13,8 @@ import { useKonamiCode } from '@/hooks/useKonamiCode';
 import { setupEventHandlers, teardownEventHandlers } from '@/lib/socket/eventHandlers';
 import { useEventSync } from '@/lib/stores/useEventSync';
 import { CheatMenu } from '@/components/ui/CheatMenu';
+import { CharacterTools } from '@/components/utils/CharacterTools';
+import { BossTools } from '@/components/utils/BossTools';
 import { ReconnectionStatus } from '@/components/ui/ReconnectionStatus';
 import { ConnectionIndicator } from '@/components/ui/ConnectionIndicator';
 import { ReconnectionDialog } from '@/components/ui/ReconnectionDialog';
@@ -30,6 +32,8 @@ function App() {
   const [showDeveloperMenu, setShowDeveloperMenu] = useState(false);
   const [showCheatMenu, setShowCheatMenu] = useState(false);
   const [showReconnectionDialog, setShowReconnectionDialog] = useState(false);
+  const [showCharacterTools, setShowCharacterTools] = useState(false);
+  const [showBossTools, setShowBossTools] = useState(false);
   const location = useLocation();
 
   const { socket, connect, disconnect, isConnected, reconnection } = useWebSocket();
@@ -203,8 +207,8 @@ function App() {
       <DeveloperMenu
         isOpen={showDeveloperMenu}
         onClose={() => setShowDeveloperMenu(false)}
-        onOpenCharacterTools={() => { /* Character tools removed from App - TODO: add to route */ }}
-        onOpenBossTools={() => { /* Boss tools removed from App - TODO: add to route */ }}
+        onOpenCharacterTools={() => { setShowCharacterTools(true); setShowDeveloperMenu(false); }}
+        onOpenBossTools={() => { setShowBossTools(true); setShowDeveloperMenu(false); }}
       />
 
       {/* Cheat Menu (Konami Code) */}
@@ -212,6 +216,20 @@ function App() {
         isOpen={showCheatMenu}
         onClose={() => setShowCheatMenu(false)}
       />
+
+      {/* Character Tools Overlay */}
+      {showCharacterTools && (
+        <div className="fixed inset-0 z-50 bg-black/80 overflow-auto">
+          <CharacterTools onBack={() => setShowCharacterTools(false)} />
+        </div>
+      )}
+
+      {/* Boss Tools Overlay */}
+      {showBossTools && (
+        <div className="fixed inset-0 z-50 bg-black/80 overflow-auto">
+          <BossTools onBack={() => setShowBossTools(false)} />
+        </div>
+      )}
 
       {/* Reconnection Status */}
       <ReconnectionStatus />

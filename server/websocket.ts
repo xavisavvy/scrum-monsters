@@ -1115,6 +1115,22 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
+    socket.on('restart_game', () => {
+      socketLogger.debug('Server received restart_game event');
+      const playerId = socket.data.playerId;
+      if (!playerId) {
+        socketLogger.debug('No playerId found for restart_game');
+        return;
+      }
+
+      socketLogger.debug({ playerId }, 'Processing restart_game for player');
+      const lobby = gameState.abandonQuest(playerId);
+      if (lobby) {
+        gameLogger.info({ lobbyId: lobby.id, newPhase: lobby.gamePhase }, 'Game restarted (new game)');
+        io.to(lobby.id).emit('lobby_updated', { lobby });
+      }
+    });
+
     socket.on('return_to_lobby', () => {
       socketLogger.debug('Server received return_to_lobby event');
       const playerId = socket.data.playerId;
