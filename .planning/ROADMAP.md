@@ -120,11 +120,11 @@ Plans:
   2. SpotlightMask and HintBubble overlay components render as siblings to PhaseRenderer (not children), with their own AnimatePresence context
   3. Key game elements have `data-hint-target` attributes and the hint system can locate and position overlays relative to them
   4. User can open a help menu from a button in the game UI that allows re-triggering the tutorial walkthrough
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 39-01: Tutorial store and hint infrastructure
-- [ ] 39-02: Spotlight overlay and help menu
+- [ ] 39-01-PLAN.md — Tutorial store and hint targeting infrastructure
+- [ ] 39-02-PLAN.md — Spotlight overlay, help menu, and game UI mounting
 
 ### Phase 40: Tutorial Content & JRPG Narrator
 **Goal**: First-time players receive guided walkthroughs and contextual hints delivered through JRPG narrator characters
@@ -164,4 +164,4 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-11 — Phase 38 complete*
+*Last updated: 2026-03-11 — Phase 39 planned*
