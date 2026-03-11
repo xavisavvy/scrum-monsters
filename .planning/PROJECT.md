@@ -111,7 +111,16 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ### Active
 
-(No active requirements — define in next milestone)
+## Current Milestone: v5.0 UX & Onboarding
+
+**Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback.
+
+**Target features:**
+- Interactive tutorial for first-time players
+- Contextual in-game hints for advanced mechanics
+- Smooth phase transitions and loading states
+- Meaningful error messages and inviting empty states
+- Responsive feedback for votes, abilities, and combat actions
 
 ### Out of Scope
 
@@ -264,4 +273,4 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 | gunzip|psql for restore (not pg_restore) | Backup format is plain-text SQL, not custom format | ✓ Good |
 
 ---
-*Last updated: 2026-03-11 after v4.0 milestone*
+*Last updated: 2026-03-11 after v5.0 milestone started*

@@ -5,16 +5,14 @@
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Planning next milestone
+**Current focus:** v5.0 UX & Onboarding
 
 ## Current Position
 
-Phase: 36 of 36 (all complete)
-Plan: All plans complete
-Status: v4.0 milestone SHIPPED
-Last activity: 2026-03-11 — v4.0 milestone archived
-
-Progress: [██████████] 100% (all milestones through v4.0 complete)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-11 — Milestone v5.0 started
 
 ## Performance Metrics
 
@@ -51,10 +49,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-03-11
-Stopped at: v4.0 milestone archived
+Stopped at: Defining v5.0 requirements
 Resume file: None
-Next action: `/gsd:new-milestone` to start next milestone
+Next action: Define requirements and create roadmap
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-03-11 — v4.0 milestone archived*
+*Last updated: 2026-03-11 — v5.0 milestone started*
