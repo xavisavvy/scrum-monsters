@@ -63,25 +63,25 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| POLISH-01 | Pending | Pending |
-| POLISH-02 | Pending | Pending |
-| POLISH-03 | Pending | Pending |
-| POLISH-04 | Pending | Pending |
-| FEED-01 | Pending | Pending |
-| FEED-02 | Pending | Pending |
-| FEED-03 | Pending | Pending |
-| TUTR-01 | Pending | Pending |
-| TUTR-02 | Pending | Pending |
-| TUTR-03 | Pending | Pending |
-| TUTR-04 | Pending | Pending |
-| FIX-01 | Pending | Pending |
-| FIX-02 | Pending | Pending |
+| POLISH-01 | Phase 37 | Pending |
+| POLISH-02 | Phase 37 | Pending |
+| POLISH-03 | Phase 37 | Pending |
+| POLISH-04 | Phase 38 | Pending |
+| FEED-01 | Phase 38 | Pending |
+| FEED-02 | Phase 38 | Pending |
+| FEED-03 | Phase 38 | Pending |
+| TUTR-01 | Phase 40 | Pending |
+| TUTR-02 | Phase 40 | Pending |
+| TUTR-03 | Phase 40 | Pending |
+| TUTR-04 | Phase 39 | Pending |
+| FIX-01 | Phase 37 | Pending |
+| FIX-02 | Phase 37 | Pending |
 
 **Coverage:**
 - v5.0 requirements: 13 total
-- Mapped to phases: 0
-- Unmapped: 13 ⚠️
+- Mapped to phases: 13
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-11*
-*Last updated: 2026-03-11 after initial definition*
+*Last updated: 2026-03-11 after roadmap creation*
