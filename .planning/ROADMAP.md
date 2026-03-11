@@ -72,7 +72,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 
 **Milestone Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback.
 
-- [ ] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes
+- [x] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes (completed 2026-03-11)
 - [ ] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions
 - [ ] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu
 - [ ] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes
@@ -92,8 +92,8 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 **Plans**: 2 plans
 
 Plans:
-- [ ] 37-01: Empty states and loading skeletons
-- [ ] 37-02: Error boundaries and bug fixes
+- [x] 37-01: Empty states and loading skeletons
+- [x] 37-02: Error boundaries and bug fixes
 
 ### Phase 38: Interaction Feedback & Transitions
 **Goal**: Every user action produces immediate visual feedback, and phase changes feel cinematic
@@ -155,13 +155,13 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 | 26-29 | v3.0 | 9/9 | Complete | 2026-02-20 |
 | 30-31 | v3.1 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | 32-36 | v4.0 | 14/14 | Complete | 2026-03-11 |
-| 37. State Polish & Bug Fixes | v5.0 | 0/2 | Not started | - |
+| 37. State Polish & Bug Fixes | v5.0 | 2/2 | Complete | 2026-03-11 |
 | 38. Interaction Feedback & Transitions | v5.0 | 0/3 | Not started | - |
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 0/2 | Not started | - |
 
-**Total: 8 milestones shipped, 36 phases complete, 130 plans (1 deferred) | v5.0: 4 phases, 9 plans planned**
+**Total: 8 milestones shipped, 37 phases complete, 132 plans (1 deferred) | v5.0: 1/4 phases complete, 2/9 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-11 — v5.0 UX & Onboarding roadmap created*
+*Last updated: 2026-03-11 — Phase 37 complete*
