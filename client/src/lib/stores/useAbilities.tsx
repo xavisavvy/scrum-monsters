@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useEffect } from 'react';
+import { toast } from 'sonner';
 import { useWebSocket } from './useWebSocket';
 import { useGameState } from './useGameState';
 
@@ -132,9 +133,14 @@ export function useAbilitySync() {
       setPendingAbility(null);
     };
 
-    const handleAbilityUsed = (data: { playerId: string; abilityId: string }) => {
+    const handleAbilityUsed = (data: { playerId: string; abilityId: string; abilityName?: string }) => {
       // Clear pending state if it's our ability
       setPendingAbility(null);
+      toast(`${data.abilityName || 'Ability'} Activated!`, {
+        description: 'Ability is now in effect',
+        duration: 2500,
+        id: `ability-${data.abilityId}`,
+      });
     };
 
     const handleGameError = () => {
