@@ -90,7 +90,7 @@
     "connect-pg-simple": "^10.0.0",
     "csrf-sync": "^4.2.1",
     "date-fns": "^3.6.0",
-    "drizzle-orm": "^0.45.1",
+    "drizzle-orm": "^0.45.2",
     "drizzle-zod": "^0.8.3",
     "embla-carousel-react": "^8.6.0",
     "express": "^4.21.2",
