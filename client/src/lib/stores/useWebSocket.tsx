@@ -5,6 +5,18 @@ import { useProgression } from './useProgression';
 import { useClassMastery } from './useClassMastery';
 import { useGameState } from './useGameState';
 import { toast } from 'sonner';
+import {
+  loadSession,
+  saveSession,
+  clearSession,
+  decodeReconnectToken,
+  RECONNECT_TOKEN_KEY,
+  LOBBY_SNAPSHOT_KEY,
+} from '@/lib/utils/sessionStorage';
+
+// Re-export the storage keys so any external importer that previously read
+// them off useWebSocket.tsx continues to work without modification.
+export { RECONNECT_TOKEN_KEY, LOBBY_SNAPSHOT_KEY };
 
 type ConnectionStatus = 'connected' | 'disconnected' | 'reconnecting' | 'failed';
 
@@ -35,45 +47,43 @@ interface WebSocketState {
   clearReconnectionState: () => void;
   storeLobbySnapshot: (snapshot: LobbySnapshot) => void;
   getReconnectToken: () => string | null;
-  reconnectToLobby: () => boolean; // Returns true if reconnect attempt was made
+  reconnectToLobby: (expectedLobbyId?: string) => boolean; // Returns true if reconnect attempt was made
 }
-
-// Reconnection token storage
-const RECONNECT_TOKEN_KEY = 'scrum-monsters-reconnect-token';
-const LOBBY_SNAPSHOT_KEY = 'scrum-monsters-lobby-snapshot';
 
 // Module-level visibility handler reference for cleanup
 let visibilityHandler: (() => void) | null = null;
 
-const storeReconnectToken = (token: string) => {
-  try {
-    localStorage.setItem(RECONNECT_TOKEN_KEY, token);
-  } catch (error) {
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.warn('Failed to store reconnect token:', error);
-    }
-  }
-};
-
+// Token-only read helper kept for back-compat (getReconnectToken consumers).
+// All session writes go through saveSession (atomic three-key write); the legacy
+// per-key helpers were removed in Phase 41-01.
 const getStoredReconnectToken = (): string | null => {
   try {
     return localStorage.getItem(RECONNECT_TOKEN_KEY);
-  } catch (error) {
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.warn('Failed to get stored reconnect token:', error);
-    }
+  } catch {
     return null;
   }
 };
 
-const clearStoredReconnectToken = () => {
+/**
+ * Lazy initializer for `lastLobbySnapshot`. On cold mount, read all three
+ * session keys; if coherent, hydrate from the stored snapshot. If incoherent
+ * (drift, missing key, mismatched lobbyId, corrupted JSON), clear all three
+ * so the next reconnect attempt starts from a clean slate.
+ */
+const initialLobbySnapshot = (): LobbySnapshot | null => {
   try {
-    localStorage.removeItem(RECONNECT_TOKEN_KEY);
-  } catch (error) {
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      console.warn('Failed to clear stored reconnect token:', error);
+    const session = loadSession();
+    if (session.coherent && session.snapshot) {
+      return session.snapshot;
     }
+    if (session.lastLobby || session.snapshot || session.token) {
+      // Partial / drifted state — wipe so we don't try to reconnect with it.
+      clearSession();
+    }
+  } catch {
+    // Defensive: never block module init on a localStorage read.
   }
+  return null;
 };
 
 export const useWebSocket = create<WebSocketState>((set, get) => ({
@@ -85,7 +95,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     maxAttempts: 12, // Up to ~13 minutes of retries
     nextRetryIn: 0
   },
-  lastLobbySnapshot: null,
+  lastLobbySnapshot: initialLobbySnapshot(),
   heartbeatInterval: null,
 
   connect: () => {
@@ -146,12 +156,13 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       }, 25000); // Every 25 seconds - office networks often have 30-60s proxy timeouts
       set({ heartbeatInterval: newHeartbeat });
 
-      // Attempt auto-reconnection if we have stored data
-      const storedToken = getStoredReconnectToken();
+      // Attempt auto-reconnection if we have a coherent stored session.
+      // The snapshot is hydrated from localStorage on cold load (no longer
+      // null), and we route through reconnectToLobby with the snapshot's
+      // lobbyId as the guard so the token cannot mis-target.
       const { lastLobbySnapshot } = get();
-
-      if (storedToken && lastLobbySnapshot) {
-        socket.emit('reconnect_with_token', { reconnectToken: storedToken });
+      if (lastLobbySnapshot) {
+        get().reconnectToLobby(lastLobbySnapshot.lobby.id);
       }
     });
 
@@ -201,18 +212,22 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
 
     // Reconnection event handlers
     socket.on('lobby_sync', (lobbySync: LobbySync) => {
-      // Store new reconnect token
-      storeReconnectToken(lobbySync.reconnectToken);
-      
-      // Update lobby snapshot
+      // Atomically write all three session keys so they cannot drift.
       const snapshot: LobbySnapshot = {
         lobby: lobbySync.lobby,
         player: lobbySync.yourPlayer,
         timestamp: Date.now(),
-        reconnectToken: lobbySync.reconnectToken
+        reconnectToken: lobbySync.reconnectToken,
       };
-      get().storeLobbySnapshot(snapshot);
-      
+      saveSession({
+        lobbyId: lobbySync.lobby.id,
+        lobbyName: lobbySync.lobby.name,
+        playerName: lobbySync.yourPlayer.name,
+        snapshot,
+        token: lobbySync.reconnectToken,
+      });
+      set({ lastLobbySnapshot: snapshot });
+
       // Clear reconnection state since we're successfully synced
       set(state => ({
         reconnection: { ...state.reconnection, status: 'connected', attempt: 0 }
@@ -230,8 +245,11 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
           id: 'reconnected',
         });
       } else {
+        // All failure results (invalid_token, grace_expired, server_error,
+        // lobby_closed, lobby_not_found) clear the full session so the three
+        // localStorage keys cannot drift apart on the next attempt.
         console.error('Reconnection failed:', response.message);
-        clearStoredReconnectToken();
+        clearSession();
         set(state => ({
           reconnection: { ...state.reconnection, status: 'failed' },
           lastLobbySnapshot: null
@@ -388,8 +406,8 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       });
     }
     
-    // Clear stored reconnection data
-    clearStoredReconnectToken();
+    // Clear stored reconnection data atomically.
+    clearSession();
     set({ lastLobbySnapshot: null });
   },
 
@@ -457,8 +475,8 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       clearInterval(heartbeatInterval);
     }
     
-    clearStoredReconnectToken();
-    set({ 
+    clearSession();
+    set({
       lastLobbySnapshot: null,
       heartbeatInterval: null,
       reconnection: {
@@ -471,8 +489,18 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   },
 
   storeLobbySnapshot: (snapshot: LobbySnapshot) => {
+    // Thin wrapper retained for back-compat. Delegates to atomic saveSession
+    // when token is available; otherwise stores the snapshot wrapper directly
+    // so the lobbyId is still recoverable on read.
     try {
-      localStorage.setItem(LOBBY_SNAPSHOT_KEY, JSON.stringify(snapshot));
+      const token = getStoredReconnectToken() ?? snapshot.reconnectToken;
+      saveSession({
+        lobbyId: snapshot.lobby.id,
+        lobbyName: snapshot.lobby.name,
+        playerName: snapshot.player.name,
+        snapshot,
+        token,
+      });
       set({ lastLobbySnapshot: snapshot });
     } catch (error) {
       if (import.meta.env.DEV && localStorage.getItem('debug')) {
@@ -500,12 +528,26 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     return getStoredReconnectToken();
   },
 
-  reconnectToLobby: () => {
+  reconnectToLobby: (expectedLobbyId?: string) => {
     const { socket } = get();
     const token = getStoredReconnectToken();
 
     if (!socket || !socket.connected || !token) {
       return false;
+    }
+
+    // LobbyId guard: if the caller knows which lobby it expects to rejoin
+    // (e.g., the route's :lobbyId param), refuse to emit a token whose
+    // payload's lobbyId disagrees. This prevents the wrong-lobby-rejoin
+    // attempt that produced the duplicate-self / lost-host symptoms in
+    // Phase 41 — see 41-RESEARCH.md.
+    if (expectedLobbyId) {
+      const decoded = decodeReconnectToken(token);
+      if (!decoded || decoded.lobbyId !== expectedLobbyId) {
+        clearSession();
+        set({ lastLobbySnapshot: null });
+        return false;
+      }
     }
 
     socket.emit('reconnect_with_token', { reconnectToken: token });
