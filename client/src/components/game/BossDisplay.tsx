@@ -382,7 +382,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
             </p>
             
             {/* Health Bar */}
-            <div style={{ width: '300px' }} className="mx-auto">
+            <div style={{ width: '300px' }} className="mx-auto" data-hint-target="boss-health">
               <HealthBar
                 value={boss.currentHealth}
                 max={boss.maxHealth}

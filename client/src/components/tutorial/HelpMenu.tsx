@@ -18,18 +18,19 @@ export function HelpMenu() {
         </button>
       </PopoverTrigger>
       <PopoverContent
-        className="w-56 bg-gray-900/95 border-amber-500/40"
+        className="w-72 bg-gray-900/95 border-amber-500/40 z-[200]"
         side="top"
         sideOffset={8}
+        collisionPadding={16}
       >
-        <div className="space-y-2">
+        <div className="flex flex-col gap-2">
           <h3 className="font-bold text-amber-400 text-sm">Help</h3>
           <button
             onClick={() => {
               startTutorial('battle-basics');
               toast('Tutorial started!', { id: 'tutorial-restart' });
             }}
-            className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-800 text-gray-200 text-sm"
+            className="block w-full text-left px-2 py-1.5 rounded hover:bg-gray-800 text-gray-200 text-sm whitespace-nowrap"
           >
             Replay Tutorial
           </button>
@@ -38,7 +39,7 @@ export function HelpMenu() {
               resetAllTutorials();
               toast('All tutorials reset', { id: 'tutorial-reset' });
             }}
-            className="w-full text-left px-2 py-1.5 rounded hover:bg-gray-800 text-gray-400 text-xs"
+            className="block w-full text-left px-2 py-1.5 rounded hover:bg-gray-800 text-gray-400 text-xs whitespace-nowrap"
           >
             Reset All Hints
           </button>
