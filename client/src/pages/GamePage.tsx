@@ -68,7 +68,7 @@ export default function GamePage() {
 
     // Try reconnection with token first (preserves avatar)
     const token = getReconnectToken();
-    if (token && reconnectToLobby()) {
+    if (token && reconnectToLobby(lobbyId.toUpperCase())) {
       // Connection will be handled via lobby_sync event
       return;
     }

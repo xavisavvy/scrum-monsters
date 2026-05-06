@@ -51,7 +51,7 @@ export default function MenuPage() {
     setIsAttemptingRejoin(true);
 
     // Try reconnection with token first (preserves avatar)
-    if (getReconnectToken() && reconnectToLobby()) {
+    if (getReconnectToken() && reconnectToLobby(lastLobby.lobbyId.toUpperCase())) {
       return;
     }
 
