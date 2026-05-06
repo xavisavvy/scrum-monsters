@@ -1008,9 +1008,20 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       ref={isActive ? (el) => {
         // Only auto-focus during battle phase to prevent stealing focus from other UI elements
         if (el && document.activeElement !== el && currentLobby?.gamePhase === 'battle') {
-          // Don't steal focus if user is typing in an input field (like emote modal)
           const activeElement = document.activeElement;
+          // Don't steal focus if user is typing in an input field (like emote modal)
           if (activeElement instanceof HTMLInputElement || activeElement instanceof HTMLTextAreaElement) {
+            return;
+          }
+          // Don't steal focus from open popovers/menus/dialogs (Radix UI), or any
+          // element inside one. Stealing focus causes Radix to auto-close on focus loss.
+          if (activeElement instanceof HTMLElement && activeElement.closest(
+            '[data-radix-popper-content-wrapper],[role="dialog"],[role="menu"],[role="listbox"]'
+          )) {
+            return;
+          }
+          // Only auto-focus when no meaningful element holds focus (body or null).
+          if (activeElement && activeElement !== document.body) {
             return;
           }
           el.focus();
