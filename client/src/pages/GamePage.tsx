@@ -1,10 +1,11 @@
-import { useEffect, useState, Suspense, lazy } from 'react';
+import { useEffect, useRef, useState, Suspense, lazy } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
+import { clearSession } from '@/lib/utils/sessionStorage';
 import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { PageMeta } from '@/components/seo/PageMeta';
@@ -53,6 +54,21 @@ export default function GamePage() {
   } = useGameState();
 
   const { fadeOutMenuMusic } = useAudio();
+
+  // Refs that mirror state used inside the socket-listener handlers. Handlers
+  // read from these refs (not from the captured state values) so the listener
+  // useEffect can register exactly once per `socket` instance and never tear
+  // down on currentLobby / lastGamePhase / currentPlayer changes — the
+  // teardown-during-emit race was the root cause of the snapshot/last-lobby
+  // drift documented in 41-RESEARCH.md.
+  const currentLobbyRef = useRef(currentLobby);
+  const currentPlayerRef = useRef(currentPlayer);
+  const lastGamePhaseRef = useRef(lastGamePhase);
+  useEffect(() => {
+    currentLobbyRef.current = currentLobby;
+    currentPlayerRef.current = currentPlayer;
+    lastGamePhaseRef.current = lastGamePhase;
+  }, [currentLobby, currentPlayer, lastGamePhase]);
 
   // Auto-join lobby when navigating to /game/:lobbyId
   useEffect(() => {
@@ -116,6 +132,9 @@ export default function GamePage() {
       setLobby(lobby);
       setPlayer(yourPlayer);
       setIsAttemptingJoin(false);
+      // Keep last-lobby in sync with the active snapshot so the three keys
+      // cannot drift on transport upgrade or a late lobby_sync arrival.
+      LastLobbyStorage.saveLastLobby(lobby.id, lobby.name);
       // Lobby phase will render based on server state
     });
 
@@ -123,11 +142,27 @@ export default function GamePage() {
       if (result !== 'success') {
         setIsAttemptingJoin(false);
 
+        // Belt-and-braces cleanup: useWebSocket already calls clearSession()
+        // for every failure result, but doing it here too keeps GamePage's
+        // navigation path coherent and ensures last-lobby is wiped before
+        // routing back to MenuPage. Show a single user-facing toast.
+        clearSession();
+
         if (result === 'lobby_closed') {
-          LastLobbyStorage.clearLastLobby();
           toast.error('Lobby no longer exists');
-          navigate('/play');
+        } else if (
+          result === 'invalid_token' ||
+          result === 'grace_expired' ||
+          result === 'server_error'
+        ) {
+          // Note: ReconnectResult does not include 'lobby_not_found' — server
+          // emits that as a game_error message instead (handled below).
+          toast.error('Your previous session expired.', {
+            description: message || undefined,
+            duration: 4000,
+          });
         }
+        navigate('/play');
       } else if (newHost) {
         toast.info(`${newHost} became the host while you were disconnected.`, {
           duration: 5000,
@@ -141,18 +176,21 @@ export default function GamePage() {
       setLobby(lobby);
 
       // Update currentPlayer with fresh data
-      if (currentPlayer) {
-        const updatedPlayer = lobby.players.find(p => p.id === currentPlayer.id);
+      const cp = currentPlayerRef.current;
+      if (cp) {
+        const updatedPlayer = lobby.players.find(p => p.id === cp.id);
         if (updatedPlayer) {
           setPlayer(updatedPlayer);
         }
       }
 
       // Force BattleScreen remount on significant state changes
+      const lastPhase = lastGamePhaseRef.current;
+      const cl = currentLobbyRef.current;
       const shouldRemount = (
-        (lastGamePhase && lastGamePhase !== 'battle' && lobby.gamePhase === 'battle') ||
-        (lastGamePhase === 'battle' && lobby.gamePhase === 'battle' &&
-         JSON.stringify(currentLobby?.currentTicket) !== JSON.stringify(lobby.currentTicket))
+        (lastPhase && lastPhase !== 'battle' && lobby.gamePhase === 'battle') ||
+        (lastPhase === 'battle' && lobby.gamePhase === 'battle' &&
+         JSON.stringify(cl?.currentTicket) !== JSON.stringify(lobby.currentTicket))
       );
 
       if (shouldRemount) {
@@ -167,18 +205,20 @@ export default function GamePage() {
     });
 
     socket.on('avatar_selected', ({ playerId, avatar }) => {
-      if (currentLobby) {
+      const cl = currentLobbyRef.current;
+      if (cl) {
         const updatedLobby = {
-          ...currentLobby,
-          players: currentLobby.players.map(p =>
+          ...cl,
+          players: cl.players.map(p =>
             p.id === playerId ? { ...p, avatar, avatarClass: avatar } : p
           )
         };
         setLobby(updatedLobby);
       }
 
-      if (currentPlayer?.id === playerId) {
-        setPlayer({ ...currentPlayer, avatar, avatarClass: avatar });
+      const cp = currentPlayerRef.current;
+      if (cp?.id === playerId) {
+        setPlayer({ ...cp, avatar, avatarClass: avatar });
       }
     });
 
@@ -230,7 +270,8 @@ export default function GamePage() {
     });
 
     socket.on('host_transferred', ({ oldHostId, newHostId, newHostName, reason }) => {
-      if (currentPlayer?.id === newHostId) {
+      const cp = currentPlayerRef.current;
+      if (cp?.id === newHostId) {
         toast.success(`You are now the host!`, {
           duration: 5000,
           icon: '👑'
@@ -257,7 +298,11 @@ export default function GamePage() {
       socket.off('game_error');
       socket.off('host_transferred');
     };
-  }, [socket, currentPlayer, currentLobby, lastGamePhase]);
+    // Listener registration depends only on `socket` and the static `navigate`.
+    // Handlers read latest currentLobby / currentPlayer / lastGamePhase via
+    // refs, so the effect never tears down on those state changes — closing
+    // the lobby_sync teardown-during-emit race that produced snapshot drift.
+  }, [socket, navigate]);
 
   const handleBackToMenu = () => {
     if (currentLobby) {
