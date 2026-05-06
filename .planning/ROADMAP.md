@@ -9,7 +9,7 @@
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
 - ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
 - ✅ **v4.0 Hosting & Deployment** — Phases 32-36 (shipped 2026-03-11)
-- 🚧 **v5.0 UX & Onboarding** — Phases 37-40 (in progress)
+- 🚧 **v5.0 UX & Onboarding** — Phases 37-41 (in progress)
 
 ## Phases
 
@@ -76,6 +76,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 - [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)
 - [ ] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu
 - [ ] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes
+- [ ] **Phase 41: Reconnection State Bugfix** — Fix stale lobby snapshot/reconnect-token causing duplicate self and lost host status on rejoin
 
 ## Phase Details
 
@@ -141,6 +142,28 @@ Plans:
 - [ ] 40-01: Tutorial walkthrough content and contextual hints
 - [ ] 40-02: JRPG narrator dialogue boxes and typewriter effect
 
+### Phase 41: Reconnection State Bugfix
+**Goal**: A returning player rejoins the same lobby with their original identity and host status, with no duplicate avatars and no stale snapshot/token state
+**Depends on**: Phase 39 (tutorial work touches PlayerHUD/PlayerController focus paths; resolve after to avoid conflicts)
+**Requirements**: FIX-03 (new — to be added to REQUIREMENTS.md when planning starts)
+**Success Criteria** (what must be TRUE):
+  1. `scrum-monsters-current-lobby` and `scrum-monsters-lobby-snapshot` localStorage entries always reference the same `lobbyId`; mismatched/stale snapshots are cleared on detection
+  2. Reconnecting to a lobby restores the original player (no duplicate self appears in the player list/teams)
+  3. The original host retains `isHost: true` after reconnect, instead of being reattached as a non-host
+  4. `reconnectToken` is invalidated and removed once it expires or once the matching lobby/player is gone server-side
+  5. Repro is a closed regression: stop dev server during an active lobby, restart, reload tab — single self in roster, host preserved
+
+**Repro evidence (2026-05-06):**
+  - `scrum-monsters-current-lobby` → lobby `MT1Q4L`
+  - `scrum-monsters-lobby-snapshot` → lobby `36I0RL` (different)
+  - `reconnectToken` was scoped to `36I0RL`
+  - Result: duplicate self in roster, original host status lost on rejoin
+**Plans**: TBD (1-2 plans expected: snapshot/token cleanup + reconnect handler integrity)
+
+Plans:
+- [ ] 41-01: Lobby snapshot/token consistency and stale-state cleanup
+- [ ] 41-02: Reconnect handler — preserve identity and host status (if not folded into 41-01)
+
 ## Progress
 
 **Execution Order:**
@@ -159,9 +182,10 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 | 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 0/2 | Not started | - |
+| 41. Reconnection State Bugfix | v5.0 | 0/2 | Not started | - |
 
-**Total: 8 milestones shipped, 38 phases complete, 135 plans (1 deferred) | v5.0: 2/4 phases complete, 5/9 plans done**
+**Total: 8 milestones shipped, 38 phases complete, 135 plans (1 deferred) | v5.0: 2/5 phases complete, 5/11 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-03-11 — Phase 39 planned*
+*Last updated: 2026-05-06 — Phase 41 added (reconnection state bugfix, blocks v5.0 ship)*
