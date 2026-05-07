@@ -13,6 +13,7 @@ files_modified:
   - server/gameState.ts
   - client/src/lib/utils/lobbySettingsStorage.test.ts
   - server/gameState.test.ts
+  - server/websocket.autoAdvance.reconnect.test.ts
 autonomous: true
 requirements: [FIX-05]
 tags: [lobby-settings, host-controls, schema, sockets]
@@ -25,6 +26,7 @@ must_haves:
     - "When toggle is ON, server DOES start the existing consensus countdown"
     - "The 3-minute voting-timeout fallback fires regardless of the toggle state (safety net preserved)"
     - "autoAdvance value persists in localStorage across new lobbies (host preference) and round-trips through Phase 41 reconnect"
+    - "A regression test asserts autoAdvance survives reconnect-token round-trip"
   artifacts:
     - path: shared/socket-schemas.ts
       provides: "EstimationSettingsSchema extended with autoAdvance: z.boolean().optional().default(false)"
@@ -204,8 +206,8 @@ if (teamsAgree && lobby.boss && lobby.currentTicket) {
     - tsc --noEmit clean
   </done>
   <acceptance_criteria>
-    - `grep -c autoAdvance shared/socket-schemas.ts` returns at least 1
-    - `grep -c autoAdvance client/src/lib/utils/lobbySettingsStorage.ts` returns at least 2 (default + validator)
+    - At least 1 occurrence of `autoAdvance` in `shared/socket-schemas.ts` (canonical check: the `<verify>` `node -e` script above)
+    - At least 2 occurrences of `autoAdvance` in `client/src/lib/utils/lobbySettingsStorage.ts` (default + validator; canonical check: the `<verify>` `node -e` script above)
     - `npx vitest run client/src/lib/utils/lobbySettingsStorage.test.ts` passes
     - `npx tsc --noEmit` passes
   </acceptance_criteria>
@@ -282,11 +284,47 @@ if (teamsAgree && lobby.boss && lobby.currentTicket) {
     - Vitest passes; tsc --noEmit clean
   </done>
   <acceptance_criteria>
-    - `grep -c "Auto-advance to next ticket" client/src/components/game/Lobby.tsx` returns 1
-    - `grep -c "estimationSettings?.autoAdvance" server/gameState.ts` returns at least 1
+    - The string `Auto-advance to next ticket` appears in `client/src/components/game/Lobby.tsx` (canonical check: the `<verify>` `node -e` script above)
+    - At least 1 occurrence of `estimationSettings?.autoAdvance` in `server/gameState.ts` non-comment lines (canonical check: the `<verify>` `node -e` script above)
     - `npx vitest run server/gameState.test.ts` passes all three behaviors
     - `npx tsc --noEmit` passes
     - Phase 41 reconnect tests still pass (estimationSettings round-trips through snapshot — verify no new code in reconnect path)
+  </acceptance_criteria>
+</task>
+
+<task type="auto" tdd="true">
+  <name>Task 2: Add Phase 41 reconnect regression test for autoAdvance round-trip</name>
+  <files>server/websocket.autoAdvance.reconnect.test.ts</files>
+  <read_first>
+    - server/websocket.reconnect.test.ts (if it exists -- read full file to mirror reconnect-token round-trip pattern). If absent, read server/websocket.ts:1487 area for `lobbySync.lobby` snapshot shape and any existing reconnect helpers.
+    - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-RESEARCH.md (Pitfall 5 -- reconnect-token snapshot inclusion).
+  </read_first>
+  <behavior>
+    - Test 1: A lobby with `estimationSettings.autoAdvance === true` survives a reconnect-token round-trip (snapshot -> restore -> reconnect -> reads back true).
+    - Test 2: A lobby with `estimationSettings.autoAdvance === false` (default) survives the same round-trip.
+  </behavior>
+  <action>
+    1. If `server/websocket.reconnect.test.ts` exists, EXTEND it with a new `describe('autoAdvance reconnect round-trip', ...)` block. Otherwise CREATE `server/websocket.autoAdvance.reconnect.test.ts` mirroring the existing reconnect test pattern in this codebase (search for `reconnect_token` or `lobbySync` test fixtures).
+    2. Test the round-trip:
+       - Create a lobby with `estimationSettings: { scaleType: 'fibonacci', autoAdvance: true }`.
+       - Serialize via the snapshot path used at `websocket.ts:1487` (lobbySync.lobby).
+       - Deserialize / restore.
+       - Assert: restored `lobby.estimationSettings.autoAdvance === true`.
+       - Repeat for `autoAdvance: false`.
+    3. ~10 lines of test code total (it is a property assertion, not a full reconnect simulation -- the value just needs to round-trip through the snapshot serializer).
+  </action>
+  <verify>
+    <automated>npx vitest run server/websocket.autoAdvance.reconnect.test.ts</automated>
+    <automated>npx tsc --noEmit</automated>
+  </verify>
+  <done>
+    - New (or extended) reconnect test file exists with both round-trip assertions
+    - Vitest passes; tsc --noEmit clean
+    - Phase 41 reconnect path is unchanged (this is purely a regression assertion)
+  </done>
+  <acceptance_criteria>
+    - The new test passes (canonical check: `npx vitest run` exits 0)
+    - tsc --noEmit passes
   </acceptance_criteria>
 </task>
 
