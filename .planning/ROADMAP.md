@@ -182,10 +182,24 @@ Plans:
 - [ ] 42-02: Auto-advance assess + reconcile (restore Lobby UI setting OR remove dead paths; retire deprecated `lobby_updated`)
 - [ ] 42-03: XP gain pacing tuning (curve + per-action awards)
 
+### Phase 43: Auth & User Account Validation
+**Goal**: A user clicking "Sign In" on the home page can actually sign in, the resulting session is recognized end-to-end, and account-tied features (stats, profile, persistent identity) work — current behavior loops back to the sign-in button.
+**Depends on**: none (independent of Phase 42 fixes)
+**Requirements**: AUTH-01
+**Success Criteria** (what must be TRUE):
+  1. Clicking "Sign In" from `UserMenu` (which redirects to `/api/auth/login`) completes the Auth0 round-trip and returns the user to the app authenticated — no redirect loop, no return-to-Sign-In button after callback
+  2. After a successful login, `/api/auth/me` returns the authenticated user, `useAuth().user` is populated client-side, and the avatar dropdown replaces the "Sign In" button on next render
+  3. Sign-out via the dropdown clears the session and returns the user to anonymous-play state without errors
+  4. Account-tied surfaces that depend on `user`/`stats` (profile, stats dialog) render correctly when authenticated and gracefully fall back when anonymous
+  5. Required Auth0 env vars (`AUTH0_CLIENT_ID`, `AUTH0_ISSUER_BASE_URL`, `AUTH0_SECRET`, `AUTH0_CLIENT_SECRET`, `BASE_URL`) are documented in `.env.example` and the app surfaces a clear error (not a silent loop) if any are missing in dev/staging/prod
+  6. Anonymous play continues to work — no auth requirement was accidentally introduced
+
+**Plans**: TBD (1-2 plans expected: diagnose-and-fix the sign-in loop; harden env validation + missing-config error UX)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 37 -> 38 -> 39 -> 40 -> 41 -> 42
+Phases execute in numeric order: 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
