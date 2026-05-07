@@ -3,13 +3,8 @@ phase: 42-v5-0-pre-ship-fixes-polish
 plan: 02b
 type: execute
 wave: 2
-depends_on: [02a]
-files_modified:
-  - shared/gameEvents.ts
-  - server/websocket.ts
-  - server/gameState.ts
-  - client/src/pages/GamePage.tsx
-  - client/src/lib/socket/eventHandlers.ts
+depends_on: [01, 02a]
+files_modified:n  - server/websocket.tsn  - client/src/pages/GamePage.tsxn  - client/src/lib/stores/useGameState.tsx
   - specs/asyncapi.yaml
   - CLAUDE.md
   - README.md
@@ -76,6 +71,11 @@ Output: Type taxonomy update, 26-site migration in server/, client handler addit
 @server/gameState.ts
 @client/src/pages/GamePage.tsx
 @client/src/lib/socket/eventHandlers.ts
+
+<!-- File coordination with 42-01 (Wave 1):
+     Task 2 of this plan extends `client/src/lib/stores/useGameState.tsx` AFTER 42-01 Task 0 has
+     added its `pendingDamageEvents` slice. Both slices co-exist on the same store —
+     do NOT remove 42-01's additions when adding the `requestBattleRemount` slice. -->
 
 <interfaces>
 <!-- Authoritative migration table — copy verbatim from RESEARCH.md lines 250-276 -->
@@ -200,24 +200,33 @@ Split into:
   </acceptance_criteria>
 </task>
 
+<!-- Task 1 split into 1a + 1b per checker recommendation. Migration table groups sites
+     by replacement type. Task 1a handles mechanical sites (REMOVE-only + session:phase_changed
+     reuse, ~16 sites). Task 1b handles sites requiring NEW fine-grained event types (~10 sites).
+     Either subtask can land independently; both must be complete before Task 2 (handler delete). -->
+
 <task type="auto">
-  <name>Task 1: Migrate all 25 server/websocket.ts emit sites + 1 server/gameState.ts emit site</name>
+  <name>Task 1a: Migrate REMOVE-only + session:phase_changed sites (16 sites, mechanical)</name>
   <files>server/websocket.ts, server/gameState.ts</files>
   <read_first>
-    - server/websocket.ts (read each line cited in the migration table — sites at 160, 241, 611, 629, 660, 693, 810, 927, 959, 971, 1130, 1145, 1161, 1178, 1193, 1277, 1302, 1316, 1453, 1464, 1475, 1554, 2157, 2172). For each site, read ±15 lines of context to identify the calling handler before applying the replacement.
-    - server/gameState.ts:160-180 (site at line 173 — restoreDisconnectedPlayer) and lines 1336-1380 (site at line 1368 — handleVotingTimeout).
-    - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-RESEARCH.md migration table (lines 250-276) — authoritative.
+    - server/websocket.ts -- sites at 160, 241, 810, 927, 971, 1145, 1161, 1178, 1193, 1277, 1302, 1316, 1554, 2157, 2172. +/-15 lines per site.
+    - server/gameState.ts:160-180 (site 173 -- restoreDisconnectedPlayer) and lines 1336-1380 (site 1368 -- handleVotingTimeout).
+    - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-RESEARCH.md migration table (lines 250-276) -- authoritative.
     - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-PATTERNS.md lines 486-523 (replacement emit patterns).
   </read_first>
   <action>
-    Apply the migration table verbatim. For each site:
+    Apply the migration table for the mechanical subset.
 
-    1. **REMOVE-only sites (no replacement needed because another event already covers):**
-       - Site 1 (websocket.ts:160) — `battle_started` adjacent emit covers; DELETE the `lobby_updated` line.
-       - Site 2 (websocket.ts:241) — `session:host_changed` already emitted; DELETE.
+    **A. REMOVE-only sites (no replacement needed because another event already covers):**
+    - Site 1 (websocket.ts:160) -- `battle_started` adjacent emit covers; DELETE.
+    - Site 2 (websocket.ts:241) -- `session:host_changed` already emitted; DELETE.
+    - Site 22 (websocket.ts:1554) -- `session:player_joined` already covers reconnect-as-rejoin; DELETE.
+    - Site 23 (websocket.ts:2157) -- `session:host_changed` already exists; DELETE.
+    - Site 24 (websocket.ts:2172) -- `player_left` already exists; DELETE.
+    - Site 25 (gameState.ts:173) -- `session:player_joined` covers; DELETE.
 
-    2. **session:phase_changed sites (sites 7, 8, 10, 12-18, 26):**
-       Replace each `io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });` with:
+    **B. session:phase_changed sites (sites 7, 8, 10, 12-18, 26):**
+       Replace each `io.to(lobbyId).emit(\'lobby_updated\', { lobby: updatedLobby });` with:
        ```typescript
        io.to(lobbyId).emit('session:phase_changed', {
          oldPhase: previousPhase,    // capture the lobby phase BEFORE the mutation
@@ -226,9 +235,40 @@ Split into:
          timestamp: Date.now(),
        });
        ```
-       For sites 8 + 17 (reveal-emitting paths), confirm `scores_revealed` is already emitted nearby — if so just remove the `lobby_updated`. For site 26 (handleVotingTimeout in gameState.ts:1368), also keep the existing `voting_timeout` emit if present.
+       Specific sites covered here: 7 (websocket.ts:810), 8 (927), 10 (971), 12-15 (1145, 1161, 1178, 1193), 16 (1277), 17-18 (1302, 1316), 26 (gameState.ts:1368).
+       For sites 8 + 17 (reveal-emitting paths), confirm `scores_revealed` is already emitted nearby -- if so just remove the `lobby_updated`. For site 26, also keep the existing `voting_timeout` emit if present.
 
-    3. **session:tickets_updated (sites 3, 4):**
+    Track every removal in a comment block at the top of websocket.ts (or the SUMMARY) referencing the migration table row. Sites NOT in this task's scope (3, 4, 5, 6, 9, 11, 19, 20, 21) are handled in Task 1b.
+  </action>
+  <verify>
+    <automated>npx tsc --noEmit</automated>
+    <!-- After Task 1a, remaining lobby_updated occurrences should be <=10 (the Task 1b sites) -->
+    <automated>node -e "const s=require('fs').readFileSync('server/websocket.ts','utf8').replace(/^\s*\/\/.*$/gm,'').replace(/\/\*[\s\S]*?\*\//g,''); const m=(s.match(/'lobby_updated'/g)||[]).length; if(m>10){console.error('Task 1a incomplete; expected <=10 remaining sites, found',m);process.exit(1)}"</automated>
+  </verify>
+  <done>
+    - All 16 mechanical sites migrated or deleted
+    - tsc --noEmit clean
+    - Remaining `'lobby_updated'` occurrences in server/ are exclusively the Task 1b sites
+  </done>
+  <acceptance_criteria>
+    - At most 10 non-comment occurrences of `'lobby_updated'` remain in `server/websocket.ts` after Task 1a (canonical check: the `<verify>` `node -e` script; passes with exit 0)
+    - tsc --noEmit passes
+  </acceptance_criteria>
+</task>
+
+<task type="auto">
+  <name>Task 1b: Migrate sites requiring NEW fine-grained event types (10 sites)</name>
+  <files>server/websocket.ts</files>
+  <read_first>
+    - server/websocket.ts -- sites at 611, 629, 660, 693, 959, 1130, 1453, 1464, 1475. +/-15 lines per site to identify the calling handler.
+    - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-RESEARCH.md migration table (lines 250-276).
+    - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-PATTERNS.md lines 486-523.
+    - .planning/phases/42-v5-0-pre-ship-fixes-polish/42-02a-SUMMARY.md (confirms `session:settings_updated` payload from 42-02a).
+  </read_first>
+  <action>
+    Apply the migration table for sites needing the NEW events added in Task 0.
+
+    1. **session:tickets_updated (sites 3, 4 -- websocket.ts:611, 629):**
        ```typescript
        io.to(lobbyId).emit('session:tickets_updated', {
          tickets: updatedLobby.tickets,
@@ -237,7 +277,7 @@ Split into:
        });
        ```
 
-    4. **session:player_ready_changed (site 5):**
+    2. **session:player_ready_changed (site 5 -- websocket.ts:660):**
        ```typescript
        io.to(lobbyId).emit('session:player_ready_changed', {
          playerId: <player>.id,
@@ -247,7 +287,7 @@ Split into:
        });
        ```
 
-    5. **session:lobby_renamed (site 6, conditional):**
+    3. **session:lobby_renamed (site 6 -- websocket.ts:693, conditional):**
        Verify the handler is `update_lobby_name` (read context). If yes:
        ```typescript
        io.to(lobbyId).emit('session:lobby_renamed', {
@@ -258,7 +298,7 @@ Split into:
        ```
        If the handler turns out to be a different action, use the appropriate fine-grained replacement and document deviation in the SUMMARY.
 
-    6. **estimation:discussion_vote_updated (site 9):**
+    4. **estimation:discussion_vote_updated (site 9 -- websocket.ts:959):**
        ```typescript
        io.to(lobbyId).emit('estimation:discussion_vote_updated', {
          playerId, score,
@@ -267,7 +307,7 @@ Split into:
        });
        ```
 
-    7. **session:game_reset (site 11):**
+    5. **session:game_reset (site 11 -- websocket.ts:1130):**
        ```typescript
        io.to(lobbyId).emit('session:game_reset', {
          lobby: updatedLobby,
@@ -276,7 +316,7 @@ Split into:
        });
        ```
 
-    8. **session:settings_updated (sites 19, 20, 21):**
+    6. **session:settings_updated (sites 19, 20, 21 -- websocket.ts:1453, 1464, 1475):**
        ```typescript
        io.to(lobbyId).emit('session:settings_updated', {
          timerSettings: updatedLobby.timerSettings,    // include only the slice this handler updated
@@ -286,12 +326,9 @@ Split into:
        });
        ```
 
-    9. **session:player_joined / session:host_changed / player_left (sites 22, 23, 24, 25):**
-       Per the migration table, these existing events already cover the case; DELETE the redundant `lobby_updated`.
+    **Handoff with 42-02a:** site 21 (`update_estimation_settings`) is the same path 42-02a already wires through `updateEstimationSettings`. Confirm 42-02a's emit isn't redundant -- if 42-02a left a `lobby_updated` emit there, replace it with `session:settings_updated`. If 42-02a already emitted `session:settings_updated` there, skip site 21.
 
-    Track every removal in a comment block at the top of websocket.ts (or the SUMMARY) referencing the migration table row.
-
-    **Handoff with 42-02a:** site 21 (`update_estimation_settings`) is the same path 42-02a already wires through `updateEstimationSettings`. Confirm 42-02a's emit isn't redundant — if 42-02a left a `lobby_updated` emit there, replace it with `session:settings_updated` per this task. If 42-02a already emitted `session:settings_updated` there, skip site 21.
+    Track every removal in a comment block referencing the migration table row.
   </action>
   <verify>
     <automated>npx tsc --noEmit</automated>
@@ -303,8 +340,8 @@ Split into:
     - tsc --noEmit clean (lobby_updated declaration still in shared/gameEvents.ts; emits all replaced)
   </done>
   <acceptance_criteria>
-    - `grep -v '^[[:space:]]*//' server/websocket.ts | grep -c "'lobby_updated'"` returns 0
-    - `grep -v '^[[:space:]]*//' server/gameState.ts | grep -c "'lobby_updated'"` returns 0
+    - 0 non-comment occurrences of `'lobby_updated'` in `server/websocket.ts` (canonical check: the `<verify>` `node -e` script; passes with exit 0)
+    - 0 non-comment occurrences of `'lobby_updated'` in `server/gameState.ts` (canonical check: the `<verify>` `node -e` script; passes with exit 0)
     - tsc --noEmit passes
   </acceptance_criteria>
 </task>
@@ -346,9 +383,9 @@ Split into:
     - tsc --noEmit clean
   </done>
   <acceptance_criteria>
-    - `grep -c lobby_updated client/src/pages/GamePage.tsx` returns 0
-    - `grep -c "Received deprecated lobby_updated" client/src/pages/GamePage.tsx` returns 0
-    - `grep -c requestBattleRemount client/src/lib/socket/eventHandlers.ts` returns at least 1
+    - 0 occurrences of `lobby_updated` in `client/src/pages/GamePage.tsx` (canonical check: the `<verify>` `node -e` script; passes with exit 0)
+    - 0 occurrences of `Received deprecated lobby_updated` in `client/src/pages/GamePage.tsx` (canonical check: the `<verify>` `node -e` script)
+    - At least 1 occurrence of `requestBattleRemount` in `client/src/lib/socket/eventHandlers.ts` (canonical check: the `<verify>` `node -e` script)
     - tsc --noEmit passes
     - npm test passes overall
   </acceptance_criteria>
@@ -390,9 +427,9 @@ Split into:
     - Full Vitest suite passes
   </done>
   <acceptance_criteria>
-    - `grep -c "'lobby_updated'" shared/gameEvents.ts` returns 0
-    - `grep -c lobby_updated specs/asyncapi.yaml` returns 0
-    - `grep -c "lobby_updated" CLAUDE.md` returns 0 (or only as historical reference in a "Phase 42 retired" note)
+    - 0 occurrences of `'lobby_updated'` in `shared/gameEvents.ts` (canonical check: the `<verify>` `node -e` script; passes with exit 0)
+    - 0 occurrences of `lobby_updated` in `specs/asyncapi.yaml` (canonical check: the `<verify>` `node -e` script)
+    - 0 occurrences of the stale "Server emits `lobby_updated` event whenever..." doc line in `CLAUDE.md` (historical "Phase 42 retired" notes allowed; canonical check: the `<verify>` `node -e` script)
     - tsc --noEmit passes
     - `npm test` passes overall
     - Phase 41 reconnect tests still pass

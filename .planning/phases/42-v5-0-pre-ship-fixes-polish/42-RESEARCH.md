@@ -703,27 +703,31 @@ const XP_RATE_VALUES: typeof XP_RATES = {
 | A4 | Reducing `boss_damage` rate doesn't break combat feedback expectations (XP popup frequency stays meaningful) | BAL-01 | [ASSUMED] At rate=1, average attack of ~30dmg = 30XP (still visible as a popup). Below 1 would feel dead. |
 | A5 | The CombatManager AoE/single-target functions at lines 1140-1216 (`performAoEAttack`, `attackSingleTarget`) are dead code and the active path is `performBossAttack` at line 984 | Architecture diagram | [VERIFIED: grep confirms only doc references to performAoEAttack/attackSingleTarget; no callers in `server/`]. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should plan 42-02 split into 42-02a (toggle) + 42-02b (event retirement)?**
    - What we know: 26 emit sites + 4-5 new events vs CONTEXT's "two known sites" estimate.
    - What's unclear: Ship-blocking severity of full retirement.
    - Recommendation: Planner splits and lets verify-phase check both. If 42-02b proves too large, escalate to user for ship/cut.
+   - **RESOLVED:** Split into 42-02a (autoAdvance toggle) + 42-02b (lobby_updated retirement) per user decision; both plans created. 42-02b further split Task 1 into 1a (16 mechanical sites) + 1b (10 new-event sites) per checker feedback to bound blast radius.
 
 2. **What's the exact semantic of websocket.ts:660, 693, 810 emit sites?**
    - What we know: They emit `lobby_updated`. Likely phase transitions or roster changes.
    - What's unclear: Without reading more of `websocket.ts` (lines were on the persisted-output not fully read in research), the planner needs to verify each.
    - Recommendation: Plan 42-02 includes a "audit each site" task as Task 0.
+   - **RESOLVED:** Each site mapped in the 42-02b migration table (660 -> session:player_ready_changed, 693 -> session:lobby_renamed, 810 -> session:phase_changed). Site 6 (693) marked conditional with handler verification step in Task 1b.
 
 3. **Does FloatingDamageManager need its own store slice, or extend `useProgression.pendingXPGains` pattern with a parallel `pendingDamageEvents`?**
    - What we know: FloatingXPManager reads from `useProgression`; mixing concerns is awkward.
    - What's unclear: Whether to add a slice to `useGameState` or new store.
    - Recommendation: New slice on `useGameState` (closer to combat-state ownership). Planner's discretion.
+   - **RESOLVED:** Placed `pendingDamageEvents` slice on `useGameState.tsx` per the recommendation (closer to combat-state ownership). 42-01 Task 0 owns this addition.
 
 4. **Are there integration tests for the socket-event lifecycle that would catch lobby_updated being emitted but not handled?**
    - What we know: Vitest tests exist for individual managers. E2E uses Playwright.
    - What's unclear: Whether contract-test coverage from Phase 12 still runs.
    - Recommendation: Plan 42-02 verifies via `tsc --noEmit` after removing `lobby_updated` from `ServerToClientEvents` — TypeScript catches all dangling emit sites at compile time.
+   - **RESOLVED:** 42-02b uses `tsc --noEmit` (after Task 3 removes `lobby_updated` from ServerToClientEvents) as the compile-time validation safety net. Phase 12 contract-test coverage is not relied on; the type-system gate is sufficient.
 
 ## Sources
 
