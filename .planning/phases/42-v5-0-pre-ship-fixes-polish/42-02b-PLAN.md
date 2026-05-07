@@ -4,7 +4,13 @@ plan: 02b
 type: execute
 wave: 2
 depends_on: [01, 02a]
-files_modified:n  - server/websocket.tsn  - client/src/pages/GamePage.tsxn  - client/src/lib/stores/useGameState.tsx
+files_modified:
+  - shared/gameEvents.ts
+  - server/websocket.ts
+  - server/gameState.ts
+  - client/src/pages/GamePage.tsx
+  - client/src/lib/socket/eventHandlers.ts
+  - client/src/lib/stores/useGameState.tsx
   - specs/asyncapi.yaml
   - CLAUDE.md
   - README.md
