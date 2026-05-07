@@ -2099,14 +2099,20 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       // Enhanced logging for host disconnects
       const lobby = lobbyId ? sessionManager.getLobby(lobbyId) : null;
-      const isHost = lobby && lobby.hostId === playerId;
+      const lobbyHostId = lobby?.hostId;
+      const isHost = lobby && lobbyHostId === playerId;
 
+      // Phase 41-02: include playerId and lobbyHostId so future host/player-id
+      // asymmetries (e.g. socket.data.playerId being overwritten by a phantom
+      // join) are observable directly from disconnect logs.
       socketLogger.info({
         socketId: socket.id,
         reason,
         isHost,
+        playerId,
+        lobbyHostId,
         lobbyId,
-        activeConnections
+        activeConnections,
       }, 'Player disconnected');
 
       if (playerId) {
