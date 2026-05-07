@@ -388,17 +388,19 @@ Already shown above in **Architecture Patterns**. All pulled from project conven
 | A2 | Radix `DropdownMenu` handles focus restoration when trigger unmounts | Pitfall 5 | Low — only triggers on session-flip-during-dropdown-open, an extreme edge case |
 | A3 | `express-openid-connect`'s `auth()` factory throws on malformed-when-set env vars (vs. silently noop) | Pitfall 2 | Medium — if it doesn't throw, the test for "fail-fast on partial config" needs different assertion. Verify in Wave 0 with a smoke-call. |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should env validation reject "partial Auth0 config"?**
    - What we know: `env.ts:14-20` marks all 5 vars optional; `server/index.ts:85` uses inline boolean. The CONTEXT.md mentions "missing Auth0 env vars surface a clear error (not a silent loop)" but the locked decisions focus on the unconfig-graceful UX, not env validation hardening.
    - What's unclear: Does AUTH-01's success criterion #5 (ROADMAP.md:195) mean validation must reject partial configs, or just document them?
    - Recommendation: Add an env-time refinement (zod `.refine()`) that enforces "all-or-nothing" — flag this for the plan-checker.
+   - **RESOLVED:** `env.ts` gets a second `.refine()` enforcing all-or-nothing AUTH0_* (delivered by Plan 43-02 Task 1).
 
 2. **Should `useAuth` expose `isAuthEnabled` to other consumers?**
    - What we know: UserMenu is the sole consumer today.
    - What's unclear: Will future phases want to know auth-enabled state?
    - Recommendation: Add `providersConfigured` to the public state shape (zero cost). Don't add a wrapper hook.
+   - **RESOLVED:** Exposed as `providersConfigured: boolean | null` on `useAuth` (delivered by Plan 43-01 Task 1). Equivalent to `isAuthEnabled` but matches the existing fetch-result naming convention in `useAuth`.
 
 ## Environment Availability
 
