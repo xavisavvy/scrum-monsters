@@ -209,6 +209,21 @@ export class SessionManager {
       throw new LobbyNotFoundError(lobbyId);
     }
 
+    // Phase 41 defense: a connected player with this exact name already in the
+    // lobby means a duplicate join_lobby (e.g. GamePage auto-join racing a
+    // just-created lobby). Return the existing record instead of minting a
+    // phantom player.
+    const existingConnected = lobby.players.find(
+      (p) => p.name === playerName && !this.disconnectedPlayers.has(p.id)
+    );
+    if (existingConnected) {
+      gameLogger.info(
+        { lobbyId, playerName, playerId: existingConnected.id },
+        'join_lobby called for already-present connected player; returning existing'
+      );
+      return { lobby, player: existingConnected };
+    }
+
     // Check for any existing disconnected players with the same name
     // This handles the case where reconnect token expired but player is still in lobby
     const stalePlayersToRemove = lobby.players.filter(
