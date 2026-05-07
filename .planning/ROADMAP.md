@@ -175,13 +175,13 @@ Plans:
   4. XP per-action awards and the level-up XP curve are reviewed; pacing tuning lands as a single commit with before/after curve documented in the plan SUMMARY (no untouched-but-claimed-fixed paths)
   5. No regressions: existing combat tests, Phase 40 tutorial tests, and Phase 41 reconnection tests all still pass
 
-**Plans**: TBD
+**Plans**: 4 plans
 
 Plans:
-- [ ] 42-01: Boss damage client feedback (HP bar + damage popups wired to `combat:player_damaged` — damage applies server-side already; the bug is missing feedback)
-- [ ] 42-02a: Auto-advance Lobby UI toggle (host-only, default OFF, persisted with lobby settings; gates consensus auto-advance only — 3-min voting timeout fallback preserved)
-- [ ] 42-02b: Retire deprecated `lobby_updated` event (migrate 26 server emit sites to fine-grained events; remove client handler at `GamePage.tsx:188`)
-- [ ] 42-03: XP gain pacing tuning (drop `XP_RATES.boss_damage` 2→1; raise curve exponent 1.5→1.8; before/after table in SUMMARY)
+- [ ] 42-01-PLAN.md — Boss damage client feedback (HP bar + damage popups wired to combat:player_damaged)
+- [ ] 42-02a-PLAN.md — Auto-advance Lobby UI toggle (host-only, default OFF, persisted with lobby settings)
+- [ ] 42-02b-PLAN.md — Retire deprecated lobby_updated event (migrate 26 server emit sites to fine-grained events)
+- [ ] 42-03-PLAN.md — XP gain pacing tuning (XP_RATES.boss_damage 2->1; curve exponent 1.5->1.8; before/after table in SUMMARY)
 
 ### Phase 43: Auth & User Account Validation
 **Goal**: A user clicking "Sign In" on the home page can actually sign in, the resulting session is recognized end-to-end, and account-tied features (stats, profile, persistent identity) work — current behavior loops back to the sign-in button.
