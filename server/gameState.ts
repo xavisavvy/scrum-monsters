@@ -1531,7 +1531,9 @@ class GameStateManager {
       teamsAgree = false;
     }
 
-    if (teamsAgree && lobby.boss && lobby.currentTicket) {
+    // Phase 42-02a / FIX-05: gate consensus auto-advance on the host-only Lobby toggle.
+    // 3-min voting timeout (handleVotingTimeout) is intentionally NOT gated — safety net stays.
+    if (teamsAgree && lobby.boss && lobby.currentTicket && lobby.estimationSettings?.autoAdvance) {
       // Check if countdown is already active
       if (!lobby.consensusCountdown?.isActive) {
         // Start consensus countdown

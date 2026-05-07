@@ -1898,6 +1898,22 @@ export function Lobby() {
                                 </select>
                               </div>
                               
+                              {/* Phase 42-02a / FIX-05: host-only auto-advance toggle (default OFF) */}
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
+                                  checked={currentLobby.estimationSettings?.autoAdvance ?? false}
+                                  onChange={(e) => updateEstimationSettings({
+                                    scaleType: currentLobby.estimationSettings?.scaleType ?? 'fibonacci',
+                                    customTshirtMapping: currentLobby.estimationSettings?.customTshirtMapping,
+                                    autoAdvance: e.target.checked,
+                                  })}
+                                  disabled={!currentPlayer?.isHost || currentLobby?.gamePhase !== 'lobby'}
+                                />
+                                <span className="text-sm font-medium">Auto-advance to next ticket on consensus (5s countdown)</span>
+                              </label>
+
                               {/* T-shirt size point mapping */}
                               {(currentLobby.estimationSettings?.scaleType || 'fibonacci') === 'tshirt' && (
                                 <div className="space-y-2">
