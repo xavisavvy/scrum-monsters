@@ -181,7 +181,7 @@ Plans:
 - [ ] 42-01-PLAN.md — Boss damage client feedback (HP bar + damage popups wired to combat:player_damaged)
 - [ ] 42-02a-PLAN.md — Auto-advance Lobby UI toggle (host-only, default OFF, persisted with lobby settings)
 - [ ] 42-02b-PLAN.md — Retire deprecated lobby_updated event (migrate 26 server emit sites to fine-grained events)
-- [ ] 42-03-PLAN.md — XP gain pacing tuning (XP_RATES.boss_damage 2->1; curve exponent 1.5->1.8; before/after table in SUMMARY)
+- [x] 42-03-PLAN.md — XP gain pacing tuning (XP_RATES.boss_damage 2->1; curve exponent 1.5->1.8; before/after table in SUMMARY) (completed 2026-05-07)
 
 ### Phase 43: Auth & User Account Validation
 **Goal**: A user clicking "Sign In" on the home page can actually sign in, the resulting session is recognized end-to-end, and account-tied features (stats, profile, persistent identity) work — current behavior loops back to the sign-in button.
