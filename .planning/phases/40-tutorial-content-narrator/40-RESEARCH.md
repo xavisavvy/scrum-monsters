@@ -639,22 +639,25 @@ Not applicable. No auth/session/access-control/crypto surfaces touched. Input va
 | A5 | Exact narrator wording in code examples is illustrative only | Code Examples | None — planner finalizes wording |
 | A6 | `nyquist_validation` enabled (default if absent in config.json) | Validation | None — section can be ignored if disabled |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Should the lobby walkthrough fork between host and non-host?**
    - What we know: Hosts see "Begin Battle" button; non-hosts see "Ready Up" / waiting message.
    - What's unclear: One walkthrough with shared steps + final-step swap, or two distinct walkthrough ids?
    - Recommendation: Single `walkthrough:lobby` id; in step 3, the planner can either (a) use `targetId: 'lobby-action'` with both buttons given that attribute conditionally, or (b) split into `walkthrough:lobby-host` / `walkthrough:lobby-guest` and pick the right id at start time. Option (a) is simpler.
+   - **RESOLVED:** Not forking. The walkthrough auto-skip-on-missing-target branch shipped in plan 40-01 Task 2 (TutorialOverlay locateTarget effect) handles non-host lobby step 3 generically — when `lobby-start` does not render for a non-host, the overlay calls `completeTutorial('walkthrough:lobby')` since step 3 is the last step. No host/non-host fork needed.
 
 2. **Combo hint timing — does `combo-notification` element stay mounted long enough?**
    - What we know: `ComboNotification` reads `useComboState.activeCombo` which is set by socket events; dismissal pattern is in `useComboState.dismissCombo`.
    - What's unclear: How long the notification stays visible after `combo:triggered`. If <1s the typewriter (30 cps × ~80 chars = ~2.6s) won't finish before target unmounts.
    - Recommendation: Verify dismissal timing during planning; if too short, the hint can position relative to `boss-health` instead, with text describing combos rather than pointing at the (transient) notification UI. Defer the decision to plan-time visual QA.
+   - **RESOLVED:** Re-anchored the first-combo hint to `boss-health` (persistent boss-health bar element, pre-existing at `BossDisplay.tsx:385`). This eliminates the typewriter-vs-dismissal timing dependency entirely. `combo-notification` is no longer used as a tutorial target; `ComboNotification.tsx` is intentionally not modified by Phase 40.
 
 3. **Reveal-phase target choice (`vote-cards` reuse vs. new `reveal-summary`)?**
    - What we know: `RevealPhase` is a placeholder card with no specific target.
    - What's unclear: Whether to add `data-hint-target="reveal-summary"` to the placeholder card or reuse `vote-cards` (which renders in the sidebar during battle and may not render in reveal phase).
    - Recommendation: Add `reveal-summary` to `RevealPhase.tsx:18` RetroCard. Cleaner ownership.
+   - **RESOLVED:** Using the recommended `reveal-summary` target on RevealPhase.tsx (plan 40-01 Task 3 Part C).
 
 ## Sources
 
