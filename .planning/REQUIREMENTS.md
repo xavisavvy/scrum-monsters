@@ -39,6 +39,10 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 
 - [ ] **BAL-01**: XP gain pacing feels rewarding without trivializing progression — XP curve and per-action XP awards reviewed and tuned
 
+### Authentication
+
+- [ ] **AUTH-01**: Sign-in via Auth0 completes end-to-end (no redirect loop), authenticated session is recognized client-side via `/api/auth/me`, sign-out works, account-tied surfaces (profile, stats) render when authenticated, anonymous play preserved, and missing Auth0 env vars surface a clear error (not a silent loop)
+
 ## Future Requirements
 
 Deferred to future milestone. Tracked but not in current roadmap.
@@ -91,12 +95,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-04 | Phase 42 | Pending |
 | FIX-05 | Phase 42 | Pending |
 | BAL-01 | Phase 42 | Pending |
+| AUTH-01 | Phase 43 | Pending |
 
 **Coverage:**
-- v5.0 requirements: 17 total
-- Mapped to phases: 17
+- v5.0 requirements: 18 total
+- Mapped to phases: 18
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-11*
-*Last updated: 2026-05-07 — Added FIX-04 (boss HP damage), FIX-05 (auto-advance reconcile), BAL-01 (XP pacing) for Phase 42 pre-ship cleanup; AVAT-01 (gender variants) deferred to v5.1.*
+*Last updated: 2026-05-07 — Added Phase 42 reqs (FIX-04, FIX-05, BAL-01) and Phase 43 (AUTH-01 sign-in loop fix); AVAT-01 (gender variants) deferred to v5.1.*
