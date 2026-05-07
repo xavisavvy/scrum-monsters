@@ -36,9 +36,6 @@ function GameLoadingFallback() {
 export default function GamePage() {
   const { lobbyId } = useParams<{ lobbyId: string }>();
   const navigate = useNavigate();
-  const [battleRemountKey, setBattleRemountKey] = useState(0);
-  const [lastGamePhase, setLastGamePhase] = useState<string | null>(null);
-  const [isBattleUnmounting, setIsBattleUnmounting] = useState(false);
   const [isAttemptingJoin, setIsAttemptingJoin] = useState(false);
 
   const { socket, emit, reconnectToLobby, getReconnectToken, clearReconnectionState } = useWebSocket();
@@ -51,6 +48,11 @@ export default function GamePage() {
     setInviteLink,
     setError,
     clearAll,
+    // Phase 42-02b Task 2: BattleScreen remount control migrated from local
+    // state into the store so eventHandlers.ts (session:phase_changed +
+    // session:ticket_advanced) can trigger the remount centrally.
+    battleRemountKey,
+    isBattleUnmounting,
   } = useGameState();
 
   const { fadeOutMenuMusic } = useAudio();
@@ -58,17 +60,17 @@ export default function GamePage() {
   // Refs that mirror state used inside the socket-listener handlers. Handlers
   // read from these refs (not from the captured state values) so the listener
   // useEffect can register exactly once per `socket` instance and never tear
-  // down on currentLobby / lastGamePhase / currentPlayer changes — the
-  // teardown-during-emit race was the root cause of the snapshot/last-lobby
-  // drift documented in 41-RESEARCH.md.
+  // down on currentLobby / currentPlayer changes — the teardown-during-emit
+  // race was the root cause of the snapshot/last-lobby drift documented in
+  // 41-RESEARCH.md. (Phase 42-02b removed lastGamePhaseRef along with the
+  // deprecated `lobby_updated` handler — phase tracking + battle remount now
+  // live in the store / eventHandlers.ts.)
   const currentLobbyRef = useRef(currentLobby);
   const currentPlayerRef = useRef(currentPlayer);
-  const lastGamePhaseRef = useRef(lastGamePhase);
   useEffect(() => {
     currentLobbyRef.current = currentLobby;
     currentPlayerRef.current = currentPlayer;
-    lastGamePhaseRef.current = lastGamePhase;
-  }, [currentLobby, currentPlayer, lastGamePhase]);
+  }, [currentLobby, currentPlayer]);
 
   // Auto-join lobby when navigating to /game/:lobbyId
   useEffect(() => {
@@ -185,38 +187,12 @@ export default function GamePage() {
       }
     });
 
-    socket.on('lobby_updated', ({ lobby }) => {
-      console.warn('Received deprecated lobby_updated event');
-      setLobby(lobby);
-
-      // Update currentPlayer with fresh data
-      const cp = currentPlayerRef.current;
-      if (cp) {
-        const updatedPlayer = lobby.players.find(p => p.id === cp.id);
-        if (updatedPlayer) {
-          setPlayer(updatedPlayer);
-        }
-      }
-
-      // Force BattleScreen remount on significant state changes
-      const lastPhase = lastGamePhaseRef.current;
-      const cl = currentLobbyRef.current;
-      const shouldRemount = (
-        (lastPhase && lastPhase !== 'battle' && lobby.gamePhase === 'battle') ||
-        (lastPhase === 'battle' && lobby.gamePhase === 'battle' &&
-         JSON.stringify(cl?.currentTicket) !== JSON.stringify(lobby.currentTicket))
-      );
-
-      if (shouldRemount) {
-        setIsBattleUnmounting(true);
-        setTimeout(() => {
-          setBattleRemountKey(prev => prev + 1);
-          setIsBattleUnmounting(false);
-        }, 100);
-      }
-
-      setLastGamePhase(lobby.gamePhase);
-    });
+    // Phase 42-02b Task 2: deleted deprecated `lobby_updated` handler
+    // (formerly here at lines 188-219). State updates now flow through
+    // fine-grained handlers in client/src/lib/socket/eventHandlers.ts.
+    // BattleScreen remount logic moved to session:phase_changed (entry to
+    // 'battle') and session:ticket_advanced (mid-battle ticket change),
+    // driven by useGameState.requestBattleRemount().
 
     socket.on('avatar_selected', ({ playerId, avatar }) => {
       const cl = currentLobbyRef.current;
@@ -303,7 +279,7 @@ export default function GamePage() {
       socket.off('lobby_joined');
       socket.off('lobby_sync');
       socket.off('reconnect_response');
-      socket.off('lobby_updated');
+      // Phase 42-02b: lobby_updated handler removed; no listener to detach.
       socket.off('avatar_selected');
       socket.off('battle_started');
       socket.off('boss_attacked');
