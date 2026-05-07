@@ -164,10 +164,28 @@ Plans:
 - [x] 41-01: Lobby snapshot/token consistency and stale-state cleanup (completed 2026-05-06)
 - [x] 41-02: Reconnect handler — preserve identity and host status (completed 2026-05-06)
 
+### Phase 42: v5.0 Pre-Ship Fixes & Polish
+**Goal**: Resolve three open gameplay/UX defects flagged late in milestone v5.0 so the milestone ships clean: boss damage actually lands on player HP, auto-advance is either restored as a real Lobby setting or fully removed, and XP gain pacing feels right.
+**Depends on**: Phase 40 (tutorial work touches BattlePhase + game UI surfaces; resolve after to avoid conflicts)
+**Requirements**: FIX-04, FIX-05, BAL-01
+**Success Criteria** (what must be TRUE):
+  1. Boss attacks — single-target AND area-of-effect — correctly decrement affected players' HP server-side; client HUD reflects the damage; verified by repro test that hit a player and asserts `player.hp` decreased
+  2. The runtime warning `Received deprecated lobby_updated event` no longer fires from `client/src/pages/GamePage.tsx`; either the deprecated handler and all server emitters of `lobby_updated` are removed (event fully retired in favor of fine-grained events), or the handler is restored as a non-deprecated path with the warning removed
+  3. Auto-advance is either (a) a working Lobby UI setting wired end-to-end (toggle in Lobby → server respects it on consensus and voting timeout) and persisted with other lobby settings, or (b) fully removed (no orphan client setting state, no dead server code) — pick one based on assessment, do not leave half-implemented
+  4. XP per-action awards and the level-up XP curve are reviewed; pacing tuning lands as a single commit with before/after curve documented in the plan SUMMARY (no untouched-but-claimed-fixed paths)
+  5. No regressions: existing combat tests, Phase 40 tutorial tests, and Phase 41 reconnection tests all still pass
+
+**Plans**: TBD
+
+Plans:
+- [ ] 42-01: Boss attack damage application fix (single-target + AoE → player HP)
+- [ ] 42-02: Auto-advance assess + reconcile (restore Lobby UI setting OR remove dead paths; retire deprecated `lobby_updated`)
+- [ ] 42-03: XP gain pacing tuning (curve + per-action awards)
+
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 37 -> 38 -> 39 -> 40
+Phases execute in numeric order: 37 -> 38 -> 39 -> 40 -> 41 -> 42
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
