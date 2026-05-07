@@ -195,7 +195,9 @@ Plans:
   5. Required Auth0 env vars (`AUTH0_CLIENT_ID`, `AUTH0_ISSUER_BASE_URL`, `AUTH0_SECRET`, `AUTH0_CLIENT_SECRET`, `BASE_URL`) are documented in `.env.example` and the app surfaces a clear error (not a silent loop) if any are missing in dev/staging/prod
   6. Anonymous play continues to work — no auth requirement was accidentally introduced
 
-**Plans**: TBD (1-2 plans expected: diagnose-and-fix the sign-in loop; harden env validation + missing-config error UX)
+**Plans:** 2 plans
+- [ ] 43-01-PLAN.md — Graceful unconfig UX (useAuth providersConfigured + UserMenu render gate)
+- [ ] 43-02-PLAN.md — Configured-path integration tests + env hardening (supertest, mockOidc, route/component/store tests, AUTH0_* all-or-nothing)
 
 ## Progress
 
