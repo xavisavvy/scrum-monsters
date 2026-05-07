@@ -76,7 +76,8 @@ export class SessionManager {
 
   // Constants
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
-  private readonly TOKEN_EXPIRY_TIME = 5 * 60 * 1000; // 5 minutes per CONTEXT.md
+  // Aligned with DISCONNECT_GRACE_PERIOD so a player in the grace window cannot hold a structurally expired token. Trade-off: wider replay window — acceptable given HMAC signature + per-player binding. (Phase 41)
+  private readonly TOKEN_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes
   private readonly TOKEN_SECRET: string;
 
   // Dependencies
@@ -696,32 +697,13 @@ export class SessionManager {
       player.name
     );
 
-    // Check if host disconnected
-    let hostTransfer: { oldHostId: string; newHostId: string; newHostName: string } | undefined;
+    // Phase 41-02: Defer host transfer until grace expiry. Mark wasHost on the
+    // DisconnectedPlayer record; if the host reconnects within the grace
+    // window, attemptPlayerReconnect restores host. If grace expires,
+    // processDisconnectedPlayers performs the actual transfer.
+    const hostTransfer: { oldHostId: string; newHostId: string; newHostName: string } | undefined = undefined;
     if (lobby.hostId === playerId) {
-      // Find first connected player (not disconnected)
-      const connectedPlayers = lobby.players.filter(
-        (p) => p.id !== playerId && !this.disconnectedPlayers.has(p.id)
-      );
-
-      if (connectedPlayers.length > 0) {
-        const newHost = connectedPlayers[0];
-        const oldHostId = lobby.hostId;
-        lobby.hostId = newHost.id;
-        newHost.isHost = true;
-
-        hostTransfer = {
-          oldHostId,
-          newHostId: newHost.id,
-          newHostName: newHost.name,
-        };
-
-        this.eventBus.emit('session:host_changed', {
-          lobbyId,
-          oldHostId,
-          newHostId: newHost.id,
-        });
-      }
+      disconnectedPlayer.wasHost = true;
     }
 
     // Emit player_disconnected event
@@ -824,6 +806,24 @@ export class SessionManager {
         disconnectedPlayer.lastKnownCombatState;
     }
 
+    // Phase 41-02: Restore host status if this player was host at disconnect
+    // time. Defense in depth: if any external code path during the grace
+    // window promoted another player, demote them so there is at most one host.
+    if (disconnectedPlayer.wasHost) {
+      for (const p of lobby.players) {
+        if (p.id !== token.playerId && p.isHost) {
+          p.isHost = false;
+        }
+      }
+      player.isHost = true;
+      lobby.hostId = token.playerId;
+      this.eventBus.emit('session:host_changed', {
+        lobbyId: token.lobbyId,
+        oldHostId: token.playerId, // logically self-restoration
+        newHostId: token.playerId,
+      });
+    }
+
     // Generate new reconnect token
     const newReconnectToken = this.generateReconnectToken(
       token.playerId,
@@ -854,15 +854,70 @@ export class SessionManager {
   }
 
   /**
-   * Processes disconnected players, removing those whose grace period has expired
+   * Processes disconnected players, removing those whose grace period has expired.
+   *
+   * Phase 41-02: When a host whose grace period has expired had `wasHost: true`,
+   * performs the deferred host transfer that used to live in
+   * `handlePlayerDisconnect`. Returns an array of host-transfer events the
+   * caller (websocket.ts) should broadcast as `host_transferred`.
    */
-  processDisconnectedPlayers(): void {
+  processDisconnectedPlayers(): Array<{
+    lobbyId: string;
+    oldHostId: string;
+    newHostId: string;
+    newHostName: string;
+  }> {
     const now = Date.now();
+    const hostTransfers: Array<{
+      lobbyId: string;
+      oldHostId: string;
+      newHostId: string;
+      newHostName: string;
+    }> = [];
 
     // Iterate disconnectedPlayers Map
     for (const [playerId, disconnectedPlayer] of this.disconnectedPlayers.entries()) {
       // Check if grace period expired
       if (disconnectedPlayer.graceExpiresAt < now) {
+        // Phase 41-02: deferred host transfer. If this player was host AND the
+        // lobby still exists with at least one connected player, transfer host
+        // BEFORE we remove the disconnected player (so removePlayer's existing
+        // host-on-leave path doesn't double-fire on a stale hostId).
+        if (disconnectedPlayer.wasHost) {
+          const lobby = this.lobbies.get(disconnectedPlayer.lobbyId);
+          if (lobby && lobby.hostId === playerId) {
+            const connectedPlayers = lobby.players.filter(
+              (p) => p.id !== playerId && !this.disconnectedPlayers.has(p.id)
+            );
+            if (connectedPlayers.length > 0) {
+              const newHost = connectedPlayers[0];
+              const oldHostId = lobby.hostId;
+              lobby.hostId = newHost.id;
+              newHost.isHost = true;
+
+              hostTransfers.push({
+                lobbyId: lobby.id,
+                oldHostId,
+                newHostId: newHost.id,
+                newHostName: newHost.name,
+              });
+
+              this.eventBus.emit('session:host_changed', {
+                lobbyId: lobby.id,
+                oldHostId,
+                newHostId: newHost.id,
+              });
+
+              gameLogger.info({
+                lobbyId: lobby.id,
+                oldHostId,
+                newHostId: newHost.id,
+                newHostName: newHost.name,
+              }, 'Deferred host transfer on grace expiry (Phase 41-02)');
+            }
+          }
+        }
+
         // Remove player from lobby
         this.removePlayer(playerId);
 
@@ -877,5 +932,7 @@ export class SessionManager {
         }
       }
     }
+
+    return hostTransfers;
   }
 }

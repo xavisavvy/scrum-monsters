@@ -403,8 +403,9 @@ describe('SessionManager - Reconnection System', () => {
         'Host Player'
       );
 
-      // Fast forward 6 minutes (token expires in 5 minutes)
-      vi.advanceTimersByTime(6 * 60 * 1000);
+      // Fast forward 11 minutes (Phase 41-02: TOKEN_EXPIRY_TIME widened to
+      // 10 minutes to match DISCONNECT_GRACE_PERIOD).
+      vi.advanceTimersByTime(11 * 60 * 1000);
 
       const validated = (sessionManager as any).validateReconnectToken(token);
 
@@ -472,7 +473,7 @@ describe('SessionManager - Reconnection System', () => {
       expect(validated).not.toBeNull();
     });
 
-    it('should trigger host transfer if host disconnects', () => {
+    it('should defer host transfer when host disconnects (Phase 41-02)', () => {
       const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
       const hostId = lobby.players[0].id;
 
@@ -481,9 +482,18 @@ describe('SessionManager - Reconnection System', () => {
 
       const result = (sessionManager as any).handlePlayerDisconnect(hostId);
 
-      expect(result.hostTransfer).toBeDefined();
-      expect(result.hostTransfer.newHostId).toBe(player2.id);
-      expect(result.hostTransfer.newHostName).toBe('Player 2');
+      // Phase 41-02: host transfer is deferred — wasHost is set on the
+      // record, lobby.hostId is unchanged, and no immediate hostTransfer
+      // fires from handlePlayerDisconnect.
+      expect(result.hostTransfer).toBeUndefined();
+      expect(result.disconnectedPlayer.wasHost).toBe(true);
+
+      const stillLobby = sessionManager.getLobby(lobby.id);
+      expect(stillLobby?.hostId).toBe(hostId);
+      const stillHost = stillLobby?.players.find(p => p.id === hostId);
+      expect(stillHost?.isHost).toBe(true);
+      const otherPlayer = stillLobby?.players.find(p => p.id === player2.id);
+      expect(otherPlayer?.isHost).toBe(false);
     });
 
     it('should emit session:player_disconnected event', () => {
@@ -528,27 +538,31 @@ describe('SessionManager - Reconnection System', () => {
       expect(response.result).toBe('lobby_closed');
     });
 
-    it('should return invalid_token for expired token even if grace period remains', () => {
+    it('should accept token at 6min after disconnect (Phase 41-02 widened expiry)', () => {
       vi.useFakeTimers();
 
       const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
       const hostId = lobby.players[0].id;
+      // Add a second player so the lobby is not destroyed when host disconnects
+      sessionManager.joinLobby(lobby.id, 'Player 2');
 
       const disconnectResult = (sessionManager as any).handlePlayerDisconnect(hostId);
       const token = disconnectResult.reconnectToken;
 
-      // Fast forward 6 minutes (token expires at 5 min, grace at 10 min)
+      // Fast forward 6 minutes — pre-Phase-41-02 the token would have expired
+      // at 5min. Post-Phase-41-02 TOKEN_EXPIRY_TIME == DISCONNECT_GRACE_PERIOD
+      // (both 10min) so the token is still valid through the entire grace
+      // window.
       vi.advanceTimersByTime(6 * 60 * 1000);
 
       const response = (sessionManager as any).attemptPlayerReconnect(token);
 
-      // Token validation fails first, even though grace period hasn't expired
-      expect(response.result).toBe('invalid_token');
+      expect(response.result).toBe('success');
 
       vi.useRealTimers();
     });
 
-    it('should succeed with valid token', () => {
+    it('should succeed with valid token and restore isHost when wasHost was true (Phase 41-02)', () => {
       const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
       const hostId = lobby.players[0].id;
 
@@ -561,7 +575,131 @@ describe('SessionManager - Reconnection System', () => {
       expect(response.lobbySync).toBeDefined();
       expect(response.lobbySync.lobby).toBeDefined();
       expect(response.lobbySync.yourPlayer).toBeDefined();
+      expect(response.lobbySync.yourPlayer.isHost).toBe(true);
+      expect(response.lobbySync.lobby.hostId).toBe(hostId);
       expect(response.lobbySync.reconnectToken).toBeDefined();
+    });
+
+    // Phase 41-02 — deferred host transfer + restoration
+
+    it('Phase 41-02: host preserved across grace-period reconnect', () => {
+      const lobby = sessionManager.createLobby('Host A', 'Test Lobby');
+      const hostId = lobby.players[0].id;
+      const { player: playerB } = sessionManager.joinLobby(lobby.id, 'Player B');
+
+      const disconnectResult = (sessionManager as any).handlePlayerDisconnect(hostId);
+      const token = disconnectResult.reconnectToken;
+
+      // Immediately after disconnect: host status NOT transferred.
+      const stillLobby = sessionManager.getLobby(lobby.id)!;
+      expect(stillLobby.hostId).toBe(hostId);
+      expect(stillLobby.players.find(p => p.id === playerB.id)?.isHost).toBe(false);
+
+      // Reconnect within grace window
+      const response = (sessionManager as any).attemptPlayerReconnect(token);
+
+      expect(response.result).toBe('success');
+      expect(response.lobbySync.yourPlayer.isHost).toBe(true);
+      expect(response.lobbySync.lobby.hostId).toBe(hostId);
+      // PlayerB is still NOT host
+      const refreshed = sessionManager.getLobby(lobby.id)!;
+      expect(refreshed.players.find(p => p.id === playerB.id)?.isHost).toBe(false);
+    });
+
+    it('Phase 41-02: host transfer occurs only on grace expiry', () => {
+      vi.useFakeTimers();
+
+      const lobby = sessionManager.createLobby('Host A', 'Test Lobby');
+      const hostId = lobby.players[0].id;
+      const { player: playerB } = sessionManager.joinLobby(lobby.id, 'Player B');
+
+      const disconnectResult = (sessionManager as any).handlePlayerDisconnect(hostId);
+      const token = disconnectResult.reconnectToken;
+
+      // No transfer immediately
+      expect(sessionManager.getLobby(lobby.id)?.hostId).toBe(hostId);
+
+      // Advance past grace period, run sweeper
+      vi.advanceTimersByTime(11 * 60 * 1000);
+      const transfers = (sessionManager as any).processDisconnectedPlayers();
+
+      expect(transfers).toHaveLength(1);
+      expect(transfers[0].newHostId).toBe(playerB.id);
+      expect(transfers[0].newHostName).toBe('Player B');
+      expect(transfers[0].oldHostId).toBe(hostId);
+
+      const finalLobby = sessionManager.getLobby(lobby.id)!;
+      expect(finalLobby.hostId).toBe(playerB.id);
+      expect(finalLobby.players.find(p => p.id === playerB.id)?.isHost).toBe(true);
+      // Original host evicted
+      expect(finalLobby.players.find(p => p.id === hostId)).toBeUndefined();
+
+      // Subsequent reconnect with original host's token: token validation
+      // path will reject (token deleted by sweeper) — assert grace_expired or
+      // invalid_token (both indicate the player cannot reclaim).
+      const response = (sessionManager as any).attemptPlayerReconnect(token);
+      expect(['invalid_token', 'grace_expired']).toContain(response.result);
+
+      vi.useRealTimers();
+    });
+
+    it('Phase 41-02: token expiry equals grace period', () => {
+      // Constant equality (private fields — read via any cast)
+      const sm = sessionManager as any;
+      expect(sm.TOKEN_EXPIRY_TIME).toBe(sm.DISCONNECT_GRACE_PERIOD);
+      expect(sm.TOKEN_EXPIRY_TIME).toBe(10 * 60 * 1000);
+
+      vi.useFakeTimers();
+
+      const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
+      const playerId = lobby.players[0].id;
+
+      const token = (sessionManager as any).generateReconnectToken(
+        playerId,
+        lobby.id,
+        'Host Player'
+      );
+
+      // At 9min: still valid (was previously invalid at >5min)
+      vi.advanceTimersByTime(9 * 60 * 1000);
+      expect((sessionManager as any).validateReconnectToken(token)).not.toBeNull();
+
+      // At 11min: invalid (expired)
+      vi.advanceTimersByTime(2 * 60 * 1000);
+      expect((sessionManager as any).validateReconnectToken(token)).toBeNull();
+
+      vi.useRealTimers();
+    });
+
+    it('Phase 41-02: interim host roll-back on reconnect (defense in depth)', () => {
+      const lobby = sessionManager.createLobby('Host A', 'Test Lobby');
+      const hostId = lobby.players[0].id;
+      const { player: playerB } = sessionManager.joinLobby(lobby.id, 'Player B');
+      sessionManager.joinLobby(lobby.id, 'Player C');
+
+      const disconnectResult = (sessionManager as any).handlePlayerDisconnect(hostId);
+      const token = disconnectResult.reconnectToken;
+
+      // Simulate an interim transfer by some other code path during the
+      // grace window (e.g. a manual transfer or a legacy handler).
+      const lobbyRef = sessionManager.getLobby(lobby.id)!;
+      lobbyRef.hostId = playerB.id;
+      const playerBRef = lobbyRef.players.find(p => p.id === playerB.id)!;
+      playerBRef.isHost = true;
+      const hostARef = lobbyRef.players.find(p => p.id === hostId)!;
+      hostARef.isHost = false;
+
+      // Reconnect: A wins, B is demoted
+      const response = (sessionManager as any).attemptPlayerReconnect(token);
+
+      expect(response.result).toBe('success');
+      expect(response.lobbySync.yourPlayer.isHost).toBe(true);
+      expect(response.lobbySync.lobby.hostId).toBe(hostId);
+
+      const refreshed = sessionManager.getLobby(lobby.id)!;
+      expect(refreshed.hostId).toBe(hostId);
+      expect(refreshed.players.find(p => p.id === hostId)?.isHost).toBe(true);
+      expect(refreshed.players.find(p => p.id === playerB.id)?.isHost).toBe(false);
     });
 
     it('should restore player state on reconnection', () => {
