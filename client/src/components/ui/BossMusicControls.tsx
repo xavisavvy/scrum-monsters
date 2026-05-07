@@ -71,7 +71,7 @@ export function BossMusicControls() {
           </RetroButton>
 
           {showSettings && (
-            <div className="absolute top-full right-0 mt-2 z-50 max-w-md">
+            <div className="absolute top-full right-0 mt-2 z-[60] max-w-md">
               <RetroCard title="Custom Boss Music">
                 <div className="space-y-3 min-w-80">
                   {isYoutubeAudioActive && (

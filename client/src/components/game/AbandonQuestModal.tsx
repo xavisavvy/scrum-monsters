@@ -24,7 +24,7 @@ export function AbandonQuestModal({ isOpen, onClose, onConfirm }: AbandonQuestMo
 
   return (
     <div 
-      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-[60]"
       onKeyDown={handleKeyDown}
       tabIndex={-1}
     >
