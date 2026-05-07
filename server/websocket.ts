@@ -221,6 +221,37 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     }
   }, 100);
 
+  // Phase 41-02: Disconnected-player sweeper for the SessionManager domain.
+  // When a player's grace period expires, processDisconnectedPlayers performs
+  // any deferred host transfer (host status is no longer transferred
+  // immediately on disconnect — see SessionManager.handlePlayerDisconnect).
+  // We emit `host_transferred` here so other clients update their UI.
+  const sessionDisconnectSweeperInterval = setInterval(() => {
+    try {
+      const hostTransfers = sessionManager.processDisconnectedPlayers();
+      for (const transfer of hostTransfers) {
+        io.to(transfer.lobbyId).emit('host_transferred', {
+          oldHostId: transfer.oldHostId,
+          newHostId: transfer.newHostId,
+          newHostName: transfer.newHostName,
+          reason: 'Host disconnected (grace period expired)',
+        });
+        const updatedLobby = sessionManager.getLobby(transfer.lobbyId);
+        if (updatedLobby) {
+          io.to(transfer.lobbyId).emit('lobby_updated', { lobby: updatedLobby });
+        }
+        socketLogger.info({
+          oldHostId: transfer.oldHostId,
+          newHostId: transfer.newHostId,
+          newHostName: transfer.newHostName,
+          lobbyId: transfer.lobbyId,
+        }, 'Deferred host transfer broadcast (Phase 41-02)');
+      }
+    } catch (err) {
+      socketLogger.error({ err }, 'sessionDisconnectSweeper failed');
+    }
+  }, 30000);
+
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
     totalConnections++;
     activeConnections++;
@@ -2094,7 +2125,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             graceMinutes
           }, 'Player can reconnect during grace period');
 
-          // If host was transferred, notify all players and update lobby
+          // Phase 41-02: host transfer is now deferred until grace expiry
+          // (see SessionManager.processDisconnectedPlayers + the
+          // sessionDisconnectSweeper interval above). hostTransfer is always
+          // undefined on the disconnect path post-Phase-41-02; this branch is
+          // retained as a no-op safety net for any future code path that
+          // re-introduces immediate transfer.
           if (hostTransfer) {
             io.to(lobbyId).emit('host_transferred', {
               oldHostId: hostTransfer.oldHostId,
@@ -2136,6 +2172,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     cleanup: () => {
       clearInterval(positionBatchInterval);
       clearInterval(revivalWatchdogInterval);
+      clearInterval(sessionDisconnectSweeperInterval);
       eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);
       pendingPositionUpdates.clear();
     }

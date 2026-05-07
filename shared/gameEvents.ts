@@ -176,6 +176,11 @@ export interface DisconnectedPlayer {
   graceExpiresAt: number;
   lastKnownPosition?: Position;
   lastKnownCombatState?: PlayerCombatState;
+  // Phase 41-02: marks that this player was the host at disconnect time. Host
+  // transfer is deferred until grace expiry; if the player reconnects within
+  // the grace window, host status is restored. Server-internal field — not
+  // emitted on-wire.
+  wasHost?: boolean;
 }
 
 export interface LobbySnapshot {
