@@ -1,10 +1,29 @@
 import { HelpCircle } from 'lucide-react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
-import { useTutorial } from '@/lib/stores/useTutorial';
+import { TUTORIAL_STEPS, useTutorial } from '@/lib/stores/useTutorial';
+import { useGameState } from '@/lib/stores/useGameState';
 import { toast } from 'sonner';
 
 export function HelpMenu() {
-  const { startTutorial, resetAllTutorials } = useTutorial();
+  const startTutorial = useTutorial((s) => s.startTutorial);
+  const resetTutorial = useTutorial((s) => s.resetTutorial);
+  const resetAllTutorials = useTutorial((s) => s.resetAllTutorials);
+  const currentPhase = useGameState((s) => s.currentLobby?.gamePhase);
+
+  const handleReplay = () => {
+    if (!currentPhase) {
+      toast('No tutorial available for this phase', { id: 'tutorial-restart' });
+      return;
+    }
+    const id = `walkthrough:${currentPhase}`;
+    if (!TUTORIAL_STEPS[id]) {
+      toast('No tutorial available for this phase', { id: 'tutorial-restart' });
+      return;
+    }
+    resetTutorial(id);
+    startTutorial(id);
+    toast('Tutorial started!', { id: 'tutorial-restart' });
+  };
 
   return (
     <Popover>
@@ -26,10 +45,7 @@ export function HelpMenu() {
         <div className="flex flex-col gap-2">
           <h3 className="font-bold text-amber-400 text-sm">Help</h3>
           <button
-            onClick={() => {
-              startTutorial('battle-basics');
-              toast('Tutorial started!', { id: 'tutorial-restart' });
-            }}
+            onClick={handleReplay}
             className="block w-full text-left px-2 py-1.5 rounded hover:bg-gray-800 text-gray-200 text-sm whitespace-nowrap"
           >
             Replay Tutorial

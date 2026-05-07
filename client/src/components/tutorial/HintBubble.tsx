@@ -1,4 +1,5 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { type NarratorId } from '@/lib/stores/useTutorial';
 
 interface HintBubbleProps {
   targetRect: {
@@ -14,6 +15,8 @@ interface HintBubbleProps {
   onNext?: () => void;
   onDismiss?: () => void;
   stepLabel?: string;
+  /** Optional narrator id; visual rendering ships in plan 40-02. */
+  narrator?: NarratorId;
 }
 
 function getPositionStyles(
@@ -58,6 +61,7 @@ export function HintBubble({
   onNext,
   onDismiss,
   stepLabel,
+  narrator: _narrator, // consumed in plan 40-02 (typewriter + name header rendering)
 }: HintBubbleProps) {
   const prefersReducedMotion = useReducedMotion();
   const duration = prefersReducedMotion ? 0 : 0.2;
