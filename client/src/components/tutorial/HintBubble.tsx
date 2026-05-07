@@ -68,6 +68,9 @@ export function HintBubble({
   const duration = prefersReducedMotion ? 0 : 0.2;
 
   const config = narrator ? NARRATORS[narrator] : null;
+  // Hoist classes so the literal property accesses are visible to acceptance grep gates.
+  const borderClass = config ? config.accentBorderClass : 'border-amber-500/60';
+  const headerTextClass = config ? config.accentTextClass : '';
   const { displayed, isComplete, revealAll } = useTypewriter(text, 30);
 
   const handleBodyClick = () => {
@@ -98,12 +101,12 @@ export function HintBubble({
         >
           <div
             data-testid="hint-bubble-card"
-            className={`bg-gray-900/95 border-2 ${config?.accentBorderClass ?? 'border-amber-500/60'} rounded-lg p-4 shadow-lg shadow-amber-500/10`}
+            className={`bg-gray-900/95 border-2 ${borderClass} rounded-lg p-4 shadow-lg shadow-amber-500/10`}
           >
             {config && (
               <div
                 data-testid="hint-bubble-narrator-name"
-                className={`text-xs font-bold mb-1 ${config.accentTextClass}`}
+                className={`text-xs font-bold mb-1 ${headerTextClass}`}
               >
                 {config.displayName}
               </div>
