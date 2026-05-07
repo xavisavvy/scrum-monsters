@@ -26,6 +26,7 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { usePhaseVictoryImage } from '@/lib/victoryImages';
 import { useViewport } from '@/lib/hooks/useViewport';
 import { FloatingXPManager } from '@/components/game/FloatingXPManager';
+import { FloatingDamageManager } from '@/components/game/FloatingDamageManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
 import { useProgression } from '@/lib/stores/useProgression';
 import { RotateDeviceOverlay } from './RotateDeviceOverlay';
@@ -353,6 +354,9 @@ export function BattleScreen() {
 
             {/* XP System UI - Floating numbers */}
             <FloatingXPManager />
+
+            {/* Damage feedback - Floating red damage numbers (Phase 42-01 / FIX-04) */}
+            <FloatingDamageManager />
 
             {/* XP Bar is rendered inside PlayerHUD */}
 

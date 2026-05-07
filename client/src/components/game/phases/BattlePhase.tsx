@@ -6,6 +6,7 @@ import { CountdownOverlay } from '@/components/game/CountdownOverlay';
 import { MinionDisplay } from '@/components/game/MinionDisplay';
 import { XPBar } from '@/components/game/XPBar';
 import { FloatingXPManager } from '@/components/game/FloatingXPManager';
+import { FloatingDamageManager } from '@/components/game/FloatingDamageManager';
 import { LevelUpCelebration } from '@/components/game/LevelUpCelebration';
 import { TierUpToast } from '@/components/game/TierUpToast';
 import { BossTelegraph } from '@/components/game/BossTelegraph';
@@ -86,6 +87,9 @@ export function BattlePhase({
 
       {/* XP System UI - Floating numbers in 3D scene */}
       <FloatingXPManager />
+
+      {/* Damage feedback - Floating red damage numbers (Phase 42-01 / FIX-04) */}
+      <FloatingDamageManager />
 
       {/* XP Bar - Bottom of screen */}
       <div className="fixed bottom-4 left-1/2 transform -translate-x-1/2 z-40">
