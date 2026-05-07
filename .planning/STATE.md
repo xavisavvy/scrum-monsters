@@ -1,3 +1,19 @@
+---
+gsd_state_version: 1.0
+milestone: v5.0
+milestone_name: UX & Onboarding
+status: executing
+stopped_at: Completed 40-01-PLAN.md (tutorial content + auto-start)
+last_updated: "2026-05-07T13:34:33Z"
+last_activity: 2026-05-07 -- Completed 40-01 (tutorial walkthrough content, contextual hints, auto-start/auto-skip)
+progress:
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
+---
+
 # Project State
 
 ## Project Reference
@@ -5,20 +21,21 @@
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 41 complete — reconnection state bugfix shipped (FIX-03 closed). v5.0 reconnection regression closed; remaining tutorial phases (39, 40) next.
+**Current focus:** Phase 40 — tutorial-content-narrator
 
 ## Current Position
 
-Phase: 41 of 41 (Reconnection State Bugfix — complete)
-Plan: 2 of 2 in current phase
-Status: Phase 41 complete — ready to resume v5.0 tutorial work (Phase 39/40)
-Last activity: 2026-05-06 — Completed 41-02 (server host preservation + token expiry alignment + create_lobby join race patches)
+Phase: 40 (tutorial-content-narrator) — EXECUTING
+Plan: 2 of 2 (40-01 complete)
+Status: Executing Phase 40 — 40-01 shipped, 40-02 pending
+Last activity: 2026-05-07 -- Completed 40-01 (tutorial walkthrough content, contextual hints, auto-start/auto-skip)
 
-Progress: [██████████] 100%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
 **Velocity (all shipped milestones):**
+
 - Total plans completed: 138 (1 deferred)
 - Total milestones shipped: 8
 
@@ -33,7 +50,7 @@ Progress: [██████████] 100%
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
-| v5.0 UX & Onboarding | 37-41 | 7/11 | In progress | - |
+| v5.0 UX & Onboarding | 37-41 | 10/11 | In progress | - |
 
 ## Accumulated Context
 
@@ -61,6 +78,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [41-02] TOKEN_EXPIRY_TIME widened from 5min to 10min to match DISCONNECT_GRACE_PERIOD (HMAC binding makes the wider replay window acceptable)
 - [41-02] GamePage hydrates from useWebSocket.lastLobbySnapshot when route lobbyId matches, short-circuiting the create_lobby → join_lobby duplicate-self race
 - [41-02] SessionManager.joinLobby dedupes connected same-name players (returns existing record) as defense in depth
+- [40-01] First-combo hint anchored to persistent boss-health (not transient combo-notification) to eliminate typewriter-vs-dismissal timing race
+- [40-01] Walkthrough auto-skip-on-missing-target advances mid-walkthrough or completes on last step, generically resolving non-host lobby step 3 and any future missing-target case
 
 ### Pending Todos
 
@@ -76,11 +95,11 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-06
-Stopped at: Completed 41-02-PLAN.md (Phase 41 complete)
+Last session: 2026-05-07
+Stopped at: Completed 40-01-PLAN.md (tutorial content + auto-start)
 Resume file: None
-Next action: Resume v5.0 tutorial work — execute 39-02-PLAN.md or replan 40
+Next action: Execute 40-02-PLAN.md (JRPG narrator visuals + typewriter)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-06 — Completed 41-02 (server host preservation + token expiry alignment + create_lobby join race fix)*
+*Last updated: 2026-05-07 — Completed 40-01 (tutorial walkthrough content, 4 hints, auto-start, auto-skip-on-missing-target)*

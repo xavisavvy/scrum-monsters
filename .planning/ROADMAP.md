@@ -139,7 +139,7 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 40-01: Tutorial walkthrough content and contextual hints
+- [x] 40-01: Tutorial walkthrough content and contextual hints (completed 2026-05-07)
 - [ ] 40-02: JRPG narrator dialogue boxes and typewriter effect
 
 ### Phase 41: Reconnection State Bugfix
@@ -181,11 +181,11 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 | 37. State Polish & Bug Fixes | v5.0 | 2/2 | Complete | 2026-03-11 |
 | 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
-| 40. Tutorial Content & JRPG Narrator | v5.0 | 0/2 | Not started | - |
+| 40. Tutorial Content & JRPG Narrator | v5.0 | 1/2 | In progress | - |
 | 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
 
-**Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 3/5 phases complete, 7/11 plans done**
+**Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 3/5 phases complete, 10/11 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-05-06 — Phase 41 complete (reconnection state bugfix shipped, FIX-03 closed)*
+*Last updated: 2026-05-07 — Plan 40-01 shipped (tutorial walkthrough content, 4 hints, auto-start/auto-skip)*
