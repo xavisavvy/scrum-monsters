@@ -7,6 +7,7 @@ import { AVATAR_CLASSES } from '@/lib/gameTypes';
 import { getAvatarImage } from '@/lib/avatarImages';
 import { AbandonQuestModal } from './AbandonQuestModal';
 import { XPBar } from './XPBar';
+import { HealthBar } from '@/components/ui/HealthBar';
 import { HelpMenu } from '@/components/tutorial/HelpMenu';
 
 export function PlayerHUD() {
@@ -31,6 +32,13 @@ export function PlayerHUD() {
   };
 
   if (!currentLobby || !currentPlayer) return null;
+
+  // Phase 42-01 (FIX-04): expose player HP bar in HUD during battle.
+  const combatState = currentPlayer.id
+    ? currentLobby.playerCombatStates?.[currentPlayer.id]
+    : null;
+  const hp = combatState?.hp ?? 100;
+  const maxHp = combatState?.maxHp ?? 100;
 
   const isHost = currentPlayer.isHost;
   const showProceedButton = isHost && currentLobby.gamePhase === 'next_level';
@@ -78,6 +86,11 @@ export function PlayerHUD() {
             {currentLobby.gamePhase !== 'lobby' && currentLobby.gamePhase !== 'avatar_selection' && (
               <div className="mt-1">
                 <XPBar />
+              </div>
+            )}
+            {currentLobby.gamePhase === 'battle' && combatState && (
+              <div className="mt-1 w-48">
+                <HealthBar value={hp} max={maxHp} size="sm" showValue label="Player HP" />
               </div>
             )}
           </div>

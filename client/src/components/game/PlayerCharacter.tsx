@@ -85,6 +85,22 @@ export const PlayerCharacter = memo(function PlayerCharacter({
     };
   }, []);
 
+  // Phase 42-01 (FIX-04): also flash on HP decrement (canonical damage signal).
+  // The attackAnimations hook below stays — boss melee/AoE damage doesn't enqueue
+  // attackAnimations, so previously the player took damage with no perceptual signal.
+  const previousHpRef = useRef<number>(currentHp);
+  useEffect(() => {
+    if (currentHp < previousHpRef.current && playerId) {
+      setIsDamaged(true);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      timeoutRef.current = setTimeout(() => {
+        setIsDamaged(false);
+        timeoutRef.current = null;
+      }, 400);
+    }
+    previousHpRef.current = currentHp;
+  }, [currentHp, playerId]);
+
   // Watch for NEW attack animations targeting this player to trigger damage flash
   useEffect(() => {
     if (attackAnimations.length > 0 && playerId) {
@@ -154,6 +170,7 @@ export const PlayerCharacter = memo(function PlayerCharacter({
   return (
     <div
       className="absolute pointer-events-auto cursor-crosshair"
+      data-damaged={isDamaged ? 'true' : 'false'}
       style={{
         left: Math.max(100, Math.min(clampedPosition.x, containerWidth - 200)),
         top: Math.max(100, Math.min(containerHeight - clampedPosition.y - characterSize - jumpHeight, containerHeight - 200)),
