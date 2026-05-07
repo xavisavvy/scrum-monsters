@@ -66,7 +66,7 @@ export function AvatarSelection() {
                 </p>
               </div>
               
-              <div className="avatar-selection-grid">
+              <div className="avatar-selection-grid" data-hint-target="avatar-grid">
                 {Object.entries(AVATAR_CLASSES).map(([key, info]) => {
                   const avatarClass = key as AvatarClass;
                   const isSelected = selectedAvatar === avatarClass;
@@ -94,7 +94,7 @@ export function AvatarSelection() {
                 })}
               </div>
               
-              <div className="text-center">
+              <div className="text-center" data-hint-target="avatar-confirm">
                 <RetroButton
                   onClick={handleConfirmAvatar}
                   className="px-8"

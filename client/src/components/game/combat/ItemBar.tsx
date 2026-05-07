@@ -17,7 +17,7 @@ export function ItemBar() {
   const items: ItemType[] = ['heal_potion', 'damage_boost', 'shield'];
 
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-center" data-hint-target="item-bar">
       {items.map(itemType => {
         const count = inventory.get(itemType) ?? 0;
         const info = getItemDisplayInfo(itemType);
