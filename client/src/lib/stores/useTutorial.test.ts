@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useTutorial } from './useTutorial';
+import { useTutorial, TUTORIAL_STEPS, NARRATORS } from './useTutorial';
 
 describe('useTutorial store', () => {
   beforeEach(() => {
@@ -118,5 +118,29 @@ describe('useTutorial store', () => {
     expect(persistedState.activeStep).toBeUndefined();
     expect(persistedState.isSpotlightVisible).toBeUndefined();
     expect(persistedState.isHydrated).toBeUndefined();
+  });
+});
+
+describe('TUTORIAL_STEPS integrity', () => {
+  it('has correct step counts for each walkthrough', () => {
+    expect(TUTORIAL_STEPS['walkthrough:lobby']).toHaveLength(3);
+    expect(TUTORIAL_STEPS['walkthrough:avatar_selection']).toHaveLength(2);
+    expect(TUTORIAL_STEPS['walkthrough:battle']).toHaveLength(5);
+  });
+
+  it('every step references a valid narrator', () => {
+    for (const [, steps] of Object.entries(TUTORIAL_STEPS)) {
+      for (const step of steps) {
+        expect(NARRATORS[step.narrator]).toBeDefined();
+      }
+    }
+  });
+
+  it('first-combo hint targets boss-health (not combo-notification)', () => {
+    expect(TUTORIAL_STEPS['hint:first-combo'][0].targetId).toBe('boss-health');
+  });
+
+  it('hint:first-vote-reveal uses sage narrator', () => {
+    expect(TUTORIAL_STEPS['hint:first-vote-reveal'][0].narrator).toBe('sage');
   });
 });
