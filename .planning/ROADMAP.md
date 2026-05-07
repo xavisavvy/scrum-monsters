@@ -178,9 +178,10 @@ Plans:
 **Plans**: TBD
 
 Plans:
-- [ ] 42-01: Boss attack damage application fix (single-target + AoE → player HP)
-- [ ] 42-02: Auto-advance assess + reconcile (restore Lobby UI setting OR remove dead paths; retire deprecated `lobby_updated`)
-- [ ] 42-03: XP gain pacing tuning (curve + per-action awards)
+- [ ] 42-01: Boss damage client feedback (HP bar + damage popups wired to `combat:player_damaged` — damage applies server-side already; the bug is missing feedback)
+- [ ] 42-02a: Auto-advance Lobby UI toggle (host-only, default OFF, persisted with lobby settings; gates consensus auto-advance only — 3-min voting timeout fallback preserved)
+- [ ] 42-02b: Retire deprecated `lobby_updated` event (migrate 26 server emit sites to fine-grained events; remove client handler at `GamePage.tsx:188`)
+- [ ] 42-03: XP gain pacing tuning (drop `XP_RATES.boss_damage` 2→1; raise curve exponent 1.5→1.8; before/after table in SUMMARY)
 
 ### Phase 43: Auth & User Account Validation
 **Goal**: A user clicking "Sign In" on the home page can actually sign in, the resulting session is recognized end-to-end, and account-tied features (stats, profile, persistent identity) work — current behavior loops back to the sign-in button.
