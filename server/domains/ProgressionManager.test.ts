@@ -16,7 +16,8 @@ describe('XPCurve', () => {
   let curve: XPCurve;
 
   beforeEach(() => {
-    curve = new XPCurve({ baseXP: 100, exponent: 1.5 });
+    // Phase 42 BAL-01: exponent tuned 1.5 → 1.8 (steepens late-level requirements).
+    curve = new XPCurve({ baseXP: 100, exponent: 1.8 });
   });
 
   describe('calculateLevel', () => {
@@ -32,13 +33,14 @@ describe('XPCurve', () => {
       expect(curve.calculateLevel(99)).toBe(1);
     });
 
-    it('returns level 3 at 382 XP', () => {
-      expect(curve.calculateLevel(382)).toBe(3);
+    it('returns level 3 at 500 XP', () => {
+      // Cumulative-to-L3 with exp=1.8 is 100 + 348 = 448; 500 lands in level 3.
+      expect(curve.calculateLevel(500)).toBe(3);
     });
 
     it('handles high levels without overflow', () => {
       const level = curve.calculateLevel(1000000);
-      expect(level).toBeGreaterThan(40);
+      expect(level).toBeGreaterThan(30);
       expect(level).toBeLessThan(100); // Sanity check
     });
   });
@@ -49,14 +51,13 @@ describe('XPCurve', () => {
     });
 
     it('calculates correct threshold for level 3', () => {
-      // Level 3 threshold is 100 * 2^1.5 = 282.84..., floored to 282
-      expect(curve.getLevelThreshold(3)).toBe(282);
+      // Level 3 threshold is 100 * 2^1.8 = 348.22..., floored to 348
+      expect(curve.getLevelThreshold(3)).toBe(348);
     });
 
     it('calculates correct threshold for level 10', () => {
-      // Level 10 threshold is 100 * 9^1.5 = 2700
-      expect(curve.getLevelThreshold(10)).toBeGreaterThan(2500);
-      expect(curve.getLevelThreshold(10)).toBeLessThan(3000);
+      // Level 10 threshold is floor(100 * 9^1.8) = 5219
+      expect(curve.getLevelThreshold(10)).toBe(5219);
     });
 
     it('returns 0 for level 1', () => {
@@ -74,8 +75,8 @@ describe('XPCurve', () => {
     });
 
     it('returns cumulative XP for level 3', () => {
-      // 100 (level 2) + 282 (level 3) = 382
-      expect(curve.getTotalXPForLevel(3)).toBe(382);
+      // 100 (level 2) + 348 (level 3) = 448
+      expect(curve.getTotalXPForLevel(3)).toBe(448);
     });
   });
 
@@ -97,15 +98,15 @@ describe('XPCurve', () => {
     it('calculates progress at level boundary', () => {
       const progress = curve.getProgressToNextLevel(100);
       expect(progress.current).toBe(0);
-      expect(progress.needed).toBe(282);
+      expect(progress.needed).toBe(348);
       expect(progress.percentage).toBe(0);
     });
 
     it('calculates progress mid-level 2', () => {
       const progress = curve.getProgressToNextLevel(200); // 100 XP into level 2
       expect(progress.current).toBe(100);
-      expect(progress.needed).toBe(282);
-      expect(progress.percentage).toBe(35); // 100/282 = 35.46%, floored to 35
+      expect(progress.needed).toBe(348);
+      expect(progress.percentage).toBe(28); // 100/348 = 28.7%, floored to 28
     });
   });
 });
@@ -174,9 +175,9 @@ describe('ProgressionManager', () => {
     it('calculates damage XP based on damage amount', () => {
       manager.awardXP('lobby1', 'player1', 10, 'boss_damage');
 
-      // 10 damage * 2 XP/damage = 20 XP
-      expect(emittedEvents['progression:xp_awarded'][0].amount).toBe(20);
-      expect(emittedEvents['progression:xp_awarded'][0].newTotal).toBe(20);
+      // Phase 42 BAL-01: boss_damage rate 2 → 1, so 10 damage * 1 XP/damage = 10 XP
+      expect(emittedEvents['progression:xp_awarded'][0].amount).toBe(10);
+      expect(emittedEvents['progression:xp_awarded'][0].newTotal).toBe(10);
     });
 
     it('awards fixed XP for vote action', () => {
@@ -202,15 +203,17 @@ describe('ProgressionManager', () => {
 
     it('accumulates XP correctly over multiple awards', () => {
       manager.awardXP('lobby1', 'player1', 10, 'vote'); // 10 XP
-      manager.awardXP('lobby1', 'player1', 5, 'boss_damage'); // 10 XP (5*2)
+      manager.awardXP('lobby1', 'player1', 5, 'boss_damage'); // 5 XP (5*1, Phase 42 rate)
       manager.awardXP('lobby1', 'player1', 1, 'consensus'); // 50 XP
 
-      expect(emittedEvents['progression:xp_awarded'][2].newTotal).toBe(70);
+      expect(emittedEvents['progression:xp_awarded'][2].newTotal).toBe(65);
     });
 
     it('emits multiple level_up events when skipping levels', () => {
-      // Award massive XP to skip multiple levels
-      manager.awardXP('lobby1', 'player1', 500, 'boss_damage'); // 1000 XP (500*2)
+      // Phase 42 BAL-01: boss_damage rate is 1, so 1500 dmg → 1500 XP.
+      // Cumulative thresholds (exp=1.8): L2=100, L3=448, L4=1170, L5=2382 → 1500 XP lands in L4.
+      // That crosses L1→L2→L3→L4, so >1 level_up still holds.
+      manager.awardXP('lobby1', 'player1', 1500, 'boss_damage');
 
       // Should trigger multiple level-ups
       expect(emittedEvents['progression:level_up']).toBeDefined();
@@ -240,12 +243,14 @@ describe('ProgressionManager', () => {
     });
 
     it('returns correct level after XP awards', () => {
-      manager.awardXP('lobby1', 'player1', 50, 'boss_damage'); // 100 XP total
+      // Phase 42 BAL-01: boss_damage rate=1 → 100 dmg → 100 XP → exactly L2 threshold.
+      manager.awardXP('lobby1', 'player1', 100, 'boss_damage');
       expect(manager.getPlayerLevel('lobby1', 'player1')).toBe(2);
     });
 
     it('returns correct level for initialized player', () => {
-      manager.initializePlayer('lobby1', 'player1', 400);
+      // Cumulative-to-L3 with exp=1.8 is 448; 500 lands in L3.
+      manager.initializePlayer('lobby1', 'player1', 500);
       expect(manager.getPlayerLevel('lobby1', 'player1')).toBe(3);
     });
   });
@@ -283,7 +288,8 @@ describe('ProgressionManager', () => {
       manager.awardXP('lobby2', 'player1', 20, 'boss_damage');
 
       expect(manager.getPlayerXP('lobby1', 'player1')).toBe(10);
-      expect(manager.getPlayerXP('lobby2', 'player1')).toBe(40); // 20*2
+      // Phase 42 BAL-01: boss_damage rate=1 → 20 dmg → 20 XP.
+      expect(manager.getPlayerXP('lobby2', 'player1')).toBe(20);
     });
 
     it('cleanup only affects specific lobby', () => {

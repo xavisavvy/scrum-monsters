@@ -42,16 +42,17 @@ export interface ProgressionManagerDeps {
  */
 const DEFAULT_CURVE_CONFIG: XPCurveConfig = {
   baseXP: 100,
-  exponent: 1.5,
+  exponent: 1.8, // Phase 42 BAL-01: 1.5 → 1.8 (steepens late-level requirements)
 };
 
 /**
  * XP rates per action type
  * Imported from shared types, but we need to use the actual values
+ * NOTE: Must mirror shared/progressionTypes.ts XP_RATES.
  */
 const XP_RATE_VALUES: typeof XP_RATES = {
   vote: 10,
-  boss_damage: 2,
+  boss_damage: 1, // Phase 42 BAL-01: 2 → 1 (mirrors shared)
   consensus: 50,
   revival: 30,
 };
