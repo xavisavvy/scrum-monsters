@@ -203,11 +203,12 @@ The application will be available at `http://localhost:5000`
 - `submit_score` - Submit story point estimate
 
 #### Server → Client
-- `lobby_updated` - Real-time lobby state changes
+- `session:*` - Fine-grained lobby/phase events (e.g. `session:phase_changed`, `session:tickets_updated`)
+- `combat:*` - Boss/player combat events (e.g. `combat:boss_damaged`, `combat:player_damaged`)
+- `estimation:*` - Voting and discussion events (e.g. `estimation:vote_cast`, `estimation:votes_revealed`)
 - `boss_attacked` - Boss damage notifications
 - `boss_ring_attack` - Boss area-of-effect attacks
 - `player_attacked` - Player damage events
-- `game_phase_changed` - State transitions
 - `scores_revealed` - Estimation results
 
 ### REST Endpoints
