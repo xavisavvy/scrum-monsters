@@ -15,7 +15,7 @@ export type XPSource = 'vote' | 'boss_damage' | 'consensus' | 'revival';
  */
 export const XP_RATES = {
   vote: 10,              // Fixed XP per vote
-  boss_damage: 2,        // XP per damage point dealt
+  boss_damage: 1,        // XP per damage point dealt (Phase 42 BAL-01: 2 → 1)
   consensus: 50,         // Bonus for reaching consensus
   revival: 30,           // Base XP for reviving a teammate
 } as const;
