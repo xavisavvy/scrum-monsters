@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
 status: executing
-stopped_at: Completed 42-03-PLAN.md (XP pacing tuning — BAL-01)
-last_updated: "2026-05-07T19:30:00.000Z"
-last_activity: 2026-05-07 -- Completed Phase 42-03 (XP pacing)
+stopped_at: Completed 42-01-PLAN.md (boss damage client feedback — FIX-04)
+last_updated: "2026-05-07T19:18:30.000Z"
+last_activity: 2026-05-07 -- Completed Phase 42-01 (boss damage client feedback, FIX-04)
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 15
-  completed_plans: 11
-  percent: 73
+  completed_plans: 12
+  percent: 80
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 ## Current Position
 
 Phase: 42 (v5-0-pre-ship-fixes-polish) — EXECUTING
-Plan: 2 of 4 (42-03 complete)
+Plan: 3 of 4 (42-01 + 42-03 complete; 42-02a + 42-02b remain)
 Status: Executing Phase 42
-Last activity: 2026-05-07 -- Completed 42-03 (XP pacing tuning, BAL-01)
+Last activity: 2026-05-07 -- Completed 42-01 (boss damage client feedback, FIX-04)
 
 Progress: [██████████] 100%
 
@@ -79,6 +79,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [41-02] GamePage hydrates from useWebSocket.lastLobbySnapshot when route lobbyId matches, short-circuiting the create_lobby → join_lobby duplicate-self race
 - [41-02] SessionManager.joinLobby dedupes connected same-name players (returns existing record) as defense in depth
 - [42-03] Tuned XP pacing — boss_damage 2→1 + curve exponent 1.5→1.8 (BAL-01); 30-min session reaches L4-5, L10 takes ~13 sessions
+- [42-01] FIX-04 was purely a client-feedback gap; server damage path intact. Wired combat:player_damaged into PlayerCharacter HP-decrement flash + new FloatingDamage(Manager) mirroring FloatingXP, added HealthBar to PlayerHUD. Mounted in BattleScreen + phases/BattlePhase (PhaseRenderer.tsx in plan does not exist — Rule 3 deviation)
 - [40-01] First-combo hint anchored to persistent boss-health (not transient combo-notification) to eliminate typewriter-vs-dismissal timing race
 - [40-01] Walkthrough auto-skip-on-missing-target advances mid-walkthrough or completes on last step, generically resolving non-host lobby step 3 and any future missing-target case
 - [40-02] useTypewriter colocated under client/src/components/tutorial/ (not lib/hooks/) per CONTEXT decision
@@ -100,10 +101,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-05-07
-Stopped at: Completed 40-02-PLAN.md (JRPG narrator visuals + typewriter)
+Stopped at: Completed 42-01-PLAN.md (boss damage client feedback — FIX-04)
 Resume file: None
-Next action: Run /gsd-verify-work for Phase 40, then advance to Phase 41 verification or next milestone
+Next action: Execute 42-02a (auto-advance toggle) and 42-02b (lobby_updated retirement), then /gsd-verify-work for Phase 42
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-07 — Completed 40-02 (useTypewriter hook + HintBubble narrator header/typewriter integration)*
+*Last updated: 2026-05-07 — Completed 42-01 (FloatingDamage + PlayerCharacter HP-decrement flash + PlayerHUD HealthBar)*

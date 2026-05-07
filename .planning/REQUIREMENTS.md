@@ -32,7 +32,7 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 - [ ] **FIX-01**: VictoryPhase "New Game" button has a valid server handler
 - [ ] **FIX-02**: DeveloperMenu Character Tools and Boss Tools buttons are functional or removed
 - [x] **FIX-03**: Reconnecting to a lobby restores original player + host status; localStorage keys (`scrum-monsters-last-lobby`, `scrum-monsters-lobby-snapshot`, `scrum-monsters-reconnect-token`) cannot drift; reconnect tokens validate within the full grace window (Phase 41)
-- [ ] **FIX-04**: Boss attacks (single-target and AoE) correctly apply damage to player HP — investigate `BossAttack` → player HP write path; verify AoE targeting iterates affected players and applies damage
+- [x] **FIX-04**: Boss attacks (single-target and AoE) correctly apply damage to player HP — investigate `BossAttack` → player HP write path; verify AoE targeting iterates affected players and applies damage (completed 42-01, 2026-05-07: server damage path verified intact; client perceptual signal added — HP bar in HUD + character flash on HP decrement + floating red damage popup wired to combat:player_damaged)
 - [ ] **FIX-05**: Auto-advance feature is reconciled — either the Lobby UI control is restored and wired end-to-end, or all deprecated/dead code paths (including the deprecated `lobby_updated` event handler at `client/src/pages/GamePage.tsx:189` and any unused client/server hooks) are removed. No more `Received deprecated lobby_updated event` warning at runtime.
 
 ### Balance
@@ -92,7 +92,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-01 | Phase 37 | Pending |
 | FIX-02 | Phase 37 | Pending |
 | FIX-03 | Phase 41 | Complete (2026-05-06) |
-| FIX-04 | Phase 42 | Pending |
+| FIX-04 | Phase 42 (42-01) | Complete |
 | FIX-05 | Phase 42 | Pending |
 | BAL-01 | Phase 42 (42-03) | Complete |
 | AUTH-01 | Phase 43 | Pending |
