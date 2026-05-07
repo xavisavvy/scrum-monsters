@@ -3,6 +3,10 @@ import { TeamStatsManager } from './teamStatsManager.js';
 import { createHash, createHmac, randomBytes } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 import { gameLogger } from './logger.js';
+// Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
+// when the voting timeout safety net auto-advances battle->reveal. Avoids the
+// retired lobby_updated full-state push.
+import { eventBus } from './domains/index.js';
 
 interface RevivalSession {
   reviverId: string;
@@ -166,12 +170,12 @@ class GameStateManager {
       if (disconnectedPlayer) {
         gameLogger.info({ playerId, playerName: disconnectedPlayer.playerName }, 'Player grace period expired - removing permanently');
         this.disconnectedPlayers.delete(playerId);
-        
+
         // Remove from lobby permanently
-        const lobby = this.removePlayer(playerId);
-        if (lobby && this.io) {
-          this.io.to(disconnectedPlayer.lobbyId).emit('lobby_updated', { lobby });
-        }
+        // Phase 42-02b row #25: lobby_updated removed; SessionManager emits the
+        // appropriate session:player_left / player_disconnected event; no
+        // additional broadcast needed here.
+        this.removePlayer(playerId);
       }
     }
 
@@ -1365,7 +1369,13 @@ class GameStateManager {
           totalCount: connectedPlayers.length,
           message: `Voting time expired. Proceeding with ${submittedPlayers.length} votes.`
         });
-        this.io.to(lobbyId).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #26: lobby_updated -> session:phase_changed via eventBus
+        // (ClientEventEmitter wires the wire emit + seq + timestamp).
+        eventBus.emit('session:phase_changed', {
+          lobbyId,
+          oldPhase: 'battle',
+          newPhase: 'reveal',
+        });
       }
 
       gameLogger.info({ voteCount: submittedPlayers.length }, 'Auto-advanced to reveal phase');
