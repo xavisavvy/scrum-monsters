@@ -179,7 +179,7 @@ Plans:
 
 Plans:
 - [x] 42-01-PLAN.md — Boss damage client feedback (HP bar + damage popups wired to combat:player_damaged) (completed 2026-05-07)
-- [ ] 42-02a-PLAN.md — Auto-advance Lobby UI toggle (host-only, default OFF, persisted with lobby settings)
+- [x] 42-02a-PLAN.md — Auto-advance Lobby UI toggle (host-only, default OFF, persisted with lobby settings) (completed 2026-05-07)
 - [ ] 42-02b-PLAN.md — Retire deprecated lobby_updated event (migrate 26 server emit sites to fine-grained events)
 - [x] 42-03-PLAN.md — XP gain pacing tuning (XP_RATES.boss_damage 2->1; curve exponent 1.5->1.8; before/after table in SUMMARY) (completed 2026-05-07)
 
