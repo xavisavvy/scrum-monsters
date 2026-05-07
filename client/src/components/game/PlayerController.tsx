@@ -1134,7 +1134,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       {/* Movement Instructions */}
       {/* Debug Modal - Toggle with Tab */}
       {showDebugModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 pointer-events-auto">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-75 pointer-events-auto">
           <div className="bg-gray-900 border-2 border-green-400 rounded-lg p-6 max-w-md w-full mx-4 text-white">
             {/* Header */}
             <div className="text-center mb-4">

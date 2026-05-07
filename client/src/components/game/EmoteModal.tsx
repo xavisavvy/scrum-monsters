@@ -38,7 +38,7 @@ export function EmoteModal({ isOpen, onClose, onSubmit }: EmoteModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[60]">
       <div className="animate-in fade-in-0 duration-200">
         <RetroCard className="w-96 mx-4">
           <h2 className="text-xl font-bold mb-4 retro-text-glow-light text-center">
