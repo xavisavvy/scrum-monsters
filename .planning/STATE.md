@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 ## Current Position
 
 Phase: 42 (v5-0-pre-ship-fixes-polish) — EXECUTING
-Plan: 3 of 4 (42-01 + 42-03 complete; 42-02a + 42-02b remain)
+Plan: 4 of 4 (42-01 + 42-02a + 42-03 complete; 42-02b remains)
 Status: Executing Phase 42
-Last activity: 2026-05-07 -- Completed 42-01 (boss damage client feedback, FIX-04)
+Last activity: 2026-05-07 -- Completed 42-02a (auto-advance host toggle, FIX-05 toggle half)
 
 Progress: [██████████] 100%
 
@@ -80,6 +80,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [41-02] SessionManager.joinLobby dedupes connected same-name players (returns existing record) as defense in depth
 - [42-03] Tuned XP pacing — boss_damage 2→1 + curve exponent 1.5→1.8 (BAL-01); 30-min session reaches L4-5, L10 takes ~13 sessions
 - [42-01] FIX-04 was purely a client-feedback gap; server damage path intact. Wired combat:player_damaged into PlayerCharacter HP-decrement flash + new FloatingDamage(Manager) mirroring FloatingXP, added HealthBar to PlayerHUD. Mounted in BattleScreen + phases/BattlePhase (PhaseRenderer.tsx in plan does not exist — Rule 3 deviation)
+- [42-02a] autoAdvance default OFF; gate only consensus countdown in checkDiscussionConsensus; 3-min handleVotingTimeout safety net stays unchanged. session:settings_updated payload designed (timer/jira/estimation optional fields) but not emitted in 42-02a — rides existing update_estimation_settings → lobby_updated for now; 42-02b absorbs the emit migration.
+- [42-02a] Parallel-executor coordination quirk: Task 0 changes (schema/type/storage extension) were swept into commit e34754e (mislabeled as 42-01) by a concurrent executor. Tasks 1 and 2 committed cleanly as 9841241 and 5c7ab93. All acceptance criteria pass against current HEAD.
 - [40-01] First-combo hint anchored to persistent boss-health (not transient combo-notification) to eliminate typewriter-vs-dismissal timing race
 - [40-01] Walkthrough auto-skip-on-missing-target advances mid-walkthrough or completes on last step, generically resolving non-host lobby step 3 and any future missing-target case
 - [40-02] useTypewriter colocated under client/src/components/tutorial/ (not lib/hooks/) per CONTEXT decision
@@ -101,10 +103,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-05-07
-Stopped at: Completed 42-01-PLAN.md (boss damage client feedback — FIX-04)
+Stopped at: Completed 42-02a-PLAN.md (auto-advance host toggle — FIX-05 toggle half)
 Resume file: None
-Next action: Execute 42-02a (auto-advance toggle) and 42-02b (lobby_updated retirement), then /gsd-verify-work for Phase 42
+Next action: Execute 42-02b (lobby_updated retirement, 26 emit sites + 4-5 new events), then /gsd-verify-work for Phase 42
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-07 — Completed 42-01 (FloatingDamage + PlayerCharacter HP-decrement flash + PlayerHUD HealthBar)*
+*Last updated: 2026-05-07 — Completed 42-02a (autoAdvance host toggle + consensus gate + reconnect regression test)*
