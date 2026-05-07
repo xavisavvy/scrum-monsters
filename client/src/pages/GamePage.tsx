@@ -82,6 +82,20 @@ export default function GamePage() {
 
     setIsAttemptingJoin(true);
 
+    // Phase 41-02: If useWebSocket already has a coherent snapshot for THIS
+    // lobby (e.g. host just emitted create_lobby and the lobby_sync handler in
+    // useWebSocket populated lastLobbySnapshot synchronously), hydrate
+    // useGameState from it and short-circuit. Without this, GamePage mounts
+    // with currentLobby=null and races a duplicate join_lobby that mints a
+    // phantom self in the roster — see 41-RESEARCH.md.
+    const snapshot = useWebSocket.getState().lastLobbySnapshot;
+    if (snapshot && snapshot.lobby.id === lobbyId.toUpperCase()) {
+      setLobby(snapshot.lobby);
+      if (snapshot.player) setPlayer(snapshot.player);
+      setIsAttemptingJoin(false);
+      return;
+    }
+
     // Try reconnection with token first (preserves avatar)
     const token = getReconnectToken();
     if (token && reconnectToLobby(lobbyId.toUpperCase())) {
