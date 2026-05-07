@@ -89,6 +89,21 @@ describe('SessionManager - Lobby Lifecycle', () => {
   });
 
   describe('joinLobby', () => {
+    it('joinLobby returns existing player when a connected same-name player is already in the lobby', () => {
+      // Phase 41-02 regression guard: GamePage auto-join was racing
+      // create_lobby and emitting a duplicate join_lobby for the host's own
+      // name, minting a phantom player and overwriting socket.data.playerId.
+      // The dedupe path in joinLobby must return the existing record instead.
+      const lobby = sessionManager.createLobby('A', 'Test Lobby');
+      const originalHostId = lobby.players[0].id;
+
+      const result = sessionManager.joinLobby(lobby.id, 'A');
+
+      expect(result.player.id).toBe(originalHostId);
+      expect(result.lobby.players).toHaveLength(1);
+      expect(result.player.isHost).toBe(true);
+    });
+
     it('should add player to existing lobby', () => {
       const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
 
