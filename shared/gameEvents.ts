@@ -320,7 +320,9 @@ export interface TeamConsensus {
 export interface ServerToClientEvents {
   lobby_created: (data: { lobby: Lobby; inviteLink: string }) => void;
   lobby_joined: (data: { lobby: Lobby; player: Player }) => void;
-  lobby_updated: (data: { lobby: Lobby }) => void;
+  // Phase 42-02b: `lobby_updated` retired. Server emits scoped fine-grained
+  // events (session:*, combat:*, estimation:*) for every state mutation;
+  // tsc --noEmit will catch any forgotten emit. See 42-02b-SUMMARY.md.
   avatar_selected: (data: { playerId: string; avatar: AvatarClass }) => void;
   lobby_player_pos: (data: {
     playerId: string;

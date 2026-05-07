@@ -711,13 +711,12 @@ components:
       payload:
         $ref: '#/components/schemas/LobbyJoinedPayload'
 
-    lobbyUpdated:
-      name: lobby_updated
-      title: Lobby Updated
-      summary: Broadcasts lobby state update
-      contentType: application/json
-      payload:
-        $ref: '#/components/schemas/LobbyUpdatedPayload'
+    # The legacy full-state lobby refresh channel was retired in
+    # Phase 42-02b (2026-05-07). State mutations now flow through
+    # fine-grained session:*, combat:*, and estimation:* channels
+    # documented below. The LobbyUpdatedPayload schema is retained
+    # because boss_defeated / quest_abandoned / game_over still
+    # reference it.
 
     avatarSelected:
       name: avatar_selected

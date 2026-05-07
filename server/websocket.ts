@@ -1,5 +1,7 @@
-// TODO (Phase 5 cleanup): Once all state updates flow through fine-grained events,
-// completely remove the 'lobby_updated' event from ServerToClientEvents
+// Phase 42-02b (2026-05-07): `lobby_updated` is fully retired. All state
+// mutations flow through fine-grained events (session:*, combat:*,
+// estimation:*). The shared `ServerToClientEvents` interface no longer
+// declares it; tsc --noEmit will reject any future emit.
 
 import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';

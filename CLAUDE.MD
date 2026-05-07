@@ -75,7 +75,7 @@ All WebSocket events defined in `shared/gameEvents.ts` under `ClientToServerEven
 3. Emit/listen in client components
 
 ### State Sync
-Server emits `lobby_updated` event whenever game state changes. All state mutations in `gameState.ts` should broadcast to clients.
+Server emits fine-grained domain events (`session:*`, `combat:*`, `estimation:*`) defined in `shared/gameEvents.ts` whenever game state changes. The legacy full-state event was retired in Phase 42; all state mutations in `gameState.ts` should broadcast scoped fine-grained events via `eventBus.emit(...)` (which `ClientEventEmitter` bridges to the wire with seq+timestamp).
 
 ## Testing
 Tests use Vitest with happy-dom. Test files located alongside source with `.test.ts`/`.spec.ts` suffix:
@@ -107,30 +107,17 @@ PostgreSQL optional - defaults to in-memory storage. If using database:
 ## Commits
 Uses Conventional Commits enforced by commitlint/husky. Format: `type(scope): description`
 
-## CI/CD Infrastructure
+## Production Infrastructure
 
-### GitHub Actions Workflows
-- `.github/workflows/ci.yml` - Lint, type check, test, build
-- `.github/workflows/e2e.yml` - Playwright E2E tests
-- `.github/workflows/deploy.yml` - ArgoCD deployment triggers
+For VPS access, SSH commands, and secrets locations, see `~/.claude/infrastructure.md` (local-only, never committed).
 
-### Kubernetes Structure
-```
-k8s/
-  base/           # Shared manifests
-  overlays/
-    dev/          # Development (1 replica, debug logs)
-    staging/      # Staging (2 replicas, staging TLS)
-    prod/         # Production (3+ replicas, prod TLS)
-  infrastructure/
-    sealed-secrets/  # Bitnami Sealed Secrets
-    cert-manager/    # Let's Encrypt TLS
-    monitoring/      # Prometheus + Grafana + Loki
-    argocd/          # GitOps deployment
-  argocd-apps/    # Application CRDs
-```
+### CI/CD Pipeline
+- `.github/workflows/ci.yml` — Lint, type check, test, build
+- `.github/workflows/e2e.yml` — Playwright E2E tests
+- `.github/workflows/docker.yml` — Build + push Docker image to GHCR
+- `.github/workflows/deploy-lightsail.yml` — Staging (auto on push to main), production (manual workflow_dispatch)
 
 ### Observability
 - **Metrics**: `/metrics` endpoint (Prometheus format)
 - **Logging**: Pino JSON logs, set `LOG_LEVEL` env var (trace/debug/info/warn/error)
-- **Dashboards**: Grafana at `kubectl port-forward svc/grafana 3000:80 -n monitoring`
+- **Health**: `/api/health`, `/api/ws-health`
