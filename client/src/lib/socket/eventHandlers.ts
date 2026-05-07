@@ -1,7 +1,7 @@
 import { Socket } from 'socket.io-client';
 import { useEventSync } from '../stores/useEventSync';
 import { useGameState } from '../stores/useGameState';
-import { Lobby, Player, Boss, TeamType, AvatarClass, GamePhase, TimerState } from '@shared/gameEvents';
+import { Lobby, Player, Boss, TeamType, AvatarClass, GamePhase, TimerState, JiraTicket, TimerSettings, JiraSettings, EstimationSettings } from '@shared/gameEvents';
 
 /**
  * Sets up centralized event handlers for all domain events.
@@ -80,13 +80,23 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('session:phase_changed', data, socket);
 
     if (processed) {
-      const { currentLobby, setLobby } = useGameState.getState();
+      const { currentLobby, setLobby, requestBattleRemount } = useGameState.getState();
       if (currentLobby) {
         const updatedLobby = {
           ...currentLobby,
           gamePhase: data.newPhase as GamePhase
         };
         setLobby(updatedLobby);
+
+        // Phase 42-02b Task 2: BattleScreen remount on phase entry to 'battle'
+        // (formerly handled in GamePage.tsx:201-216 lobby_updated handler).
+        if (
+          data.oldPhase !== 'battle' &&
+          data.newPhase === 'battle' &&
+          typeof requestBattleRemount === 'function'
+        ) {
+          requestBattleRemount();
+        }
       }
     }
   });
@@ -140,6 +150,98 @@ export function setupEventHandlers(socket: Socket): void {
         // Also update currentPlayer if this is for the current player
         if (currentPlayer && currentPlayer.id === data.playerId) {
           setPlayer({ ...currentPlayer, avatar: data.avatar as AvatarClass, avatarClass: data.avatar as AvatarClass });
+        }
+      }
+    }
+  });
+
+  // --------------------------------------------------------------------------
+  // Phase 42-02b: New fine-grained session events absorbing the retired
+  // `lobby_updated` full-state push. Each handler routes through the
+  // useEventSync seq gate, then applies a scoped setLobby update.
+  // --------------------------------------------------------------------------
+
+  socket.on('session:tickets_updated', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('session:tickets_updated', data, socket);
+
+    if (processed) {
+      const { currentLobby, setLobby } = useGameState.getState();
+      if (currentLobby) {
+        setLobby({ ...currentLobby, tickets: data.tickets as JiraTicket[] });
+      }
+    }
+  });
+
+  socket.on('session:player_ready_changed', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('session:player_ready_changed', data, socket);
+
+    if (processed) {
+      const { currentLobby, setLobby } = useGameState.getState();
+      if (currentLobby) {
+        setLobby({
+          ...currentLobby,
+          players: currentLobby.players.map(p =>
+            p.id === data.playerId ? { ...p, isReady: !!data.isReady } : p
+          ),
+        });
+      }
+    }
+  });
+
+  socket.on('session:lobby_renamed', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('session:lobby_renamed', data, socket);
+
+    if (processed) {
+      const { currentLobby, setLobby } = useGameState.getState();
+      if (currentLobby) {
+        setLobby({ ...currentLobby, name: data.name });
+      }
+    }
+  });
+
+  socket.on('session:settings_updated', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('session:settings_updated', data, socket);
+
+    if (processed) {
+      const { currentLobby, setLobby } = useGameState.getState();
+      if (currentLobby) {
+        setLobby({
+          ...currentLobby,
+          ...(data.timerSettings && { timerSettings: data.timerSettings as TimerSettings }),
+          ...(data.jiraSettings && { jiraSettings: data.jiraSettings as JiraSettings }),
+          ...(data.estimationSettings && { estimationSettings: data.estimationSettings as EstimationSettings }),
+        });
+      }
+    }
+  });
+
+  socket.on('session:game_reset', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('session:game_reset', data, socket);
+
+    if (processed) {
+      const { setLobby } = useGameState.getState();
+      // Full-state replace — major reset (restart_game / proceed_next_level).
+      setLobby(data.lobby as Lobby);
+    }
+  });
+
+  socket.on('session:ticket_advanced', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('session:ticket_advanced', data, socket);
+
+    if (processed) {
+      const { currentLobby, setLobby, requestBattleRemount } = useGameState.getState();
+      if (currentLobby) {
+        setLobby({ ...currentLobby, currentTicket: data.currentTicket as JiraTicket });
+        // Phase 42-02b Task 2: BattleScreen mid-battle ticket-change remount
+        // (formerly handled in GamePage.tsx:201-216 lobby_updated handler).
+        if (currentLobby.gamePhase === 'battle' && typeof requestBattleRemount === 'function') {
+          requestBattleRemount();
         }
       }
     }
@@ -293,8 +395,26 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { setDiscussionTimer } = useGameState.getState();
       setDiscussionTimer(null);
-      // Phase transition will be handled by session:phase_changed event
-      // or lobby_updated - no additional action needed here
+      // Phase transition is handled by session:phase_changed event.
+    }
+  });
+
+  socket.on('estimation:discussion_vote_updated', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('estimation:discussion_vote_updated', data, socket);
+
+    if (processed) {
+      const { currentLobby, setLobby } = useGameState.getState();
+      if (currentLobby) {
+        // Mirror the existing per-vote update shape used by estimation:vote_cast
+        // and the legacy lobby_updated discussion path.
+        setLobby({
+          ...currentLobby,
+          players: currentLobby.players.map(p =>
+            p.id === data.playerId ? { ...p, currentScore: data.score as number | '?' } : p
+          ),
+        });
+      }
     }
   });
 
@@ -660,6 +780,13 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('session:phase_changed');
   socket.off('session:team_changed');
   socket.off('session:avatar_selected');
+  // Phase 42-02b
+  socket.off('session:tickets_updated');
+  socket.off('session:player_ready_changed');
+  socket.off('session:lobby_renamed');
+  socket.off('session:settings_updated');
+  socket.off('session:game_reset');
+  socket.off('session:ticket_advanced');
 
   // Estimation events
   socket.off('estimation:vote_cast');
@@ -671,6 +798,8 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('estimation:timer_expired');
   socket.off('estimation:discussion_timer_started');
   socket.off('estimation:discussion_ended');
+  // Phase 42-02b
+  socket.off('estimation:discussion_vote_updated');
 
   // Combat events
   socket.off('combat:boss_damaged');

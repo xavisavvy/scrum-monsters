@@ -426,6 +426,13 @@ export interface ServerToClientEvents {
   'session:phase_changed': (data: { oldPhase: GamePhase; newPhase: GamePhase; seq: number; timestamp: number }) => void;
   'session:team_changed': (data: { playerId: string; oldTeam: TeamType; newTeam: TeamType; seq: number; timestamp: number }) => void;
   'session:avatar_selected': (data: { playerId: string; avatar: AvatarClass; seq: number; timestamp: number }) => void;
+  // Phase 42-02b: New fine-grained events to absorb the retiring `lobby_updated` full-state push.
+  'session:tickets_updated': (data: { tickets: JiraTicket[]; seq: number; timestamp: number }) => void;
+  'session:player_ready_changed': (data: { playerId: string; isReady: boolean; seq: number; timestamp: number }) => void;
+  'session:lobby_renamed': (data: { name: string; seq: number; timestamp: number }) => void;
+  'session:settings_updated': (data: { timerSettings?: TimerSettings; jiraSettings?: JiraSettings; estimationSettings?: EstimationSettings; seq: number; timestamp: number }) => void;
+  'session:game_reset': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
+  'session:ticket_advanced': (data: { currentTicket: JiraTicket; seq: number; timestamp: number }) => void;
 
   // Fine-grained estimation events
   'estimation:vote_cast': (data: { playerId: string; team: TeamType; hasVoted: boolean; seq: number; timestamp: number }) => void;
@@ -438,6 +445,8 @@ export interface ServerToClientEvents {
   'estimation:estimate_forced': (data: { team: TeamType; consensusValue: number; seq: number; timestamp: number }) => void;
   'estimation:discussion_timer_started': (data: { durationMs: number; endsAt: number; seq: number; timestamp: number }) => void;
   'estimation:discussion_ended': (data: { reason: string; finalEstimate: number; seq: number; timestamp: number }) => void;
+  // Phase 42-02b: Per-vote update during discussion phase (replaces lobby_updated for site websocket.ts:959).
+  'estimation:discussion_vote_updated': (data: { playerId: string; score: number | string; seq: number; timestamp: number }) => void;
 
   // Fine-grained combat events
   'combat:boss_damaged': (data: { playerId: string; damage: number; newHp: number; seq: number; timestamp: number }) => void;

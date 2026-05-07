@@ -53,6 +53,11 @@ interface GameState {
   bossEnraged: boolean;
   bossEnrageMessage: string | null;
   pendingDamageEvents: PendingDamageEvent[];
+  // Phase 42-02b Task 2: BattleScreen remount control. Ownership migrated out
+  // of GamePage local state into the store so eventHandlers.ts (session:phase_changed
+  // + session:ticket_advanced) can trigger the remount without prop drilling.
+  battleRemountKey: number;
+  isBattleUnmounting: boolean;
 
   // Actions
   setLobby: (lobby: Lobby) => void;
@@ -72,6 +77,10 @@ interface GameState {
   setBossEnraged: (message: string) => void;
   addPendingDamage: (evt: PendingDamageEvent) => void;
   clearPendingDamage: (id: string) => void;
+  // Phase 42-02b Task 2: triggers a one-tick BattleScreen unmount/remount
+  // (matches the previous GamePage behavior: 100ms unmount window so React
+  // disposes the old <BattleScreen> tree before the new key mounts).
+  requestBattleRemount: () => void;
   clearAll: () => void;
 }
 
@@ -92,6 +101,8 @@ export const useGameState = create<GameState>()(
     bossEnraged: false,
     bossEnrageMessage: null,
     pendingDamageEvents: [],
+    battleRemountKey: 0,
+    isBattleUnmounting: false,
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -168,6 +179,16 @@ export const useGameState = create<GameState>()(
     clearPendingDamage: (id) =>
       set((s) => ({ pendingDamageEvents: s.pendingDamageEvents.filter((e) => e.id !== id) })),
 
+    requestBattleRemount: () => {
+      set({ isBattleUnmounting: true });
+      setTimeout(() => {
+        set((s) => ({
+          battleRemountKey: s.battleRemountKey + 1,
+          isBattleUnmounting: false,
+        }));
+      }, 100);
+    },
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
@@ -183,7 +204,9 @@ export const useGameState = create<GameState>()(
       bossPhaseMessage: null,
       bossEnraged: false,
       bossEnrageMessage: null,
-      pendingDamageEvents: []
+      pendingDamageEvents: [],
+      battleRemountKey: 0,
+      isBattleUnmounting: false,
     })
   }))
 );
