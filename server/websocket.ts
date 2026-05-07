@@ -105,6 +105,22 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   const clientEventEmitter = initializeClientEventEmitter(io);
   socketLogger.info('ClientEventEmitter initialized for fine-grained events');
 
+  /**
+   * Phase 42-02b: Helper to emit a fine-grained client event with the
+   * canonical {seq, timestamp} envelope. Mirrors the pattern at line ~505
+   * (avatar_selected) and centralizes sequencer/buffer access for the
+   * 9 lobby_updated migration sites in Task 1b that bypass eventBus.
+   */
+  const emitFineGrained = (lobbyId: string, event: string, data: Record<string, any>): void => {
+    const emitter = getClientEventEmitter();
+    if (!emitter) return;
+    const seq = (emitter as any).sequencer.nextSeq(lobbyId);
+    const timestamp = Date.now();
+    const payload = { ...data, seq, timestamp };
+    (emitter as any).sequencer.bufferEvent(lobbyId, seq, event, payload);
+    io.to(lobbyId).emit(event as any, payload);
+  };
+
   // ==========================================================================
   // EVENT BUS SUBSCRIPTIONS - Phase transition handlers
   // ==========================================================================
@@ -605,8 +621,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       lobby.tickets.push(...tickets);
 
-      // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
-      io.to(lobby.id).emit('lobby_updated', { lobby });
+      // Phase 42-02b row #3: lobby_updated -> session:tickets_updated.
+      emitFineGrained(lobby.id, 'session:tickets_updated', { tickets: lobby.tickets });
       socketLogger.info({ playerId, ticketCount: tickets.length, lobbyId: lobby.id }, 'Host added tickets');
     });
 
@@ -623,8 +639,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       lobby.tickets = lobby.tickets.filter(t => t.id !== ticketId);
 
-      // Keep lobby_updated for ticket management (host-only, not covered by fine-grained events yet)
-      io.to(lobby.id).emit('lobby_updated', { lobby });
+      // Phase 42-02b row #4: lobby_updated -> session:tickets_updated.
+      emitFineGrained(lobby.id, 'session:tickets_updated', { tickets: lobby.tickets });
       socketLogger.info({ playerId, ticketId, lobbyId: lobby.id }, 'Host removed ticket');
     });
 
@@ -689,7 +705,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
 
       lobby.name = trimmedName;
-      io.to(lobby.id).emit('lobby_updated', { lobby });
+      // Phase 42-02b row #6: lobby_updated -> session:lobby_renamed.
+      emitFineGrained(lobby.id, 'session:lobby_renamed', { name: lobby.name });
       socketLogger.info({ playerId, lobbyName: trimmedName }, 'Host renamed lobby');
     });
 
@@ -805,8 +822,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       player.isReady = ready;
 
-      // Broadcast updated lobby state to all players
-      io.to(lobbyId).emit('lobby_updated', { lobby });
+      // Phase 42-02b row #5: lobby_updated -> session:player_ready_changed.
+      emitFineGrained(lobbyId, 'session:player_ready_changed', {
+        playerId: player.id,
+        isReady: !!player.isReady,
+      });
       socketLogger.debug({ playerId, lobbyId, ready }, 'Player toggled ready');
     });
 
@@ -959,8 +979,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateDiscussionVote(playerId, score);
       if (lobby) {
-        // Keep lobby_updated for discussion phase updates (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #9: lobby_updated -> estimation:discussion_vote_updated.
+        emitFineGrained(lobby.id, 'estimation:discussion_vote_updated', {
+          playerId,
+          score,
+        });
         
         // Check for consensus and auto-advance - rely on gameState for consensus logic
         const result = gameState.checkDiscussionConsensus(lobby.id);
@@ -1135,8 +1158,15 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           newPhase: 'battle',
         });
 
-        // Keep lobby_updated: major state reset (new ticket, reset combat/estimation)
-        io.to(lobbyId).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #11: lobby_updated -> session:game_reset.
+        // Major state reset (new ticket + reset combat/estimation) — full
+        // lobby payload is intentional here (mirrors system:full_state shape).
+        emitFineGrained(lobbyId, 'session:game_reset', { lobby });
+        // Phase 42-02b Task 2 hook: explicit ticket-advanced signal so
+        // BattleScreen remounts on the new currentTicket.
+        if (lobby.currentTicket) {
+          emitFineGrained(lobbyId, 'session:ticket_advanced', { currentTicket: lobby.currentTicket });
+        }
         gameLogger.info({ lobbyId, ticketId: nextTicket.id }, 'Proceed to next level');
       } catch (error) {
         socket.emit('game_error', { message: (error as Error).message });
@@ -1493,8 +1523,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateTimerSettings(playerId, timerSettings);
       if (lobby) {
-        // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #19: lobby_updated -> session:settings_updated.
+        emitFineGrained(lobby.id, 'session:settings_updated', { timerSettings: lobby.timerSettings });
       }
     });
 
@@ -1504,8 +1534,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateJiraSettings(playerId, jiraSettings);
       if (lobby) {
-        // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #20: lobby_updated -> session:settings_updated.
+        emitFineGrained(lobby.id, 'session:settings_updated', { jiraSettings: lobby.jiraSettings });
       }
     });
 
@@ -1515,8 +1545,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const lobby = gameState.updateEstimationSettings(playerId, estimationSettings);
       if (lobby) {
-        // Keep lobby_updated for settings changes (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #21: lobby_updated -> session:settings_updated.
+        // (42-02a designed this payload shape; this is its first emit site.)
+        emitFineGrained(lobby.id, 'session:settings_updated', { estimationSettings: lobby.estimationSettings });
         gameLogger.info({ playerId, lobbyId: lobby.id }, 'Estimation settings updated');
       }
     });
