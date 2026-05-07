@@ -1258,9 +1258,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           return;
         }
 
-        // Only allow advancement during discussion phase with consensus
+        // If phase already advanced past discussion (auto-advance race), silently no-op.
+        // The user's intent ("advance past discussion") already happened; toasting an
+        // error confuses hosts. Log it for diagnostics only.
         if (lobby.gamePhase !== 'discussion') {
-          socket.emit('game_error', { message: 'Phase advancement only available during discussion phase' });
+          socketLogger.debug(
+            { playerId, lobbyId, gamePhase: lobby.gamePhase },
+            'advancePhaseNow ignored: phase already advanced past discussion'
+          );
           return;
         }
 
