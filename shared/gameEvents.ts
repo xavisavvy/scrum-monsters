@@ -94,6 +94,7 @@ export interface ConsensusSettings {
 export interface EstimationSettings {
   scaleType: EstimationScaleType;
   customTshirtMapping?: Record<string, number>; // Custom point values for T-shirt sizes
+  autoAdvance?: boolean; // Default false (host-only opt-in); gates consensus countdown auto-advance
 }
 
 export interface TimerState {

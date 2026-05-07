@@ -125,6 +125,7 @@ export const ConsensusSettingsSchema = z.object({
 export const EstimationSettingsSchema = z.object({
   scaleType: EstimationScaleTypeSchema,
   customTshirtMapping: z.record(z.string(), z.number()).optional(),
+  autoAdvance: z.boolean().optional().default(false),
 });
 
 /**

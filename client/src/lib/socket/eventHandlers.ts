@@ -353,7 +353,7 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:player_damaged', data, socket);
 
     if (processed) {
-      const { currentLobby, setLobby } = useGameState.getState();
+      const { currentLobby, setLobby, addPendingDamage } = useGameState.getState();
       if (currentLobby) {
         const updatedLobby = {
           ...currentLobby,
@@ -367,6 +367,18 @@ export function setupEventHandlers(socket: Socket): void {
         };
         setLobby(updatedLobby);
       }
+
+      // Phase 42-01 (FIX-04): push floating damage popup event for client feedback.
+      // Server-side damage path is unchanged; this is a perceptual signal only.
+      addPendingDamage({
+        id: `${data.playerId}-${data.seq ?? Date.now()}`,
+        playerId: data.playerId,
+        amount: data.damage,
+        position: {
+          x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0,
+          y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0,
+        },
+      });
     }
   });
 

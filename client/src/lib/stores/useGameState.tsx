@@ -30,6 +30,13 @@ interface TelegraphState {
   bossType?: string;
 }
 
+export interface PendingDamageEvent {
+  id: string;
+  playerId: string;
+  amount: number;
+  position: { x: number; y: number };
+}
+
 interface GameState {
   currentLobby: Lobby | null;
   currentPlayer: Player | null;
@@ -45,6 +52,7 @@ interface GameState {
   bossPhaseMessage: string | null;
   bossEnraged: boolean;
   bossEnrageMessage: string | null;
+  pendingDamageEvents: PendingDamageEvent[];
 
   // Actions
   setLobby: (lobby: Lobby) => void;
@@ -62,6 +70,8 @@ interface GameState {
   clearTelegraph: () => void;
   setBossPhase: (phase: number, message: string, bossType: string) => void;
   setBossEnraged: (message: string) => void;
+  addPendingDamage: (evt: PendingDamageEvent) => void;
+  clearPendingDamage: (id: string) => void;
   clearAll: () => void;
 }
 
@@ -81,6 +91,7 @@ export const useGameState = create<GameState>()(
     bossPhaseMessage: null,
     bossEnraged: false,
     bossEnrageMessage: null,
+    pendingDamageEvents: [],
 
     setLobby: (lobby) => set({ currentLobby: lobby }),
     
@@ -151,6 +162,12 @@ export const useGameState = create<GameState>()(
       }, 3000);
     },
 
+    addPendingDamage: (evt) =>
+      set((s) => ({ pendingDamageEvents: [...s.pendingDamageEvents, evt] })),
+
+    clearPendingDamage: (id) =>
+      set((s) => ({ pendingDamageEvents: s.pendingDamageEvents.filter((e) => e.id !== id) })),
+
     clearAll: () => set({
       currentLobby: null,
       currentPlayer: null,
@@ -165,7 +182,8 @@ export const useGameState = create<GameState>()(
       bossPhase: 1,
       bossPhaseMessage: null,
       bossEnraged: false,
-      bossEnrageMessage: null
+      bossEnrageMessage: null,
+      pendingDamageEvents: []
     })
   }))
 );

@@ -104,7 +104,8 @@ export class LobbySettingsStorage {
         baseUrl: undefined
       },
       estimationSettings: {
-        scaleType: 'fibonacci'
+        scaleType: 'fibonacci',
+        autoAdvance: false
       }
     };
   }
@@ -139,7 +140,10 @@ export class LobbySettingsStorage {
         customTshirtMapping: settings.estimationSettings?.customTshirtMapping &&
           typeof settings.estimationSettings.customTshirtMapping === 'object'
           ? settings.estimationSettings.customTshirtMapping
-          : undefined
+          : undefined,
+        autoAdvance: typeof settings.estimationSettings?.autoAdvance === 'boolean'
+          ? settings.estimationSettings.autoAdvance
+          : false
       }
     };
   }
