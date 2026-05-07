@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
 status: executing
-stopped_at: Completed 40-02-PLAN.md (JRPG narrator visuals + typewriter)
-last_updated: "2026-05-07T13:55:00Z"
-last_activity: 2026-05-07 -- Completed 40-02 (useTypewriter hook + HintBubble narrator header/typewriter integration)
+stopped_at: Completed 42-03-PLAN.md (XP pacing tuning — BAL-01)
+last_updated: "2026-05-07T19:30:00.000Z"
+last_activity: 2026-05-07 -- Completed Phase 42-03 (XP pacing)
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 11
+  total_phases: 7
+  completed_phases: 5
+  total_plans: 15
   completed_plans: 11
-  percent: 100
+  percent: 73
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 40 — tutorial-content-narrator
+**Current focus:** Phase 42 — v5-0-pre-ship-fixes-polish
 
 ## Current Position
 
-Phase: 40 (tutorial-content-narrator) — READY FOR VERIFICATION
-Plan: 2 of 2 (both complete)
-Status: Phase 40 plans complete (40-01 + 40-02 shipped); ready for /gsd-verify-work
-Last activity: 2026-05-07 -- Completed 40-02 (useTypewriter hook + HintBubble narrator header/typewriter integration)
+Phase: 42 (v5-0-pre-ship-fixes-polish) — EXECUTING
+Plan: 2 of 4 (42-03 complete)
+Status: Executing Phase 42
+Last activity: 2026-05-07 -- Completed 42-03 (XP pacing tuning, BAL-01)
 
 Progress: [██████████] 100%
 
@@ -78,6 +78,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [41-02] TOKEN_EXPIRY_TIME widened from 5min to 10min to match DISCONNECT_GRACE_PERIOD (HMAC binding makes the wider replay window acceptable)
 - [41-02] GamePage hydrates from useWebSocket.lastLobbySnapshot when route lobbyId matches, short-circuiting the create_lobby → join_lobby duplicate-self race
 - [41-02] SessionManager.joinLobby dedupes connected same-name players (returns existing record) as defense in depth
+- [42-03] Tuned XP pacing — boss_damage 2→1 + curve exponent 1.5→1.8 (BAL-01); 30-min session reaches L4-5, L10 takes ~13 sessions
 - [40-01] First-combo hint anchored to persistent boss-health (not transient combo-notification) to eliminate typewriter-vs-dismissal timing race
 - [40-01] Walkthrough auto-skip-on-missing-target advances mid-walkthrough or completes on last step, generically resolving non-host lobby step 3 and any future missing-target case
 - [40-02] useTypewriter colocated under client/src/components/tutorial/ (not lib/hooks/) per CONTEXT decision

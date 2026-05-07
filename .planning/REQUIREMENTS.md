@@ -37,7 +37,7 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 
 ### Balance
 
-- [ ] **BAL-01**: XP gain pacing feels rewarding without trivializing progression — XP curve and per-action XP awards reviewed and tuned
+- [x] **BAL-01**: XP gain pacing feels rewarding without trivializing progression — XP curve and per-action XP awards reviewed and tuned (completed 42-03, 2026-05-07)
 
 ### Authentication
 
@@ -94,7 +94,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-03 | Phase 41 | Complete (2026-05-06) |
 | FIX-04 | Phase 42 | Pending |
 | FIX-05 | Phase 42 | Pending |
-| BAL-01 | Phase 42 | Pending |
+| BAL-01 | Phase 42 (42-03) | Complete |
 | AUTH-01 | Phase 43 | Pending |
 
 **Coverage:**
