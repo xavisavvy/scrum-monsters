@@ -76,7 +76,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 - [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)
 - [ ] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu
 - [ ] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes
-- [ ] **Phase 41: Reconnection State Bugfix** — Fix stale lobby snapshot/reconnect-token causing duplicate self and lost host status on rejoin
+- [x] **Phase 41: Reconnection State Bugfix** — Fix stale lobby snapshot/reconnect-token causing duplicate self and lost host status on rejoin (completed 2026-05-06)
 
 ## Phase Details
 
@@ -161,8 +161,8 @@ Plans:
 **Plans**: TBD (1-2 plans expected: snapshot/token cleanup + reconnect handler integrity)
 
 Plans:
-- [ ] 41-01: Lobby snapshot/token consistency and stale-state cleanup
-- [ ] 41-02: Reconnect handler — preserve identity and host status (if not folded into 41-01)
+- [x] 41-01: Lobby snapshot/token consistency and stale-state cleanup (completed 2026-05-06)
+- [x] 41-02: Reconnect handler — preserve identity and host status (completed 2026-05-06)
 
 ## Progress
 
@@ -182,10 +182,10 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 | 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 0/2 | Not started | - |
-| 41. Reconnection State Bugfix | v5.0 | 0/2 | Not started | - |
+| 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
 
-**Total: 8 milestones shipped, 38 phases complete, 135 plans (1 deferred) | v5.0: 2/5 phases complete, 5/11 plans done**
+**Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 3/5 phases complete, 7/11 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-05-06 — Phase 41 added (reconnection state bugfix, blocks v5.0 ship)*
+*Last updated: 2026-05-06 — Phase 41 complete (reconnection state bugfix shipped, FIX-03 closed)*

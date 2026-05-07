@@ -31,6 +31,7 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 
 - [ ] **FIX-01**: VictoryPhase "New Game" button has a valid server handler
 - [ ] **FIX-02**: DeveloperMenu Character Tools and Boss Tools buttons are functional or removed
+- [x] **FIX-03**: Reconnecting to a lobby restores original player + host status; localStorage keys (`scrum-monsters-last-lobby`, `scrum-monsters-lobby-snapshot`, `scrum-monsters-reconnect-token`) cannot drift; reconnect tokens validate within the full grace window (Phase 41)
 
 ## Future Requirements
 
@@ -76,12 +77,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | TUTR-04 | Phase 39 | Pending |
 | FIX-01 | Phase 37 | Pending |
 | FIX-02 | Phase 37 | Pending |
+| FIX-03 | Phase 41 | Complete (2026-05-06) |
 
 **Coverage:**
-- v5.0 requirements: 13 total
-- Mapped to phases: 13
+- v5.0 requirements: 14 total
+- Mapped to phases: 14
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-11*
-*Last updated: 2026-03-11 after roadmap creation*
+*Last updated: 2026-05-06 — FIX-03 added and marked complete (Phase 41 reconnection state bugfix)*
