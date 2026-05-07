@@ -24,7 +24,7 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 
 - [x] **TUTR-01**: User sees a phase-aware spotlight walkthrough on first visit to lobby, avatar selection, and battle (skippable, remembers completion) (Phase 40-01)
 - [x] **TUTR-02**: User sees one-time contextual hints on first encounter with features (first combo, first item drop, first boss telegraph) (Phase 40-01)
-- [ ] **TUTR-03**: Tutorial and hint text appears in JRPG dialogue box style with narrator character (Guild Master, Battle Advisor, Sage)
+- [x] **TUTR-03**: Tutorial and hint text appears in JRPG dialogue box style with narrator character (Guild Master, Battle Advisor, Sage) (Phase 40-02)
 - [ ] **TUTR-04**: User can re-trigger tutorial from a help menu button
 
 ### Bug Fixes
@@ -73,7 +73,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FEED-03 | Phase 38 | Pending |
 | TUTR-01 | Phase 40 | Pending |
 | TUTR-02 | Phase 40 | Pending |
-| TUTR-03 | Phase 40 | Pending |
+| TUTR-03 | Phase 40 | Complete (40-02) |
 | TUTR-04 | Phase 39 | Pending |
 | FIX-01 | Phase 37 | Pending |
 | FIX-02 | Phase 37 | Pending |
