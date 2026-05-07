@@ -1,5 +1,6 @@
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
-import { type NarratorId } from '@/lib/stores/useTutorial';
+import { NARRATORS, type NarratorId } from '@/lib/stores/useTutorial';
+import { useTypewriter } from './useTypewriter';
 
 interface HintBubbleProps {
   targetRect: {
@@ -15,7 +16,7 @@ interface HintBubbleProps {
   onNext?: () => void;
   onDismiss?: () => void;
   stepLabel?: string;
-  /** Optional narrator id; visual rendering ships in plan 40-02. */
+  /** Narrator id; renders name header + accent color (Phase 40-02). */
   narrator?: NarratorId;
 }
 
@@ -61,10 +62,28 @@ export function HintBubble({
   onNext,
   onDismiss,
   stepLabel,
-  narrator: _narrator, // consumed in plan 40-02 (typewriter + name header rendering)
+  narrator,
 }: HintBubbleProps) {
   const prefersReducedMotion = useReducedMotion();
   const duration = prefersReducedMotion ? 0 : 0.2;
+
+  const config = narrator ? NARRATORS[narrator] : null;
+  const { displayed, isComplete, revealAll } = useTypewriter(text, 30);
+
+  const handleBodyClick = () => {
+    if (!isComplete) {
+      revealAll();
+    } else {
+      // When fully revealed, body click advances. If onNext is missing
+      // (single-step bubble), fall back to onDismiss so reduced-motion
+      // users still progress on a single click.
+      if (onNext) {
+        onNext();
+      } else if (onDismiss) {
+        onDismiss();
+      }
+    }
+  };
 
   return (
     <AnimatePresence>
@@ -77,13 +96,33 @@ export function HintBubble({
           exit={{ opacity: 0, scale: 0.9 }}
           transition={{ duration }}
         >
-          <div className="bg-gray-900/95 border-2 border-amber-500/60 rounded-lg p-4 shadow-lg shadow-amber-500/10">
+          <div
+            data-testid="hint-bubble-card"
+            className={`bg-gray-900/95 border-2 ${config?.accentBorderClass ?? 'border-amber-500/60'} rounded-lg p-4 shadow-lg shadow-amber-500/10`}
+          >
+            {config && (
+              <div
+                data-testid="hint-bubble-narrator-name"
+                className={`text-xs font-bold mb-1 ${config.accentTextClass}`}
+              >
+                {config.displayName}
+              </div>
+            )}
             {stepLabel && (
               <div className="text-xs text-amber-400/70 mb-1">{stepLabel}</div>
             )}
-            <div className="text-sm text-gray-100">{text}</div>
+            <div
+              data-testid="hint-bubble-body"
+              className="text-sm text-gray-100 cursor-pointer"
+              onClick={handleBodyClick}
+            >
+              {displayed}
+            </div>
             {(onDismiss || onNext) && (
-              <div className="flex gap-2 mt-3 justify-end">
+              <div
+                className="flex gap-2 mt-3 justify-end"
+                onClick={(e) => e.stopPropagation()}
+              >
                 {onDismiss && (
                   <button
                     onClick={onDismiss}
