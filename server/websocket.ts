@@ -156,8 +156,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       });
     }
 
-    // Keep lobby_updated: phase transitions need full state for completedTickets and currentTicket updates
-    io.to(lobbyId).emit('lobby_updated', { lobby });
+    // Phase 42-02b row #1: lobby_updated removed; session:phase_changed
+    // already emitted above (lines 144 / 152) via eventBus.
     gameLogger.info({ lobbyId, newPhase: lobby.gamePhase }, 'Discussion ended, phase transition');
   });
 
@@ -236,10 +236,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           newHostName: transfer.newHostName,
           reason: 'Host disconnected (grace period expired)',
         });
-        const updatedLobby = sessionManager.getLobby(transfer.lobbyId);
-        if (updatedLobby) {
-          io.to(transfer.lobbyId).emit('lobby_updated', { lobby: updatedLobby });
-        }
+        // Phase 42-02b row #2: lobby_updated removed; host_transferred
+        // (emitted just above) is the canonical signal for this transition.
         socketLogger.info({
           oldHostId: transfer.oldHostId,
           newHostId: transfer.newHostId,
@@ -657,7 +655,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (updatedLobby) {
         const leavingPlayer = updatedLobby.players.find(p => p.id === playerId);
         io.to(lobbyId).emit('player_left', { playerId, playerName: leavingPlayer?.name || 'Unknown' });
-        io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
+        // Phase 42-02b: lobby_updated removed; player_left + the existing
+        // session:player_left domain event cover roster mutation downstream.
       }
     });
 
@@ -923,16 +922,21 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (result) {
             const { lobby: updatedLobby, teamScores, teamConsensus } = result;
             io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-            // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-            io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
-            
+            // Phase 42-02b row #8: lobby_updated -> session:phase_changed
+            // (battle -> reveal). scores_revealed above carries the data.
+            eventBus.emit('session:phase_changed', {
+              lobbyId: lobby.id,
+              oldPhase: 'battle',
+              newPhase: updatedLobby.gamePhase,
+            });
+
             // Check if teams agreed using same logic as gameState
             const devTeamExists = updatedLobby.teams.developers.length > 0;
             const qaTeamExists = updatedLobby.teams.qa.length > 0;
-            
+
             let teamsAgree = false;
             if (devTeamExists && qaTeamExists) {
-              teamsAgree = teamConsensus.developers.hasConsensus && 
+              teamsAgree = teamConsensus.developers.hasConsensus &&
                           teamConsensus.qa.hasConsensus &&
                           teamConsensus.developers.score === teamConsensus.qa.score;
             } else if (devTeamExists && !qaTeamExists) {
@@ -940,7 +944,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             } else if (!devTeamExists && qaTeamExists) {
               teamsAgree = teamConsensus.qa.hasConsensus;
             }
-            
+
             if (teamsAgree && updatedLobby.boss?.defeated) {
               io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
             }
@@ -967,8 +971,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (updatedLobby.gamePhase !== 'discussion') {
             // Auto-advance after a brief delay for players to see the consensus
             setTimeout(() => {
-              // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-              io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+              // Phase 42-02b row #10: lobby_updated -> session:phase_changed
+              // (discussion -> next phase via consensus auto-advance).
+              eventBus.emit('session:phase_changed', {
+                lobbyId: lobby.id,
+                oldPhase: 'discussion',
+                newPhase: updatedLobby.gamePhase,
+              });
               if (updatedLobby.boss?.defeated) {
                 io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
               }
@@ -1141,8 +1150,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = gameState.abandonQuest(playerId);
       if (lobby) {
         io.to(lobby.id).emit('quest_abandoned', { lobby });
-        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #12: lobby_updated -> session:phase_changed.
+        // quest_abandoned (above) carries the lobby snapshot; this fine-grained
+        // event signals the phase transition.
+        eventBus.emit('session:phase_changed', {
+          lobbyId: lobby.id,
+          oldPhase: 'battle',
+          newPhase: lobby.gamePhase,
+        });
       }
     });
 
@@ -1158,7 +1173,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = gameState.abandonQuest(playerId);
       if (lobby) {
         gameLogger.info({ lobbyId: lobby.id, newPhase: lobby.gamePhase }, 'Game restarted (new game)');
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #13: lobby_updated -> session:phase_changed.
+        eventBus.emit('session:phase_changed', {
+          lobbyId: lobby.id,
+          oldPhase: 'game_over',
+          newPhase: lobby.gamePhase,
+        });
       }
     });
 
@@ -1174,8 +1194,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobby = gameState.returnToLobby(playerId);
       if (lobby) {
         gameLogger.info({ lobbyId: lobby.id, newPhase: lobby.gamePhase }, 'Returned to lobby');
-        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-        io.to(lobby.id).emit('lobby_updated', { lobby });
+        // Phase 42-02b row #14: lobby_updated -> session:phase_changed.
+        eventBus.emit('session:phase_changed', {
+          lobbyId: lobby.id,
+          oldPhase: 'victory',
+          newPhase: lobby.gamePhase,
+        });
       } else {
         gameLogger.warn('Failed to return to lobby - gameState.returnToLobby returned null');
       }
@@ -1189,8 +1213,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (result) {
         const { lobby: updatedLobby, teamScores, teamConsensus } = result;
         io.to(updatedLobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-        // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-        io.to(updatedLobby.id).emit('lobby_updated', { lobby: updatedLobby });
+        // Phase 42-02b row #15: lobby_updated -> session:phase_changed
+        // (battle -> reveal via host force). scores_revealed above carries data.
+        eventBus.emit('session:phase_changed', {
+          lobbyId: updatedLobby.id,
+          oldPhase: 'battle',
+          newPhase: updatedLobby.gamePhase,
+        });
         
         // Check if teams agreed using same logic as gameState
         const devTeamExists = updatedLobby.teams.developers.length > 0;
@@ -1273,8 +1302,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (result) {
           const { lobby: updatedLobby } = result;
 
-          // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-          io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
+          // Phase 42-02b row #16: lobby_updated -> session:phase_changed
+          // (host manual advance from discussion).
+          eventBus.emit('session:phase_changed', {
+            lobbyId,
+            oldPhase: 'discussion',
+            newPhase: updatedLobby.gamePhase,
+          });
 
           gameLogger.info({ playerId, lobbyId }, 'Host manually advanced phase');
         } else {
@@ -1298,8 +1332,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (result) {
           const { lobby, message } = result;
 
-          // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-          io.to(lobbyId).emit('lobby_updated', { lobby });
+          // Phase 42-02b row #17: lobby_updated -> session:phase_changed
+          // (host force voting progression).
+          eventBus.emit('session:phase_changed', {
+            lobbyId,
+            oldPhase: 'battle',
+            newPhase: lobby.gamePhase,
+          });
 
           // Notify everyone about the forced progression
           io.to(lobbyId).emit('game_error', { message });
@@ -1312,8 +1351,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             if (revealResult) {
               const { lobby: updatedLobby, teamScores, teamConsensus } = revealResult;
               io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-              // Keep lobby_updated for phase transitions (not yet covered by fine-grained events)
-              io.to(lobby.id).emit('lobby_updated', { lobby: updatedLobby });
+              // Phase 42-02b row #18: lobby_updated -> session:phase_changed
+              // (reveal cascade after force progression).
+              eventBus.emit('session:phase_changed', {
+                lobbyId: lobby.id,
+                oldPhase: 'reveal',
+                newPhase: updatedLobby.gamePhase,
+              });
             }
           }
         } else {
@@ -1550,8 +1594,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             playerId,
             playerName: lobbySync.yourPlayer.name
           });
-          // Keep lobby_updated for reconnection notifications (not yet covered by fine-grained events)
-          socket.to(lobbyId).emit('lobby_updated', { lobby: lobbySync.lobby });
+          // Phase 42-02b row #22: lobby_updated removed; player_reconnected
+          // is the canonical signal. Reconnecting client receives the full
+          // lobby state above via lobby_sync + sendFullState.
 
           socketLogger.info({ playerId, playerName: lobbySync.yourPlayer.name }, 'Player reconnected successfully');
         } else {
@@ -2150,13 +2195,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
               reason: 'Host disconnected'
             });
 
-            // Emit lobby update with new host information
-            const updatedLobby = sessionManager.getLobby(lobbyId);
-            if (updatedLobby) {
-              // Keep lobby_updated for host transfer (not yet covered by fine-grained events)
-              io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
-            }
-
+            // Phase 42-02b row #23: lobby_updated removed;
+            // host_transferred above is the canonical signal.
             socketLogger.info({
               oldHostId: hostTransfer.oldHostId,
               newHostId: hostTransfer.newHostId,
@@ -2168,8 +2208,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           const updatedLobby = sessionManager.removePlayer(playerId);
           if (updatedLobby && lobbyId) {
             io.to(lobbyId).emit('player_disconnected', { playerId });
-            // Keep lobby_updated for player removal fallback (not yet covered by fine-grained events)
-            io.to(lobbyId).emit('lobby_updated', { lobby: updatedLobby });
+            // Phase 42-02b row #24: lobby_updated removed; player_disconnected
+            // above is the canonical signal for fallback removal.
           }
           socketLogger.warn({ playerId }, 'Player removed immediately (reconnection unavailable)');
         }
