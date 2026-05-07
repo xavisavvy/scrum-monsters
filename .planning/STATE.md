@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
 status: executing
-stopped_at: Completed 40-01-PLAN.md (tutorial content + auto-start)
-last_updated: "2026-05-07T13:34:33Z"
-last_activity: 2026-05-07 -- Completed 40-01 (tutorial walkthrough content, contextual hints, auto-start/auto-skip)
+stopped_at: Completed 40-02-PLAN.md (JRPG narrator visuals + typewriter)
+last_updated: "2026-05-07T13:55:00Z"
+last_activity: 2026-05-07 -- Completed 40-02 (useTypewriter hook + HintBubble narrator header/typewriter integration)
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 ## Current Position
 
-Phase: 40 (tutorial-content-narrator) — EXECUTING
-Plan: 2 of 2 (40-01 complete)
-Status: Executing Phase 40 — 40-01 shipped, 40-02 pending
-Last activity: 2026-05-07 -- Completed 40-01 (tutorial walkthrough content, contextual hints, auto-start/auto-skip)
+Phase: 40 (tutorial-content-narrator) — READY FOR VERIFICATION
+Plan: 2 of 2 (both complete)
+Status: Phase 40 plans complete (40-01 + 40-02 shipped); ready for /gsd-verify-work
+Last activity: 2026-05-07 -- Completed 40-02 (useTypewriter hook + HintBubble narrator header/typewriter integration)
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -50,7 +50,7 @@ Progress: [█████████░] 91%
 | v3.0 Production Optimization | 26-29 | 9 | Complete | 2026-02-20 |
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
-| v5.0 UX & Onboarding | 37-41 | 10/11 | In progress | - |
+| v5.0 UX & Onboarding | 37-41 | 11/11 | In progress | - |
 
 ## Accumulated Context
 
@@ -80,6 +80,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [41-02] SessionManager.joinLobby dedupes connected same-name players (returns existing record) as defense in depth
 - [40-01] First-combo hint anchored to persistent boss-health (not transient combo-notification) to eliminate typewriter-vs-dismissal timing race
 - [40-01] Walkthrough auto-skip-on-missing-target advances mid-walkthrough or completes on last step, generically resolving non-host lobby step 3 and any future missing-target case
+- [40-02] useTypewriter colocated under client/src/components/tutorial/ (not lib/hooks/) per CONTEXT decision
+- [40-02] Reduced-motion: isComplete=true on first render so a single body click advances/dismisses with no intermediate reveal click
+- [40-02] Single-step bubble (only onDismiss, no onNext): body click after isComplete falls back to onDismiss so reduced-motion users dismiss with one click
 
 ### Pending Todos
 
@@ -96,10 +99,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-05-07
-Stopped at: Completed 40-01-PLAN.md (tutorial content + auto-start)
+Stopped at: Completed 40-02-PLAN.md (JRPG narrator visuals + typewriter)
 Resume file: None
-Next action: Execute 40-02-PLAN.md (JRPG narrator visuals + typewriter)
+Next action: Run /gsd-verify-work for Phase 40, then advance to Phase 41 verification or next milestone
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-07 — Completed 40-01 (tutorial walkthrough content, 4 hints, auto-start, auto-skip-on-missing-target)*
+*Last updated: 2026-05-07 — Completed 40-02 (useTypewriter hook + HintBubble narrator header/typewriter integration)*

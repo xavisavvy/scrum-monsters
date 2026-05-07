@@ -75,7 +75,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 - [x] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes (completed 2026-03-11)
 - [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)
 - [ ] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu
-- [ ] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes
+- [x] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes (plans complete 2026-05-07; pending /gsd-verify-work)
 - [x] **Phase 41: Reconnection State Bugfix** — Fix stale lobby snapshot/reconnect-token causing duplicate self and lost host status on rejoin (completed 2026-05-06)
 
 ## Phase Details
@@ -140,7 +140,7 @@ Plans:
 
 Plans:
 - [x] 40-01: Tutorial walkthrough content and contextual hints (completed 2026-05-07)
-- [ ] 40-02: JRPG narrator dialogue boxes and typewriter effect
+- [x] 40-02: JRPG narrator dialogue boxes and typewriter effect (completed 2026-05-07)
 
 ### Phase 41: Reconnection State Bugfix
 **Goal**: A returning player rejoins the same lobby with their original identity and host status, with no duplicate avatars and no stale snapshot/token state
@@ -181,11 +181,11 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40
 | 37. State Polish & Bug Fixes | v5.0 | 2/2 | Complete | 2026-03-11 |
 | 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
-| 40. Tutorial Content & JRPG Narrator | v5.0 | 1/2 | In progress | - |
+| 40. Tutorial Content & JRPG Narrator | v5.0 | 2/2 | Plans complete | - |
 | 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
 
 **Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 3/5 phases complete, 10/11 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-05-07 — Plan 40-01 shipped (tutorial walkthrough content, 4 hints, auto-start/auto-skip)*
+*Last updated: 2026-05-07 — Plan 40-02 shipped (useTypewriter hook + HintBubble narrator header/typewriter); Phase 40 plans complete*
