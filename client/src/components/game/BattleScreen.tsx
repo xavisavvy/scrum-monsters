@@ -326,7 +326,7 @@ export function BattleScreen() {
 
             {/* Boss Music Controls - Top Right */}
             <div
-              className="absolute top-6 right-6 z-40"
+              className="absolute top-6 right-6 z-[60]"
               style={{
                 paddingTop: 'env(safe-area-inset-top, 0px)',
                 paddingRight: 'env(safe-area-inset-right, 0px)'
@@ -390,7 +390,7 @@ export function BattleScreen() {
             
             {/* Boss Music Controls - Top Right */}
             <div
-              className="absolute top-6 right-6 z-40"
+              className="absolute top-6 right-6 z-[60]"
               style={{
                 paddingTop: 'env(safe-area-inset-top, 0px)',
                 paddingRight: 'env(safe-area-inset-right, 0px)'
