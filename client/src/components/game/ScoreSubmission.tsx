@@ -175,7 +175,7 @@ export function ScoreSubmission() {
               </motion.div>
             </div>
             
-            <div className="text-center">
+            <div className="text-center" data-hint-target="vote-submit">
               <RetroButton
                 onClick={handleScoreSubmit}
                 disabled={selectedScore === null}

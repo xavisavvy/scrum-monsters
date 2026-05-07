@@ -1718,7 +1718,7 @@ export function Lobby() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-8 pb-8 relative" style={{ zIndex: 20 }}>
-        <div className="text-center mb-6">
+        <div className="text-center mb-6" data-hint-target="lobby-welcome">
           {isEditingLobbyName ? (
             <div className="flex items-center justify-center gap-2 mb-2">
               <input
@@ -1774,7 +1774,7 @@ export function Lobby() {
           </div>
           {inviteLink && (
             <div className="mt-4 space-y-3">
-              <div className="relative">
+              <div className="relative" data-hint-target="lobby-invite">
                 <div className="flex gap-2 justify-center">
                   <RetroButton size="sm" onClick={copyInviteLink}>
                     Copy Invite Link
@@ -2134,13 +2134,15 @@ export function Lobby() {
               )}
               
               {isHost && tickets.length > 0 && (
-                <RetroButton
-                  onClick={startBattle}
-                  className="w-full"
-                  variant="accent"
-                >
-                  Begin Battle! ({tickets.length} ticket{tickets.length !== 1 ? 's' : ''})
-                </RetroButton>
+                <div data-hint-target="lobby-start">
+                  <RetroButton
+                    onClick={startBattle}
+                    className="w-full"
+                    variant="accent"
+                  >
+                    Begin Battle! ({tickets.length} ticket{tickets.length !== 1 ? 's' : ''})
+                  </RetroButton>
+                </div>
               )}
             </RetroCard>
           </div>

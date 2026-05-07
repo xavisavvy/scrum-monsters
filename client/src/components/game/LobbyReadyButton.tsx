@@ -12,15 +12,17 @@ export function LobbyReadyButton() {
   };
 
   return (
-    <GameButton
-      onClick={handleToggle}
-      variant={isReady ? 'primary' : 'secondary'}
-      size="md"
-      aria-pressed={isReady}
-      aria-label={isReady ? 'Ready - click to unready' : 'Not ready - click to ready up'}
-      className="min-w-[120px]"
-    >
-      {isReady ? '\u2713 Ready' : 'Ready Up'}
-    </GameButton>
+    <div data-hint-target="lobby-ready">
+      <GameButton
+        onClick={handleToggle}
+        variant={isReady ? 'primary' : 'secondary'}
+        size="md"
+        aria-pressed={isReady}
+        aria-label={isReady ? 'Ready - click to unready' : 'Not ready - click to ready up'}
+        className="min-w-[120px]"
+      >
+        {isReady ? '\u2713 Ready' : 'Ready Up'}
+      </GameButton>
+    </div>
   );
 }

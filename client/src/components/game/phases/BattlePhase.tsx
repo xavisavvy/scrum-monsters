@@ -14,10 +14,11 @@ import { useProgression } from '@/lib/stores/useProgression';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAbilitySync } from '@/lib/stores/useAbilities';
 import { ComboNotification } from '@/components/game/ComboNotification';
-import { useComboSync } from '@/lib/stores/useComboState';
+import { useComboSync, useComboState } from '@/lib/stores/useComboState';
 import { ItemBar } from '@/components/game/combat/ItemBar';
 import { BattleLoadingSpinner } from '@/components/ui/LoadingSkeleton';
-import { useItemSync } from '@/lib/stores/useItemStore';
+import { useItemSync, useItemStore } from '@/lib/stores/useItemStore';
+import { useFirstEncounter } from '@/lib/hooks/useFirstEncounter';
 
 interface BattlePhaseProps extends PhaseComponentProps {}
 
@@ -35,6 +36,14 @@ export function BattlePhase({
   useAbilitySync(); // Wire ability server events
   useComboSync(); // Wire combo server events
   useItemSync(); // Wire item server events
+
+  // Phase 40 contextual hints — fire once per first-encounter, latched via completedHints.
+  const activeCombo = useComboState((s) => s.activeCombo);
+  const inventorySize = useItemStore((s) => s.inventory.size);
+  const telegraph = useGameState((s) => s.telegraph);
+  useFirstEncounter('first-combo', activeCombo !== null);
+  useFirstEncounter('first-item', inventorySize >= 1);
+  useFirstEncounter('first-telegraph', telegraph !== null);
 
   // Don't render if no boss is available
   if (!boss) {
