@@ -136,7 +136,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
-  // Lobby invite redirect endpoint
+  // Lobby invite redirect endpoint — direct single-hop to /game/:lobbyId.
+  // The legacy `?join=` query-param form still works (handled by the SPA's
+  // index loader for backwards compatibility with any links in the wild).
   app.get('/join/:lobbyId', (req, res) => {
     const { lobbyId } = req.params;
     // Validate: 6 alphanumeric chars (matches generateLobbyCode output)
@@ -144,7 +146,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     if (!/^[A-Z0-9]{6}$/i.test(lobbyId)) {
       return res.redirect('/?error=invalid-invite');
     }
-    res.redirect(`/?join=${encodeURIComponent(lobbyId.toUpperCase())}`);
+    res.redirect(`/game/${encodeURIComponent(lobbyId.toUpperCase())}`);
   });
 
   // Marketing page route
