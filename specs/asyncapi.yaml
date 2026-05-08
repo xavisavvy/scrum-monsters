@@ -353,14 +353,6 @@ operations:
       - $ref: '#/channels/serverToClient/messages/lobbyCreated'
     summary: Server notifies client of lobby creation
 
-  receiveLobbyUpdated:
-    action: receive
-    channel:
-      $ref: '#/channels/serverToClient'
-    messages:
-      - $ref: '#/channels/serverToClient/messages/lobbyUpdated'
-    summary: Server broadcasts lobby state update
-
   receiveGameError:
     action: receive
     channel:
