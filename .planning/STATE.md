@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
 status: executing
-stopped_at: Completed 43-01-PLAN.md (graceful unconfig UX — useAuth providersConfigured + UserMenu render gate)
-last_updated: "2026-05-08T02:34:30.000Z"
-last_activity: 2026-05-08 -- Completed 43-01 (graceful unconfig UX shipped; 690/690 tests pass)
+stopped_at: Completed 43-02-PLAN.md (configured-path tests + AUTH0_* env hardening — AUTH-01 complete)
+last_updated: "2026-05-08T02:50:00.000Z"
+last_activity: 2026-05-08 -- Completed 43-02 (supertest harness + 15 new tests + AUTH0 all-or-nothing refine; 705/705 tests pass; AUTH-01 complete)
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 17
-  completed_plans: 16
-  percent: 94
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 ## Current Position
 
-Phase: 43 (auth-user-account-validation) — EXECUTING
-Plan: 2 of 2
-Status: Executing Phase 43 (43-01 complete; 43-02 next)
-Last activity: 2026-05-08 -- Completed 43-01 (graceful unconfig UX shipped; 690/690 tests pass)
+Phase: 43 (auth-user-account-validation) — COMPLETE
+Plan: 2 of 2 (complete)
+Status: Phase 43 complete (both plans shipped; AUTH-01 done)
+Last activity: 2026-05-08 -- Completed 43-02 (supertest harness + 15 new tests + AUTH0_* all-or-nothing env refine; 705/705 tests pass)
 
-Progress: [█████████░] 94%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -92,6 +92,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [43-01] Co-located providers fetch inside useAuth (not a separate useAuthProviders hook) — single consumer, single fetch, matches existing chained-fetch pattern (checkAuth -> fetchProfile -> fetchStats)
 - [43-01] Sequenced fetchProviders BEFORE /api/auth/me in checkAuth (no Promise.all) per RESEARCH Pitfall 4 — eliminates stale-closure race / render flicker
 - [43-01] providersConfigured: boolean | null tri-state — null = loading; UserMenu renders null while null (no Sign In flash) and fail-closed on /providers errors (sets false, never null)
+- [43-02] Adopted supertest@^7 as devDep (first HTTP-route integration test harness in repo); justified — prior server tests target domain managers, never Express routes
+- [43-02] mockOidc.ts test helper stubs (req as any).oidc directly — does NOT vi.mock the express-openid-connect auth() factory (per RESEARCH §Anti-Patterns: factory mocks hide regressions)
+- [43-02] Login-redirect smoke is structural ONLY — asserts configureAuth0 is exported + middleware mounts without throwing; no live redirect, no real Auth0 issuer contact (TODO stretch: assert 302 once express-openid-connect exposes a test mode)
+- [43-02] AUTH0_* all-or-nothing zod .refine() chained AFTER existing production-DB refine, using the same httpLogger.error + process.exit(1) idiom (NOT throw); BASE_URL deliberately excluded from the all-or-nothing set
 
 ### Pending Todos
 
@@ -108,10 +112,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 43-01-PLAN.md (graceful unconfig UX — useAuth providersConfigured + UserMenu render gate)
+Stopped at: Completed 43-02-PLAN.md (configured-path tests + AUTH0_* env hardening — AUTH-01 fully delivered)
 Resume file: None
-Next action: Execute 43-02-PLAN.md (configured-path integration tests + AUTH0_* env hardening)
+Next action: Phase 43 verification / proceed to next phase per ROADMAP
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-08 — Completed 43-01 (graceful unconfig UX: useAuth.providersConfigured + UserMenu three-way gate; 690/690 tests pass; AUTH-01 partially delivered)*
+*Last updated: 2026-05-08 — Completed 43-02 (supertest harness, mockOidc helper, 15 new tests across server/component/store, AUTH0_* all-or-nothing env refine); 705/705 tests pass; AUTH-01 COMPLETE*
