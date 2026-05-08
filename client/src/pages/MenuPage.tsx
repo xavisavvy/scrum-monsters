@@ -4,11 +4,8 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { LobbyCreation } from '@/components/game/LobbyCreation';
 import { LobbyJoin } from '@/components/game/LobbyJoin';
-import { useWebSocket } from '@/lib/stores/useWebSocket';
-import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { LastLobbyStorage } from '@/lib/utils/lastLobbyStorage';
-import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import { PageMeta } from '@/components/seo/PageMeta';
 import { META_CONFIG } from '@/components/seo/metaConfig';
 
@@ -21,11 +18,9 @@ type MenuState = 'main' | 'create_lobby' | 'join_lobby';
 export default function MenuPage() {
   const navigate = useNavigate();
   const [menuState, setMenuState] = useState<MenuState>('main');
-  const [joinLobbyId, setJoinLobbyId] = useState<string>('');
+  const [joinLobbyId] = useState<string>('');
   const [lastLobby, setLastLobby] = useState(LastLobbyStorage.loadLastLobby());
-  const [isAttemptingRejoin, setIsAttemptingRejoin] = useState(false);
 
-  const { emit, reconnectToLobby, getReconnectToken } = useWebSocket();
   const { fadeOutMenuMusic, playButtonSelect, switchToNextTrack } = useAudio();
   const currentTrackName = useAudio(state =>
     state.musicTracks[state.currentTrackIndex]?.name ?? 'Loading...'
@@ -48,25 +43,14 @@ export default function MenuPage() {
 
     playButtonSelect();
     fadeOutMenuMusic();
-    setIsAttemptingRejoin(true);
 
-    // Try reconnection with token first (preserves avatar)
-    if (getReconnectToken() && reconnectToLobby(lastLobby.lobbyId.toUpperCase())) {
-      return;
-    }
-
-    // Fall back to join_lobby (new player, needs avatar selection)
-    const savedName = PlayerNameStorage.loadName();
-    if (savedName) {
-      emit('join_lobby', {
-        lobbyId: lastLobby.lobbyId.toUpperCase(),
-        playerName: savedName
-      });
-    } else {
-      setIsAttemptingRejoin(false);
-      setJoinLobbyId(lastLobby.lobbyId);
-      setMenuState('join_lobby');
-    }
+    // Navigate to /game/:lobbyId so GamePage mounts and runs its auto-join
+    // useEffect. GamePage handles the full rejoin flow (snapshot hydration →
+    // token reconnect → join_lobby fallback) AND registers the lobby_sync
+    // handler that actually sets currentLobby in useGameState. Emitting
+    // reconnect_with_token from here without navigating left the user stuck
+    // on /play because no GamePage was mounted to receive lobby_sync.
+    navigate(`/game/${lastLobby.lobbyId.toUpperCase()}`);
   };
 
   if (menuState === 'create_lobby') {
