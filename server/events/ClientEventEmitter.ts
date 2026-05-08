@@ -70,6 +70,8 @@ export class ClientEventEmitter {
       this.emitToLobby(payload.lobbyId, 'session:player_joined', {
         playerId: payload.playerId,
         playerName: payload.playerName,
+        team: payload.team,
+        avatar: payload.avatar,
       });
     });
 
