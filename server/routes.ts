@@ -106,6 +106,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.status(result.status).json(result.body);
   });
 
+  // Version endpoint — lets users/operators verify which deploy is live
+  // by hitting `https://scrummonsters.com/api/version` in a browser.
+  // `commit` and `builtAt` come from build-time env vars (set by Docker
+  // build via GIT_COMMIT/BUILD_TIME args); `version` from package.json.
+  app.get('/api/version', (_req, res) => {
+    let pkgVersion = 'unknown';
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      pkgVersion = require('../package.json').version || 'unknown';
+    } catch {
+      // package.json not resolvable in some bundled-server scenarios;
+      // fall through to 'unknown'.
+    }
+    res.json({
+      version: pkgVersion,
+      commit: process.env.GIT_COMMIT || 'unknown',
+      builtAt: process.env.BUILD_TIME || 'unknown',
+      uptime: Math.round(process.uptime()),
+    });
+  });
+
   // WebSocket health check endpoint
   app.get('/api/ws-health', (req, res) => {
     const io = (httpServer as any).io;
