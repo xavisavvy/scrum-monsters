@@ -114,11 +114,13 @@ export default function GamePage() {
         playerName: savedName
       });
     } else {
-      // No saved name - user needs to provide one
-      // This would typically redirect to a name entry screen
-      // For now, we'll just show an error
-      toast.error('Please enter your name first');
-      navigate('/play');
+      // No saved name — route to /play with the lobby code preserved as
+      // a query param. MenuPage detects ?join=CODE on mount and pre-opens
+      // the LobbyJoin form with the lobby ID filled in, so the user just
+      // enters their name once and joins. Without the query param, fresh
+      // users hitting /join/CODE links would be stranded on /play with
+      // no way back into the lobby they came for.
+      navigate(`/play?join=${encodeURIComponent(lobbyId.toUpperCase())}`);
     }
   }, [lobbyId, socket, currentLobby, isAttemptingJoin]);
 

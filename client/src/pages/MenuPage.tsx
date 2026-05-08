@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useState, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { RetroButton } from '@/components/ui/retro-button';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { LobbyCreation } from '@/components/game/LobbyCreation';
@@ -17,9 +17,22 @@ type MenuState = 'main' | 'create_lobby' | 'join_lobby';
  */
 export default function MenuPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [menuState, setMenuState] = useState<MenuState>('main');
-  const [joinLobbyId] = useState<string>('');
+  const [joinLobbyId, setJoinLobbyId] = useState<string>('');
   const [lastLobby, setLastLobby] = useState(LastLobbyStorage.loadLastLobby());
+
+  // Pre-open the join form when arriving via /play?join=CODE — happens when
+  // a fresh user (no saved name) hits /join/CODE or /game/CODE; GamePage
+  // bounces them here with the lobby ID preserved so they can enter their
+  // name and join the lobby they came for.
+  useEffect(() => {
+    const code = searchParams.get('join');
+    if (code && /^[A-Z0-9]{6}$/i.test(code)) {
+      setJoinLobbyId(code.toUpperCase());
+      setMenuState('join_lobby');
+    }
+  }, [searchParams]);
 
   const { fadeOutMenuMusic, playButtonSelect, switchToNextTrack } = useAudio();
   const currentTrackName = useAudio(state =>
