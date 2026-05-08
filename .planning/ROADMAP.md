@@ -196,7 +196,7 @@ Plans:
   6. Anonymous play continues to work — no auth requirement was accidentally introduced
 
 **Plans:** 2 plans
-- [ ] 43-01-PLAN.md — Graceful unconfig UX (useAuth providersConfigured + UserMenu render gate)
+- [x] 43-01-PLAN.md — Graceful unconfig UX (useAuth providersConfigured + UserMenu render gate) (completed 2026-05-08)
 - [ ] 43-02-PLAN.md — Configured-path integration tests + env hardening (supertest, mockOidc, route/component/store tests, AUTH0_* all-or-nothing)
 
 ## Progress
@@ -218,9 +218,11 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43
 | 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 2/2 | Plans complete | - |
 | 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
+| 42. v5.0 Pre-Ship Fixes & Polish | v5.0 | 4/4 | Complete | 2026-05-07 |
+| 43. Auth & User Account Validation | v5.0 | 1/2 | In progress | - |
 
-**Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 3/5 phases complete, 10/11 plans done**
+**Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 5/7 phases complete, 15/17 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-05-07 — Plan 40-02 shipped (useTypewriter hook + HintBubble narrator header/typewriter); Phase 40 plans complete*
+*Last updated: 2026-05-08 — Plan 43-01 shipped (graceful unconfig UX: useAuth.providersConfigured + UserMenu three-way gate); 690/690 tests pass*

@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
 status: executing
-stopped_at: Completed 42-02b-PLAN.md (lobby_updated full retirement — FIX-05 event-retirement half)
-last_updated: "2026-05-07T22:10:00.000Z"
-last_activity: 2026-05-07 -- Completed Phase 42-02b (lobby_updated retirement, FIX-05)
+stopped_at: Completed 43-01-PLAN.md (graceful unconfig UX — useAuth providersConfigured + UserMenu render gate)
+last_updated: "2026-05-08T02:34:30.000Z"
+last_activity: 2026-05-08 -- Completed 43-01 (graceful unconfig UX shipped; 690/690 tests pass)
 progress:
   total_phases: 7
-  completed_phases: 5
-  total_plans: 15
-  completed_plans: 13
-  percent: 87
+  completed_phases: 6
+  total_plans: 17
+  completed_plans: 16
+  percent: 94
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 42 — v5-0-pre-ship-fixes-polish
+**Current focus:** Phase 43 — auth-user-account-validation
 
 ## Current Position
 
-Phase: 42 (v5-0-pre-ship-fixes-polish) — EXECUTING
-Plan: 4 of 4 (42-01 + 42-02a + 42-02b + 42-03 complete) — ready for /gsd-verify-work
-Status: Executing Phase 42
-Last activity: 2026-05-07 -- Completed 42-02b (lobby_updated retirement: 26 emit sites migrated, GamePage handler deleted, type removed; 690/690 tests pass)
+Phase: 43 (auth-user-account-validation) — EXECUTING
+Plan: 2 of 2
+Status: Executing Phase 43 (43-01 complete; 43-02 next)
+Last activity: 2026-05-08 -- Completed 43-01 (graceful unconfig UX shipped; 690/690 tests pass)
 
-Progress: [██████████] 100%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
@@ -89,6 +89,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [40-02] Single-step bubble (only onDismiss, no onNext): body click after isComplete falls back to onDismiss so reduced-motion users dismiss with one click
 - [42-02b] Fully retired lobby_updated: 26 server emit sites migrated to fine-grained events (10 phase_changed via eventBus + 9 NEW events via emitFineGrained helper + 7 REMOVE-only). GamePage handler deleted; battle remount logic moved to useGameState.requestBattleRemount slice driven by session:phase_changed + session:ticket_advanced handlers. Type removed from ServerToClientEvents — tsc is the future safety net.
 - [42-02b] proceed_next_level emits BOTH session:game_reset (full lobby) AND session:ticket_advanced (currentTicket) to keep BattleScreen-remount trigger explicit instead of inferring from lobby diff.
+- [43-01] Co-located providers fetch inside useAuth (not a separate useAuthProviders hook) — single consumer, single fetch, matches existing chained-fetch pattern (checkAuth -> fetchProfile -> fetchStats)
+- [43-01] Sequenced fetchProviders BEFORE /api/auth/me in checkAuth (no Promise.all) per RESEARCH Pitfall 4 — eliminates stale-closure race / render flicker
+- [43-01] providersConfigured: boolean | null tri-state — null = loading; UserMenu renders null while null (no Sign In flash) and fail-closed on /providers errors (sets false, never null)
 
 ### Pending Todos
 
@@ -104,11 +107,11 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-05-07
-Stopped at: Completed 42-02b-PLAN.md (lobby_updated full retirement — FIX-05 event-retirement half)
+Last session: 2026-05-08
+Stopped at: Completed 43-01-PLAN.md (graceful unconfig UX — useAuth providersConfigured + UserMenu render gate)
 Resume file: None
-Next action: /gsd-verify-work for Phase 42 (all 4 plans complete: 42-01, 42-02a, 42-02b, 42-03)
+Next action: Execute 43-02-PLAN.md (configured-path integration tests + AUTH0_* env hardening)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-07 — Completed 42-02b (26 emit sites migrated to fine-grained events, GamePage handler deleted, type removed, 690/690 tests pass)*
+*Last updated: 2026-05-08 — Completed 43-01 (graceful unconfig UX: useAuth.providersConfigured + UserMenu three-way gate; 690/690 tests pass; AUTH-01 partially delivered)*
