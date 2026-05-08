@@ -1228,7 +1228,13 @@ export function Lobby() {
 
   const copyLobbyCode = () => {
     if (currentLobby?.id) {
-      navigator.clipboard.writeText(currentLobby.id);
+      // Copy a shareable URL, not just the bare code. Matches the format
+      // the server uses for inviteLink (`${origin}/join/${lobbyId}`) and
+      // is what users actually want when they click "copy" — a link they
+      // can paste into chat. The server-issued inviteLink is host-only;
+      // this gives every player a working share URL.
+      const url = `${window.location.origin}/join/${currentLobby.id}`;
+      navigator.clipboard.writeText(url);
       setShowCopiedNotification(true);
 
       // Auto-hide notification after 2 seconds
