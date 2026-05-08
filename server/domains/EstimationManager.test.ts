@@ -731,7 +731,8 @@ describe('EstimationManager', () => {
       eventBus.emit('session:player_joined', {
         lobbyId: 'lobby1',
         playerId: 'latecomer',
-        playerName: 'Late Player'
+        playerName: 'Late Player',
+        team: 'developers',
       });
 
       const state = estimationManager.getEstimation('lobby1');
@@ -743,7 +744,8 @@ describe('EstimationManager', () => {
       eventBus.emit('session:player_joined', {
         lobbyId: 'lobby1',
         playerId: 'spectator1',
-        playerName: 'Spectator Player'
+        playerName: 'Spectator Player',
+        team: 'developers',
       });
 
       const state = estimationManager.getEstimation('lobby1');
@@ -756,7 +758,8 @@ describe('EstimationManager', () => {
       eventBus.emit('session:player_joined', {
         lobbyId: 'lobby1',
         playerId: 'qa1',
-        playerName: 'QA Player'
+        playerName: 'QA Player',
+        team: 'developers',
       });
 
       const state = estimationManager.getEstimation('lobby1');
@@ -824,7 +827,8 @@ describe('EstimationManager', () => {
       eventBus.emit('session:player_joined', {
         lobbyId: 'lobby1',
         playerId: 'player1',
-        playerName: 'Player One'
+        playerName: 'Player One',
+        team: 'developers',
       });
 
       // State should still be null

@@ -187,11 +187,17 @@ export class SessionManager {
     this.playerToLobby.set(hostId, lobbyId);
     this.playerActivity.set(hostId, Date.now());
 
-    // Emit domain event
+    // Emit domain event. team + avatar must be included so other clients'
+    // incremental session:player_joined handler can place this player on the
+    // right Battle Teams panel — without them, the player is added to the
+    // local lobby with team=undefined and never appears in any team group
+    // (host's view bug 2026-05-08, post-Phase 42-02b).
     this.eventBus.emit('session:player_joined', {
       lobbyId,
       playerId: hostId,
       playerName: hostName,
+      team: hostPlayer.team,
+      avatar: hostPlayer.avatar,
     });
 
     return lobby;
@@ -311,11 +317,16 @@ export class SessionManager {
     this.playerToLobby.set(playerId, lobbyId);
     this.playerActivity.set(playerId, Date.now());
 
-    // Emit domain event
+    // Emit domain event. team + avatar must be included so the host's
+    // incremental session:player_joined handler can place this new player
+    // on the right Battle Teams panel — see comment above for the bug
+    // this prevents.
     this.eventBus.emit('session:player_joined', {
       lobbyId,
       playerId,
       playerName,
+      team: player.team,
+      avatar: player.avatar,
     });
 
     return { lobby: updatedLobby, player };

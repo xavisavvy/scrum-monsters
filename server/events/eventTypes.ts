@@ -12,7 +12,7 @@
  * Event naming convention: domain:action (e.g., estimation:vote_cast)
  */
 
-import { GamePhase, TeamType } from '../../shared/gameEvents';
+import { GamePhase, TeamType, AvatarClass } from '../../shared/gameEvents';
 import type {
   ProgressionXPAwardedPayload,
   ProgressionLevelUpPayload,
@@ -65,6 +65,11 @@ export interface SessionPlayerJoinedPayload {
   lobbyId: string;
   playerId: string;
   playerName: string;
+  /** Player's initial team. Required so clients can place the player in
+   * the right Battle Teams panel without waiting for a follow-up event. */
+  team: TeamType;
+  /** Player's initial avatar/class (optional — set later via select_avatar). */
+  avatar?: AvatarClass;
 }
 
 /** Emitted when a player leaves a lobby (disconnect or explicit leave) */

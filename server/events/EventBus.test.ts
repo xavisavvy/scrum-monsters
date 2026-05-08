@@ -62,7 +62,8 @@ describe('EventBus', () => {
       eventBus.emit('session:player_joined', {
         lobbyId: 'lobby-1',
         playerId: 'player-1',
-        playerName: 'Test Player'
+        playerName: 'Test Player',
+        team: 'developers',
       });
 
       // Sync listener should have run immediately

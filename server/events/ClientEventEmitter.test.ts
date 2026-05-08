@@ -51,6 +51,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
 
       expect(emittedEvents).toHaveLength(1);
@@ -92,6 +93,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+          team: 'developers',
       });
 
       const data = emittedEvents[0].data;
@@ -150,6 +152,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
 
       expect(emittedEvents[0].data.seq).toBe(1);
@@ -160,11 +163,13 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
       eventBus.emit('session:player_joined', {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-2',
         playerName: 'Bob',
+        team: 'developers',
       });
       eventBus.emit('estimation:vote_cast', {
         lobbyId: 'TEST-LOBBY',
@@ -183,16 +188,19 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'LOBBY-A',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
       eventBus.emit('session:player_joined', {
         lobbyId: 'LOBBY-B',
         playerId: 'player-2',
         playerName: 'Bob',
+        team: 'developers',
       });
       eventBus.emit('session:player_joined', {
         lobbyId: 'LOBBY-A',
         playerId: 'player-3',
         playerName: 'Charlie',
+        team: 'developers',
       });
 
       const lobbyAEvents = emittedEvents.filter((e) => e.room === 'LOBBY-A');
@@ -214,6 +222,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
       eventBus.emit('estimation:vote_cast', {
         lobbyId: 'TEST-LOBBY',
@@ -234,11 +243,13 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
       eventBus.emit('session:player_joined', {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-2',
         playerName: 'Bob',
+        team: 'developers',
       });
       eventBus.emit('estimation:vote_cast', {
         lobbyId: 'TEST-LOBBY',
@@ -259,6 +270,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
 
       emitter.cleanup('TEST-LOBBY');
@@ -278,6 +290,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
 
       // Emit lobby destroyed
@@ -325,6 +338,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
 
       emitter.cleanup('TEST-LOBBY');
@@ -380,11 +394,13 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-1',
         playerName: 'Alice',
+        team: 'developers',
       });
       eventBus.emit('session:player_joined', {
         lobbyId: 'TEST-LOBBY',
         playerId: 'player-2',
         playerName: 'Bob',
+        team: 'developers',
       });
 
       emittedEvents = []; // Reset
@@ -418,6 +434,7 @@ describe('ClientEventEmitter', () => {
         lobbyId: 'TEST',
         playerId: 'p1',
         playerName: 'Alice',
+        team: 'developers',
       });
       eventBus.emit('session:player_left', {
         lobbyId: 'TEST',

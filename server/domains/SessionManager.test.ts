@@ -74,6 +74,8 @@ describe('SessionManager - Lobby Lifecycle', () => {
         lobbyId: lobby.id,
         playerId: hostId,
         playerName: 'Host Player',
+        team: 'spectators',
+        avatar: 'warrior',
       });
     });
 
@@ -154,6 +156,8 @@ describe('SessionManager - Lobby Lifecycle', () => {
         lobbyId: lobby.id,
         playerId: result.player.id,
         playerName: 'Player 2',
+        team: 'developers',
+        avatar: 'warrior',
       });
     });
 
