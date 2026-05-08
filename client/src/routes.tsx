@@ -10,6 +10,60 @@ import GamePage from './pages/GamePage';
 import RoomPage from './pages/RoomPage';
 
 /**
+ * Friendly fallback shown when React Router catches an error from a route
+ * loader/element. Most commonly fires after a deploy when a stale tab
+ * tries to lazy-load a chunk hash that no longer exists; main.tsx has a
+ * `vite:preloadError` listener that auto-reloads once, but if a second
+ * attempt also fails we render this instead of the default "Hey
+ * developer 👋" Router error screen.
+ */
+function RouteErrorFallback() {
+  return (
+    <div
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: '#0f0a1f',
+        color: '#fff',
+        fontFamily: 'monospace',
+        padding: '2rem',
+        textAlign: 'center',
+      }}
+    >
+      <div style={{ maxWidth: 480 }}>
+        <h1 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
+          Scrum Monsters was updated
+        </h1>
+        <p style={{ marginBottom: '1.5rem', opacity: 0.85 }}>
+          A new version is available. Reload to continue.
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            sessionStorage.removeItem('scrum-monsters:chunk-reload-attempted');
+            window.location.reload();
+          }}
+          style={{
+            padding: '0.75rem 1.5rem',
+            background: '#7c3aed',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '0.375rem',
+            cursor: 'pointer',
+            fontSize: '1rem',
+            fontFamily: 'inherit',
+          }}
+        >
+          Reload
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Central route definitions using React Router v7 (declarative mode)
  * Clean URLs without hash fragments, proper browser history support
  */
@@ -17,6 +71,7 @@ export const router = createBrowserRouter([
   {
     path: '/',
     element: <App />,
+    errorElement: <RouteErrorFallback />,
     children: [
       {
         index: true,
