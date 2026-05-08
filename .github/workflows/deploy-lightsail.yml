@@ -55,13 +55,22 @@ jobs:
           script: |
             set -e
             cd /opt/scrummonsters
-            echo "[1/4] Pulling latest Docker image from GHCR..."
+            echo "[1/5] Disk usage before:"
+            df -h / | tail -1
+            echo "[2/5] Pruning unused Docker images and build cache..."
+            # Remove images not referenced by any container (running or stopped).
+            # The currently-running app image is referenced and therefore safe.
+            # Prevents 'no space left on device' during pull/extract on hosts
+            # that accumulate old deploy images (#staging-disk-full 2026-05-08).
+            docker image prune -af || true
+            docker builder prune -af || true
+            df -h / | tail -1
+            echo "[3/5] Pulling latest Docker image from GHCR..."
             docker compose -f docker-compose.prod.yml pull app
-            echo "[2/4] Running Drizzle migrations..."
+            echo "[4/5] Running Drizzle migrations..."
             docker compose -f docker-compose.prod.yml run --rm app npx drizzle-kit push --force
-            echo "[3/4] Restarting app container (no-deps preserves postgres + NPM)..."
+            echo "[5/5] Restarting app container (no-deps preserves postgres + NPM)..."
             docker compose -f docker-compose.prod.yml up -d --no-deps app
-            echo "[4/4] Health check..."
             sleep 15
             curl --fail --silent --show-error http://localhost:5000/api/health
             echo ""
@@ -93,13 +102,22 @@ jobs:
           script: |
             set -e
             cd /opt/scrummonsters
-            echo "[1/4] Pulling latest Docker image from GHCR..."
+            echo "[1/5] Disk usage before:"
+            df -h / | tail -1
+            echo "[2/5] Pruning unused Docker images and build cache..."
+            # Remove images not referenced by any container (running or stopped).
+            # The currently-running app image is referenced and therefore safe.
+            # Prevents 'no space left on device' during pull/extract on hosts
+            # that accumulate old deploy images (#staging-disk-full 2026-05-08).
+            docker image prune -af || true
+            docker builder prune -af || true
+            df -h / | tail -1
+            echo "[3/5] Pulling latest Docker image from GHCR..."
             docker compose -f docker-compose.prod.yml pull app
-            echo "[2/4] Running Drizzle migrations..."
+            echo "[4/5] Running Drizzle migrations..."
             docker compose -f docker-compose.prod.yml run --rm app npx drizzle-kit push --force
-            echo "[3/4] Restarting app container (no-deps preserves postgres + NPM)..."
+            echo "[5/5] Restarting app container (no-deps preserves postgres + NPM)..."
             docker compose -f docker-compose.prod.yml up -d --no-deps app
-            echo "[4/4] Health check..."
             sleep 15
             curl --fail --silent --show-error http://localhost:5000/api/health
             echo ""
