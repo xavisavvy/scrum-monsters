@@ -20,7 +20,7 @@ import { useAuth } from "@/lib/stores/useAuth";
 import { User, LogOut, BarChart3 } from "lucide-react";
 
 export function UserMenu() {
-  const { user, stats, login, logout, isLoading } = useAuth();
+  const { user, stats, login, logout, isLoading, providersConfigured } = useAuth();
   const [showStatsDialog, setShowStatsDialog] = useState(false);
 
   // Get initials for avatar fallback
@@ -39,8 +39,13 @@ export function UserMenu() {
     return "??";
   };
 
-  // If not logged in, show sign in button
+  // If not logged in, gate Sign In on confirmed-configured providers.
+  // While providers query is in flight (null) or auth0 is unconfigured (false),
+  // render NOTHING — no flash, no broken button. Fail-closed per CONTEXT.
   if (!user) {
+    if (isLoading || providersConfigured === null || providersConfigured === false) {
+      return null;
+    }
     return (
       <Button
         variant="outline"
