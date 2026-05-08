@@ -10,8 +10,6 @@ export function ProjectileSystem({ projectiles, onProjectileComplete }: Projecti
   const [animatedProjectiles, setAnimatedProjectiles] = useState<Projectile[]>([]);
 
   useEffect(() => {
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-    }
     setAnimatedProjectiles(projectiles);
   }, [projectiles]);
 

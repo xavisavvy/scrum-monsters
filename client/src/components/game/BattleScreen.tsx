@@ -255,11 +255,7 @@ export function BattleScreen() {
 
   // Handle boss music when entering/leaving battle
   useEffect(() => {
-    if (import.meta.env.DEV && localStorage.getItem('debug')) {
-    }
     if (currentLobby?.gamePhase === 'battle' && currentLobby?.boss) {
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      }
       // Fade in boss music when battle starts
       fadeInBossMusic();
     } else {

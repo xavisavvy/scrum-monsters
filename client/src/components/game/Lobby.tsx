@@ -1205,7 +1205,6 @@ export function Lobby() {
     }
     if (trimmedName !== currentLobby?.name) {
       emit('update_lobby_name', { name: trimmedName });
-    } else {
     }
     setIsEditingLobbyName(false);
   };
