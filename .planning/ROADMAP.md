@@ -9,7 +9,7 @@
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
 - ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
 - ✅ **v4.0 Hosting & Deployment** — Phases 32-36 (shipped 2026-03-11)
-- 🚧 **v5.0 UX & Onboarding** — Phases 37-41 (in progress)
+- 🚧 **v5.0 UX & Onboarding** — Phases 37-43 (in progress)
 
 ## Phases
 
@@ -197,7 +197,7 @@ Plans:
 
 **Plans:** 2 plans
 - [x] 43-01-PLAN.md — Graceful unconfig UX (useAuth providersConfigured + UserMenu render gate) (completed 2026-05-08)
-- [ ] 43-02-PLAN.md — Configured-path integration tests + env hardening (supertest, mockOidc, route/component/store tests, AUTH0_* all-or-nothing)
+- [x] 43-02-PLAN.md — Configured-path integration tests + env hardening (supertest, mockOidc, route/component/store tests, AUTH0_* all-or-nothing) (completed 2026-05-08)
 
 ## Progress
 
@@ -219,10 +219,10 @@ Phases execute in numeric order: 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 2/2 | Plans complete | - |
 | 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
 | 42. v5.0 Pre-Ship Fixes & Polish | v5.0 | 4/4 | Complete | 2026-05-07 |
-| 43. Auth & User Account Validation | v5.0 | 1/2 | In progress | - |
+| 43. Auth & User Account Validation | v5.0 | 2/2 | Plans complete | - |
 
-**Total: 8 milestones shipped, 39 phases complete, 137 plans (1 deferred) | v5.0: 5/7 phases complete, 15/17 plans done**
+**Total: 8 milestones shipped, 39 phases complete, 138 plans (1 deferred) | v5.0: 5/7 phases complete, 16/17 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-05-08 — Plan 43-01 shipped (graceful unconfig UX: useAuth.providersConfigured + UserMenu three-way gate); 690/690 tests pass*
+*Last updated: 2026-05-08 — Plan 43-02 shipped (supertest harness, mockOidc helper, 15 new tests across server/component/store, AUTH0_* all-or-nothing env refine); 705/705 tests pass; AUTH-01 complete*

@@ -41,7 +41,7 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 
 ### Authentication
 
-- [ ] **AUTH-01**: Sign-in via Auth0 completes end-to-end (no redirect loop), authenticated session is recognized client-side via `/api/auth/me`, sign-out works, account-tied surfaces (profile, stats) render when authenticated, anonymous play preserved, and missing Auth0 env vars surface a clear error (not a silent loop)
+- [x] **AUTH-01**: Sign-in via Auth0 completes end-to-end (no redirect loop), authenticated session is recognized client-side via `/api/auth/me`, sign-out works, account-tied surfaces (profile, stats) render when authenticated, anonymous play preserved, and missing Auth0 env vars surface a clear error (not a silent loop) (Phase 43-01 + 43-02, completed 2026-05-08)
 
 ## Future Requirements
 
@@ -95,7 +95,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-04 | Phase 42 (42-01) | Complete |
 | FIX-05 | Phase 42 (42-02a + 42-02b) | Complete |
 | BAL-01 | Phase 42 (42-03) | Complete |
-| AUTH-01 | Phase 43 | Pending |
+| AUTH-01 | Phase 43 (43-01 + 43-02) | Complete (2026-05-08) |
 
 **Coverage:**
 - v5.0 requirements: 18 total
@@ -104,4 +104,4 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 ---
 *Requirements defined: 2026-03-11*
-*Last updated: 2026-05-07 — Added Phase 42 reqs (FIX-04, FIX-05, BAL-01) and Phase 43 (AUTH-01 sign-in loop fix); AVAT-01 (gender variants) deferred to v5.1.*
+*Last updated: 2026-05-08 — AUTH-01 complete (Phase 43-01 graceful unconfig UX + Phase 43-02 configured-path tests + AUTH0_* env hardening; 705/705 tests pass).*
