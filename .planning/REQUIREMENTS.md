@@ -43,6 +43,10 @@ Requirements for UX & Onboarding milestone. Each maps to roadmap phases.
 
 - [x] **AUTH-01**: Sign-in via Auth0 completes end-to-end (no redirect loop), authenticated session is recognized client-side via `/api/auth/me`, sign-out works, account-tied surfaces (profile, stats) render when authenticated, anonymous play preserved, and missing Auth0 env vars surface a clear error (not a silent loop) (Phase 43-01 + 43-02, completed 2026-05-08)
 
+### Infrastructure
+
+- [ ] **INFRA-01**: Deploys do not produce a 502 Bad Gateway window for users. New app container runs alongside the old, becomes healthy, NPM swaps upstream, then the old container stops. A continuous request stream during deploy sees zero dropped requests; in-flight WebSocket sessions either survive or reconnect cleanly via existing Phase 41 reconnection. (Phase 44)
+
 ## Future Requirements
 
 Deferred to future milestone. Tracked but not in current roadmap.
@@ -96,12 +100,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FIX-05 | Phase 42 (42-02a + 42-02b) | Complete |
 | BAL-01 | Phase 42 (42-03) | Complete |
 | AUTH-01 | Phase 43 (43-01 + 43-02) | Complete (2026-05-08) |
+| INFRA-01 | Phase 44 | Pending |
 
 **Coverage:**
-- v5.0 requirements: 18 total
-- Mapped to phases: 18
+- v5.0 requirements: 19 total
+- Mapped to phases: 19
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-11*
-*Last updated: 2026-05-08 — AUTH-01 complete (Phase 43-01 graceful unconfig UX + Phase 43-02 configured-path tests + AUTH0_* env hardening; 705/705 tests pass).*
+*Last updated: 2026-05-08 — Added INFRA-01 (zero-downtime blue-green deploys) for Phase 44; AUTH-01 marked complete.*
