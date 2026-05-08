@@ -30,9 +30,25 @@ export function setupEventHandlers(socket: Socket): void {
           hasSubmittedScore: false,
           level: 1
         };
+        // Also update currentLobby.teams[team] — the Battle Teams panel
+        // reads from `teams[team]`, not `players`. Without this push the
+        // host's team panel stays empty for the new joiner until they
+        // explicitly pick a team (which fires session:team_changed and
+        // does update teams). Skip if the player is already in the team
+        // (idempotent in case the event replays).
+        const team = data.team as TeamType | undefined;
+        const updatedTeams = team && currentLobby.teams[team]
+          ? {
+              ...currentLobby.teams,
+              [team]: currentLobby.teams[team].some(p => p.id === newPlayer.id)
+                ? currentLobby.teams[team]
+                : [...currentLobby.teams[team], newPlayer],
+            }
+          : currentLobby.teams;
         const updatedLobby = {
           ...currentLobby,
-          players: [...currentLobby.players, newPlayer]
+          players: [...currentLobby.players, newPlayer],
+          teams: updatedTeams,
         };
         setLobby(updatedLobby);
       }
@@ -46,9 +62,17 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
+        // Mirror the players[] removal in teams[*] so the Battle Teams
+        // panel stops showing the player after they leave.
+        const updatedTeams = {
+          developers: currentLobby.teams.developers.filter(p => p.id !== data.playerId),
+          qa: currentLobby.teams.qa.filter(p => p.id !== data.playerId),
+          spectators: currentLobby.teams.spectators.filter(p => p.id !== data.playerId),
+        };
         const updatedLobby = {
           ...currentLobby,
-          players: currentLobby.players.filter(p => p.id !== data.playerId)
+          players: currentLobby.players.filter(p => p.id !== data.playerId),
+          teams: updatedTeams,
         };
         setLobby(updatedLobby);
       }
