@@ -134,8 +134,6 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       
       // Only trigger flicker for new attacks, not repeated renders
       if (latestAttack.id !== lastProcessedAttackId.current) {
-        if (import.meta.env.DEV && localStorage.getItem('debug')) {
-        }
         lastProcessedAttackId.current = latestAttack.id;
         setIsDamaged(true);
         

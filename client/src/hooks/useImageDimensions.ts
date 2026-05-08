@@ -18,8 +18,6 @@ export function useImageDimensions(src: string): ImageDimensions {
 
     const img = new Image();
     img.onload = () => {
-      if (import.meta.env.DEV && localStorage.getItem('debug')) {
-      }
       setDimensions({
         width: img.naturalWidth,
         height: img.naturalHeight,
