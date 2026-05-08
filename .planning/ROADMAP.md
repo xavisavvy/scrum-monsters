@@ -199,10 +199,20 @@ Plans:
 - [x] 43-01-PLAN.md — Graceful unconfig UX (useAuth providersConfigured + UserMenu render gate) (completed 2026-05-08)
 - [x] 43-02-PLAN.md — Configured-path integration tests + env hardening (supertest, mockOidc, route/component/store tests, AUTH0_* all-or-nothing) (completed 2026-05-08)
 
-## Progress
+### Phase 44: Zero-Downtime Deploys (Blue-Green)
+**Goal**: Deploys do not produce a 502 Bad Gateway window for users. The new image runs alongside the old, becomes healthy, then NPM (nginx-proxy-manager) swaps upstream — old container stops only after the swap. No more ~15-30s "Bad Gateway" gap users currently see during every deploy.
+**Depends on**: Phase 42 (deploy workflow currently has the docker prune step that this phase will extend), Phase 43 (auth + reconnection paths must continue to work across the deploy swap)
+**Requirements**: INFRA-01
+**Success Criteria** (what must be TRUE):
+  1. A continuous request stream (e.g. `while true; do curl /api/health; done`) during a deploy never sees a non-2xx response — zero dropped requests
+  2. WebSocket connections in flight at deploy time either survive the swap or reconnect gracefully via the existing Phase 41 reconnection machinery (no duplicate-self / lost-host regression)
+  3. Deploy script supports an explicit rollback: if the new color fails its health check, NPM upstream stays on the old color and the deploy aborts cleanly
+  4. NPM admin credentials are stored as a CI secret (NPM_ADMIN_EMAIL, NPM_ADMIN_PASSWORD) and used to authenticate API calls from the deploy script
+  5. State of which color is active persists across deploys (e.g. `/opt/scrummonsters/.active-color` file), so subsequent deploys correctly target the inactive color
+  6. Compose changes preserve the existing single-host / postgres-on-network architecture — no Swarm, no Kubernetes
+  7. Phase 39/40/41/42/43 invariants must continue to pass under repeated deploys
 
-**Execution Order:**
-Phases execute in numeric order: 37 -> 38 -> 39 -> 40 -> 41 -> 42 -> 43
+**Plans**: TBD (likely 2-3 plans: compose + state file, NPM API integration, deploy script + rollback)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
