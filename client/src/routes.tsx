@@ -61,6 +61,14 @@ export const router = createBrowserRouter([
         element: <MenuPage />,
       },
       {
+        // Shareable quick-join URL: /join/CODE → /game/CODE.
+        // Pre-existing query-param form (/?join=CODE) is handled in the
+        // index loader above; this gives users a memorable path-style URL.
+        path: 'join/:lobbyId',
+        loader: ({ params }) =>
+          redirect(`/game/${(params.lobbyId ?? '').toUpperCase()}`),
+      },
+      {
         path: 'game/:lobbyId',
         element: <GamePage />,
       },
