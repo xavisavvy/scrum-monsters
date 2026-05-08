@@ -24,6 +24,24 @@ const envSchema = z.object({
     process.exit(1);
   }
   return true;
+}).refine((data) => {
+  // AUTH0_* all-or-nothing: either all four are set, or none are.
+  // Partial config crashes express-openid-connect with a cryptic error;
+  // fail-fast here with a clear message instead. Per RESEARCH §Pitfall 2.
+  const auth0Vars = [
+    data.AUTH0_ISSUER_BASE_URL,
+    data.AUTH0_CLIENT_ID,
+    data.AUTH0_CLIENT_SECRET,
+    data.AUTH0_SECRET,
+  ];
+  const setCount = auth0Vars.filter(Boolean).length;
+  if (setCount > 0 && setCount < 4) {
+    httpLogger.error(
+      'Auth0 partial configuration detected. Either set ALL of AUTH0_ISSUER_BASE_URL, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET, AUTH0_SECRET — or NONE.'
+    );
+    process.exit(1);
+  }
+  return true;
 });
 
 export type Env = z.infer<typeof envSchema>;
