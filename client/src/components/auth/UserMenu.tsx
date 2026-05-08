@@ -103,7 +103,7 @@ export function UserMenu() {
           <DialogHeader>
             <DialogTitle>Your Stats</DialogTitle>
             <DialogDescription>
-              Your ScrumQuest gameplay statistics
+              Your Scrum Monsters gameplay statistics
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

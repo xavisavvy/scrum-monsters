@@ -172,7 +172,7 @@ app.use((req, res, next) => {
 
     // Structured startup configuration logging
     logger.info({
-      msg: 'ScrumQuest server started',
+      msg: 'Scrum Monsters server started',
       environment: env.NODE_ENV,
       nodeVersion: process.version,
       database: storage instanceof PgStorage ? 'PostgreSQL' : 'In-Memory',
