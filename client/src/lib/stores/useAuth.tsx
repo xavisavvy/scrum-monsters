@@ -36,11 +36,14 @@ interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
+  // null = not yet fetched (loading); true/false = server-reported configuration
+  providersConfigured: boolean | null;
 
   // Actions
   checkAuth: () => Promise<void>;
   login: () => void;
   logout: () => void;
+  fetchProviders: () => Promise<void>;
   fetchProfile: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<boolean>;
   fetchStats: () => Promise<void>;
@@ -57,9 +60,32 @@ export const useAuth = create<AuthState>()(
         isLoading: false,
         isInitialized: false,
         error: null,
+        providersConfigured: null,
+
+        fetchProviders: async () => {
+          try {
+            const response = await fetch("/api/auth/providers", {
+              credentials: "include",
+            });
+            if (!response.ok) {
+              // Fail-closed: any non-OK status hides the Sign In button
+              set({ providersConfigured: false });
+              return;
+            }
+            const data = await response.json();
+            set({ providersConfigured: !!data.auth0 });
+          } catch (err) {
+            // Fail-closed on network/parse errors
+            console.error("Failed to fetch auth providers:", err);
+            set({ providersConfigured: false });
+          }
+        },
 
         checkAuth: async () => {
           set({ isLoading: true, error: null });
+          // Sequence providers fetch BEFORE /me to avoid stale-closure race
+          // (RESEARCH §Pitfall 4 — do not Promise.all)
+          await get().fetchProviders();
           try {
             const response = await fetch("/api/auth/me", {
               credentials: "include",
