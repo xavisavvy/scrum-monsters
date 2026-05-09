@@ -248,7 +248,20 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         // All failure results (invalid_token, grace_expired, server_error,
         // lobby_closed, lobby_not_found) clear the full session so the three
         // localStorage keys cannot drift apart on the next attempt.
+        //
+        // Phase 44 (CONTEXT.md "Active-game interruption is ACCEPTED"):
+        // After a blue-green deploy swap, the new color has empty in-process
+        // SessionManager Maps so reconnect_with_token resolves to one of these
+        // failure modes. Surface a user-visible toast (not a silent clear) so
+        // the user understands why their lobby evaporated and routes cleanly
+        // back to /play. id 'reconnect-stale' makes the toast idempotent
+        // against sonner's duplicate-suppression.
         console.error('Reconnection failed:', response.message);
+        toast.warning('Lobby session ended', {
+          description: 'Your previous lobby is no longer available. Start or join a new one.',
+          id: 'reconnect-stale',
+          duration: 5000,
+        });
         clearSession();
         set(state => ({
           reconnection: { ...state.reconnection, status: 'failed' },
