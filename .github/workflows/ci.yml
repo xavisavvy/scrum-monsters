@@ -240,7 +240,7 @@ jobs:
           sudo apt-get install -y shellcheck bats jq
 
       - name: Shellcheck deploy library
-        run: shellcheck scripts/deploy/lib/*.sh scripts/deploy/wave0-npm-discovery.sh
+        run: shellcheck -x scripts/deploy/lib/*.sh scripts/deploy/wave0-npm-discovery.sh scripts/deploy/deploy-bluegreen.sh scripts/deploy/rollback-bluegreen.sh
 
       - name: Bats deploy library
         run: bats scripts/deploy/test/
