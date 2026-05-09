@@ -9,7 +9,7 @@
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
 - ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
 - ✅ **v4.0 Hosting & Deployment** — Phases 32-36 (shipped 2026-03-11)
-- 🚧 **v5.0 UX & Onboarding** — Phases 37-43 (in progress)
+- 🚧 **v5.0 UX & Onboarding** — Phases 37-44 (in progress; 7/8 verified, Phase 39 UAT outstanding)
 
 ## Phases
 
@@ -230,13 +230,14 @@ Plans:
 | 32-36 | v4.0 | 14/14 | Complete | 2026-03-11 |
 | 37. State Polish & Bug Fixes | v5.0 | 2/2 | Complete | 2026-03-11 |
 | 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
-| 39. Tutorial Foundation | v5.0 | 0/2 | Not started | - |
-| 40. Tutorial Content & JRPG Narrator | v5.0 | 2/2 | Plans complete | - |
+| 39. Tutorial Foundation | v5.0 | 2/2 | Plans complete; UAT outstanding | - |
+| 40. Tutorial Content & JRPG Narrator | v5.0 | 2/2 | Complete | 2026-05-07 |
 | 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
 | 42. v5.0 Pre-Ship Fixes & Polish | v5.0 | 4/4 | Complete | 2026-05-07 |
-| 43. Auth & User Account Validation | v5.0 | 2/2 | Plans complete | - |
+| 43. Auth & User Account Validation | v5.0 | 2/2 | Complete | 2026-05-07 |
+| 44. Zero-Downtime Deploys (Blue-Green) | v5.0 | 3/3 | Complete | 2026-05-09 |
 
-**Total: 8 milestones shipped, 39 phases complete, 138 plans (1 deferred) | v5.0: 5/7 phases complete, 16/17 plans done**
+**Total: 8 milestones shipped, 42 phases complete, 144 plans (1 deferred) | v5.0: 7/8 phases complete (Phase 39 UAT outstanding), 20/20 plans done**
 
 ---
 *Roadmap created: 2026-02-11*
