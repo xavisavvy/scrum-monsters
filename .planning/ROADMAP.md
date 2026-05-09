@@ -212,7 +212,12 @@ Plans:
   6. Compose changes preserve the existing single-host / postgres-on-network architecture — no Swarm, no Kubernetes
   7. Phase 39/40/41/42/43 invariants must continue to pass under repeated deploys
 
-**Plans**: TBD (likely 2-3 plans: compose + state file, NPM API integration, deploy script + rollback)
+**Plans**: 3 plans
+
+Plans:
+- [ ] 44-01-PLAN.md — Compose blue-green topology + NPM image pin + Wave 0 discovery script + stale-snapshot toast UX
+- [ ] 44-02-PLAN.md — NPM REST API helper module + healthcheck poll module + Bats tests + CI shellcheck/bats gate
+- [ ] 44-03-PLAN.md — Deploy orchestrator + auto-rollback + manual rollback script + workflow wiring + operator runbook
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
