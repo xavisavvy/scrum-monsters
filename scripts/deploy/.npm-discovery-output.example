@@ -1,0 +1,14 @@
+# Example output of scripts/deploy/wave0-npm-discovery.sh
+# Operator pastes the actual values into the deploy script in Plan 44-03.
+# DO NOT paste real production values into this file — it is a TEMPLATE only.
+#
+# [1/4] Authenticating to NPM at http://localhost:81...
+# [2/4] Discovering proxy host ID for scrummonsters.com...
+# DISCOVERED NPM_PROXY_HOST_ID=<integer, e.g., 4>
+# [3/4] Determining read-only-field strip list (no-op PUT round-trip)...
+# STRIP_LIST_OK: del(.id, .created_on, .modified_on, .owner_user_id, .meta.nginx_online, .meta.nginx_err)
+# [4/4] Capturing NPM image digest for Plan 44-01 pin verification...
+# sha256:<digest>
+# [jc21/nginx-proxy-manager:latest] <created>
+#
+# DONE. Paste the DISCOVERED line and STRIP_LIST_OK line into Plan 44-03's deploy script.
