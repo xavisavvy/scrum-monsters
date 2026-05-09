@@ -45,6 +45,16 @@ Out of scope: replacing NPM with another reverse proxy; multi-region deploys; ru
 ### NPM image pin (resolved 2026-05-08)
 
 - **Pin nginx-proxy-manager to a specific image tag in Plan 44-01.** Researcher flagged that `latest` is unpinned; once the deploy script depends on the NPM REST API contract, an upstream NPM update could silently break deploys. Pin to the version currently running on the VPS (capture during Plan 44-01 setup).
+- **Captured value:** `jc21/nginx-proxy-manager:2.14.0` (Wave 0 operator discovery against live VPS, 2026-05-08). NOT `2.11.3` as the initial plan guessed.
+
+### NPM service account for deploy automation (resolved 2026-05-09)
+
+- **Wave 0 discovery surfaced an unanticipated 2FA blocker.** NPM 2.14 added TOTP-based 2FA, and the human admin account `preston@prestonfarr.com` had `totp_enabled: true`. NPM's `/api/tokens` endpoint returns `{requires_2fa: true, challenge_token: ...}` instead of an access token, which is incompatible with non-interactive CI authentication.
+- **Resolution:** Created a dedicated NPM service account `deploy-bot@scrummonsters.com` with role `admin`, no 2FA. Used only by the deploy script. The human admin account retains 2FA. GitHub Actions secrets `NPM_ADMIN_EMAIL` / `NPM_ADMIN_PASSWORD` hold the bot credentials.
+- **NPM_PROXY_HOST_ID:** `1` (captured 2026-05-08; stable, hardcoded in deploy script).
+- **NPM_PUT_STRIP_LIST:** `del(.id, .created_on, .modified_on, .owner_user_id, .meta.nginx_online, .meta.nginx_err)` (the conservative default from RESEARCH.md Pattern 1 worked as-is against NPM 2.14.0 — no extension needed).
+- **Trust boundary:** `/opt/scrummonsters/.env` is `chmod 600` and the NPM admin port `81` is localhost-only on the VPS, so the bot's password is only useful from inside the VPS or through a privileged SSH session. Acceptable for deploy automation at current scale.
+- **Provisioning workflow:** `.github/workflows/provision-vps-secrets.yml` (workflow_dispatch). Reads `NPM_ADMIN_EMAIL` / `NPM_ADMIN_PASSWORD` repo secrets and idempotently upserts them into VPS `.env`. Re-run after rotating the bot password.
 
 ### Auto-rollback on healthcheck failure
 
