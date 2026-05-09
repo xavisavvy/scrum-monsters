@@ -4,12 +4,50 @@
 # Note: Port 81 (NPM admin) should be removed from Lightsail firewall after TLS setup
 
 services:
-  app:
+  # Blue-green deploy topology (Phase 44).
+  # Both colors share the same image, env, healthcheck, and Postgres dependency.
+  # Neither publishes a host port — NPM reaches them on the Docker network via
+  # `container_name:` DNS (Pitfall 6 — RESEARCH.md). Each color is gated by a
+  # Compose profile so a plain `docker compose up -d` never starts both at once;
+  # the deploy script (Plan 44-03) selects the inactive color and starts it
+  # explicitly with `docker compose --profile <color> up -d app-<color>`.
+  app-blue:
     image: ghcr.io/xavisavvy/scrum-monsters:${APP_IMAGE_TAG:-latest}
+    container_name: app-blue
+    profiles: ["blue"]
     stop_grace_period: 45s
     restart: unless-stopped
-    ports:
-      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SESSION_SECRET: ${SESSION_SECRET}
+      PORT: "5000"
+      ALLOWED_ORIGINS: https://scrummonsters.com
+      BASE_URL: https://scrummonsters.com
+      # Optional OAuth providers — uncomment and set values in .env to enable
+      # GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      # GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      # GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID}
+      # GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET}
+      # Optional Upstash Redis — uncomment if using
+      # UPSTASH_REDIS_REST_URL: ${UPSTASH_REDIS_REST_URL}
+      # UPSTASH_REDIS_REST_TOKEN: ${UPSTASH_REDIS_REST_TOKEN}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:5000/api/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  app-green:
+    image: ghcr.io/xavisavvy/scrum-monsters:${APP_IMAGE_TAG:-latest}
+    container_name: app-green
+    profiles: ["green"]
+    stop_grace_period: 45s
+    restart: unless-stopped
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
@@ -69,7 +107,13 @@ services:
     restart: unless-stopped
 
   nginx-proxy-manager:
-    image: jc21/nginx-proxy-manager:latest
+    # Pinned (Phase 44, Pitfall 8 — RESEARCH.md): once the deploy script depends
+    # on the NPM REST API contract, an upstream NPM update could silently break
+    # deploys. Operator captures the running version digest via
+    # scripts/deploy/wave0-npm-discovery.sh (uses `docker inspect` against the
+    # currently running image) and updates this tag if the captured version
+    # differs from 2.11.3.
+    image: jc21/nginx-proxy-manager:2.11.3
     restart: unless-stopped
     ports:
       - "80:80"
@@ -101,8 +145,11 @@ services:
           memory: 128M
         reservations:
           memory: 64M
-    depends_on:
-      - app
+    # NOTE (Phase 44): the previous `depends_on: - app` was advisory only.
+    # With profile-gated app-blue / app-green, Compose v2 treats `depends_on`
+    # against a profile-disabled service as an invalid project, so we drop the
+    # dep entirely. Prometheus scrapes the active color via service-discovery
+    # config, not start ordering.
 
   grafana:
     image: grafana/grafana-oss:latest
