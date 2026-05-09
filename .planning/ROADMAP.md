@@ -215,9 +215,9 @@ Plans:
 **Plans**: 3 plans
 
 Plans:
-- [ ] 44-01-PLAN.md — Compose blue-green topology + NPM image pin + Wave 0 discovery script + stale-snapshot toast UX
-- [ ] 44-02-PLAN.md — NPM REST API helper module + healthcheck poll module + Bats tests + CI shellcheck/bats gate
-- [ ] 44-03-PLAN.md — Deploy orchestrator + auto-rollback + manual rollback script + workflow wiring + operator runbook
+- [x] 44-01-PLAN.md — Compose blue-green topology + NPM image pin + Wave 0 discovery script + stale-snapshot toast UX
+- [x] 44-02-PLAN.md — NPM REST API helper module + healthcheck poll module + Bats tests + CI shellcheck/bats gate
+- [x] 44-03-PLAN.md — Deploy orchestrator + auto-rollback + manual rollback script + workflow wiring + operator runbook
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
