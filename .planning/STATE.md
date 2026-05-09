@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
 status: executing
-stopped_at: Completed 43-02-PLAN.md (configured-path tests + AUTH0_* env hardening — AUTH-01 complete)
-last_updated: "2026-05-08T02:50:00.000Z"
-last_activity: 2026-05-08 -- Completed 43-02 (supertest harness + 15 new tests + AUTH0 all-or-nothing refine; 705/705 tests pass; AUTH-01 complete)
+stopped_at: Completed 44-02-PLAN.md (NPM API + healthcheck bash modules + CI shellcheck/bats gate — INFRA-01 in flight, Plan 44-03 next)
+last_updated: "2026-05-08T03:30:00.000Z"
+last_activity: 2026-05-08 -- Completed 44-02 (scripts/deploy/lib/npm-api.sh + health-poll.sh + 13 bats tests + CI deploy-scripts job; 2 commits 47cc14a, 8546614)
 progress:
   total_phases: 7
   completed_phases: 7
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 ## Current Position
 
-Phase: 43 (auth-user-account-validation) — COMPLETE
-Plan: 2 of 2 (complete)
-Status: Phase 43 complete (both plans shipped; AUTH-01 done)
-Last activity: 2026-05-08 -- Completed 43-02 (supertest harness + 15 new tests + AUTH0_* all-or-nothing env refine; 705/705 tests pass)
+Phase: 44 (zero-downtime-deploys-blue-green) — IN PROGRESS
+Plan: 2 of 3 (complete; Plan 44-03 next)
+Status: Wave 2 (autonomous helper modules + CI gate) shipped
+Last activity: 2026-05-08 -- Completed 44-02 (npm-api.sh + health-poll.sh + 13 bats tests + CI deploy-scripts job)
 
 Progress: [██████████] 100%
 
@@ -96,6 +96,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [43-02] mockOidc.ts test helper stubs (req as any).oidc directly — does NOT vi.mock the express-openid-connect auth() factory (per RESEARCH §Anti-Patterns: factory mocks hide regressions)
 - [43-02] Login-redirect smoke is structural ONLY — asserts configureAuth0 is exported + middleware mounts without throwing; no live redirect, no real Auth0 issuer contact (TODO stretch: assert 302 once express-openid-connect exposes a test mode)
 - [43-02] AUTH0_* all-or-nothing zod .refine() chained AFTER existing production-DB refine, using the same httpLogger.error + process.exit(1) idiom (NOT throw); BASE_URL deliberately excluded from the all-or-nothing set
+- [44-02] Bash deploy helpers split into source-able modules (npm-api.sh, health-poll.sh) under scripts/deploy/lib/; PATH-shim mocking via mktemp tmp dirs is the bats convention for this repo
+- [44-02] npm_login fails loudly on requires_2fa response (extra 8th bats test added — Rule 2 critical security functionality per executor brief; total 13 bats tests > plan-stated 12)
+- [44-02] CI deploy-scripts job uses apt-get install shellcheck bats jq on ubuntu-latest; ci-success needs[] gates branch protection on the new job
 
 ### Pending Todos
 
@@ -112,10 +115,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 43-02-PLAN.md (configured-path tests + AUTH0_* env hardening — AUTH-01 fully delivered)
+Stopped at: Completed 44-02-PLAN.md (NPM API + healthcheck bash modules + CI shellcheck/bats gate)
 Resume file: None
-Next action: Phase 43 verification / proceed to next phase per ROADMAP
+Next action: Plan 44-03 — blue-green deploy orchestrator (sources both helpers shipped in 44-02)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-08 — Completed 43-02 (supertest harness, mockOidc helper, 15 new tests across server/component/store, AUTH0_* all-or-nothing env refine); 705/705 tests pass; AUTH-01 COMPLETE*
+*Last updated: 2026-05-08 — Completed 44-02 (scripts/deploy/lib/npm-api.sh + health-poll.sh, 13 bats tests, CI deploy-scripts job); commits 47cc14a + 8546614*
