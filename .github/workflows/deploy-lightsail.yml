@@ -46,34 +46,33 @@ jobs:
           aws-region: us-east-1
           role-session-name: GitHubActions-Staging-Deploy
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (blue-green)
         uses: appleboy/ssh-action@v1
+        env:
+          NPM_ADMIN_EMAIL: ${{ secrets.NPM_ADMIN_EMAIL }}
+          NPM_ADMIN_PASSWORD: ${{ secrets.NPM_ADMIN_PASSWORD }}
         with:
           host: ${{ env.REMOTE_HOST }}
           username: ${{ env.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NPM_ADMIN_EMAIL,NPM_ADMIN_PASSWORD
+          # set -e (NOT -ex) — never trace the password.
+          # The orchestrator (scripts/deploy/deploy-bluegreen.sh) handles:
+          #   pull -> start inactive color -> healthcheck -> drizzle migrate ->
+          #   NPM swap -> external smoke -> persist .active-color -> stop old color.
+          # Auto-rollback (pre-swap) if healthcheck fails.
           script: |
             set -e
             cd /opt/scrummonsters
-            echo "[1/5] Disk usage before:"
+            echo "[setup] Pulling latest deploy scripts from main..."
+            git fetch origin main
+            git reset --hard origin/main
+            echo "[setup] Disk usage before:"
             df -h / | tail -1
-            echo "[2/5] Pruning unused Docker images and build cache..."
-            # Remove images not referenced by any container (running or stopped).
-            # The currently-running app image is referenced and therefore safe.
-            # Prevents 'no space left on device' during pull/extract on hosts
-            # that accumulate old deploy images (#staging-disk-full 2026-05-08).
-            docker image prune -af || true
-            docker builder prune -af || true
+            echo "[setup] Invoking blue-green deploy orchestrator..."
+            bash scripts/deploy/deploy-bluegreen.sh
+            echo "[setup] Disk usage after:"
             df -h / | tail -1
-            echo "[3/5] Pulling latest Docker image from GHCR..."
-            docker compose -f docker-compose.prod.yml pull app
-            echo "[4/5] Running Drizzle migrations..."
-            docker compose -f docker-compose.prod.yml run --rm app npx drizzle-kit push --force
-            echo "[5/5] Restarting app container (no-deps preserves postgres + NPM)..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps app
-            sleep 15
-            curl --fail --silent --show-error http://localhost:5000/api/health
-            echo ""
             echo "Staging deploy complete."
 
   deploy-prod:
@@ -93,34 +92,28 @@ jobs:
           aws-region: us-east-1
           role-session-name: GitHubActions-Prod-Deploy
 
-      - name: Deploy via SSH
+      - name: Deploy via SSH (blue-green)
         uses: appleboy/ssh-action@v1
+        env:
+          NPM_ADMIN_EMAIL: ${{ secrets.NPM_ADMIN_EMAIL }}
+          NPM_ADMIN_PASSWORD: ${{ secrets.NPM_ADMIN_PASSWORD }}
         with:
           host: ${{ env.REMOTE_HOST }}
           username: ${{ env.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          envs: NPM_ADMIN_EMAIL,NPM_ADMIN_PASSWORD
           script: |
             set -e
             cd /opt/scrummonsters
-            echo "[1/5] Disk usage before:"
+            echo "[setup] Pulling latest deploy scripts from main..."
+            git fetch origin main
+            git reset --hard origin/main
+            echo "[setup] Disk usage before:"
             df -h / | tail -1
-            echo "[2/5] Pruning unused Docker images and build cache..."
-            # Remove images not referenced by any container (running or stopped).
-            # The currently-running app image is referenced and therefore safe.
-            # Prevents 'no space left on device' during pull/extract on hosts
-            # that accumulate old deploy images (#staging-disk-full 2026-05-08).
-            docker image prune -af || true
-            docker builder prune -af || true
+            echo "[setup] Invoking blue-green deploy orchestrator..."
+            bash scripts/deploy/deploy-bluegreen.sh
+            echo "[setup] Disk usage after:"
             df -h / | tail -1
-            echo "[3/5] Pulling latest Docker image from GHCR..."
-            docker compose -f docker-compose.prod.yml pull app
-            echo "[4/5] Running Drizzle migrations..."
-            docker compose -f docker-compose.prod.yml run --rm app npx drizzle-kit push --force
-            echo "[5/5] Restarting app container (no-deps preserves postgres + NPM)..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps app
-            sleep 15
-            curl --fail --silent --show-error http://localhost:5000/api/health
-            echo ""
             echo "Production deploy complete."
 
   smoke-test:
@@ -137,21 +130,19 @@ jobs:
           host: ${{ env.REMOTE_HOST }}
           username: ${{ env.REMOTE_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # External URLs (https://scrummonsters.com/...) hit NPM, which proves
+          # the post-deploy upstream re-route. The host port 5000 is NOT
+          # published in the blue-green topology (Plan 44-01) so localhost:5000
+          # would 404 even on a healthy deploy.
           script: |
             set -e
-            echo "[1/3] Health endpoint..."
-            curl --fail --silent --show-error http://localhost:5000/api/health
+            echo "[1/3] External health endpoint via NPM..."
+            curl --fail --silent --show-error https://scrummonsters.com/api/health
             echo ""
-            echo "[2/3] WebSocket health..."
-            curl --fail --silent --show-error http://localhost:5000/api/ws-health
+            echo "[2/3] External WebSocket health via NPM..."
+            curl --fail --silent --show-error https://scrummonsters.com/api/ws-health
             echo ""
-            echo "[3/3] Home page loads..."
-            STATUS=$(curl --silent --output /dev/null --write-out "%{http_code}" http://localhost:5000/)
-            if [ "$STATUS" -eq 200 ]; then
-              echo "Home page returned 200 OK"
-            else
-              echo "Home page returned $STATUS"
-              exit 1
-            fi
+            echo "[3/3] Active color check..."
+            cat /opt/scrummonsters/.active-color
             echo ""
             echo "All smoke tests passed."
