@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v5.0
 milestone_name: UX & Onboarding
-status: executing
-stopped_at: Completed 44-02-PLAN.md (NPM API + healthcheck bash modules + CI shellcheck/bats gate — INFRA-01 in flight, Plan 44-03 next)
-last_updated: "2026-05-08T03:30:00.000Z"
-last_activity: 2026-05-08 -- Completed 44-02 (scripts/deploy/lib/npm-api.sh + health-poll.sh + 13 bats tests + CI deploy-scripts job; 2 commits 47cc14a, 8546614)
+status: completed
+stopped_at: Completed 44-02-PLAN.md (NPM API + healthcheck bash modules + CI shellcheck/bats gate)
+last_updated: "2026-05-09T03:57:32.489Z"
+last_activity: 2026-05-09 -- Phase 44 marked complete
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 17
-  completed_plans: 17
+  total_phases: 8
+  completed_phases: 8
+  total_plans: 20
+  completed_plans: 20
   percent: 100
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 ## Current Position
 
-Phase: 44 (zero-downtime-deploys-blue-green) — IN PROGRESS
+Phase: 44 — COMPLETE
 Plan: 2 of 3 (complete; Plan 44-03 next)
-Status: Wave 2 (autonomous helper modules + CI gate) shipped
-Last activity: 2026-05-08 -- Completed 44-02 (npm-api.sh + health-poll.sh + 13 bats tests + CI deploy-scripts job)
+Status: Phase 44 complete
+Last activity: 2026-05-09 -- Phase 44 marked complete
 
 Progress: [██████████] 100%
 
