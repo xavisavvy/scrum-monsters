@@ -40,6 +40,11 @@ Out of scope: replacing NPM with another reverse proxy; multi-region deploys; ru
 - **Caveat that must be verified during planning**: in-memory lobby state lives on whichever container is currently active. Before swapping NPM, the new color has NO lobbies. After swap, reconnecting clients hit the new color, find their lobby gone, and end up on `/play`. This is the same failure mode Phase 41 is designed to handle, BUT requires that lobby state be reconstructed from the reconnect token. Researcher must confirm the reconnect-token flow can re-create a lobby (or at least restore the reconnecting player into the existing lobby) when the new color has empty in-memory state.
   - If reconnection cannot reconstruct: this phase needs a deferred sub-decision: either (a) accept that deploys interrupt active games (post a "we deployed, please re-create your lobby" UX), or (b) escalate scope to externalize lobby state to Redis/Postgres so both colors share state.
   - This is the single highest-risk open question in this phase.
+  - **RESOLVED 2026-05-08 after research:** Researcher confirmed Phase 41 reconnect CANNOT reconstruct lobby state across colors (`SessionManager` keeps `lobbies` / `disconnectedPlayers` / `reconnectTokens` as in-process Maps; `validateReconnectToken` returns null when the new color's Map is empty; `attemptPlayerReconnect` short-circuits at `lobby_closed`). User decision: **accept active-game interruption** (option a). HTTP gets zero-downtime; in-flight WS connections see "lobby evaporated", bounce to `/play` with a stale-snapshot toast, and operator runbook documents this as expected behavior. Externalizing state stays Deferred. Plans must include: (1) operator runbook note, (2) toast/UX copy verification when reconnect lands on a new color with no matching lobby.
+
+### NPM image pin (resolved 2026-05-08)
+
+- **Pin nginx-proxy-manager to a specific image tag in Plan 44-01.** Researcher flagged that `latest` is unpinned; once the deploy script depends on the NPM REST API contract, an upstream NPM update could silently break deploys. Pin to the version currently running on the VPS (capture during Plan 44-01 setup).
 
 ### Auto-rollback on healthcheck failure
 
