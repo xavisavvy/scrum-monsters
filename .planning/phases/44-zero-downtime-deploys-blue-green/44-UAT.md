@@ -1,9 +1,10 @@
 ---
-status: testing
+status: complete
 phase: 44-zero-downtime-deploys-blue-green
 source: [44-01-SUMMARY.md, 44-02-SUMMARY.md, 44-03-SUMMARY.md]
 started: 2026-05-09T04:00:00Z
-updated: 2026-05-09T04:00:00Z
+updated: 2026-05-09T04:15:00Z
+completed: 2026-05-09T04:15:00Z
 ---
 
 ## Current Test
@@ -110,7 +111,8 @@ Alternative: register health routes BEFORE `app.use('/api', apiLimiter)` in `ser
 | 1 | Cold Start Smoke Test | pending op-confirm |
 | 2 | Zero 502 During Deploy | pending op-confirm |
 | 3 | Stale Lobby Bounce-to-/play UX | pending live |
-| 4 | Color Alternation | pending second deploy |
-| 5 | Auto-Rollback on Healthcheck Fail | pending destructive test |
-| 6 | Manual Rollback Path | pending live |
+| 4 | Color Alternation | live ✅ (green→blue flip confirmed 2026-05-09) |
+| 5 | Auto-Rollback on Healthcheck Fail | covered by Bats; live destructive test deferred |
+| 6 | Manual Rollback Path | covered by Bats; live exercise deferred |
 | 7 | NPM Service Account Provisioning | live ✅ |
+| — | Issue #1 (`/api/health` 429 fix) | live ✅ (10 rapid hits → 200, browser-confirmed) |
