@@ -55,7 +55,7 @@ jobs:
 
       - name: Comment PR on failure
         if: steps.visual-tests.outcome == 'failure'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             github.rest.issues.createComment({
