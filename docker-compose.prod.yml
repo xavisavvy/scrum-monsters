@@ -109,11 +109,11 @@ services:
   nginx-proxy-manager:
     # Pinned (Phase 44, Pitfall 8 — RESEARCH.md): once the deploy script depends
     # on the NPM REST API contract, an upstream NPM update could silently break
-    # deploys. Operator captures the running version digest via
-    # scripts/deploy/wave0-npm-discovery.sh (uses `docker inspect` against the
-    # currently running image) and updates this tag if the captured version
-    # differs from 2.11.3.
-    image: jc21/nginx-proxy-manager:2.11.3
+    # deploys. Captured 2026-05-08 via Wave 0 operator discovery against the live
+    # VPS (image digest sha256:2aa69b38..., NPM API version v2.14.0). Update this
+    # tag only after re-running scripts/deploy/wave0-npm-discovery.sh against an
+    # NPM upgrade to confirm the API contract still matches.
+    image: jc21/nginx-proxy-manager:2.14.0
     restart: unless-stopped
     ports:
       - "80:80"
