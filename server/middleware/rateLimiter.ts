@@ -28,13 +28,38 @@ export const profileLimiter = rateLimit({
 });
 
 /**
+ * Health and version endpoints exempt from apiLimiter.
+ * These are hit constantly by external monitoring (blackbox-exporter,
+ * Route 53 health checks), the deploy workflow's smoke-test job, and
+ * operators verifying service state during/after deploys. Sharing the
+ * 200/15min apiLimiter bucket with mutating endpoints would either
+ * starve real callers or, if the limit were raised, dilute its
+ * protection on the endpoints it actually exists to protect.
+ *
+ * Paths are relative to the /api mount point in server/routes.ts.
+ * (Phase 44 UAT Issue #1, 2026-05-09.)
+ */
+export const RATE_LIMIT_EXEMPT_PATHS = new Set([
+  '/health',
+  '/health/livez',
+  '/health/readyz',
+  '/ws-health',
+  '/version',
+]);
+
+export function shouldSkipApiRateLimit(req: Pick<Request, 'path'>): boolean {
+  return process.env.NODE_ENV === 'test' || RATE_LIMIT_EXEMPT_PATHS.has(req.path);
+}
+
+/**
  * apiLimiter - General rate limiting catch-all for all /api routes.
  * Limit: 200 requests per 15 minutes per IP.
+ * Exempts health/version paths (see RATE_LIMIT_EXEMPT_PATHS).
  */
 export const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 200,
   standardHeaders: 'draft-8',
   legacyHeaders: false,
-  skip: (_req: Request) => process.env.NODE_ENV === 'test',
+  skip: (req: Request) => shouldSkipApiRateLimit(req),
 });
