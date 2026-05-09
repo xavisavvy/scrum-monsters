@@ -4,8 +4,8 @@ milestone: v5.0
 milestone_name: UX & Onboarding
 status: completed
 stopped_at: Completed 44-02-PLAN.md (NPM API + healthcheck bash modules + CI shellcheck/bats gate)
-last_updated: "2026-05-09T03:57:32.489Z"
-last_activity: 2026-05-09 -- Phase 44 marked complete
+last_updated: "2026-05-09T04:24:49.611Z"
+last_activity: 2026-05-09
 progress:
   total_phases: 8
   completed_phases: 8
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 Phase: 44 — COMPLETE
 Plan: 2 of 3 (complete; Plan 44-03 next)
 Status: Phase 44 complete
-Last activity: 2026-05-09 -- Phase 44 marked complete
+Last activity: 2026-05-09
 
 Progress: [██████████] 100%
 
