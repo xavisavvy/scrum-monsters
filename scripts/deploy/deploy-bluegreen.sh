@@ -11,9 +11,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=lib/npm-api.sh
+# shellcheck source=scripts/deploy/lib/npm-api.sh
 source "$SCRIPT_DIR/lib/npm-api.sh"
-# shellcheck source=lib/health-poll.sh
+# shellcheck source=scripts/deploy/lib/health-poll.sh
 source "$SCRIPT_DIR/lib/health-poll.sh"
 
 deploy_bluegreen_main() {
