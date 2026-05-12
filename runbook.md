@@ -12,7 +12,8 @@ Covers: initial VPS setup, deploy procedure, and what deploy.sh does step by ste
 | Restart stack | SSH in, then: `cd /opt/scrummonsters && sudo systemctl restart scrummonsters` |
 | NPM admin UI | SSH tunnel: `ssh -L 81:localhost:81 ubuntu@<ip>` then visit http://localhost:81 |
 | Check app health | `curl https://scrummonsters.com/api/health` |
-| Monitoring UIs | SSH tunnel: `ssh -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 -L 9999:127.0.0.1:9999 ubuntu@<ip>` |
+| Grafana dashboards | Open `https://<your-stack>.grafana.net` (Grafana Cloud) — see Part 8 |
+| Prometheus UI (debug only) | SSH tunnel: `ssh -L 9090:127.0.0.1:9090 ubuntu@<ip>` |
 | Rollback to prior version | SSH in, then: `APP_IMAGE_TAG=sha-XXXXXX docker compose -f docker-compose.prod.yml pull app && docker compose -f docker-compose.prod.yml up -d --no-deps app` |
 | Trigger manual backup | SSH in, then: `docker compose -f docker-compose.prod.yml exec postgres-backup sh -c '/backup.sh'` |
 | View backup logs | SSH in, then: `docker compose -f docker-compose.prod.yml logs -f postgres-backup` |
@@ -174,6 +175,10 @@ APP_IMAGE_TAG=latest
 BACKUP_S3_ACCESS_KEY_ID=<from AWS IAM user>
 BACKUP_S3_SECRET_ACCESS_KEY=<from AWS IAM user>
 BACKUP_S3_BUCKET=<your-backup-bucket-name>
+
+# Grafana Cloud remote_write (see Part 8 for setup)
+# Write-scoped access token from your Grafana Cloud stack.
+GRAFANA_REMOTE_WRITE_TOKEN=<glc_... — see Part 8.1>
 ```
 
 Generate strong secrets before filling in:
@@ -188,6 +193,21 @@ chmod 600 /opt/scrummonsters/.env
 ```
 
 > **Important:** The `DATABASE_URL` password must exactly match `POSTGRES_PASSWORD`. Docker Compose uses both — `POSTGRES_PASSWORD` to initialize the PostgreSQL container, and `DATABASE_URL` to connect from the app.
+
+### 1.8a Bootstrap the Grafana Cloud Token File
+
+Prometheus mounts the remote_write token as a file (not an env var, because Prometheus does not expand env vars in its config). Export the token from `.env` into the file the container reads:
+
+```bash
+cd /opt/scrummonsters
+grep '^GRAFANA_REMOTE_WRITE_TOKEN=' .env | cut -d= -f2- | tr -d '\n\r' \
+  > docker/prometheus/grafana_remote_write_token
+chmod 644 docker/prometheus/grafana_remote_write_token
+```
+
+The file must be world-readable (mode 644) because the Prometheus container runs as UID 65534 (`nobody`), not as `ubuntu`. The file contains only one secret and lives outside `.env`, so 644 is acceptable here.
+
+The file is `.gitignored` and never committed. If you rotate the Grafana Cloud token, update `.env` and re-run the export command above, then `docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps prometheus` to pick up the new token.
 
 ### 1.9 Create systemd Service
 
@@ -549,61 +569,86 @@ If this succeeds without an authentication error, the VPS is authorized to pull 
 
 ---
 
-## Part 8: Monitoring Access
+## Part 8: Monitoring (Grafana Cloud)
 
-All monitoring services are bound to `127.0.0.1` on the VPS and are **not accessible from the public internet**. Access them via SSH tunnel.
+Local Grafana and Dozzle were removed on 2026-05-12 (Phase: see `chore(infra): ship metrics to Grafana Cloud` in git history) to free ~150 MB of RAM on the 1 GB VPS. Prometheus still runs on-host and scrapes the app + blackbox-exporter, then ships everything to **Grafana Cloud (free tier)** via `remote_write`.
 
-### 8.1 Open SSH Tunnel
+### 8.1 First-Time Grafana Cloud Setup
 
-Open a single SSH tunnel that forwards all three monitoring ports:
+If you are provisioning a fresh VPS or rotating credentials:
 
+1. Sign up at https://grafana.com/auth/sign-up/create-user (or log into an existing account)
+2. Create a stack — name it `scrummonsters` and pick a region close to the VPS (e.g. `prod-us-west-0`)
+3. In the stack, go to **Home → Connections → Add new connection → Hosted Prometheus metrics**
+4. On the "Send Metrics" page, click **Generate now** to create a `metrics:write`-scoped access token. **Copy the token immediately** — it is shown only once
+5. From the same page, note the three values needed for `prometheus.yml`:
+   - `url` — looks like `https://prometheus-prod-XX-prod-us-west-0.grafana.net/api/prom/push`
+   - `username` — numeric Prometheus instance ID
+   - `password` — the `glc_...` token from step 4
+6. Update `docker/prometheus/prometheus.yml` with the `url` and `username` (committed to git, no secrets)
+7. Add the token to `.env` as `GRAFANA_REMOTE_WRITE_TOKEN=glc_...` and run the export from Part 1.8a to write the token file
+8. Recreate Prometheus: `docker compose -f docker-compose.prod.yml --env-file .env up -d --no-deps prometheus`
+
+### 8.2 Access Dashboards
+
+Grafana Cloud is public-internet accessible (with login). No SSH tunnel needed.
+
+- **Cloud UI:** https://*&lt;your-stack&gt;*.grafana.net (e.g. https://prestonfarr.grafana.net)
+- **Login:** your Grafana Cloud account (Grafana SSO / GitHub / Google — whatever you signed up with)
+- **Datasource:** `grafanacloud-<stack>-prom` is auto-provisioned and points at the hosted Prometheus that receives your remote_write data
+
+### 8.3 Sanity Check
+
+Confirm metrics are arriving:
+
+1. In Grafana Cloud, open **Explore** → select the `grafanacloud-<stack>-prom` datasource
+2. Run `up{instance="https://scrummonsters.com"}` — should return `1` (blackbox probe success)
+3. Run `prometheus_remote_storage_samples_total` — should return a steadily increasing counter (verifies your VPS Prometheus is shipping)
+
+If no data appears within 60s, on the VPS check:
 ```bash
-ssh -i ~/.ssh/lightsail_scrummonsters \
-  -L 3001:127.0.0.1:3001 \
-  -L 9090:127.0.0.1:9090 \
-  -L 9999:127.0.0.1:9999 \
-  ubuntu@34.199.135.244
+docker logs scrummonsters-prometheus-1 2>&1 | grep -E "WARN|ERROR|remote_write" | tail
 ```
 
-Leave this terminal open while accessing the monitoring UIs.
+Common failure modes are documented in **Part 9.4 — Common Failure Scenarios**.
 
-### 8.2 Access Monitoring UIs
+### 8.4 On-VPS Prometheus (still local)
 
-With the SSH tunnel active, open these URLs in your browser:
+Prometheus itself still runs on the VPS as a Docker container — it's what scrapes the app and ships to Cloud.
 
-| Service | URL | Purpose |
-|---------|-----|---------|
-| Grafana | http://localhost:3001 | Metrics dashboards (active lobbies, players, WebSocket connections, error rates) |
-| Prometheus | http://localhost:9090 | Raw metrics queries and scrape target status |
-| Dozzle | http://localhost:9999 | Real-time Docker container log viewer |
+- Bound to `127.0.0.1:9090` (not publicly exposed)
+- 7-day local retention as a backstop if Cloud is unreachable
+- Access via SSH tunnel if you need to debug scrape config locally:
+  ```bash
+  ssh -i ~/.ssh/lightsail_scrummonsters -L 9090:127.0.0.1:9090 ubuntu@34.199.135.244 -N
+  # then visit http://localhost:9090
+  ```
 
-### 8.3 Grafana Credentials
+### 8.5 Services Overview
 
-- **Username:** `admin`
-- **Password:** See `GRAFANA_ADMIN_PASSWORD` in `/opt/scrummonsters/.env` on the VPS
+| Service | Internal Port | Image | Purpose |
+|---------|--------------|-------|---------|
+| Prometheus | 9090 (loopback) | prom/prometheus | Scrapes /metrics at 60s intervals, 7-day local retention, ships to Grafana Cloud |
+| blackbox-exporter | 9115 (loopback) | prom/blackbox-exporter | TLS-probe scrummonsters.com to populate `up{job="blackbox-tls"}` |
 
-To retrieve the password:
-```bash
-ssh -i ~/.ssh/lightsail_scrummonsters ubuntu@34.199.135.244 "grep GRAFANA_ADMIN_PASSWORD /opt/scrummonsters/.env"
-```
-
-### 8.4 Services Overview
-
-| Service | Internal Port | Tunnel Port | Image | Purpose |
-|---------|--------------|-------------|-------|---------|
-| Prometheus | 9090 | 9090 | prom/prometheus | Scrapes /metrics at 60s intervals, 7-day retention |
-| Grafana | 3000 (mapped to 3001) | 3001 | grafana/grafana-oss | Pre-built ScrumQuest dashboard with 10 metric panels |
-| Dozzle | 8080 (mapped to 9999) | 9999 | amir20/dozzle | Shows logs from all Docker containers in one UI |
-
-### 8.5 Memory Limits
+### 8.6 Memory Budget
 
 | Service | Memory Limit | Typical Usage |
 |---------|-------------|---------------|
 | Prometheus | 128 MB | 40-60 MB |
-| Grafana | 128 MB | 80-100 MB |
-| Dozzle | 32 MB | 15-20 MB |
+| blackbox-exporter | 32 MB | 15-20 MB |
 
-Total monitoring overhead: ~150-180 MB of the 1 GB VPS budget.
+Total monitoring overhead on-box: ~60-80 MB (down from ~150-180 MB pre-2026-05-12). Grafana + dashboards live in Grafana Cloud and consume zero VPS RAM.
+
+### 8.7 Container Logs (replaces Dozzle)
+
+For real-time log tailing without Dozzle, SSH in and use Docker directly:
+
+```bash
+docker compose -f docker-compose.prod.yml logs -f                       # all services
+docker compose -f docker-compose.prod.yml logs -f app-blue --tail 100   # one service
+docker logs scrummonsters-prometheus-1 --since 5m                       # by container name
+```
 
 ---
 
