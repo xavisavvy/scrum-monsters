@@ -41,7 +41,7 @@
     "db:migrate": "drizzle-kit migrate",
     "prepare": "husky",
     "audit": "audit-ci --config .audit-ci.json",
-    "license-check": "license-checker-rseidelsohn --onlyAllow 'MIT;MIT*;Apache-2.0;BSD-2-Clause;BSD-3-Clause;BSD*;ISC;0BSD;Unlicense;CC0-1.0;OFL-1.1;Zlib;BlueOak-1.0.0;Hippocratic-2.1;MIT AND ISC' --production",
+    "license-check": "license-checker-rseidelsohn --onlyAllow 'MIT;MIT*;Apache-2.0;BSD-2-Clause;BSD-3-Clause;BSD*;ISC;0BSD;Unlicense;CC0-1.0;OFL-1.1;Zlib;BlueOak-1.0.0;Hippocratic-2.1;MIT AND ISC' --excludePackages 'gsap' --production",
     "release": "standard-version",
     "release:minor": "standard-version --release-as minor",
     "release:major": "standard-version --release-as major",
