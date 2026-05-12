@@ -15,7 +15,7 @@ env:
 jobs:
   health-check:
     name: Post-Deploy Health Check
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     # Only run if deploy succeeded
     if: github.event.workflow_run.conclusion == 'success'
 

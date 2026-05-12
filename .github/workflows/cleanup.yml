@@ -13,7 +13,7 @@ permissions:
 jobs:
   cleanup-runs:
     name: Clean Old Workflow Runs
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
 
     steps:
@@ -28,7 +28,7 @@ jobs:
 
   cleanup-caches:
     name: Clean Old Caches
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
 
     steps:
@@ -59,7 +59,7 @@ jobs:
 
   cleanup-packages:
     name: Clean Old Package Versions
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
 
     steps:
