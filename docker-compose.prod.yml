@@ -133,6 +133,7 @@ services:
     volumes:
       - ./docker/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./docker/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - ./docker/prometheus/grafana_remote_write_token:/etc/prometheus/grafana_remote_write_token:ro
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -151,41 +152,10 @@ services:
     # dep entirely. Prometheus scrapes the active color via service-discovery
     # config, not start ordering.
 
-  grafana:
-    image: grafana/grafana-oss:latest
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:3001:3000"
-    environment:
-      GF_SECURITY_ADMIN_USER: admin
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    volumes:
-      - grafana_data:/var/lib/grafana
-      - ./docker/grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./docker/grafana/dashboards:/var/lib/grafana/dashboards:ro
-    deploy:
-      resources:
-        limits:
-          memory: 128M
-        reservations:
-          memory: 64M
-    depends_on:
-      - prometheus
-
-  dozzle:
-    image: amir20/dozzle:latest
-    restart: unless-stopped
-    ports:
-      - "127.0.0.1:9999:8080"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-    deploy:
-      resources:
-        limits:
-          memory: 32M
-        reservations:
-          memory: 16M
+  # grafana + dozzle removed 2026-05-12 — Grafana Cloud is now the dashboard
+  # surface (Prometheus remote_write below). Local containers consumed ~150 MB
+  # resident on a 914 MB box which drove swap thrashing and intermittent
+  # outages. Restore from git history if you ever want them back.
 
   blackbox-exporter:
     image: prom/blackbox-exporter:latest
@@ -208,4 +178,3 @@ volumes:
   npm_data:
   npm_letsencrypt:
   prometheus_data:
-  grafana_data:

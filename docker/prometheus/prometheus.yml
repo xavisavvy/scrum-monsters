@@ -26,3 +26,14 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115
+
+# Ship metrics to Grafana Cloud. Replaces the previously-local Grafana
+# container (removed 2026-05-12). Token lives at the password_file path,
+# which the prometheus service mounts read-only from
+# ./docker/prometheus/grafana_remote_write_token (gitignored, populated
+# from .env on the VPS via deploy.sh / runbook).
+remote_write:
+  - url: https://prometheus-prod-67-prod-us-west-0.grafana.net/api/prom/push
+    basic_auth:
+      username: "3189754"
+      password_file: /etc/prometheus/grafana_remote_write_token
