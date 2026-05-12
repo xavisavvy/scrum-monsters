@@ -6,11 +6,21 @@ rule_files:
   - '/etc/prometheus/alerts.yml'
 
 scrape_configs:
+  # Blue-green deploy: one of these two containers is profile-gated off at any
+  # given time (Phase 44). Prometheus scrapes both addresses; Docker DNS will
+  # fail to resolve the inactive color, producing up=0 for that target — which
+  # is exactly the signal we want. Query the active color with
+  # `up{job="scrumquest"} == 1` or `max by (color) (up{job="scrumquest"})`.
   - job_name: 'scrumquest'
-    static_configs:
-      - targets: ['app:5000']
     metrics_path: '/metrics'
     scrape_timeout: 10s
+    static_configs:
+      - targets: ['app-blue:5000']
+        labels:
+          color: blue
+      - targets: ['app-green:5000']
+        labels:
+          color: green
 
   - job_name: 'blackbox-tls'
     metrics_path: /probe
