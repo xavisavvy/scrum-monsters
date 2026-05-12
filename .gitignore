@@ -10,6 +10,10 @@ server/public
 .env.local
 .env.*.local
 
+# Grafana Cloud remote_write token (mounted into the prometheus container
+# as password_file; populated on the VPS from .env, never committed)
+docker/prometheus/grafana_remote_write_token
+
 # OS files
 .DS_Store
 Thumbs.db
