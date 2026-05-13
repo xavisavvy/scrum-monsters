@@ -28,7 +28,7 @@ env:
 jobs:
   release:
     name: Create Release
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 30
 
     outputs:
@@ -100,7 +100,7 @@ jobs:
 
   docker-release:
     name: Docker Release
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 30
     needs: release
 
