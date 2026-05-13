@@ -32,7 +32,13 @@ jobs:
     name: Playwright E2E Tests
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 30
-
+    # Run the job inside Microsoft's official Playwright image — chromium,
+    # firefox and every system library Playwright needs ship preinstalled.
+    # Avoids `--with-deps` which calls `sudo apt-get` and fails on Synology
+    # DSM (no apt, no passwordless sudo). Pin the image tag to match the
+    # @playwright/test version in package.json; bump both together.
+    container:
+      image: mcr.microsoft.com/playwright:v1.60.0-jammy
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,7 +53,8 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium firefox
+        # No --with-deps: system libs already in the playwright image.
+        run: npx playwright install chromium firefox
 
       - name: Run Playwright tests
         run: npm run test:e2e
