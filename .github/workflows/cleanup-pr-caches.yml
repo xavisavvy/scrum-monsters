@@ -1,0 +1,62 @@
+name: Cleanup PR caches
+
+# Deletes GitHub Actions cache entries scoped to a PR ref when that PR
+# closes (merged or otherwise). Without this, each closed PR's
+# node-cache + buildkit-blob entries linger until they age out under the
+# 10 GB per-repo cap, evicting useful main-branch caches in the process.
+#
+# Safe to delete on close: GitHub guarantees future PRs CAN read the
+# main-branch caches as fallbacks, and PR-scoped caches are only ever
+# read by that PR's own runs.
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: cleanup-cache-pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  cleanup:
+    name: Delete caches for PR #${{ github.event.pull_request.number }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete PR cache entries via REST
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: refs/pull/${{ github.event.pull_request.number }}/merge
+        run: |
+          set -euo pipefail
+          echo "Listing caches scoped to ref=$REF in $REPO..."
+          # The REST endpoint paginates — fetch all pages.
+          ids=$(gh api --paginate \
+            "repos/$REPO/actions/caches?ref=$REF&per_page=100" \
+            --jq '.actions_caches[].id')
+          if [[ -z "$ids" ]]; then
+            echo "No caches found for $REF. Nothing to do."
+            exit 0
+          fi
+          count=0
+          freed_bytes=0
+          while IFS= read -r id; do
+            [[ -z "$id" ]] && continue
+            # Re-fetch size before delete so we can report.
+            sz=$(gh api "repos/$REPO/actions/caches?ref=$REF" \
+              --jq ".actions_caches[] | select(.id == $id) | .size_in_bytes" 2>/dev/null || echo 0)
+            if gh api -X DELETE "repos/$REPO/actions/caches/$id" --silent; then
+              count=$((count + 1))
+              freed_bytes=$((freed_bytes + sz))
+              echo "  deleted cache #$id ($((sz / 1024 / 1024)) MB)"
+            else
+              echo "  WARN: failed to delete cache #$id"
+            fi
+          done <<< "$ids"
+          echo "Deleted $count cache entries ($((freed_bytes / 1024 / 1024)) MB freed)."

@@ -36,7 +36,9 @@ vite.config.ts.*
 *.tmp
 
 # Claude Code files (conversation history and sessions)
-.claude/
+.claude/*
+# Project-shared skills are checked in so they ride along with the repo
+!.claude/skills/
 
 # Test coverage
 coverage

@@ -31,8 +31,14 @@ describe('shouldSkipApiRateLimit', () => {
 
   it('does NOT exempt mutating endpoints — they keep the 200/15min limit', () => {
     expect(shouldSkipApiRateLimit({ path: '/lobbies' })).toBe(false);
-    expect(shouldSkipApiRateLimit({ path: '/auth/login' })).toBe(false);
     expect(shouldSkipApiRateLimit({ path: '/csrf-token' })).toBe(false);
+  });
+
+  it('skips /auth/* and /user/* in the mount-level limiter — their routers apply their own', () => {
+    expect(shouldSkipApiRateLimit({ path: '/auth/me' })).toBe(true);
+    expect(shouldSkipApiRateLimit({ path: '/auth/login' })).toBe(true);
+    expect(shouldSkipApiRateLimit({ path: '/auth/providers' })).toBe(true);
+    expect(shouldSkipApiRateLimit({ path: '/user/profile' })).toBe(true);
   });
 
   it('always skips in NODE_ENV=test (preserves existing test isolation)', () => {

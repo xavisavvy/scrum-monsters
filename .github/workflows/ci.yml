@@ -229,9 +229,13 @@ jobs:
 
   # Lint deploy bash modules (Plan 44-02) — shellcheck + bats. Keeps the
   # blue-green deploy helpers from rotting between deploys.
+  # Pinned to ubuntu-latest unconditionally because the install step uses
+  # apt-get, which doesn't exist on the Synology self-hosted runner.
+  # shellcheck and bats are sub-30s installs; no value in routing to
+  # self-hosted for this job.
   deploy-scripts:
     name: Deploy script lint + tests
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
