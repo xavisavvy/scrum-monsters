@@ -21,7 +21,7 @@ on:
 jobs:
   validate-specs:
     name: Validate API Specs
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -42,7 +42,7 @@ jobs:
 
   type-drift:
     name: Check Type Generation Drift
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     steps:
       - uses: actions/checkout@v4
 
@@ -69,7 +69,7 @@ jobs:
 
   contract-tests:
     name: Contract Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     needs: validate-specs
     steps:
       - uses: actions/checkout@v4
@@ -143,7 +143,7 @@ jobs:
   # Gate job for branch protection
   api-contracts-success:
     name: API Contracts Success
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     needs: [validate-specs, type-drift, contract-tests]
     if: always()
     steps:

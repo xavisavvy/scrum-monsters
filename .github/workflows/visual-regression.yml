@@ -20,7 +20,7 @@ permissions:
 jobs:
   visual-tests:
     name: Visual Regression Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     container:
       image: mcr.microsoft.com/playwright:v1.49.1-noble
       options: --init --ipc=host
