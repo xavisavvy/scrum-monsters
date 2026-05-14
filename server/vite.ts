@@ -10,6 +10,7 @@ import viteConfig from "../vite.config";
 import { nanoid } from "nanoid";
 import { injectMetaTags } from "./seoMiddleware";
 import { httpLogger } from './logger.js';
+import { htmlLimiter } from "./middleware/rateLimiter.js";
 
 const viteLogger = createLogger();
 
@@ -39,7 +40,7 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  app.use("*", async (req, res, next) => {
+  app.use("*", htmlLimiter, async (req, res, next) => {
     const url = req.originalUrl;
 
     try {
@@ -78,14 +79,14 @@ export function serveStatic(app: Express) {
   }
 
   // Serve static files but exclude index.html (we handle it with meta tag injection)
-  app.use(express.static(distPath, { index: false }));
+  app.use(htmlLimiter, express.static(distPath, { index: false }));
 
   // Cache the base HTML template for performance
   const htmlPath = path.resolve(distPath, "index.html");
   let cachedHtml: string | null = null;
 
   // fall through to index.html if the file doesn't exist
-  app.use("*", (req, res) => {
+  app.use("*", htmlLimiter, (req, res) => {
     try {
       // Read HTML from cache or disk
       if (!cachedHtml) {

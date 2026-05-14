@@ -47,8 +47,19 @@ export const RATE_LIMIT_EXEMPT_PATHS = new Set([
   '/version',
 ]);
 
+/**
+ * Path prefixes whose routers apply their own rate limiter
+ * (apiLimiter or profileLimiter) at the router level so CodeQL can
+ * see rate-limiting inline with the handlers. The mount-level
+ * apiLimiter on /api skips these to avoid double-counting against
+ * the same shared bucket.
+ */
+const ROUTER_OWNED_PREFIXES = ['/auth/', '/user/'];
+
 export function shouldSkipApiRateLimit(req: Pick<Request, 'path'>): boolean {
-  return process.env.NODE_ENV === 'test' || RATE_LIMIT_EXEMPT_PATHS.has(req.path);
+  if (process.env.NODE_ENV === 'test') return true;
+  if (RATE_LIMIT_EXEMPT_PATHS.has(req.path)) return true;
+  return ROUTER_OWNED_PREFIXES.some((prefix) => req.path.startsWith(prefix));
 }
 
 /**
@@ -62,4 +73,20 @@ export const apiLimiter = rateLimit({
   standardHeaders: 'draft-8',
   legacyHeaders: false,
   skip: (req: Request) => shouldSkipApiRateLimit(req),
+});
+
+/**
+ * htmlLimiter - Liberal rate limit for the SPA HTML shell and static
+ * asset serving (server/vite.ts). Page navigations and asset fetches
+ * are bursty (one HTML + many JS/CSS/image requests per page load),
+ * so the budget is intentionally large — this exists to satisfy
+ * `js/missing-rate-limiting` and shed pathological scrapers, not to
+ * police normal traffic.
+ */
+export const htmlLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 2000,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  skip: (_req: Request) => process.env.NODE_ENV === 'test',
 });
