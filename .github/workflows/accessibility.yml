@@ -23,12 +23,11 @@ jobs:
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     container:
       image: mcr.microsoft.com/playwright:v1.49.1-noble
-      # --user matches `id actionsrunner` on synology-xavisavvy (uid=1030,
-      # gid=100) so files written into the mounted workspace are owned by
-      # actionsrunner instead of root. Without this, root-owned files leak
-      # onto the host and break the next job's actions/checkout with EACCES.
-      # Same fix already applied to e2e.yml (commit 7c792f0).
-      options: --init --ipc=host --user 1030:100
+      # No --user pin: container runs as root. We chown the workspace +
+      # cache dirs back to RUNNER_UID:RUNNER_GID in a final 'always()'
+      # step. Makes this workflow agnostic to which self-hosted runner
+      # picks up the job (heimdall uid=1030, shadowsong-wsl uid=1000).
+      options: --init --ipc=host
 
     steps:
       - name: Checkout
@@ -92,6 +91,19 @@ jobs:
 
             _Note: Moderate and minor violations are logged as warnings but do not block merge._`
             })
+
+# Chown root-owned files back to the runner host's user before the
+      # container exits, so the NEXT actions/checkout on this host can
+      # clean the workspace without EACCES. Runner-agnostic: each runner
+      # is configured with its own RUNNER_UID/RUNNER_GID in its .env file
+      # (heimdall: 1030:100, shadowsong-wsl-local: 1000:1000). Falls back
+      # to root (a no-op) when the env vars aren't set.
+      - name: Chown workspace back to runner user
+        if: always()
+        run: |
+          uid="${RUNNER_UID:-0}"
+          gid="${RUNNER_GID:-0}"
+          chown -R "$uid:$gid" "$GITHUB_WORKSPACE" /github/home /__w/_temp 2>/dev/null || true
 
       - name: Fail if tests failed
         if: steps.a11y-tests.outcome == 'failure'

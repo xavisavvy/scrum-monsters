@@ -117,6 +117,16 @@ cmd_setup() {
     --work "_work" \
     --replace
 
+  # Write RUNNER_UID/RUNNER_GID into the runner's .env so the chown-back
+  # step in container workflows can restore ownership after the container
+  # (which runs as root) exits. Without this, the next actions/checkout
+  # on this runner fails with EACCES on git clean.
+  {
+    echo "RUNNER_UID=$(id -u)"
+    echo "RUNNER_GID=$(id -g)"
+  } >> "$RUNNER_DIR/.env"
+  info "Wrote RUNNER_UID/RUNNER_GID to .env ($(id -u):$(id -g))."
+
   # Drop a self-link so the user can invoke this script from inside the runner dir.
   ln -sf "$(realpath "$0")" "$RUNNER_DIR/local-runner.sh"
 
