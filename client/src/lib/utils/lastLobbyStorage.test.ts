@@ -41,7 +41,7 @@ describe('LastLobbyStorage', () => {
     });
   });
 
-  it('returns null for stale lobby entries older than 24 hours', () => {
+  it('returns null for lobby entries at or past the 24-hour cutoff', () => {
     vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
     localStorage.setItem(
       STORAGE_KEY,
@@ -53,6 +53,25 @@ describe('LastLobbyStorage', () => {
     );
 
     expect(LastLobbyStorage.loadLastLobby()).toBeNull();
+  });
+
+  it('returns lobby entries that are just under the 24-hour cutoff', () => {
+    vi.spyOn(Date, 'now').mockReturnValue(1_700_000_000_000);
+    const justUnderCutoff = 1_700_000_000_000 - (TWENTY_FOUR_HOURS_MS - 1);
+    localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify({
+        lobbyId: 'FRESH1',
+        lobbyName: 'Almost Stale',
+        timestamp: justUnderCutoff,
+      }),
+    );
+
+    expect(LastLobbyStorage.loadLastLobby()).toEqual({
+      lobbyId: 'FRESH1',
+      lobbyName: 'Almost Stale',
+      timestamp: justUnderCutoff,
+    });
   });
 
   it('returns null and warns when stored JSON is invalid', () => {

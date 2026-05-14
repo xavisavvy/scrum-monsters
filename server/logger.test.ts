@@ -133,15 +133,18 @@ describe('logger configuration', () => {
     expect(captured.config?.level).toBe('debug');
     expect(captured.config?.timestamp).toBe('isoTime');
     expect(captured.config?.redact).toEqual({
-      paths: expect.arrayContaining([
+      paths: [
         'password',
         'token',
         'secret',
         'authorization',
         'cookie',
+        '*.password',
+        '*.token',
+        '*.secret',
         'req.headers.authorization',
         'req.headers.cookie',
-      ]),
+      ],
       censor: '[REDACTED]',
     });
     expect(captured.config?.transport).toEqual({
@@ -311,7 +314,7 @@ describe('httpLoggerMiddleware', () => {
     });
   });
 
-  it('logs server errors at error level when the response finishes', async () => {
+  it('logs server errors at error level and falls back to randomBytes when no crypto.randomUUID is available', async () => {
     const { httpLogger, module } = await loadLoggerModule();
     const requestLogger = createMockLogger();
     const finishHandlers: Array<() => void> = [];
@@ -342,7 +345,14 @@ describe('httpLoggerMiddleware', () => {
     module.httpLoggerMiddleware()(req, res, vi.fn());
     finishHandlers[0]();
 
-    expect(res.setHeader).toHaveBeenCalledWith('X-Request-ID', expect.any(String));
+    // With no x-request-id header and no crypto.randomUUID, the middleware must
+    // fall back to randomBytes(8).toString('hex') — a 16-char lowercase hex string.
+    // This pins the security-sensitive fallback added when Math.random() was removed.
+    const setHeaderCall = res.setHeader.mock.calls.find(([name]) => name === 'X-Request-ID');
+    expect(setHeaderCall).toBeDefined();
+    const requestId = setHeaderCall?.[1] as string;
+    expect(requestId).toMatch(/^[0-9a-f]{16}$/);
+    expect(httpLogger.child).toHaveBeenCalledWith({ requestId });
     expect(requestLogger.error).toHaveBeenCalledWith({
       msg: 'Request completed',
       method: 'DELETE',
