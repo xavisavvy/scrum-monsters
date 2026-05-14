@@ -3,7 +3,7 @@ import { createServer, type Server } from "http";
 import { setupWebSocket } from "./websocket.js";
 import authRoutes from "./auth/routes.js";
 import profileRoutes from "./auth/profileRoutes.js";
-import { profileLimiter, apiLimiter } from './middleware/rateLimiter.js';
+import { apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 import { storage, PgStorage } from './storage.js';
 import { getMetrics, getMetricsContentType, metricsMiddleware } from "./metrics.js";
@@ -34,8 +34,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // HTTP metrics middleware — after /metrics route to avoid self-referential noise
   app.use(metricsMiddleware());
 
-  // Rate limiting (applied before route handlers)
-  app.use('/api/user', profileLimiter);
+  // Rate limiting catch-all for /api routes that don't belong to a
+  // sub-router. /api/auth/* and /api/user/* are skipped here because
+  // their routers apply apiLimiter/profileLimiter at the router level
+  // (so CodeQL can see them) — see shouldSkipApiRateLimit.
+  // Health/version paths are exempt for monitoring traffic.
   app.use('/api', apiLimiter);
 
   // CSRF token endpoint — GET so no CSRF check needed, session must exist first

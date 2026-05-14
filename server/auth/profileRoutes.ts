@@ -2,8 +2,14 @@ import { Router, Request, Response } from "express";
 import { storage } from "../storage.js";
 import { isAuthenticated, getUserId } from "./auth0.js";
 import { authLogger } from '../logger.js';
+import { profileLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
+
+// Rate limiting applied at router level so CodeQL detects it inline
+// with each handler. shouldSkipApiRateLimit skips the mount-level
+// apiLimiter on /user/* to avoid double-counting the same bucket.
+router.use(profileLimiter);
 
 // Get user profile
 router.get("/profile", isAuthenticated, async (req: Request, res: Response) => {
