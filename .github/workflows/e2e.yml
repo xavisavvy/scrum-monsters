@@ -39,6 +39,14 @@ jobs:
     # @playwright/test version in package.json; bump both together.
     container:
       image: mcr.microsoft.com/playwright:v1.60.0-jammy
+      # Run the container as the self-hosted runner's UID:GID so files
+      # written into the mounted workspace are owned by `actionsrunner`,
+      # not by root inside the container. Without this, root-owned files
+      # leak onto the host workspace and break the NEXT job's
+      # actions/checkout with EACCES on git clean. Matches `id actionsrunner`
+      # on synology-xavisavvy: uid=1030, gid=100. Adjust if the runner host
+      # or user changes.
+      options: --user 1030:100
     steps:
       - name: Checkout
         uses: actions/checkout@v4
