@@ -115,7 +115,7 @@ For VPS access, SSH commands, and secrets locations, see `~/.claude/infrastructu
 - `.github/workflows/ci.yml` — Lint, type check, test, build
 - `.github/workflows/e2e.yml` — Playwright E2E tests
 - `.github/workflows/docker.yml` — Build + push Docker image to GHCR
-- `.github/workflows/deploy-lightsail.yml` — Staging (auto on push to main), production (manual workflow_dispatch)
+- `.github/workflows/deploy-lightsail.yml` — Deploy to scrummonsters.com (auto on push to main after Docker build; manual workflow_dispatch for re-runs). Single environment — there is no separate staging URL.
 
 ### Observability
 - **Metrics**: `/metrics` endpoint (Prometheus format)

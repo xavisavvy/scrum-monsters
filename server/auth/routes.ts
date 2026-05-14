@@ -1,7 +1,13 @@
 import { Router, Request, Response } from "express";
 import { storage } from "../storage.js";
+import { apiLimiter } from "../middleware/rateLimiter.js";
 
 const router = Router();
+
+// Rate limiting applied at router level so CodeQL detects it inline
+// with each handler. shouldSkipApiRateLimit skips the mount-level
+// apiLimiter on /auth/* to avoid double-counting the same bucket.
+router.use(apiLimiter);
 
 // Get current user — uses Auth0's req.oidc
 router.get("/me", async (req: Request, res: Response) => {
