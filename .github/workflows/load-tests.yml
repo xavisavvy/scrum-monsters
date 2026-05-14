@@ -22,7 +22,7 @@ env:
 jobs:
   http-load-tests:
     name: HTTP Load Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 15
 
     steps:
@@ -115,7 +115,7 @@ jobs:
 
   websocket-load-tests:
     name: WebSocket Load Tests
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 15
 
     steps:
@@ -192,7 +192,7 @@ jobs:
 
   idle-connection-test:
     name: Idle Connection Test
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, Linux, X64]
     timeout-minutes: 10
     if: github.event.inputs.run_idle_test == 'true' || github.event_name == 'schedule'
 
