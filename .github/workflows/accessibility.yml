@@ -23,7 +23,12 @@ jobs:
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     container:
       image: mcr.microsoft.com/playwright:v1.49.1-noble
-      options: --init --ipc=host
+      # --user matches `id actionsrunner` on synology-xavisavvy (uid=1030,
+      # gid=100) so files written into the mounted workspace are owned by
+      # actionsrunner instead of root. Without this, root-owned files leak
+      # onto the host and break the next job's actions/checkout with EACCES.
+      # Same fix already applied to e2e.yml (commit 7c792f0).
+      options: --init --ipc=host --user 1030:100
 
     steps:
       - name: Checkout
