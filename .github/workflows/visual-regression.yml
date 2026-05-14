@@ -17,9 +17,33 @@ permissions:
   contents: read
   pull-requests: write
 
+env:
+  NODE_VERSION: "24"
+
 jobs:
+  # Cheap typecheck gate (~30-60s) so we don't spin up the Playwright
+  # container (~5 min) when a TypeScript error would have failed the
+  # PR anyway. visual-tests below `needs: pre-check`.
+  pre-check:
+    name: Pre-check (typecheck)
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "npm"
+      - name: Install dependencies
+        run: npm ci
+      - name: Type check
+        run: npm run check
+
   visual-tests:
     name: Visual Regression Tests
+    needs: pre-check
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     container:
       image: mcr.microsoft.com/playwright:v1.49.1-noble
