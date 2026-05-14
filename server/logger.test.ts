@@ -32,9 +32,7 @@ async function loadLoggerModule(options?: {
   vi.resetModules();
 
   process.env.NODE_ENV = options?.nodeEnv ?? 'test';
-  if (options?.logLevel === undefined) {
-    delete process.env.LOG_LEVEL;
-  } else if (options.logLevel === null) {
+  if (options?.logLevel === undefined || options.logLevel === null) {
     delete process.env.LOG_LEVEL;
   } else {
     process.env.LOG_LEVEL = options.logLevel;

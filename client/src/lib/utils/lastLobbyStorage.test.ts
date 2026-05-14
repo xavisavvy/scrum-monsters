@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { LastLobbyStorage } from './lastLobbyStorage';
 
 const STORAGE_KEY = 'scrum-monsters-last-lobby';
+const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
 
 describe('LastLobbyStorage', () => {
   let warnSpy: ReturnType<typeof vi.spyOn>;
@@ -47,7 +48,7 @@ describe('LastLobbyStorage', () => {
       JSON.stringify({
         lobbyId: 'OLD123',
         lobbyName: 'Yesterday Squad',
-        timestamp: 1_700_000_000_000 - 24 * 60 * 60 * 1000,
+        timestamp: 1_700_000_000_000 - TWENTY_FOUR_HOURS_MS,
       }),
     );
 
