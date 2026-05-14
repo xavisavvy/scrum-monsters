@@ -18,7 +18,9 @@ The contract:
 All commands route through `scripts/runner/local-runner.sh` inside the WSL Ubuntu distro. From this Windows session's Bash tool you call it via `wsl`:
 
 ```bash
-wsl -d Ubuntu -- bash /mnt/c/Users/Preston/git/ScrumMonsters/scripts/runner/local-runner.sh <command>
+scripts\runner\local-runner.cmd <command>        # from any Windows shell
+# or, from inside WSL directly:
+~/actions-runner/scrum-monsters-local/local-runner.sh <command>
 ```
 
 Subcommands: `setup`, `start`, `stop`, `status`, `logs`, `unregister`.
@@ -28,7 +30,7 @@ Subcommands: `setup`, `start`, `stop`, `status`, `logs`, `unregister`.
 ### User asks: "start the local runner"
 
 ```bash
-wsl -d Ubuntu -- bash /mnt/c/Users/Preston/git/ScrumMonsters/scripts/runner/local-runner.sh start
+C:\Users\Preston\git\ScrumMonsters\scripts\runner\local-runner.cmd start
 ```
 
 If the script reports "Runner not installed — run setup first", drop into the **first-time setup** workflow below before continuing.
@@ -44,7 +46,7 @@ Tell the user the PID and the log path. The runner now picks up jobs continuousl
 ### User asks: "stop the local runner"
 
 ```bash
-wsl -d Ubuntu -- bash /mnt/c/Users/Preston/git/ScrumMonsters/scripts/runner/local-runner.sh stop
+C:\Users\Preston\git\ScrumMonsters\scripts\runner\local-runner.cmd stop
 ```
 
 The runner gracefully finishes any in-flight job (up to 30s grace) before exiting. If a job is currently running you'll see the wait in the output — don't second-guess and SIGKILL it manually.
@@ -52,8 +54,8 @@ The runner gracefully finishes any in-flight job (up to 30s grace) before exitin
 ### User asks: "what's the local runner doing"
 
 ```bash
-wsl -d Ubuntu -- bash /mnt/c/Users/Preston/git/ScrumMonsters/scripts/runner/local-runner.sh status
-wsl -d Ubuntu -- bash /mnt/c/Users/Preston/git/ScrumMonsters/scripts/runner/local-runner.sh logs 80
+C:\Users\Preston\git\ScrumMonsters\scripts\runner\local-runner.cmd status
+C:\Users\Preston\git\ScrumMonsters\scripts\runner\local-runner.cmd logs 80
 ```
 
 If the user says "is it picking up the deploy?", also check GitHub:
@@ -77,10 +79,12 @@ The setup is interactive — it needs a one-time registration token that **only 
 
    Recommend to the user:
    ```
-   ! wsl -d Ubuntu -- bash /mnt/c/Users/Preston/git/ScrumMonsters/scripts/runner/local-runner.sh setup
+   ! C:\Users\Preston\git\ScrumMonsters\scripts\runner\local-runner.cmd setup
    ```
 
    The `!` prefix runs the command in their actual shell so the token prompt works. Don't try to run setup yourself via the Bash tool — token entry will hang.
+
+   **Shell gotcha:** if the user is in Git Bash (MSYS) and prefers to invoke the `.sh` directly, MSYS will mangle `/mnt/c/...` paths by prefixing the Git install root. The `.cmd` wrapper avoids this entirely. If they insist on the `.sh`, tell them to prefix `MSYS_NO_PATHCONV=1 `.
 
 4. After setup completes, run `status` to verify the runner is registered but not running. Then `start` if the user wants it active immediately.
 
