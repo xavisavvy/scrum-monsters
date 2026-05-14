@@ -134,8 +134,6 @@ channels:
         $ref: '#/components/messages/lobbyCreated'
       lobbyJoined:
         $ref: '#/components/messages/lobbyJoined'
-      lobbyUpdated:
-        $ref: '#/components/messages/lobbyUpdated'
       avatarSelected:
         $ref: '#/components/messages/avatarSelected'
       lobbyPlayerPosServer:
