@@ -18,7 +18,7 @@ permissions:
 jobs:
   gitleaks:
     name: Secret Detection
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 10
 
     steps:

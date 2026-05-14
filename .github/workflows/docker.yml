@@ -32,7 +32,7 @@ env:
 jobs:
   build-and-push:
     name: Build & Push
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 30
 
     outputs:
@@ -105,7 +105,7 @@ jobs:
 
   scan:
     name: Security Scan
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 15
     needs: build-and-push
     if: github.event_name != 'pull_request'
