@@ -11,7 +11,7 @@ permissions:
 jobs:
   pr-title:
     name: Validate PR Title
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 5
 
     steps:
@@ -48,7 +48,7 @@ jobs:
 
   size-label:
     name: PR Size Label
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 5
 
     steps:
@@ -71,7 +71,7 @@ jobs:
 
   files-changed:
     name: Detect Changed Files
-    runs-on: [self-hosted, Linux, X64]
+    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 5
 
     outputs:
