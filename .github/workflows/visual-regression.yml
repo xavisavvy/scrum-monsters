@@ -30,6 +30,16 @@ jobs:
       options: --init --ipc=host
 
     steps:
+      # Belt-and-suspenders: previous container runs that were cancelled
+      # mid-job leave root-owned files in the workspace (/__w/_temp,
+      # /__w/<repo>, /github/home) that the runner can't clean on the
+      # next job. We run as root inside the container, so chmod those
+      # paths to make them world-writable. Wrapped in `|| true` so it
+      # never fails the job. Pairs with the end-of-job chown step which
+      # restores ownership on the happy path.
+      - name: Pre-clean - make any leftover files cleanable
+        run: chmod -R o+rwX /__w /github/home 2>/dev/null || true
+
       - name: Checkout
         uses: actions/checkout@v4
 
