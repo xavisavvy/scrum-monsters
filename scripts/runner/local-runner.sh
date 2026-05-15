@@ -121,6 +121,10 @@ cmd_setup() {
   # step in container workflows can restore ownership after the container
   # (which runs as root) exits. Without this, the next actions/checkout
   # on this runner fails with EACCES on git clean.
+  # Remove any pre-existing entries first so re-running setup is idempotent.
+  if [[ -f "$RUNNER_DIR/.env" ]]; then
+    sed -i '/^RUNNER_UID=/d; /^RUNNER_GID=/d' "$RUNNER_DIR/.env"
+  fi
   {
     echo "RUNNER_UID=$(id -u)"
     echo "RUNNER_GID=$(id -g)"
