@@ -10,6 +10,9 @@ permissions:
   actions: write
   packages: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   cleanup-runs:
     name: Clean Old Workflow Runs

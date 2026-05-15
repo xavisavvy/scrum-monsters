@@ -58,7 +58,11 @@ export default defineConfig({
   webServer: process.env.BASE_URL
     ? undefined
     : {
-        command: "npm run dev",
+        // Under CI there is no .env file in the fresh workspace; `npm run dev`
+        // uses `tsx --env-file=.env` which exits 9 ("file not found"). Use
+        // dev:ci variant that omits the flag. Local dev keeps the flag for
+        // automatic .env loading.
+        command: process.env.CI ? "npm run dev:ci" : "npm run dev",
         url: "http://localhost:5000",
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
