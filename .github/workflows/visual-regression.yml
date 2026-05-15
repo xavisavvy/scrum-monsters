@@ -77,7 +77,7 @@ jobs:
             See [visual testing docs](https://playwright.dev/docs/test-snapshots) for more info.`
             })
 
-# Chown root-owned files back to the runner host's user before the
+      # Chown root-owned files back to the runner host's user before the
       # container exits, so the NEXT actions/checkout on this host can
       # clean the workspace without EACCES. Runner-agnostic: each runner
       # is configured with its own RUNNER_UID/RUNNER_GID in its .env file
