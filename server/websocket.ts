@@ -103,6 +103,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // Pass the io instance to GameState for emitting events
   setGameStateIO(io);
 
+  // Tracks which players have explicitly confirmed an avatar during the
+  // avatar_selection phase, keyed by lobbyId. Reset whenever the lobby
+  // (re)enters avatar_selection via start_battle.
+  const avatarSelections = new Map<string, Set<string>>();
+
   // Initialize ClientEventEmitter for fine-grained event delivery
   const clientEventEmitter = initializeClientEventEmitter(io);
   socketLogger.info('ClientEventEmitter initialized for fine-grained events');
@@ -524,6 +529,61 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         (emitter as any).sequencer.bufferEvent(lobby.id, seq, 'session:avatar_selected', payload);
         io.to(lobby.id).emit('session:avatar_selected', payload);
       }
+
+      // If we're in the avatar_selection phase, record this player's
+      // confirmation. Once every active (developer/qa) player has confirmed,
+      // advance the lobby into battle. Spectators don't gate the transition.
+      if (lobby.gamePhase === 'avatar_selection') {
+        let selected = avatarSelections.get(lobby.id);
+        if (!selected) {
+          selected = new Set<string>();
+          avatarSelections.set(lobby.id, selected);
+        }
+        const confirmedIds = selected;
+        confirmedIds.add(playerId);
+
+        const activePlayers = lobby.players.filter(
+          p => p.team === 'developers' || p.team === 'qa'
+        );
+        const allSelected =
+          activePlayers.length > 0 &&
+          activePlayers.every(p => confirmedIds.has(p.id));
+
+        if (allSelected) {
+          gameLogger.info(
+            { lobbyId: lobby.id, activeCount: activePlayers.length },
+            'All active players selected avatars - starting battle'
+          );
+
+          // Find the host to drive gameState.startBattle (it asserts host).
+          const host = lobby.players.find(p => p.isHost);
+          if (!host) {
+            gameLogger.warn({ lobbyId: lobby.id }, 'No host found when advancing to battle');
+            return;
+          }
+
+          const result = gameState.startBattle(host.id, lobby.tickets);
+          avatarSelections.delete(lobby.id);
+
+          if (!result) {
+            gameLogger.warn({ lobbyId: lobby.id }, 'startBattle returned null after avatar selection');
+            return;
+          }
+          if ('error' in result) {
+            gameLogger.warn({ error: result.error, lobbyId: lobby.id }, 'Battle start error post-avatar-selection');
+            io.to(lobby.id).emit('game_error', { message: result.error });
+            return;
+          }
+
+          const { lobby: updatedLobby, boss } = result;
+          io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
+          eventBus.emit('session:phase_changed', {
+            lobbyId: updatedLobby.id,
+            oldPhase: 'avatar_selection',
+            newPhase: 'battle',
+          });
+        }
+      }
     });
 
     socket.on('assign_team', ({ playerId: targetPlayerId, team }) => {
@@ -901,25 +961,32 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         return;
       }
 
-      gameLogger.info({ lobbyId: lobby.id, ticketCount: lobby.tickets.length }, 'Starting battle');
-      const result = gameState.startBattle(playerId, lobby.tickets);
-      if (result) {
-        if ('error' in result) {
-          // Send error message to the client
-          gameLogger.warn({ error: result.error }, 'Battle start error');
-          socket.emit('game_error', { message: result.error });
-        } else {
-          const { lobby: updatedLobby, boss } = result;
+      gameLogger.info({ lobbyId: lobby.id, ticketCount: lobby.tickets.length }, 'Host initiated battle - entering avatar selection');
 
-          gameLogger.info({ lobbyId: updatedLobby.id }, 'Battle started successfully');
-          // Removed lobby_updated: battle_started event contains lobby
-
-          // Start the battle (synchronous - relies on socket.io event ordering)
-          io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
-        }
-      } else {
-        gameLogger.warn('startBattle returned null/undefined');
+      // Validate active players exist BEFORE entering avatar_selection so the
+      // host gets a synchronous error instead of being stranded in a phase
+      // that can never complete.
+      const hasActivePlayers = lobby.players.some(p => p.team === 'developers' || p.team === 'qa');
+      if (!hasActivePlayers) {
+        socket.emit('game_error', {
+          message: 'Cannot start battle: At least one Developer or QA team member is required to participate in estimation battles. Please assign players to active teams first.',
+        });
+        return;
       }
+
+      // Transition lobby into avatar_selection. The actual battle start
+      // (gameState.startBattle + battle_started emit) is deferred until every
+      // active (non-spectator) player has confirmed an avatar via
+      // `select_avatar` below.
+      const oldPhase = lobby.gamePhase;
+      lobby.gamePhase = 'avatar_selection';
+      avatarSelections.set(lobby.id, new Set<string>());
+
+      eventBus.emit('session:phase_changed', {
+        lobbyId: lobby.id,
+        oldPhase,
+        newPhase: 'avatar_selection',
+      });
     });
 
     socket.on('submit_score', ({ score }) => {
