@@ -73,15 +73,15 @@ async function loadLoggerModule(options?: {
   });
 
   const randomBytes = vi.fn(() => Buffer.from(options?.randomBytesHex ?? '0011223344556677', 'hex'));
-  vi.doMock('crypto', async () => {
-    const actual = await vi.importActual<typeof import('crypto')>('crypto');
-
-    return {
-      ...actual,
-      randomBytes,
-      default: actual,
-    };
-  });
+  // Minimal mock — logger.ts only imports `randomBytes` from `crypto`.
+  // Avoid `vi.importActual('crypto')` because Vite's resolver treats Node
+  // built-ins as `__vite-browser-external` placeholders, which crash with
+  // `ERR_INVALID_ARG_VALUE` ("must be a file URL"). If logger.ts grows to
+  // import more from crypto, extend this mock surface explicitly.
+  vi.doMock('crypto', () => ({
+    randomBytes,
+    default: { randomBytes },
+  }));
   vi.doMock('pino', () => {
     const pinoMock = vi.fn((config: Record<string, unknown>) => {
       captured.config = config;
