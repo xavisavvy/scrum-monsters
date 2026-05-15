@@ -934,9 +934,19 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const player = lobby.players.find(p => p.id === playerId);
         if (player) {
           socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
+
+          // Emit fine-grained estimation:vote_cast so all clients (including
+          // the voter) update their hasSubmittedScore flag and render the vote
+          // indicator. The legacy `submit_score` path doesn't go through
+          // EstimationManager.castVote (which is what emits this event for the
+          // newer ranked-vote path), so we emit it here directly.
+          emitFineGrained(lobby.id, 'estimation:vote_cast', {
+            playerId,
+            team: player.team,
+            hasVoted: true,
+          });
         }
 
-        // Removed lobby_updated: estimation:vote_cast event emitted by estimationManager
         
         // Check if all scores submitted and reveal
         if (lobby.gamePhase === 'reveal') {
