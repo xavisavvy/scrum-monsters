@@ -322,13 +322,24 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
-        // Update players with revealed votes
+        // Canonical payload (shared/clientEvents.ts EstimationVotesRevealedEvent):
+        //   { votes: Record<playerId, score | '?'>, team: TeamType }
+        // One event is emitted per non-empty team server-side; merge votes for
+        // the players belonging to data.team. Tolerate the legacy shape
+        // ({ teamScores: { developers, qa } }) too, in case any older emit
+        // site is still in the wild — harmless if absent.
+        const votesByPlayer: Record<string, number | '?'> | undefined =
+          data?.votes ?? data?.teamScores?.[data?.team] ?? undefined;
+        const eventTeam: 'developers' | 'qa' | undefined = data?.team;
+
+        if (!votesByPlayer) return;
+
         const updatedLobby = {
           ...currentLobby,
           players: currentLobby.players.map(p => {
-            const playerTeam = p.team as 'developers' | 'qa';
-            const teamScores = data.teamScores?.[playerTeam];
-            const score = teamScores?.[p.id];
+            // If event is team-scoped, only mutate that team's players.
+            if (eventTeam && p.team !== eventTeam) return p;
+            const score = votesByPlayer[p.id];
             return score !== undefined ? { ...p, currentScore: score } : p;
           })
         };

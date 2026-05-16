@@ -268,6 +268,21 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     }
   }, 30000);
 
+  // Periodic recompute of the labeled websocketConnections gauge.
+  // Many code paths mutate socket.data.lobbyId / socket.data.userId
+  // (create_lobby, join_lobby, leave_lobby, reconnect, etc.) without
+  // calling updateWebsocketMetrics. Rather than instrumenting every
+  // mutation, recompute the buckets on a 5s tick — well within
+  // Prometheus's 15s scrape window. The recompute is O(open sockets)
+  // and only touches metric state, so it's cheap.
+  const websocketMetricsInterval = setInterval(() => {
+    try {
+      updateWebsocketMetrics(io);
+    } catch (err) {
+      socketLogger.error({ err }, 'websocketMetrics recompute failed');
+    }
+  }, 5000);
+
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
     totalConnections++;
     activeConnections++;
@@ -299,7 +314,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     }, 'Player connected');
 
     // Update Prometheus WebSocket connection gauge
-    updateWebsocketMetrics(io.sockets.sockets.size);
+    updateWebsocketMetrics(io);
 
     socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
@@ -962,6 +977,24 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (result) {
             const { lobby: updatedLobby, teamScores, teamConsensus } = result;
             io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+            // Bug fix (solo-vote-stuck-discussion): the legacy 'scores_revealed'
+            // event carries team aggregates only, and the client never
+            // populated per-player currentScore from it. Emit fine-grained
+            // 'estimation:votes_revealed' per non-empty team so Discussion.tsx
+            // (which reads currentLobby.teams[*].currentScore) can render
+            // consensus + Advance Now without a full-state refresh.
+            if (updatedLobby.teams.developers.length > 0) {
+              emitFineGrained(lobby.id, 'estimation:votes_revealed', {
+                votes: teamScores.developers,
+                team: 'developers',
+              });
+            }
+            if (updatedLobby.teams.qa.length > 0) {
+              emitFineGrained(lobby.id, 'estimation:votes_revealed', {
+                votes: teamScores.qa,
+                team: 'qa',
+              });
+            }
             // Phase 42-02b row #8: lobby_updated -> session:phase_changed
             // (battle -> reveal). scores_revealed above carries the data.
             eventBus.emit('session:phase_changed', {
@@ -1401,6 +1434,21 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             if (revealResult) {
               const { lobby: updatedLobby, teamScores, teamConsensus } = revealResult;
               io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
+              // Bug fix (solo-vote-stuck-discussion): mirror the per-team
+              // fine-grained reveal emit so the force-progression path also
+              // populates per-player currentScore client-side.
+              if (updatedLobby.teams.developers.length > 0) {
+                emitFineGrained(lobby.id, 'estimation:votes_revealed', {
+                  votes: teamScores.developers,
+                  team: 'developers',
+                });
+              }
+              if (updatedLobby.teams.qa.length > 0) {
+                emitFineGrained(lobby.id, 'estimation:votes_revealed', {
+                  votes: teamScores.qa,
+                  team: 'qa',
+                });
+              }
               // Phase 42-02b row #18: lobby_updated -> session:phase_changed
               // (reveal cascade after force progression).
               eventBus.emit('session:phase_changed', {
@@ -2193,7 +2241,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const lobbyId = socket.data.lobbyId;
 
       // Update Prometheus WebSocket connection gauge
-      updateWebsocketMetrics(io.sockets.sockets.size);
+      updateWebsocketMetrics(io);
 
       // Track disconnect reasons for monitoring
       disconnectReasons.set(reason, (disconnectReasons.get(reason) || 0) + 1);
@@ -2273,6 +2321,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     io,
     cleanup: () => {
       clearInterval(positionBatchInterval);
+      clearInterval(websocketMetricsInterval);
       clearInterval(revivalWatchdogInterval);
       clearInterval(sessionDisconnectSweeperInterval);
       eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);
