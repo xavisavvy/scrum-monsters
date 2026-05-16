@@ -14,7 +14,7 @@
 export interface BufferedEvent {
   seq: number;
   event: string;
-  data: any;
+  data: unknown;
   timestamp: number;
 }
 
@@ -46,7 +46,7 @@ export class LobbyEventSequencer {
    * @param event - Event name
    * @param data - Event payload
    */
-  bufferEvent(lobbyId: string, seq: number, event: string, data: any): void {
+  bufferEvent(lobbyId: string, seq: number, event: string, data: unknown): void {
     const buffer = this.buffers.get(lobbyId) ?? [];
 
     buffer.push({

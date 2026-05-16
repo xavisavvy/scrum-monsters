@@ -1,17 +1,17 @@
-import { Lobby, Boss } from '@shared/gameEvents';
+import { Lobby, Boss, Player } from '@shared/gameEvents';
 
 /**
  * Base interface that all phase components must implement.
  */
 export interface PhaseComponentProps {
   lobby: Lobby;
-  currentPlayer?: any;
+  currentPlayer?: Player;
   boss?: Boss;
   onBossAttack?: () => void;
   onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
-  emit: (...args: [event: string, ...rest: any[]]) => void;
+  emit: (...args: [event: string, ...rest: unknown[]]) => void;
   isTransitioning?: boolean;
 }
 

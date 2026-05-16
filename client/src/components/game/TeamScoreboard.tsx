@@ -2,7 +2,7 @@ import React from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { RetroCard } from '@/components/ui/retro-card';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { TeamType } from '@/lib/gameTypes';
+import { TeamType, TeamStats } from '@/lib/gameTypes';
 
 export function TeamScoreboard() {
   const { currentLobby } = useGameState();
@@ -49,7 +49,7 @@ export function TeamScoreboard() {
     return null;
   };
 
-  const calculateCompetitiveScore = (stats: any) => {
+  const calculateCompetitiveScore = (stats: TeamStats) => {
     // Focus on healthy scrum behaviors rather than story point inflation
     
     // PRIMARY SCORING: Team collaboration & battle performance

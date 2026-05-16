@@ -713,7 +713,7 @@ export function BattleScreen() {
           <GameOverPhase
             key={phaseKey}
             lobby={currentLobby}
-            currentPlayer={currentPlayer}
+            currentPlayer={currentPlayer ?? undefined}
             emit={emit}
             sidebarCollapsed={false}
             onToggleSidebar={() => {}}

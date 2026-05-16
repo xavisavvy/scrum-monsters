@@ -65,7 +65,7 @@ type ThreatEntry = BossAIThreatEntry;
 /**
  * Player combat state tracking
  */
-interface PlayerCombat {
+export interface PlayerCombat {
   playerId: string;
   hp: number;
   maxHp: number;
@@ -108,7 +108,7 @@ interface RevivalSession {
 /**
  * Lobby combat state
  */
-interface LobbyCombatState {
+export interface LobbyCombatState {
   lobbyId: string;
   boss?: BossCombat;
   players: Map<string, PlayerCombat>;

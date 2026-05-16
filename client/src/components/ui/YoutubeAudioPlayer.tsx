@@ -1,16 +1,51 @@
 import React, { useEffect, useRef } from 'react';
 import { useAudio } from '@/lib/stores/useAudio';
 
+// Minimal shape of the YouTube IFrame API we use.
+interface YTPlayer {
+  destroy: () => void;
+  playVideo: () => void;
+  pauseVideo: () => void;
+  stopVideo: () => void;
+  setVolume: (volume: number) => void;
+  mute: () => void;
+  unMute: () => void;
+  loadVideoById: (videoId: string) => void;
+}
+
+interface YTPlayerEvent {
+  target: YTPlayer;
+}
+
+interface YTStateChangeEvent {
+  data: number;
+}
+
+interface YTPlayerConstructor {
+  new (
+    container: HTMLElement,
+    options: {
+      height: string;
+      width: string;
+      playerVars: Record<string, number>;
+      events: {
+        onReady?: (event: YTPlayerEvent) => void;
+        onStateChange?: (event: YTStateChangeEvent) => void;
+      };
+    }
+  ): YTPlayer;
+}
+
 declare global {
   interface Window {
-    YT: any;
+    YT: { Player: YTPlayerConstructor };
     onYouTubeIframeAPIReady: () => void;
   }
 }
 
 export function YoutubeAudioPlayer() {
   const { setYoutubePlayer, stopYoutubeAudio } = useAudio();
-  const playerRef = useRef<any>(null);
+  const playerRef = useRef<YTPlayer | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -47,10 +82,10 @@ export function YoutubeAudioPlayer() {
           showinfo: 0,
         },
         events: {
-          onReady: (event: any) => {
+          onReady: (event: YTPlayerEvent) => {
             setYoutubePlayer(event.target);
           },
-          onStateChange: (event: any) => {
+          onStateChange: (event: YTStateChangeEvent) => {
             // When video ends (state 0), stop the audio
             if (event.data === 0) {
               stopYoutubeAudio();

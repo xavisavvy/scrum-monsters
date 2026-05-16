@@ -13,6 +13,7 @@
  */
 
 import { ScopedEventBus } from '../events';
+import type { LobbyCombatState, PlayerCombat } from './CombatManager';
 import { AvatarClass } from '../../shared/gameEvents';
 import {
   AbilityDefinition,
@@ -26,7 +27,7 @@ import {
 export interface AbilityManagerDeps {
   eventBus: ScopedEventBus;
   combatManager: {
-    getCombatState: (lobbyId: string) => any; // LobbyCombatState from CombatManager
+    getCombatState: (lobbyId: string) => LobbyCombatState | undefined;
     canUseClassAbility: (lobbyId: string, playerId: string, abilityId: string) => boolean;
   };
   getPlayerClass: (lobbyId: string, playerId: string) => AvatarClass | null;
@@ -274,8 +275,8 @@ export class AbilityManager {
       case 'party': {
         // All fighting players
         return Array.from(combatState.players.values())
-          .filter((p: any) => p.combatState === 'fighting')
-          .map((p: any) => p.playerId);
+          .filter((p: PlayerCombat) => p.combatState === 'fighting')
+          .map((p: PlayerCombat) => p.playerId);
       }
 
       case 'single': {
@@ -283,11 +284,11 @@ export class AbilityManager {
         // For other effects, target self
         if (effectType === 'heal') {
           const fightingPlayers = Array.from(combatState.players.values())
-            .filter((p: any) => p.combatState === 'fighting')
-            .sort((a: any, b: any) => a.hp - b.hp);
+            .filter((p: PlayerCombat) => p.combatState === 'fighting')
+            .sort((a: PlayerCombat, b: PlayerCombat) => a.hp - b.hp);
 
           if (fightingPlayers.length > 0) {
-            return [(fightingPlayers[0] as any).playerId];
+            return [fightingPlayers[0].playerId];
           }
         }
         return [playerId];

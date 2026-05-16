@@ -10,6 +10,12 @@ declare module "express-session" {
   }
 }
 
+// Minimal shape of express-openid-connect's req.oidc.
+interface OidcContext {
+  isAuthenticated(): boolean;
+  user?: { sub?: string };
+}
+
 /**
  * Configure Auth0 middleware using express-openid-connect.
  * Returns the auth() middleware to mount on the Express app.
@@ -32,6 +38,8 @@ export function configureAuth0(): RequestHandler {
     session: {
       absoluteDuration: 7 * 24 * 60 * 60, // 7 days
     },
+    // session typed as any to match express-openid-connect's Session interface without taking on its full surface.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     afterCallback: async (_req: Request, _res: Response, session: any) => {
       // Find or create user in local DB from Auth0 claims
       const { sub, email, nickname, name, picture } = session.claims || {};
@@ -91,8 +99,9 @@ export function configureAuth0(): RequestHandler {
 export function syncAuth0ToSession(): RequestHandler {
   return async (req: Request, _res: Response, next: NextFunction) => {
     try {
-      if ((req as any).oidc?.isAuthenticated()) {
-        const sub = (req as any).oidc.user?.sub;
+      const oidc = (req as Request & { oidc?: OidcContext }).oidc;
+      if (oidc?.isAuthenticated()) {
+        const sub = oidc.user?.sub;
         if (sub && !req.session.userId) {
           const user = await storage.getUserByAuth0Sub(sub);
           if (user) {
@@ -116,7 +125,7 @@ export function syncAuth0ToSession(): RequestHandler {
  * Middleware: checks if user is authenticated via Auth0.
  */
 export function isAuthenticated(req: Request, res: Response, next: NextFunction) {
-  if ((req as any).oidc?.isAuthenticated()) {
+  if ((req as Request & { oidc?: OidcContext }).oidc?.isAuthenticated()) {
     return next();
   }
   res.status(401).json({ error: "Not authenticated" });
@@ -126,7 +135,7 @@ export function isAuthenticated(req: Request, res: Response, next: NextFunction)
  * Helper: resolves numeric userId from the Auth0 sub claim on the request.
  */
 export async function getUserId(req: Request): Promise<number | undefined> {
-  const sub = (req as any).oidc?.user?.sub;
+  const sub = (req as Request & { oidc?: OidcContext }).oidc?.user?.sub;
   if (!sub) return undefined;
   const user = await storage.getUserByAuth0Sub(sub);
   return user?.id;

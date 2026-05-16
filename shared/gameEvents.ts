@@ -202,8 +202,8 @@ export interface LobbySync {
   reconnectToken: string;
   pendingActions?: {
     timers?: TimerState;
-    consensus?: any;
-    battleState?: any;
+    consensus?: unknown;
+    battleState?: unknown;
   };
   stateChanges?: {
     playersJoined?: string[];
@@ -632,7 +632,7 @@ export interface ServerToClientEvents {
 
   // System events
   'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
-  'system:missed_events': (data: { events: Array<{ event: string; data: any }> }) => void;
+  'system:missed_events': (data: { events: Array<{ event: string; data: unknown }> }) => void;
 
   // Server lifecycle events
   server_shutdown: (data: { message: string; reconnectDelayMs: number }) => void;

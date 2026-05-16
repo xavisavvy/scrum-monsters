@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
-import { TeamType } from '@/lib/gameTypes';
+import { TeamType, TeamStats } from '@/lib/gameTypes';
 import { getRandomVictoryImage } from '@/lib/victoryImages';
 
 interface CelebrationEvent {
@@ -95,7 +95,7 @@ export function TeamCelebration() {
       }
 
       // Check for milestones
-      const checkMilestone = (stats: any, team: TeamType, emoji: string) => {
+      const checkMilestone = (stats: TeamStats, team: TeamType, emoji: string) => {
         const milestones = [50, 100, 250, 500, 1000];
         const currentPoints = stats.totalStoryPoints;
         const lastAnnouncedMilestone = announcedMilestones.current.get(team) || 0;

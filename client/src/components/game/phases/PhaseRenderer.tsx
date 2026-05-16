@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { GamePhase, Lobby } from '@shared/gameEvents';
+import { GamePhase, Lobby, Player } from '@shared/gameEvents';
 import { PhaseRegistry } from './PhaseRegistry';
 import { PhaseTransition } from './PhaseTransition';
 import { PhaseInterstitial } from './PhaseInterstitial';
@@ -10,12 +10,12 @@ import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
 
 interface PhaseRendererProps {
   lobby: Lobby;
-  currentPlayer?: any;
+  currentPlayer?: Player;
   onBossAttack?: () => void;
   onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
   sidebarCollapsed: boolean;
   onToggleSidebar: () => void;
-  emit: (event: string, data?: any) => void;
+  emit: (event: string, data?: unknown) => void;
   isTransitioning?: boolean;
   previousPhase?: GamePhase;
 }

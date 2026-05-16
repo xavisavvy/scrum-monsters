@@ -45,7 +45,7 @@ export function isRedisConnected(): boolean {
   return isConnected && redisClient !== null;
 }
 
-export async function cacheLobby(lobbyId: string, lobbyData: any): Promise<void> {
+export async function cacheLobby(lobbyId: string, lobbyData: unknown): Promise<void> {
   const client = getRedisClient();
   if (!client) return;
 
@@ -60,7 +60,7 @@ export async function cacheLobby(lobbyId: string, lobbyData: any): Promise<void>
   }
 }
 
-export async function getCachedLobby(lobbyId: string): Promise<any | null> {
+export async function getCachedLobby(lobbyId: string): Promise<unknown | null> {
   const client = getRedisClient();
   if (!client) return null;
 
@@ -107,13 +107,16 @@ export async function cachePlayerSession(
   }
 }
 
-export async function getCachedPlayerSession(playerId: string): Promise<any | null> {
+export async function getCachedPlayerSession(playerId: string): Promise<{ lobbyId: string; reconnectToken: string; playerName: string } | null> {
   const client = getRedisClient();
   if (!client) return null;
 
   try {
     const data = await client.get(`player:${playerId}`);
-    return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
+    if (!data) return null;
+    return typeof data === 'string'
+      ? JSON.parse(data) as { lobbyId: string; reconnectToken: string; playerName: string }
+      : data as { lobbyId: string; reconnectToken: string; playerName: string };
   } catch (error) {
     dbLogger.error({ err: error }, 'Redis get player session error');
     return null;
@@ -148,7 +151,7 @@ export async function deletePlayerSession(playerId: string): Promise<void> {
   }
 }
 
-export async function cacheGameState(lobbyId: string, gameState: any): Promise<void> {
+export async function cacheGameState(lobbyId: string, gameState: unknown): Promise<void> {
   const client = getRedisClient();
   if (!client) return;
 
@@ -163,7 +166,7 @@ export async function cacheGameState(lobbyId: string, gameState: any): Promise<v
   }
 }
 
-export async function getCachedGameState(lobbyId: string): Promise<any | null> {
+export async function getCachedGameState(lobbyId: string): Promise<unknown | null> {
   const client = getRedisClient();
   if (!client) return null;
 

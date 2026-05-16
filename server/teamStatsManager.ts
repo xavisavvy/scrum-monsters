@@ -1,14 +1,16 @@
 import { Lobby, TeamType, TeamStats } from '../shared/gameEvents.js';
 
+export interface TeamPerformanceEntry {
+  team: TeamType;
+  estimationTime: number;
+  accuracy: number;
+  participationRate: number;
+  consensusAchieved: boolean;
+}
+
 export class TeamStatsManager {
-  
-  static updateTeamCompetitionStats(lobby: Lobby, performanceData: {
-    team: TeamType;
-    estimationTime: number;
-    accuracy: number;
-    participationRate: number;
-    consensusAchieved: boolean;
-  }[]): void {
+
+  static updateTeamCompetitionStats(lobby: Lobby, performanceData: TeamPerformanceEntry[]): void {
     if (!lobby.teamCompetition) return;
 
     // Update each team's stats
@@ -96,7 +98,7 @@ export class TeamStatsManager {
            streakBonus + speedBonus + efficiencyBonus;
   }
 
-  private static checkAndAwardAchievements(teamStats: TeamStats, data: any): void {
+  private static checkAndAwardAchievements(teamStats: TeamStats, data: TeamPerformanceEntry): void {
     const achievements = [];
 
     // Speed achievements (convert ms to seconds for comparison)
@@ -180,8 +182,8 @@ export class TeamStatsManager {
     estimationTime: number;
     score: number | '?';
     team: TeamType;
-  }>): any[] {
-    const teamData: { [key in TeamType]?: any } = {};
+  }>): TeamPerformanceEntry[] {
+    const teamData: { [key in TeamType]?: TeamPerformanceEntry } = {};
 
     // Initialize team data
     (['developers', 'qa'] as const).forEach(team => {

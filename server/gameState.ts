@@ -3,6 +3,8 @@ import { TeamStatsManager } from './teamStatsManager.js';
 import { createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 import { gameLogger } from './logger.js';
+import type { Server as SocketIOServer } from 'socket.io';
+
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
 // when the voting timeout safety net auto-advances battle->reveal. Avoids the
 // retired lobby_updated full-state push.
@@ -44,7 +46,7 @@ class GameStateManager {
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
   private votingTimeouts = new Map<string, NodeJS.Timeout>(); // Store voting timeouts separately
   private modifierIntervals = new Map<string, NodeJS.Timeout>(); // Track modifier intervals per lobby
-  private io?: any; // SocketIO server instance
+  private io?: SocketIOServer;
   
   // Reconnection system
   private disconnectedPlayers: Map<string, DisconnectedPlayer> = new Map(); // key: playerId
@@ -54,7 +56,7 @@ class GameStateManager {
   private readonly TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
   private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + randomBytes(16).toString('hex');
 
-  constructor(io?: any) {
+  constructor(io?: SocketIOServer) {
     this.io = io;
     // Start revival watchdog timer
     this.revivalWatchdog = setInterval(() => {
@@ -1745,6 +1747,10 @@ class GameStateManager {
     this.playerPerformanceMap.delete(lobby.id);
   }
 
+  // ringAttack return shape differs from the boss_ring_attack wire schema
+  // (in-memory uses startX/startY/progress; wire uses bossX/bossY/x/y).
+  // Reconciling them is out of scope here.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   attackBoss(playerId: string, _damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any; healedBoss?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
@@ -1803,6 +1809,8 @@ class GameStateManager {
     };
   }
 
+  // Return shape diverges from the wire boss_ring_attack schema; see attackBoss note.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private createRingAttack(lobby: Lobby): any {
     // Get all active (non-downed) non-spectator players
     const targets = lobby.players
@@ -2068,6 +2076,6 @@ class GameStateManager {
 export const gameState = new GameStateManager();
 
 // Method to set the io instance after it's created
-export function setGameStateIO(io: any) {
-  (gameState as any).io = io;
+export function setGameStateIO(io: SocketIOServer) {
+  (gameState as unknown as { io: SocketIOServer }).io = io;
 }

@@ -1,9 +1,11 @@
 // Re-export shared types for client use
 export * from '../../../shared/gameEvents.js';
 
+import type { Socket } from 'socket.io-client';
+
 // Client-specific types
 export interface GameClient {
-  socket: any;
+  socket: Socket;
   playerId?: string;
   lobbyId?: string;
   isConnected: boolean;

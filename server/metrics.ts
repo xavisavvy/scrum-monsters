@@ -1,4 +1,5 @@
 import { Registry, Counter, Gauge, Histogram, collectDefaultMetrics } from "prom-client";
+import type { Request, Response, NextFunction } from "express";
 
 /**
  * Prometheus metrics registry for ScrumQuest
@@ -347,7 +348,7 @@ export function recordGameCompletion(victory: boolean): void {
  * Normalize route for Prometheus labels to prevent high-cardinality label explosion.
  * Dynamic path segments are replaced with parameter placeholders.
  */
-function normalizeRoute(req: any): string {
+function normalizeRoute(req: Request): string {
   if (req.route?.path) return req.route.path;
   const path: string = req.path;
   if (path.startsWith('/join/')) return '/join/:lobbyId';
@@ -363,7 +364,7 @@ function normalizeRoute(req: any): string {
  * Express middleware for HTTP metrics
  */
 export function metricsMiddleware() {
-  return (req: any, res: any, next: any) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
 
     res.on("finish", () => {

@@ -5,9 +5,16 @@ import { Socket } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
 import { socketLogger } from './logger.js';
 
+interface PerformanceTrackingTarget {
+  trackPlayerPerformance(
+    playerId: string,
+    data: { estimationTime: number; score: number; team: string; ticketId?: string }
+  ): void;
+}
+
 export function setupTeamCompetitionHandlers(
   socket: Socket<ClientToServerEvents, ServerToClientEvents>,
-  gameStateManager: any // Replace with proper type
+  gameStateManager: PerformanceTrackingTarget
 ) {
   socket.on('player_performance', (data: { playerId: string; team: string; estimationTime: number; score: number; ticketId?: string }) => {
     try {
