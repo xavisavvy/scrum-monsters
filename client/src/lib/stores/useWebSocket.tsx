@@ -416,7 +416,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   },
 
   attemptReconnection: () => {
-    const { reconnection, socket } = get();
+    const { reconnection } = get();
     
     if (reconnection.status === 'reconnecting' || reconnection.attempt >= reconnection.maxAttempts) {
       return;

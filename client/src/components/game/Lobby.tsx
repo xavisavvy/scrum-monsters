@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, useMemo } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
@@ -8,7 +8,6 @@ import {
   DialogHeader, 
   DialogTitle, 
   DialogTrigger,
-  DialogClose,
   DialogDescription
 } from '@/components/ui/dialog';
 import { SpriteRenderer } from './SpriteRenderer';
@@ -202,7 +201,7 @@ export function Lobby() {
     x: number;
     startTime: number;
   }>>([]);
-  const [doorAnimation, setDoorAnimation] = React.useState({ isOpen: false, isOpening: false });
+  const [, setDoorAnimation] = React.useState({ isOpen: false, isOpening: false });
   
   // Emote system state
   const [showEmoteModal, setShowEmoteModal] = useState(false);

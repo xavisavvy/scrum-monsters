@@ -19,7 +19,6 @@ import {
   Lobby,
   Player,
   TeamType,
-  GamePhase,
   DisconnectedPlayer,
   ReconnectToken,
   TimerSettings,
@@ -28,12 +27,9 @@ import {
   AvatarClass,
 } from '../../shared/gameEvents';
 import {
-  SessionError,
   LobbyNotFoundError,
-  LobbyFullError,
   PlayerNotFoundError,
   PlayerNotHostError,
-  ReconnectionFailedError,
 } from '../errors/SessionErrors';
 
 const LOBBY_CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

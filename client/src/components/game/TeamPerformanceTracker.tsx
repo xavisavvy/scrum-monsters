@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
-import { TeamType } from '@/lib/gameTypes';
 
 interface PerformanceMetrics {
   estimationStartTime: number | null;
@@ -78,34 +77,6 @@ export function TeamPerformanceTracker() {
       });
     }
   }, [currentLobby?.gamePhase]);
-
-  // Calculate real-time team performance
-  const getTeamPerformance = (team: TeamType) => {
-    if (!currentLobby) return null;
-
-    const teamPlayers = currentLobby.teams[team] || [];
-    const teamSubmissions = Object.entries(metrics.teamSubmissions)
-      .filter(([playerId]) => teamPlayers.some(p => p.id === playerId))
-      .map(([, data]) => data);
-
-    if (teamSubmissions.length === 0) return null;
-
-    const avgTime = teamSubmissions.reduce((sum, sub) => sum + sub.time, 0) / teamSubmissions.length;
-    const submissionRate = teamSubmissions.length / Math.max(teamPlayers.length, 1);
-    
-    // Check if team has consensus
-    const scores = teamSubmissions.map(sub => sub.score);
-    const hasConsensus = scores.length > 0 && scores.every(score => score === scores[0]);
-
-    return {
-      averageTime: avgTime,
-      submissionRate,
-      hasConsensus,
-      consensusScore: hasConsensus ? scores[0] : null,
-      submittedCount: teamSubmissions.length,
-      totalMembers: teamPlayers.length
-    };
-  };
 
   // Hide Live Performance section as requested
   return null;

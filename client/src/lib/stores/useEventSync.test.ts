@@ -65,7 +65,7 @@ describe('useEventSync', () => {
 
     it('stores gap event in pendingEvents', () => {
       const mockSocket = { emit: vi.fn() } as any;
-      const { handleEvent, pendingEvents } = useEventSync.getState();
+      const { handleEvent } = useEventSync.getState();
 
       handleEvent('test:event', { seq: 1 }, mockSocket);
       handleEvent('test:event', { seq: 5, data: 'gap-event' }, mockSocket);
@@ -195,7 +195,7 @@ describe('useEventSync', () => {
 
   describe('Optimistic updates', () => {
     it('setOptimistic stores value', () => {
-      const { setOptimistic, pendingOptimistic } = useEventSync.getState();
+      const { setOptimistic } = useEventSync.getState();
 
       setOptimistic('vote', 5);
 

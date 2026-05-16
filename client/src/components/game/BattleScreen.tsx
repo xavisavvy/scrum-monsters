@@ -34,7 +34,7 @@ import { RotateDeviceOverlay } from './RotateDeviceOverlay';
 export function BattleScreen() {
   const { currentLobby, addAttackAnimation, currentPlayer } = useGameState();
   const { emit, socket } = useWebSocket();
-  const { playHit, playSuccess, fadeInBossMusic, fadeOutBossMusic, stopBossMusic } = useAudio();
+  const { playHit, playSuccess, fadeInBossMusic, stopBossMusic } = useAudio();
   const victoryImage = usePhaseVictoryImage(currentLobby?.gamePhase);
   const { levelUp } = useProgression();
   const viewport = useViewport();

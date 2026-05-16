@@ -20,7 +20,7 @@ export default function MenuPage() {
   const [searchParams] = useSearchParams();
   const [menuState, setMenuState] = useState<MenuState>('main');
   const [joinLobbyId, setJoinLobbyId] = useState<string>('');
-  const [lastLobby, setLastLobby] = useState(LastLobbyStorage.loadLastLobby());
+  const [lastLobby] = useState(LastLobbyStorage.loadLastLobby());
 
   // Pre-open the join form when arriving via /play?join=CODE — happens when
   // a fresh user (no saved name) hits /join/CODE or /game/CODE; GamePage

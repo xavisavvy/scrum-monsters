@@ -17,7 +17,6 @@ import { AvatarClass } from '../../shared/gameEvents';
 import {
   AbilityDefinition,
   AbilityEffectType,
-  CLASS_ABILITY_CONFIGS,
   getAbilityConfig,
 } from '../../shared/abilityTypes';
 

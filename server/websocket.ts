@@ -676,10 +676,6 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       socketLogger.info({ playerId, lobbyId }, 'Player explicitly leaving lobby');
 
-      // Capture player info before removal
-      const lobby = sessionManager.getPlayerLobby(playerId);
-      const leavingPlayer = lobby?.players.find(p => p.id === playerId);
-
       // Remove player from lobby
       const updatedLobby = sessionManager.removePlayer(playerId);
 

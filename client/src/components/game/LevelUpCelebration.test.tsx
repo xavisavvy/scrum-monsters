@@ -1,5 +1,4 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, act } from '@testing-library/react';
 import { useProgression } from '@/lib/stores/useProgression';
 import { useAudio } from '@/lib/stores/useAudio';
 

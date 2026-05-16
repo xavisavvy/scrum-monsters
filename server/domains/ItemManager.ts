@@ -16,7 +16,6 @@ import { ScopedEventBus } from '../events';
 import { AvatarClass } from '../../shared/gameEvents';
 import {
   ItemType,
-  ItemInventory,
   ITEM_DEFINITIONS,
   MAX_ITEMS_PER_TYPE,
   selectRandomItemType,

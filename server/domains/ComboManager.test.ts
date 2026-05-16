@@ -10,7 +10,6 @@ import { ScopedEventBus } from '../events/ScopedEventBus';
 import { AvatarClass } from '../../shared/gameEvents';
 import { AbilityUsedPayload } from '../../shared/abilityTypes';
 import { EstimationFullConsensusReachedPayload } from '../events/eventTypes';
-import { CLASS_COMBOS } from '../../shared/comboTypes';
 
 describe('ComboManager', () => {
   let comboManager: ComboManager;

@@ -134,24 +134,6 @@ export const PlayerCharacter = memo(function PlayerCharacter({
   // Current sprite animation
   const spriteAnimation = getSpriteAnimation();
 
-  // Get projectile emoji based on class
-  const getProjectileEmoji = (): string => {
-    const projectileEmojis = {
-      ranger: '🏹',
-      rogue: '🔪', 
-      bard: '🎵',
-      sorcerer: '🔥',
-      wizard: '⚡',
-      warrior: '⚔️',
-      paladin: '✨',
-      cleric: '💫',
-      oathbreaker: '🖤',
-      monk: '👊'
-    };
-    
-    return projectileEmojis[avatarClass];
-  };
-
   const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
     if (isDead) return;
     
