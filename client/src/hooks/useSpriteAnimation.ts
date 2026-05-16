@@ -185,8 +185,12 @@ export function useSpriteAnimation({
 
   const spriteFrame = getCurrentSpriteFrame();
   
-  // Determine if sprite should be horizontally flipped
-  const shouldFlip = direction === 'right'; // Flip left-facing sprites for right direction
+  // Sprite atlases have dedicated rows for each direction (see
+  // SPRITE_CONFIG.directions above: row 1 = walk-left, row 2 = walk-right).
+  // Earlier code also horizontally flipped when direction === 'right',
+  // which double-mirrored the already-right-facing frames — making the
+  // sprite turn left and moonwalk while moving right. Disabled.
+  const shouldFlip = false;
 
   return {
     spriteSheetUrl,
