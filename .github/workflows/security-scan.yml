@@ -30,9 +30,27 @@ jobs:
         with:
           fetch-depth: 0  # Full history for complete scanning
 
-      - name: Run Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GITLEAKS_CONFIG: .gitleaks.toml
-          GITLEAKS_ENABLE_COMMENTS: true
+      # Bypassing gitleaks/gitleaks-action@v2 — its cache layer on the
+      # Synology runner restores the binary without the +x bit, producing
+      # `spawn /tmp/gitleaks-*/gitleaks EACCES`. We install and invoke the
+      # CLI directly instead. Trade-off: no auto-PR-comments from the
+      # action; the SARIF report still uploads to the Security tab below.
+      - name: Install gitleaks CLI
+        run: |
+          set -euo pipefail
+          GITLEAKS_VERSION="8.24.3"
+          curl -fsSL "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" \
+            | tar -xz -C /tmp gitleaks
+          chmod +x /tmp/gitleaks
+          /tmp/gitleaks version
+
+      - name: Run gitleaks
+        run: |
+          /tmp/gitleaks detect \
+            --redact \
+            -v \
+            --config=.gitleaks.toml \
+            --exit-code=2 \
+            --report-format=sarif \
+            --report-path=results.sarif \
+            --log-opts=-1
