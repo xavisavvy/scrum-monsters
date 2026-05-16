@@ -1,6 +1,6 @@
 import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
-import { createHash, createHmac, randomBytes } from 'crypto';
+import { createHash, createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 import { gameLogger } from './logger.js';
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
@@ -19,8 +19,15 @@ interface RevivalSession {
 
 const LOBBY_CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function generateSecureLobbyCode(): string {
-  const bytes = randomBytes(6);
-  return Array.from(bytes).map(b => LOBBY_CODE_CHARSET[b % LOBBY_CODE_CHARSET.length]).join('');
+  // Uniform sampling via crypto.randomInt (avoids the modulo-bias that
+  // randomBytes(6).map(b => charset[b % 36]) introduces — 256 % 36 = 4,
+  // so bytes 252-255 give A-D one extra mapping each). CodeQL
+  // js/biased-cryptographic-random.
+  let code = '';
+  for (let i = 0; i < 6; i++) {
+    code += LOBBY_CODE_CHARSET[randomInt(LOBBY_CODE_CHARSET.length)];
+  }
+  return code;
 }
 
 function generateSecureId(): string {
