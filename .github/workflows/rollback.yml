@@ -52,8 +52,8 @@ jobs:
       - name: Check rate limits and cooldown
         id: rate-check
         run: |
-          mkdir -p .argocd-rollback
-          STATE_FILE=".argocd-rollback/rollback-state-${{ inputs.environment }}.json"
+          mkdir -p .rollback-state
+          STATE_FILE=".rollback-state/rollback-state-${{ inputs.environment }}.json"
 
           # Initialize state if doesn't exist
           if [ ! -f "$STATE_FILE" ]; then
@@ -263,7 +263,7 @@ jobs:
       - name: Update rate limit state
         if: inputs.dry_run == false
         run: |
-          STATE_FILE=".argocd-rollback/rollback-state-${{ inputs.environment }}.json"
+          STATE_FILE=".rollback-state/rollback-state-${{ inputs.environment }}.json"
 
           # Update state with new rollback timestamp
           jq --arg now "$(date -Iseconds)" \
@@ -320,7 +320,7 @@ jobs:
 
       - name: Record rollback in audit log
         run: |
-          mkdir -p .argocd-rollback
+          mkdir -p .rollback-state
 
           # Determine trigger type based on reason prefix
           TRIGGER="manual"
@@ -343,12 +343,12 @@ jobs:
             --argjson duration "${{ needs.rollback.outputs.duration || 0 }}" \
             '{timestamp: $ts, environment: $env, component: $comp, trigger: $trigger, actor: $actor, from_revision: $from, to_revision: $to, to_deployment_id: $id, reason: $reason, workflow_run: $run, duration_seconds: $duration, success: true}')
 
-          echo "$ENTRY" >> .argocd-rollback/rollback-history.jsonl
+          echo "$ENTRY" >> .rollback-state/rollback-history.jsonl
 
           # Commit audit log
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .argocd-rollback/rollback-history.jsonl
+          git add .rollback-state/rollback-history.jsonl
           git diff --cached --quiet || git commit -m "audit: rollback ${{ github.event.inputs.environment }} to ${{ needs.rollback.outputs.to-revision }}"
           git push
 
