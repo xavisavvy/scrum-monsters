@@ -202,6 +202,7 @@
   },
   "overrides": {
     "esbuild": "^0.25.11",
-    "prismjs": ">=1.30.0"
+    "prismjs": ">=1.30.0",
+    "three": "$three"
   }
 }

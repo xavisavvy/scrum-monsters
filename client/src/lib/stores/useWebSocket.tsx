@@ -253,7 +253,10 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         // the user understands why their lobby evaporated and routes cleanly
         // back to /play. id 'reconnect-stale' makes the toast idempotent
         // against sonner's duplicate-suppression.
-        console.error('Reconnection failed:', response.message);
+        // Downgraded to warn: the failure is expected after a blue-green
+        // deploy swap (or token expiry) and is fully handled by the
+        // toast + clearSession path below — not a real error.
+        console.warn('Reconnection failed:', response.message);
         toast.warning('Lobby session ended', {
           description: 'Your previous lobby is no longer available. Start or join a new one.',
           id: 'reconnect-stale',
