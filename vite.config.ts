@@ -53,24 +53,41 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
+          // Match a package name at a path boundary inside node_modules.
+          // Anchoring prevents `.includes('engine.io')` from matching a
+          // hypothetical `node_modules/engine.io.malicious-shim/` path
+          // (CodeQL js/incomplete-url-substring-sanitization).
+          // `id` here is Rollup's internal module ID — a build-time
+          // file path, not user input — so the practical risk is nil,
+          // but anchoring is the right thing regardless.
+          const hasPkg = (pkg: string) =>
+            id.includes(`/node_modules/${pkg}/`) || id.includes(`\\node_modules\\${pkg}\\`);
+
           // Isolate Three.js and React Three Fiber into their own chunk
-          // This is the heaviest dependency (~600KB+)
-          if (id.includes('three') || id.includes('@react-three') || id.includes('postprocessing') || id.includes('three-stdlib') || id.includes('meshline') || id.includes('r3f-perf')) {
+          // (the heaviest dependency, ~600KB+).
+          if (
+            hasPkg('three') ||
+            hasPkg('@react-three') ||
+            hasPkg('postprocessing') ||
+            hasPkg('three-stdlib') ||
+            hasPkg('meshline') ||
+            hasPkg('r3f-perf')
+          ) {
             return 'three-vendor';
           }
 
-          // React core in its own chunk (shared across all routes)
-          if (id.includes('node_modules/react/') || id.includes('node_modules/react-dom/')) {
+          // React core in its own chunk (shared across all routes).
+          if (hasPkg('react') || hasPkg('react-dom')) {
             return 'react-vendor';
           }
 
-          // Socket.IO client (only needed for game routes but lighter)
-          if (id.includes('socket.io-client') || id.includes('engine.io')) {
+          // Socket.IO client (only needed for game routes but lighter).
+          if (hasPkg('socket.io-client') || hasPkg('engine.io-client') || hasPkg('engine.io-parser')) {
             return 'socket-vendor';
           }
 
-          // Framer Motion (used for transitions, moderate size)
-          if (id.includes('framer-motion')) {
+          // Framer Motion (used for transitions, moderate size).
+          if (hasPkg('framer-motion')) {
             return 'motion-vendor';
           }
         }
