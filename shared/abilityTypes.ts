@@ -6,7 +6,7 @@
  */
 
 import { AvatarClass } from './gameEvents';
-import { ClassAbilityDef, MasteryTier } from './classMasteryTypes';
+import { ClassAbilityDef } from './classMasteryTypes';
 
 /**
  * Effect type categorizes what an ability does mechanically

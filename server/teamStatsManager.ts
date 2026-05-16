@@ -1,4 +1,4 @@
-import { Lobby, TeamType, TeamStats, TeamCompetition } from '../shared/gameEvents.js';
+import { Lobby, TeamType, TeamStats } from '../shared/gameEvents.js';
 
 export class TeamStatsManager {
   

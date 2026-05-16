@@ -23,7 +23,7 @@ import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
 import { registerRoutes, setSessionMiddleware } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
-import { initializeRedis, shutdownRedis, isRedisConnected } from "./redis";
+import { initializeRedis, shutdownRedis } from "./redis";
 import { configureAuth0, syncAuth0ToSession } from "./auth/auth0.js";
 import { globalAuthLimiter } from "./middleware/rateLimiter.js";
 import { validateEnv } from "./config/env.js";

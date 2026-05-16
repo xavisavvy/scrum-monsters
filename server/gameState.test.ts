@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { gameState } from './gameState';
 import type { Lobby } from '@shared/gameEvents';
 

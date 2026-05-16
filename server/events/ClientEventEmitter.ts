@@ -19,7 +19,6 @@
 import { Server } from 'socket.io';
 import { ScopedEventBus } from './ScopedEventBus';
 import { LobbyEventSequencer, BufferedEvent } from './LobbyEventSequencer';
-import { DomainEventMap } from './eventTypes';
 import { Lobby } from '../../shared/gameEvents';
 
 export interface ClientEventEmitterDeps {

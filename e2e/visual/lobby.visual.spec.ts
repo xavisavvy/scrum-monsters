@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { viewports, screenshotOptions, waitForStableUI } from '../helpers/visual-helpers';
-import { createLobbyAndPickAvatar, openPlayScreen } from '../helpers/lobby-flow';
+import { openPlayScreen } from '../helpers/lobby-flow';
 
 test.describe('Lobby Visual Regression', () => {
   test.beforeEach(async ({ page }) => {

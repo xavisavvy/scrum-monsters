@@ -4,7 +4,7 @@
  * Tests for the bridge between internal domain events and Socket.IO client events.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { ClientEventEmitter } from './ClientEventEmitter';
 import { ScopedEventBus } from './ScopedEventBus';
 import { LobbyEventSequencer } from './LobbyEventSequencer';

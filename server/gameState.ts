@@ -1,6 +1,6 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, GamePhase, TeamType, AvatarClass, TeamScores, TeamConsensus, TeamCompetition, TeamStats, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResult, ReconnectResponse } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
-import { createHash, createHmac, randomBytes, randomInt } from 'crypto';
+import { createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
 import { gameLogger } from './logger.js';
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
@@ -1491,10 +1491,6 @@ class GameStateManager {
       }
     };
 
-    // Handle cases where one or both teams are empty - check actual team membership
-    const devTeamExists = lobby.teams.developers.length > 0;
-    const qaTeamExists = lobby.teams.qa.length > 0;
-    
     // Transition to discussion phase to allow players to see individual votes and update them
     lobby.gamePhase = 'discussion';
 

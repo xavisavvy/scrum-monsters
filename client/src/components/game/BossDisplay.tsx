@@ -221,7 +221,7 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
                     : isDamaged ? 'scale(1.15)' : 'scale(1)',
                   filter: isDeathAnimationActive
                     ? 'brightness(1.8) contrast(1.5) saturate(2) hue-rotate(0deg) drop-shadow(0 0 20px #ff0000)'
-                    : isBossDead && !isDeathAnimationActive
+                    : isBossDead
                     ? 'grayscale(0.8) brightness(0.6)'
                     : isDamaged ? 'brightness(2.5) contrast(2) saturate(1.5) hue-rotate(15deg)' : 'none',
                   opacity: isDeathAnimationActive ? 0 : isBossDead ? 0.6 : 1,
@@ -421,8 +421,10 @@ export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayP
       <div className="flex justify-center mb-4 relative">
         {renderBossSprite()}
         
-        {/* Attack Animations */}
-        {!fullscreen && attackAnimations.map(animation => (
+        {/* Attack Animations (only renders in non-fullscreen branch
+            — the fullscreen branch returns early above, around line 181,
+            so the !fullscreen guard here was redundant). */}
+        {attackAnimations.map(animation => (
           <div
             key={animation.id}
             className="damage-animation"

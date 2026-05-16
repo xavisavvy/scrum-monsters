@@ -25,7 +25,6 @@ import {
   LobbyNotFoundError,
   PlayerNotFoundError,
   PlayerNotHostError,
-  ReconnectionFailedError,
   SessionError,
   EstimationNotActiveError,
   VoteNotEligibleError,
@@ -34,7 +33,6 @@ import {
   ForceEstimateTieError,
   InvalidForcedValueError,
   CombatNotActiveError,
-  PlayerNotInCombatError,
   RevivalNotAllowedError,
   NotHealerClassError,
 } from './domains/index.js';
@@ -104,7 +102,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   setGameStateIO(io);
 
   // Initialize ClientEventEmitter for fine-grained event delivery
-  const clientEventEmitter = initializeClientEventEmitter(io);
+  // (call for side effect — singleton, retrieved later via getClientEventEmitter)
+  initializeClientEventEmitter(io);
   socketLogger.info('ClientEventEmitter initialized for fine-grained events');
 
   /**
@@ -182,7 +181,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // Connection monitoring for Replit
   let totalConnections = 0;
   let activeConnections = 0;
-  let disconnectReasons = new Map<string, number>();
+  const disconnectReasons = new Map<string, number>();
 
   // Position batching for performance - aggregate updates and broadcast every 100ms
   const pendingPositionUpdates = new Map<string, boolean>(); // lobbyId -> hasPendingUpdates
@@ -680,7 +679,6 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // Capture player info before removal
       const lobby = sessionManager.getPlayerLobby(playerId);
       const leavingPlayer = lobby?.players.find(p => p.id === playerId);
-      const playerName = leavingPlayer?.name || 'Unknown';
 
       // Remove player from lobby
       const updatedLobby = sessionManager.removePlayer(playerId);
@@ -2268,7 +2266,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Use SessionManager reconnection system
         const disconnectResult = sessionManager.handlePlayerDisconnect(playerId);
         if (disconnectResult && lobbyId) {
-          const { disconnectedPlayer, reconnectToken, hostTransfer } = disconnectResult;
+          const { disconnectedPlayer, hostTransfer } = disconnectResult;
 
           // Notify other players about the disconnection (but keep player in lobby)
           io.to(lobbyId).emit('player_disconnected', { playerId });
