@@ -15,7 +15,13 @@ import { htmlLimiter } from "./middleware/rateLimiter.js";
 const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
-  httpLogger.info({ source }, message);
+  // Strip CR/LF/control chars before logging to neutralize log-injection
+  // payloads in user-controlled paths (e.g. /api/foo%0aFAKE_LOG_LINE).
+  // Pino JSON logging escapes these anyway, but defense-in-depth and
+  // silences CodeQL js/log-injection.
+  // eslint-disable-next-line no-control-regex
+  const safe = message.replace(/[\r\n\t\x00-\x1f\x7f]/g, ' ');
+  httpLogger.info({ source }, safe);
 }
 
 export async function setupVite(app: Express, server: Server) {

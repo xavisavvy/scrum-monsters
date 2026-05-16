@@ -7,6 +7,7 @@ import { apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 import { storage, PgStorage } from './storage.js';
 import { getMetrics, getMetricsContentType, metricsMiddleware } from "./metrics.js";
+import { httpLogger } from "./logger.js";
 
 // Import session middleware from index (circular import avoided by lazy loading)
 let sessionMiddlewareRef: RequestHandler | null = null;
@@ -27,7 +28,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.set('Content-Type', getMetricsContentType());
       res.end(await getMetrics());
     } catch (err) {
-      res.status(500).end(String(err));
+      // Log the real error server-side; return a generic message to the
+      // client so we don't echo error details / stack frames over the
+      // wire (CodeQL js/stack-trace-exposure).
+      httpLogger.error({ err }, 'Failed to render /metrics');
+      res.status(500).end('Failed to render metrics');
     }
   });
 
