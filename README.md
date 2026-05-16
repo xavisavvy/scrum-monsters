@@ -9,6 +9,8 @@
 
 A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that gamifies story point estimation. Players create or join lobbies, select fantasy avatar classes, and estimate tickets by "battling" pixel art bosses in real-time combat scenarios.
 
+![Scrum Monsters landing page](docs/screenshots/landing.png)
+
 ## 🌟 Features
 
 ### 🎯 Core Gameplay
@@ -127,6 +129,8 @@ npm run dev
 The application will be available at `http://localhost:5000`
 
 ## 🎮 How to Play
+
+![Play menu — create or join a lobby](docs/screenshots/play-menu.png)
 
 ### 1. Create or Join a Lobby
 - **Host**: Create a new lobby and receive a unique invite code
