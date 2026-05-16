@@ -299,16 +299,6 @@ export default function GamePage() {
     // the lobby_sync teardown-during-emit race that produced snapshot drift.
   }, [socket, navigate]);
 
-  const handleBackToMenu = () => {
-    if (currentLobby) {
-      emit('leave_lobby', {});
-    }
-    LastLobbyStorage.clearLastLobby();
-    clearReconnectionState();
-    clearAll();
-    navigate('/play');
-  };
-
   // Render appropriate component based on server-driven game phase
   const renderGamePhase = () => {
     if (!currentLobby) {

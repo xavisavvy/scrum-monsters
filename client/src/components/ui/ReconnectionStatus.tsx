@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertTriangle, Wifi, WifiOff, RotateCcw, X } from 'lucide-react';
+import { AlertTriangle, WifiOff, RotateCcw, X } from 'lucide-react';
 import { RetroButton } from './retro-button';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 

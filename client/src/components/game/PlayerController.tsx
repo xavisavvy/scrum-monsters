@@ -54,8 +54,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       const screenPos = viewport.worldToScreen(worldX, worldY);
       
       const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
-      const isSignificantDifference = Math.abs(playerPosition.x - screenPos.x) > 100 || Math.abs(playerPosition.y - screenPos.y) > 100;
-      
+
       if (isInitialSync) {
         setPlayerPosition({ x: screenPos.x, y: screenPos.y });
       }
@@ -943,13 +942,6 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           };
           
           setProjectiles(prev => [...prev, newProjectile]);
-          
-          const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
-          const targetWorld = viewport.screenToWorld(targetX, targetY);
-          const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-          const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-          const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-          const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
           
           if (currentPlayer.team === 'spectators' && targetPlayerId) {
             const damage = 0; // Damage calculated on server based on modifier

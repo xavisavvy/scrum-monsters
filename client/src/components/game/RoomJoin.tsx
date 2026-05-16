@@ -6,7 +6,6 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { FavoriteRoomsStorage } from '@/lib/utils/favoriteRoomsStorage';
 import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
-import { useGameState } from '@/lib/stores/useGameState';
 
 interface RoomJoinProps {
   roomId: string;
@@ -19,7 +18,6 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
   const [mode, setMode] = useState<'checking' | 'join' | 'create'>('checking');
   const [isProcessing, setIsProcessing] = useState(false);
   const { emit, socket } = useWebSocket();
-  const { currentLobby } = useGameState();
   const navigate = useNavigate();
 
   // Normalize room ID for display

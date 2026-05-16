@@ -99,7 +99,7 @@ export const useEventSync = create<EventSyncState>()(
     handleMissedEventsReplay: (events: Array<{ event: string; data: any }>) => {
       // Process each event in order
       events.forEach((evt) => {
-        const { seq, ...payload } = evt.data;
+        const { seq } = evt.data;
         if (seq) {
           set({ lastSeq: seq });
         }

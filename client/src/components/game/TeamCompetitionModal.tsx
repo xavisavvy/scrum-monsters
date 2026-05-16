@@ -1,5 +1,4 @@
 import React from 'react';
-import { RetroCard } from '../ui/retro-card';
 import { TeamScoreboard } from './TeamScoreboard';
 
 interface TeamCompetitionModalProps {

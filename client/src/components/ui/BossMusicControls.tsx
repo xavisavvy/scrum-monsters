@@ -7,13 +7,10 @@ import { RetroCard } from '@/components/ui/retro-card';
 
 export function BossMusicControls() {
   const { 
-    isBossMusicMuted, 
+    isBossMusicMuted,
     isYoutubeAudioActive,
     youtubeUrl,
-    toggleBossMusicMute, 
-    playYoutubeAudio, 
-    stopYoutubeAudio,
-    setYoutubeUrl 
+    toggleBossMusicMute,
   } = useAudio();
   const { currentPlayer } = useGameState();
   const { socket } = useWebSocket();

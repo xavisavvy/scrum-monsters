@@ -45,7 +45,6 @@ export const SpriteRenderer = memo(function SpriteRenderer({
   if (imageDimensions.loaded) {
     // For 1024x1024 images with 4x4 grid: each frame is 256x256
     const actualFrameWidth = imageDimensions.width / 4;
-    const actualFrameHeight = imageDimensions.height / 4;
     
     // Calculate which frame we want (column and row)
     const frameCol = Math.floor(spriteFrame.x / frameSize.width);

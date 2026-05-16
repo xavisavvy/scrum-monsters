@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SessionManager, SessionManagerDeps } from './SessionManager';
+import { SessionManager } from './SessionManager';
 import { ScopedEventBus } from '../events';
 import { LobbyNotFoundError, PlayerNotFoundError, PlayerNotHostError } from '../errors/SessionErrors';
 

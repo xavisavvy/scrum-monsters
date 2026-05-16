@@ -5,7 +5,7 @@ import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
-import { FIBONACCI_NUMBERS, EstimationScaleType, ESTIMATION_SCALES } from '@/lib/gameTypes';
+import { FIBONACCI_NUMBERS, ESTIMATION_SCALES } from '@/lib/gameTypes';
 
 const voteCardSpring = { type: 'spring' as const, stiffness: 300, damping: 20 };
 const selectedGlow = { scale: 1.05, boxShadow: '0 0 20px rgba(234, 179, 8, 0.6)' };
