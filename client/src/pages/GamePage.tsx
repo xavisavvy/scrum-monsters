@@ -198,12 +198,14 @@ export default function GamePage() {
     // driven by useGameState.requestBattleRemount().
 
     socket.on('avatar_selected', ({ playerId, avatar }) => {
+      // Mirror session:avatar_selected: flip hasSelectedAvatar so the
+      // per-player Lobby gate (renderGamePhase) advances this user.
       const cl = currentLobbyRef.current;
       if (cl) {
         const updatedLobby = {
           ...cl,
           players: cl.players.map(p =>
-            p.id === playerId ? { ...p, avatar, avatarClass: avatar } : p
+            p.id === playerId ? { ...p, avatar, avatarClass: avatar, hasSelectedAvatar: true } : p
           )
         };
         setLobby(updatedLobby);
@@ -211,7 +213,7 @@ export default function GamePage() {
 
       const cp = currentPlayerRef.current;
       if (cp?.id === playerId) {
-        setPlayer({ ...cp, avatar, avatarClass: avatar });
+        setPlayer({ ...cp, avatar, avatarClass: avatar, hasSelectedAvatar: true });
       }
     });
 
@@ -322,7 +324,21 @@ export default function GamePage() {
 
     const phase = currentLobby.gamePhase;
 
-    if (phase === 'avatar_selection') {
+    // Per-player avatar gate. As of 2026-05-15, `lobby.gamePhase` is no
+    // longer driven into 'avatar_selection' on the server — the legacy
+    // `GameState.startGame` path was dead code. Each player independently
+    // sees AvatarSelection before the Lobby view based on their own
+    // `hasSelectedAvatar` flag, regardless of the lobby's shared phase.
+    // This satisfies the UX expectation that you pick your class before
+    // you ever see the lobby while keeping host actions (ticket import,
+    // settings) unblocked once the host picks. See
+    // .planning/debug/resolved/avatar-selection-skipped.md.
+    // The phase === 'avatar_selection' branch is kept as a fallback in
+    // case any external integration sets that phase explicitly, but it
+    // should not fire in normal play.
+    const needsAvatarSelection =
+      !!currentPlayer && currentPlayer.hasSelectedAvatar === false;
+    if (needsAvatarSelection || phase === 'avatar_selection') {
       return (
         <Suspense fallback={<GameLoadingFallback />}>
           <AvatarSelection />

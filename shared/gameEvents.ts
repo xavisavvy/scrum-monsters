@@ -27,6 +27,11 @@ export interface Player {
   hasSubmittedScore: boolean;
   level: number; // Player level from XP progression (default 1)
   isReady?: boolean; // Player ready state for lobby phase
+  // Per-player gate for avatar_selection -> lobby UX transition. Server initializes
+  // false for fresh players; flipped true on `select_avatar`. Preserved on
+  // reconnect via SessionManager.joinLobby so reconnecting players skip
+  // re-selecting. See .planning/debug/resolved/avatar-selection-skipped.md.
+  hasSelectedAvatar?: boolean;
 }
 
 export interface TeamStats {
@@ -428,6 +433,9 @@ export interface ServerToClientEvents {
   'session:phase_changed': (data: { oldPhase: GamePhase; newPhase: GamePhase; seq: number; timestamp: number }) => void;
   'session:team_changed': (data: { playerId: string; oldTeam: TeamType; newTeam: TeamType; seq: number; timestamp: number }) => void;
   'session:avatar_selected': (data: { playerId: string; avatar: AvatarClass; seq: number; timestamp: number }) => void;
+  // Note: payload intentionally does not include hasSelectedAvatar — clients
+  // infer the flipped-true transition from receipt of this event itself.
+
   // Phase 42-02b: New fine-grained events to absorb the retiring `lobby_updated` full-state push.
   'session:tickets_updated': (data: { tickets: JiraTicket[]; seq: number; timestamp: number }) => void;
   'session:player_ready_changed': (data: { playerId: string; isReady: boolean; seq: number; timestamp: number }) => void;
