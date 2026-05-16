@@ -90,3 +90,45 @@ export const htmlLimiter = rateLimit({
   legacyHeaders: false,
   skip: (_req: Request) => process.env.NODE_ENV === 'test',
 });
+
+/**
+ * Absolute paths (full request path, not /api-relative) that the
+ * globalAuthLimiter must NOT rate-limit. These are the same probe
+ * endpoints documented in RATE_LIMIT_EXEMPT_PATHS but as full URLs,
+ * because the global limiter sits ABOVE the /api router and sees
+ * the unmounted path.
+ */
+const GLOBAL_EXEMPT_ABSOLUTE_PATHS = new Set([
+  '/api/health',
+  '/api/health/livez',
+  '/api/health/readyz',
+  '/api/ws-health',
+  '/api/version',
+  '/metrics',
+]);
+
+/**
+ * globalAuthLimiter - App-level rate limit that gates the Auth0
+ * middleware chain (configureAuth0 + syncAuth0ToSession). Without
+ * this an unauthenticated attacker could hammer the app and force
+ * syncAuth0ToSession's per-request DB lookup (server/auth/auth0.ts).
+ *
+ * Limit is intentionally generous (2000 req / 15 min / IP) — this is
+ * a DoS-shedding limit, not an anti-abuse one. The Auth0 callback
+ * routes are additionally protected by authLimiter at the auth router.
+ *
+ * Probe endpoints (livez/readyz/health/version/metrics) are exempt
+ * so a flapping container can still report status under load.
+ * (Phase 44 UAT Issue #1 — earlier rate-limit additions broke probe
+ * timeouts; this version explicitly avoids that.)
+ */
+export const globalAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  limit: 2000,
+  standardHeaders: 'draft-8',
+  legacyHeaders: false,
+  skip: (req: Request) => {
+    if (process.env.NODE_ENV === 'test') return true;
+    return GLOBAL_EXEMPT_ABSOLUTE_PATHS.has(req.path);
+  },
+});
