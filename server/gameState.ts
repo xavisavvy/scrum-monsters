@@ -486,7 +486,9 @@ class GameStateManager {
         avatarClass: 'warrior',
         hasSubmittedScore: false,
         currentScore: undefined,
-        level: 1
+        level: 1,
+        // avatar_selection -> lobby UX gate (see SessionManager.createLobby).
+        hasSelectedAvatar: false
       }],
       teams: {
         developers: [],
@@ -570,7 +572,9 @@ class GameStateManager {
         avatarClass: 'warrior',
         hasSubmittedScore: false,
         currentScore: undefined,
-        level: 1
+        level: 1,
+        // Fresh joiners start with avatar gate closed (see SessionManager.joinLobby).
+        hasSelectedAvatar: false
       };
       lobby.players.push(player);
     }
@@ -1106,6 +1110,15 @@ class GameStateManager {
     return lobby;
   }
 
+  /**
+   * @deprecated Dead code as of 2026-05-15. The `avatar_selection` server
+   * phase was retired in favor of per-player client-side gating via
+   * `Player.hasSelectedAvatar`. `startBattle` is the live host-start path.
+   * This method (and `proceedToNextPhase`) is no longer wired to any socket
+   * event. Kept temporarily to avoid breaking any external callers; remove
+   * after Phase 43 ships.
+   * See .planning/debug/resolved/avatar-selection-skipped.md.
+   */
   startGame(playerId: string): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;
@@ -1126,6 +1139,12 @@ class GameStateManager {
     return lobby;
   }
 
+  /**
+   * @deprecated Dead code as of 2026-05-15. Counterpart to the deprecated
+   * `startGame`. The avatar_selection -> battle transition no longer flows
+   * through this method. Use `startBattle` / `proceedNextLevel` instead.
+   * See .planning/debug/resolved/avatar-selection-skipped.md.
+   */
   proceedToNextPhase(playerId: string): Lobby | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby) return null;

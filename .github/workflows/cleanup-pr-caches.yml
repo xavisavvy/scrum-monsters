@@ -21,6 +21,9 @@ concurrency:
   group: cleanup-cache-pr-${{ github.event.pull_request.number }}
   cancel-in-progress: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 jobs:
   cleanup:
     name: Delete caches for PR #${{ github.event.pull_request.number }}

@@ -165,15 +165,23 @@ export function setupEventHandlers(socket: Socket): void {
       if (currentLobby) {
         const updatedLobby = {
           ...currentLobby,
+          // Receipt of session:avatar_selected implies the player flipped
+          // their hasSelectedAvatar gate on the server. Mirror that on the
+          // client so GamePage.renderGamePhase() drops them out of the
+          // AvatarSelection screen for all viewers (own player AND remote
+          // peers, which is what the lobby roster cares about). See
+          // .planning/debug/resolved/avatar-selection-skipped.md.
           players: currentLobby.players.map(p =>
-            p.id === data.playerId ? { ...p, avatar: data.avatar as AvatarClass, avatarClass: data.avatar as AvatarClass } : p
+            p.id === data.playerId
+              ? { ...p, avatar: data.avatar as AvatarClass, avatarClass: data.avatar as AvatarClass, hasSelectedAvatar: true }
+              : p
           )
         };
         setLobby(updatedLobby);
 
         // Also update currentPlayer if this is for the current player
         if (currentPlayer && currentPlayer.id === data.playerId) {
-          setPlayer({ ...currentPlayer, avatar: data.avatar as AvatarClass, avatarClass: data.avatar as AvatarClass });
+          setPlayer({ ...currentPlayer, avatar: data.avatar as AvatarClass, avatarClass: data.avatar as AvatarClass, hasSelectedAvatar: true });
         }
       }
     }

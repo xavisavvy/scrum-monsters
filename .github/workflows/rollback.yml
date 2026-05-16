@@ -36,6 +36,7 @@ permissions:
   contents: read   # Default: least privilege
 
 env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
   ARGOCD_SERVER: argocd.local
 
 jobs:

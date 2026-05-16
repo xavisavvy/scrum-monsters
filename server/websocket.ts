@@ -511,6 +511,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       player.avatar = avatarClass;
       player.avatarClass = avatarClass;
+      // Flip the per-player avatar gate. Client GamePage.renderGamePhase()
+      // reads this on currentPlayer and stops rendering AvatarSelection once
+      // true, dropping the user into the Lobby view. Whole-lobby gating was
+      // rejected because the host needs to manage tickets while joiners are
+      // still picking — keeping `lobby.gamePhase` at 'lobby' avoids breaking
+      // the existing handler guards in this file (lines that check
+      // `lobby.gamePhase !== 'lobby'`).
+      player.hasSelectedAvatar = true;
 
       // Emit legacy event for App.tsx state transition
       io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });

@@ -88,14 +88,21 @@ export const useTutorial = create<TutorialState>()(
         completedHints: state.completedHints,
         version: state.version,
       }),
-      onRehydrateStorage: () => (_state, error) => {
-        if (!error) {
-          useTutorial.setState({ isHydrated: true });
-        }
-      },
     },
   ),
 );
+
+// Mark isHydrated reliably after persist middleware rehydrates from localStorage.
+// The inline onRehydrateStorage callback was observed to not fire in some
+// production builds (Phase 39 UAT Gap #1B, 2026-05-15). Using the canonical
+// post-creation persist.onFinishHydration API plus a hasHydrated() guard for
+// the case where hydration completed before this subscriber registered.
+if (useTutorial.persist.hasHydrated()) {
+  useTutorial.setState({ isHydrated: true });
+}
+useTutorial.persist.onFinishHydration(() => {
+  useTutorial.setState({ isHydrated: true });
+});
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase 40: Narrator config + tutorial content
