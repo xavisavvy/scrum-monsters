@@ -24,6 +24,7 @@ import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
 import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
 import { Canvas } from '@react-three/fiber';
+import { attachWebglResilience } from '@/lib/utils/webglResilience';
 import { PerformanceMonitor } from '@react-three/drei';
 import * as THREE from 'three';
 import { useIsMobile } from '@/hooks/use-is-mobile';
@@ -2287,6 +2288,7 @@ export function Lobby() {
               style={{ width: '100%', height: '100%', touchAction: 'none' }}
               dpr={dpr}
               gl={{ antialias: !isMobile, alpha: true }}
+              onCreated={attachWebglResilience}
             >
               <PerformanceMonitor
                 onDecline={() => setDpr((d) => Math.max(d - 0.5, 1))}
