@@ -185,12 +185,13 @@ export function useSpriteAnimation({
 
   const spriteFrame = getCurrentSpriteFrame();
   
-  // Sprite atlases have dedicated rows for each direction (see
-  // SPRITE_CONFIG.directions above: row 1 = walk-left, row 2 = walk-right).
-  // Earlier code also horizontally flipped when direction === 'right',
-  // which double-mirrored the already-right-facing frames — making the
-  // sprite turn left and moonwalk while moving right. Disabled.
-  const shouldFlip = false;
+  // Both "left" (row 1) and "right" (row 2) sprite-sheet rows actually
+  // contain right-facing frames (artwork inconsistency — the row-1 frames
+  // were never re-drawn facing left). Flip horizontally when moving left
+  // so the sprite faces its direction of travel instead of moonwalking.
+  // Earlier code had this backwards (`direction === 'right'`), which made
+  // right-walk double-mirror and look like moonwalking-left.
+  const shouldFlip = direction === 'left';
 
   return {
     spriteSheetUrl,
