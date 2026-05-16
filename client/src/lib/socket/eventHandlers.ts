@@ -269,7 +269,21 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { currentLobby, setLobby, requestBattleRemount } = useGameState.getState();
       if (currentLobby) {
-        setLobby({ ...currentLobby, currentTicket: data.currentTicket as JiraTicket });
+        // Reset per-ticket vote state on the client. Server resets these in
+        // gameState.proceedNextLevel (see gameState.ts:858/889/929/1154) but
+        // the fine-grained session:ticket_advanced payload only carries
+        // currentTicket — without this reset, players stay marked as
+        // hasSubmittedScore=true from the previous ticket and the vote-
+        // indicator UI is wrong for the new ticket.
+        setLobby({
+          ...currentLobby,
+          currentTicket: data.currentTicket as JiraTicket,
+          players: currentLobby.players.map(p => ({
+            ...p,
+            hasSubmittedScore: false,
+            currentScore: undefined,
+          })),
+        });
         // Phase 42-02b Task 2: BattleScreen mid-battle ticket-change remount
         // (formerly handled in GamePage.tsx:201-216 lobby_updated handler).
         if (currentLobby.gamePhase === 'battle' && typeof requestBattleRemount === 'function') {
