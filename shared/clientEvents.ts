@@ -199,7 +199,7 @@ export interface SystemFullStateEvent extends BaseClientEvent {
 export interface SystemMissedEventsEvent {
   events: Array<{
     event: string; // Event name (e.g., 'session:player_joined')
-    data: any; // Event payload with seq and timestamp
+    data: unknown; // Event payload with seq and timestamp
   }>;
 }
 

@@ -72,9 +72,9 @@ export const SpriteRenderer = memo(function SpriteRenderer({
   }
 
   // Add error handling for missing sprites
-  const handleImageError = (e: any) => {
+  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>) => {
     console.warn(`⚠️ Failed to load sprite: ${spriteSheetUrl}`);
-    e.target.style.display = 'none';
+    (e.target as HTMLImageElement).style.display = 'none';
   };
 
   // Fallback for when image hasn't loaded yet or fails to load

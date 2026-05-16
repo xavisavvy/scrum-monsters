@@ -25,6 +25,8 @@ export type OidcStub = {
  */
 export function mockOidcMiddleware(stub: OidcStub): RequestHandler {
   return (req, _res, next) => {
+    // Matches production cast at server/auth/routes.ts attaching `oidc` to Express.Request.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (req as any).oidc = stub;
     next();
   };

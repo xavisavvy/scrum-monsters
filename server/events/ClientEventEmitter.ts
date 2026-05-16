@@ -517,7 +517,7 @@ export class ClientEventEmitter {
    * @param event - Event name
    * @param data - Event payload
    */
-  private emitToLobby(lobbyId: string, event: string, data: any): void {
+  private emitToLobby(lobbyId: string, event: string, data: Record<string, unknown>): void {
     const seq = this.sequencer.nextSeq(lobbyId);
     const timestamp = Date.now();
 

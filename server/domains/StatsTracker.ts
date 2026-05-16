@@ -369,7 +369,7 @@ export class StatsTracker {
       const userId = this.getUserId(lobbyId, playerId);
       if (!userId) return; // Guest player, no persistence
 
-      await this.storage.incrementUserStat(userId, stat as any, increment);
+      await this.storage.incrementUserStat(userId, stat as Parameters<typeof this.storage.incrementUserStat>[1], increment);
     } catch (err) {
       // Log but don't fail — persistence is best-effort
       dbLogger.error({ err, playerId, stat }, 'Failed to persist stat');

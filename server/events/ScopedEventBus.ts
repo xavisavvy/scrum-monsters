@@ -79,7 +79,7 @@ export class ScopedEventBus extends EventBus {
 
     let removed = 0;
     for (const { event, listener } of listeners) {
-      this.off(event, listener as any);
+      this.off(event, listener as (...args: unknown[]) => void);
       removed++;
     }
 

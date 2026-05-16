@@ -151,7 +151,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // WebSocket health check endpoint
   app.get('/api/ws-health', (req, res) => {
-    const io = (httpServer as any).io;
+    type IoSocket = { conn: { transport: { name: string } } };
+    type HealthIo = { sockets: { sockets: Map<string, IoSocket> } };
+    const io = (httpServer as typeof httpServer & { io?: HealthIo }).io;
     if (!io) {
       return res.status(503).json({
         status: 'error',
@@ -165,7 +167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     // Import gameState to check lobby status
     const { gameState } = require('./gameState.js');
-    const lobbies = (gameState as any).lobbies;
+    const lobbies = (gameState as { lobbies?: Map<string, unknown> }).lobbies;
     const lobbyCount = lobbies ? lobbies.size : 0;
 
     res.json({
@@ -173,7 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       websocket: {
         connected: connectedCount,
         lobbies: lobbyCount,
-        transports: sockets.map((s: any) => s.conn.transport.name),
+        transports: sockets.map((s) => s.conn.transport.name),
       },
       timestamp: new Date().toISOString()
     });
@@ -215,8 +217,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Setup WebSocket server and attach to httpServer for health checks
   const { io, cleanup } = setupWebSocket(httpServer, sessionMiddlewareRef);
-  (httpServer as any).io = io; // Attach for health check access
-  (httpServer as any).cleanupWebSocket = cleanup; // Attach cleanup for graceful shutdown
+  const httpServerWithExtras = httpServer as typeof httpServer & {
+    io?: typeof io;
+    cleanupWebSocket?: () => void;
+  };
+  httpServerWithExtras.io = io; // Attach for health check access
+  httpServerWithExtras.cleanupWebSocket = cleanup; // Attach cleanup for graceful shutdown
 
   return httpServer;
 }

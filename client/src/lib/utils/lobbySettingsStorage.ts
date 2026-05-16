@@ -113,6 +113,8 @@ export class LobbySettingsStorage {
   /**
    * Validate and sanitize loaded settings
    */
+  // Settings come from JSON.parse; runtime checks below narrow each field.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private static validateSettings(settings: any): LobbySettingsPresets {
     const defaults = this.getDefaultSettings();
     

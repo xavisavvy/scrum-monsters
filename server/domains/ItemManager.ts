@@ -13,6 +13,7 @@
  */
 
 import { ScopedEventBus } from '../events';
+import type { LobbyCombatState } from './CombatManager';
 import { AvatarClass } from '../../shared/gameEvents';
 import {
   ItemType,
@@ -27,7 +28,7 @@ import {
 export interface ItemManagerDeps {
   eventBus: ScopedEventBus;
   combatManager: {
-    getCombatState: (lobbyId: string) => any; // LobbyCombatState from CombatManager
+    getCombatState: (lobbyId: string) => LobbyCombatState | undefined;
   };
   getPlayerClass: (lobbyId: string, playerId: string) => AvatarClass | null;
 }

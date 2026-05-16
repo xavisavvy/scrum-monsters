@@ -139,7 +139,7 @@ async function main() {
   }
 
   // Inject budget into profile for report generation
-  (profile.config as any).budget = { min: config.budgetMin, max: config.budgetMax };
+  (profile.config as Record<string, unknown>).budget = { min: config.budgetMin, max: config.budgetMax };
 
   // Extract resource requirements
   const requirements = extractRequirements(profile, {

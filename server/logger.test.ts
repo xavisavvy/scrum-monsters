@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import type { Request, Response, NextFunction } from 'express';
 
 interface MockLogger {
   trace: ReturnType<typeof vi.fn>;
@@ -238,7 +239,7 @@ describe('httpLoggerMiddleware', () => {
 
     vi.spyOn(Date, 'now').mockReturnValueOnce(100).mockReturnValueOnce(145);
 
-    module.httpLoggerMiddleware()(req, res, next);
+    module.httpLoggerMiddleware()(req as unknown as Request, res as unknown as Response, next as NextFunction);
 
     expect(res.setHeader).toHaveBeenCalledWith('X-Request-ID', 'req-123');
     expect(httpLogger.child).toHaveBeenCalledWith({ requestId: 'req-123' });
@@ -293,7 +294,7 @@ describe('httpLoggerMiddleware', () => {
 
     vi.spyOn(Date, 'now').mockReturnValueOnce(200).mockReturnValueOnce(260);
 
-    module.httpLoggerMiddleware()(req, res, vi.fn());
+    module.httpLoggerMiddleware()(req as unknown as Request, res as unknown as Response, vi.fn());
     finishHandlers[0]();
 
     expect(res.setHeader).toHaveBeenCalledWith('X-Request-ID', 'generated-request-id');
@@ -342,7 +343,7 @@ describe('httpLoggerMiddleware', () => {
 
     vi.spyOn(Date, 'now').mockReturnValueOnce(300).mockReturnValueOnce(375);
 
-    module.httpLoggerMiddleware()(req, res, vi.fn());
+    module.httpLoggerMiddleware()(req as unknown as Request, res as unknown as Response, vi.fn());
     finishHandlers[0]();
 
     // With no x-request-id header and no crypto.randomUUID, the middleware must

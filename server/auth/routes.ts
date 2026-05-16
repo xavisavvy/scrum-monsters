@@ -2,6 +2,14 @@ import { Router, Request, Response } from "express";
 import { storage } from "../storage.js";
 import { apiLimiter } from "../middleware/rateLimiter.js";
 
+// Minimal shape of express-openid-connect's req.oidc.
+interface OidcContext {
+  isAuthenticated(): boolean;
+  user?: { sub?: string };
+}
+
+type ReqWithOidc = Request & { oidc?: OidcContext };
+
 const router = Router();
 
 // Rate limiting applied at router level so CodeQL detects it inline
@@ -11,8 +19,9 @@ router.use(apiLimiter);
 
 // Get current user — uses Auth0's req.oidc
 router.get("/me", async (req: Request, res: Response) => {
-  if ((req as any).oidc?.isAuthenticated() && (req as any).oidc.user) {
-    const sub = (req as any).oidc.user.sub;
+  const oidc = (req as ReqWithOidc).oidc;
+  if (oidc?.isAuthenticated() && oidc.user?.sub) {
+    const sub = oidc.user.sub;
     const user = await storage.getUserByAuth0Sub(sub);
     if (user) {
       res.json({

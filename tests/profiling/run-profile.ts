@@ -127,7 +127,7 @@ async function runK6(users: number, durationSeconds: number): Promise<void> {
     });
 
     k6Process.on("error", (err) => {
-      if ((err as any).code === "ENOENT") {
+      if ((err as NodeJS.ErrnoException).code === "ENOENT") {
         reject(new Error("k6 not installed. Install from https://k6.io/docs/getting-started/installation/"));
       } else {
         reject(err);

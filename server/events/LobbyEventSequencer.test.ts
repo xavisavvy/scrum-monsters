@@ -78,11 +78,11 @@ describe('LobbyEventSequencer', () => {
 
       // Oldest event should be #51 (150 - 100 + 1)
       expect(buffer![0].seq).toBe(51);
-      expect(buffer![0].data.index).toBe(51);
+      expect((buffer![0].data as { index: number }).index).toBe(51);
 
       // Newest event should be #150
       expect(buffer![99].seq).toBe(150);
-      expect(buffer![99].data.index).toBe(150);
+      expect((buffer![99].data as { index: number }).index).toBe(150);
     });
 
     it('should include timestamp in buffered events', () => {

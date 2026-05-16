@@ -1,5 +1,17 @@
 import { create } from "zustand";
 
+// Minimal shape we actually use from the YouTube IFrame API player.
+interface YouTubePlayer {
+  playVideo: () => void;
+  pauseVideo: () => void;
+  stopVideo: () => void;
+  setVolume: (volume: number) => void;
+  mute: () => void;
+  unMute: () => void;
+  destroy: () => void;
+  loadVideoById: (videoId: string) => void;
+}
+
 interface MusicTrack {
   name: string;
   file: string;
@@ -11,7 +23,7 @@ interface AudioState {
   menuMusic: HTMLAudioElement | null;
   lobbyMusic: HTMLAudioElement | null;
   bossMusic: HTMLAudioElement | null;
-  youtubePlayer: any | null;
+  youtubePlayer: YouTubePlayer | null;
   hitSound: HTMLAudioElement | null;
   successSound: HTMLAudioElement | null;
   buttonSelectSound: HTMLAudioElement | null;
@@ -35,7 +47,7 @@ interface AudioState {
   setMenuMusic: (music: HTMLAudioElement) => void;
   setLobbyMusic: (music: HTMLAudioElement) => void;
   setBossMusic: (music: HTMLAudioElement) => void;
-  setYoutubePlayer: (player: any) => void;
+  setYoutubePlayer: (player: YouTubePlayer) => void;
   setHitSound: (sound: HTMLAudioElement) => void;
   setSuccessSound: (sound: HTMLAudioElement) => void;
   setButtonSelectSound: (sound: HTMLAudioElement) => void;

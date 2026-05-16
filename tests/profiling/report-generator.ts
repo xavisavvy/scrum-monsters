@@ -177,7 +177,7 @@ ${costAnalysis.recommendationReason}
 |----------|------|--------------|-----|-----|-------------|-------------|-----------|-------------|
 ${costAnalysis.options.map(formatOptionRow).join('\n')}
 
-**Budget range:** $${(profile.config as any).budget?.min || 5}-$${(profile.config as any).budget?.max || 20}/month
+**Budget range:** $${(profile.config as Record<string, { min?: number; max?: number }>).budget?.min || 5}-$${(profile.config as Record<string, { min?: number; max?: number }>).budget?.max || 20}/month
 
 ### Within Budget Options
 

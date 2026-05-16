@@ -99,7 +99,7 @@ if (process.env.AUTH0_CLIENT_ID && process.env.AUTH0_ISSUER_BASE_URL && process.
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
-  let capturedJsonResponse: Record<string, any> | undefined = undefined;
+  let capturedJsonResponse: Record<string, unknown> | undefined = undefined;
 
   const originalResJson = res.json;
   res.json = function (bodyJson, ...args) {
@@ -151,7 +151,7 @@ app.use((req, res, next) => {
     request: server.requestTimeout
   }, 'Server timeouts configured');
 
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+  app.use((err: Error & { status?: number; statusCode?: number }, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
     const message = err.message || "Internal Server Error";
 
@@ -203,7 +203,11 @@ app.use((req, res, next) => {
 
     try {
       // 1. Notify all connected WebSocket clients
-      const io = (server as any).io;
+      const serverWithExtras = server as typeof server & {
+        io?: { emit: (event: string, data: unknown) => void; close: (cb: () => void) => void };
+        cleanupWebSocket?: () => void;
+      };
+      const io = serverWithExtras.io;
       if (io) {
         io.emit('server_shutdown', {
           message: 'Server shutting down for maintenance',
@@ -219,8 +223,8 @@ app.use((req, res, next) => {
       }
 
       // 2. Stop accepting new connections and clean up intervals
-      if ((server as any).cleanupWebSocket) {
-        (server as any).cleanupWebSocket();
+      if (serverWithExtras.cleanupWebSocket) {
+        serverWithExtras.cleanupWebSocket();
       }
 
       // 3. Close Redis connections
