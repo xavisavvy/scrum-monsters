@@ -31,4 +31,4 @@ For commercial use of trademarks, contact: licensing@scrummonsters.com
 To report trademark violations, email: legal@scrummonsters.com
 
 ---
-**© 2025 Preston Farr. All trademark rights reserved.**
+**© 2025-2026 Preston Farr. All trademark rights reserved.**
