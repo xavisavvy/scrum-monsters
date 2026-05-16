@@ -10,6 +10,7 @@ import { PlayerNameStorage } from '@/lib/utils/playerNameStorage';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { PageMeta } from '@/components/seo/PageMeta';
 import { getGameMeta } from '@/components/seo/metaConfig';
+import { TutorialOverlay } from '@/components/tutorial/TutorialOverlay';
 
 // Lazy load heavy game components
 const Lobby = lazy(() => import('@/components/game/Lobby').then(m => ({ default: m.Lobby })));
@@ -382,6 +383,7 @@ export default function GamePage() {
     <>
       <PageMeta meta={getGameMeta(currentLobby?.name, lobbyId)} />
       {renderGamePhase()}
+      <TutorialOverlay />
     </>
   );
 }
