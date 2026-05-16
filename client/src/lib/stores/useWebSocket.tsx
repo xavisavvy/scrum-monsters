@@ -50,9 +50,6 @@ interface WebSocketState {
   reconnectToLobby: (expectedLobbyId?: string) => boolean; // Returns true if reconnect attempt was made
 }
 
-// Module-level visibility handler reference for cleanup
-let visibilityHandler: (() => void) | null = null;
-
 // Token-only read helper kept for back-compat (getReconnectToken consumers).
 // All session writes go through saveSession (atomic three-key write); the legacy
 // per-key helpers were removed in Phase 41-01.
@@ -396,12 +393,6 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     // Clear heartbeat
     if (heartbeatInterval) {
       clearInterval(heartbeatInterval);
-    }
-    
-    // Remove visibility handler
-    if (visibilityHandler) {
-      document.removeEventListener('visibilitychange', visibilityHandler);
-      visibilityHandler = null;
     }
     
     if (socket) {

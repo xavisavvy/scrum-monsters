@@ -316,8 +316,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       
       setOtherPlayersPositions(otherPositions);
       
-      // Pass all positions (current player + other players) to parent component
-      if (onPlayerPositionsUpdate && currentPlayer) {
+      // Pass all positions (current player + other players) to parent component.
+      // currentPlayer is already guaranteed truthy by the early-return on line 301.
+      if (onPlayerPositionsUpdate) {
         const allPositions = {
           ...otherPositions,
           [currentPlayer.id]: { x: playerPosition.x + characterSize / 2, y: playerPosition.y + characterSize / 2 }
@@ -379,8 +380,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   useEffect(() => {
     const movePlayer = () => {
       setPlayerPosition(prev => {
-        let newX = prev.x;
-        let newY = prev.y;
+        // newX/newY are assigned unconditionally below (lines ~424-425
+        // after deltaX/deltaY normalization), so the prev.x/prev.y seed
+        // values were dead. CodeQL js/useless-assignment-to-local.
         let moving = false;
         let direction: SpriteDirection = currentDirection;
 
@@ -421,8 +423,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         }
 
         // Apply movement with bounds checking (keep character in visible area)
-        newX = Math.max(0, Math.min(viewport.viewportWidth - characterSize, prev.x + deltaX));
-        newY = Math.max(50, Math.min(viewport.viewportHeight - characterSize - 50, prev.y + deltaY)); // Keep away from edges
+        const newX = Math.max(0, Math.min(viewport.viewportWidth - characterSize, prev.x + deltaX));
+        const newY = Math.max(50, Math.min(viewport.viewportHeight - characterSize - 50, prev.y + deltaY)); // Keep away from edges
 
         // Update movement state and direction
         setIsMoving(moving);
@@ -602,47 +604,21 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       return;
     }
     
-    // NO DOWNED PLAYERS NEARBY: Attack boss with special attack
+    // NO DOWNED PLAYERS NEARBY: Attack boss with special attack.
+    // (effectText labels were here previously but never consumed —
+    // emit('attack_boss') sends damage only. Re-add at the floating-
+    // damage layer if class-flavored attack labels are wanted again.)
     let damage = 25;
-    let effectText = 'Special Attack';
-    
     switch (avatarClass) {
-      case 'ranger':
-        damage = 30;
-        effectText = 'ARROW STORM';
-        break;
-      case 'rogue':
-        damage = 35;
-        effectText = 'SHADOW STRIKE';
-        break;
-      case 'bard':
-        damage = 20;
-        effectText = 'SONIC BLAST';
-        break;
-      case 'sorcerer':
-        damage = 40;
-        effectText = 'FIREBALL';
-        break;
-      case 'wizard':
-        damage = 38;
-        effectText = 'LIGHTNING BOLT';
-        break;
-      case 'warrior':
-        damage = 32;
-        effectText = 'BERSERKER RAGE';
-        break;
-      case 'paladin':
-        damage = 28;
-        effectText = 'DIVINE SMITE';
-        break;
-      case 'oathbreaker':
-        damage = 42;
-        effectText = 'DARK COVENANT';
-        break;
-      case 'monk':
-        damage = 33;
-        effectText = 'CHI BLAST';
-        break;
+      case 'ranger':      damage = 30; break;
+      case 'rogue':       damage = 35; break;
+      case 'bard':        damage = 20; break;
+      case 'sorcerer':    damage = 40; break;
+      case 'wizard':      damage = 38; break;
+      case 'warrior':     damage = 32; break;
+      case 'paladin':     damage = 28; break;
+      case 'oathbreaker': damage = 42; break;
+      case 'monk':        damage = 33; break;
     }
     
     emit('attack_boss', { damage });

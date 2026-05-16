@@ -126,7 +126,7 @@ export function generateReport(profile: ProfileReport, costAnalysis: CostAnalysi
     : 'No suitable option found within budget';
 
   // Build markdown sections
-  let markdown = `# ScrumQuest Hosting Analysis Report
+  const markdown = `# ScrumQuest Hosting Analysis Report
 
 **Generated:** ${date}
 **Test Configuration:** ${users} concurrent WebSocket users, ${duration}s steady state duration
