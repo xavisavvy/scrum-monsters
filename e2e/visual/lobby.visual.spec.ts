@@ -30,19 +30,12 @@ test.describe('Lobby Visual Regression', () => {
       );
     });
 
-    test(`lobby ready - ${name}`, async ({ page }, testInfo) => {
-      await page.setViewportSize(dimensions);
-      await createLobbyAndPickAvatar(page, {
-        lobbyName: `Visual-${name}-${testInfo.testId.slice(0, 6)}`,
-        playerName: 'TestPlayer',
-        avatar: 'warrior',
-      });
-      await waitForStableUI(page);
-
-      await expect(page).toHaveScreenshot(
-        `lobby-ready-${name}.png`,
-        screenshotOptions(page)
-      );
-    });
+    // TODO: lobby-ready snapshots aren't useful because the 3D
+    // PlayerCharacter canvas fills the viewport and our visual-helper
+    // commonMasks() masks `<canvas>` entirely with magenta — so the
+    // whole screen comes out solid pink. Real coverage requires either
+    // an alternate mask strategy (only mask animated regions) or a
+    // dedicated non-3D lobby layout for testing. Skipped until then.
+    test.fixme(`lobby ready - ${name}`, async () => {});
   }
 });
