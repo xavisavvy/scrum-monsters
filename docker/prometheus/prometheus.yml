@@ -29,6 +29,8 @@ scrape_configs:
     static_configs:
       - targets:
           - https://scrummonsters.com
+          - https://prestonfarr.com
+          - https://familytokens.app
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
@@ -36,6 +38,23 @@ scrape_configs:
         target_label: instance
       - target_label: __address__
         replacement: blackbox-exporter:9115
+
+  # Host metrics for the Lightsail VM via node-exporter.
+  - job_name: 'node'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          host: lightsail-prod
+
+  # Postgres metrics for the scrum-monsters database. familytokens-db is on
+  # the same Docker network but in a separate compose project; adding a
+  # second postgres-exporter for it requires updating that project's compose
+  # with its own credentials.
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+        labels:
+          db: scrummonsters
 
 # Ship metrics to Grafana Cloud. Replaces the previously-local Grafana
 # container (removed 2026-05-12). Token lives at the password_file path,
