@@ -7,6 +7,8 @@ import { Player } from '@shared/gameEvents';
 
 const FIBONACCI_NUMBERS = [1, 2, 3, 5, 8, 13, 21, '?'] as const;
 
+type PlayerWithScore = Player & { score: number | '?' };
+
 export function Discussion() {
   const { currentLobby, currentPlayer, discussionTimer } = useGameState();
   const { emit, socket } = useWebSocket();
@@ -64,11 +66,11 @@ export function Discussion() {
     .map((p: Player) => ({ ...p, score: p.currentScore! }));
 
   // Check if there's consensus
-  const devScores = developersWithVotes.map((p: any) => p.score).filter((score: any) => typeof score === 'number');
-  const qaScores = qaWithVotes.map((p: any) => p.score).filter((score: any) => typeof score === 'number');
-  
-  const devConsensus = devScores.length > 0 && devScores.every((score: any) => score === devScores[0]);
-  const qaConsensus = qaScores.length > 0 && qaScores.every((score: any) => score === qaScores[0]);
+  const devScores = developersWithVotes.map((p: PlayerWithScore) => p.score).filter((score): score is number => typeof score === 'number');
+  const qaScores = qaWithVotes.map((p: PlayerWithScore) => p.score).filter((score): score is number => typeof score === 'number');
+
+  const devConsensus = devScores.length > 0 && devScores.every((score: number) => score === devScores[0]);
+  const qaConsensus = qaScores.length > 0 && qaScores.every((score: number) => score === qaScores[0]);
   
   const hasConsensus = currentLobby.teams.developers.length > 0 && currentLobby.teams.qa.length > 0
     ? devConsensus && qaConsensus && devScores[0] === qaScores[0]
@@ -177,7 +179,7 @@ export function Discussion() {
         {currentLobby.teams.developers.length > 0 && (
           <RetroCard title="👨‍💻 Developers">
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {developersWithVotes.map((player: any) => (
+              {developersWithVotes.map((player: PlayerWithScore) => (
                 <div 
                   key={player.id}
                   className={`flex items-center justify-between p-3 rounded border ${
@@ -215,7 +217,7 @@ export function Discussion() {
         {currentLobby.teams.qa.length > 0 && (
           <RetroCard title="🧪 QA Engineers">
             <div className="space-y-3 max-h-64 overflow-y-auto">
-              {qaWithVotes.map((player: any) => (
+              {qaWithVotes.map((player: PlayerWithScore) => (
                 <div 
                   key={player.id}
                   className={`flex items-center justify-between p-3 rounded border ${
