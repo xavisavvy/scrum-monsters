@@ -5,6 +5,20 @@ const SITE_NAME = 'Scrum Monsters';
 const SITE_URL = process.env.SITE_URL || 'https://scrummonsters.com';
 const DEFAULT_OG_IMAGE = `${SITE_URL}/og-image.png`;
 
+// HTML-attribute escape for user-controlled values flowing into the
+// SSR'd <head>. The injectMetaTags caller passes req.originalUrl-derived
+// paths into <meta og:url> and <link rel="canonical"> — without escaping,
+// a path like /"><script>alert(1)</script> would break out of the
+// attribute and inject JS. CodeQL js/reflected-xss.
+function escapeHtmlAttr(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 interface MetaConfig {
   title: string;
   description: string;
@@ -60,7 +74,10 @@ function getMetaForPath(path: string): MetaConfig {
 
 export function injectMetaTags(html: string, requestPath: string): string {
   const meta = getMetaForPath(requestPath);
-  const canonicalUrl = `${SITE_URL}${requestPath === '/' ? '' : requestPath}`;
+  // requestPath is user-controlled (req.originalUrl); escape before
+  // embedding into href / content attributes.
+  const safePath = escapeHtmlAttr(requestPath === '/' ? '' : requestPath);
+  const canonicalUrl = `${SITE_URL}${safePath}`;
   const ogImage = meta.ogImage || DEFAULT_OG_IMAGE;
 
   const metaTags = `
