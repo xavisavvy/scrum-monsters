@@ -298,7 +298,7 @@ export function Discussion() {
               🎭 Spectator Mode 🎭
             </div>
             <p className="text-sm text-gray-400">
-              You're watching the team discussion. Players can update their estimates above!
+              You&apos;re watching the team discussion. Players can update their estimates above!
             </p>
           </div>
         </RetroCard>

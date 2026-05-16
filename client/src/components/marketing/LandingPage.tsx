@@ -280,7 +280,7 @@ export function LandingPage({ onStartGame, onNavigate }: LandingPageProps) {
                 size="lg"
                 className="text-2xl px-12 py-6"
               >
-                🏆 Battle Now - It's Free!
+                🏆 Battle Now - It&apos;s Free!
               </RetroButton>
             </div>
 

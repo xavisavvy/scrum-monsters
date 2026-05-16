@@ -53,6 +53,8 @@ export function ScoreSubmission() {
       setHasSubmitted(false);
       setSelectedScore(null);
     }
+    // Only re-run when the submission flag flips, not on every currentPlayer change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPlayer?.hasSubmittedScore]);
 
   const handleScoreSubmit = () => {
@@ -124,10 +126,10 @@ export function ScoreSubmission() {
               🎭 Spectator Mode 🎭
             </div>
             <p className="text-sm text-gray-400">
-              You're watching the estimation process. Developers and QA teams are voting!
+              You&apos;re watching the estimation process. Developers and QA teams are voting!
             </p>
             <p className="text-xs text-gray-500">
-              Future feature: You'll be able to control lair animations and other fun spectator activities!
+              Future feature: You&apos;ll be able to control lair animations and other fun spectator activities!
             </p>
           </div>
         </RetroCard>
@@ -138,7 +140,7 @@ export function ScoreSubmission() {
         <RetroCard title="Submit Your Estimate">
           <div className="space-y-4">
             <p className="text-center text-sm">
-              Choose your story point estimate (or ? if you're unsure):
+              Choose your story point estimate (or ? if you&apos;re unsure):
             </p>
             
             <div className="fibonacci-grid" key={currentTicket?.id} data-hint-target="vote-cards">

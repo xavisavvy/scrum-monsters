@@ -123,6 +123,8 @@ export default function GamePage() {
       // no way back into the lobby they came for.
       navigate(`/play?join=${encodeURIComponent(lobbyId.toUpperCase())}`);
     }
+    // Rejoin logic depends on URL lobbyId + socket presence; setters/handlers read latest via closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lobbyId, socket, currentLobby, isAttemptingJoin]);
 
   // Setup game-specific WebSocket event listeners
@@ -297,6 +299,7 @@ export default function GamePage() {
     // Handlers read latest currentLobby / currentPlayer / lastGamePhase via
     // refs, so the effect never tears down on those state changes — closing
     // the lobby_sync teardown-during-emit race that produced snapshot drift.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, navigate]);
 
   // Render appropriate component based on server-driven game phase

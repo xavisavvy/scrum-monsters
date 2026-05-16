@@ -41,7 +41,7 @@ export function PricingPage({ onBackToHome, onNavigate }: PricingPageProps) {
               Pricing
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Simple, transparent pricing that scales with your team. Start free, upgrade when you're ready.
+              Simple, transparent pricing that scales with your team. Start free, upgrade when you&apos;re ready.
             </p>
           </header>
 
@@ -209,7 +209,7 @@ export function PricingPage({ onBackToHome, onNavigate }: PricingPageProps) {
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold text-yellow-400 mb-2">Can I try Pro features before subscribing?</h3>
-                  <p className="text-gray-300">Absolutely! We'll offer a 14-day free trial of Pro features when they launch. No credit card required.</p>
+                  <p className="text-gray-300">Absolutely! We&apos;ll offer a 14-day free trial of Pro features when they launch. No credit card required.</p>
                 </div>
                 
                 <div>
@@ -219,7 +219,7 @@ export function PricingPage({ onBackToHome, onNavigate }: PricingPageProps) {
                 
                 <div>
                   <h3 className="text-lg font-bold text-yellow-400 mb-2">Can I cancel anytime?</h3>
-                  <p className="text-gray-300">Yes! Cancel your subscription anytime through your account settings. You'll keep Pro features until the end of your billing period.</p>
+                  <p className="text-gray-300">Yes! Cancel your subscription anytime through your account settings. You&apos;ll keep Pro features until the end of your billing period.</p>
                 </div>
                 
                 <div>

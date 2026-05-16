@@ -131,7 +131,9 @@ export function TeamCelebration() {
     };
 
     checkForCelebrations();
-  }, [currentLobby?.teamCompetition?.developers.achievements, 
+    // Intentionally tracks specific scalar fields, not the whole teamCompetition object, to avoid spurious re-renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLobby?.teamCompetition?.developers.achievements,
       currentLobby?.teamCompetition?.qa.achievements,
       currentLobby?.teamCompetition?.developers.currentStreak,
       currentLobby?.teamCompetition?.qa.currentStreak,

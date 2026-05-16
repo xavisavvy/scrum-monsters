@@ -87,13 +87,13 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
               Well, well, well... someone knows the ancient ways! 
             </p>
             <p className="text-gray-400 text-xs mt-2">
-              You've unlocked the forbidden cheat menu, but don't expect much...
+              You&apos;ve unlocked the forbidden cheat menu, but don&apos;t expect much...
             </p>
           </div>
 
           <div className="border-t border-gray-600 pt-4">
             <h3 className="text-center text-white font-bold mb-3">
-              "CHEAT" OPTIONS
+              &quot;CHEAT&quot; OPTIONS
             </h3>
             
             <div className="space-y-2 text-center">
@@ -141,7 +141,7 @@ export function CheatMenu({ isOpen, onClose }: CheatMenuProps) {
 
           <div className="border-t border-gray-600 pt-4 space-y-3">
             <div className="text-center text-xs text-gray-500">
-              🎭 "Cheating is just another form of creativity!" 🎭
+              🎭 &quot;Cheating is just another form of creativity!&quot; 🎭
             </div>
             
             <RetroButton
