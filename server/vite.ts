@@ -102,7 +102,7 @@ export function serveStatic(app: Express) {
       const requestPath = req.originalUrl.split('?')[0]; // Strip query params
       const processed = injectMetaTags(cachedHtml, requestPath);
       res.status(200).set({ "Content-Type": "text/html" }).end(processed);
-    } catch (error) {
+    } catch (_error) {
       res.status(500).send('Internal Server Error');
     }
   });

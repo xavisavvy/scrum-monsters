@@ -64,7 +64,6 @@ export function attachWebglResilience(
     // context will NEVER be restored by the UA.
     event.preventDefault();
     outstandingLoss = true;
-    // eslint-disable-next-line no-console
     console.warn('[webgl] context lost — recovery requested');
     options.onLost?.(event as WebGLContextEvent);
     // Fire-and-forget telemetry: increments

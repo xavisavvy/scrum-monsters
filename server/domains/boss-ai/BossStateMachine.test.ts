@@ -7,7 +7,6 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BossStateMachine } from './BossStateMachine';
-import type { BossState, BossPhaseNumber } from './types';
 
 describe('BossStateMachine', () => {
   let fsm: BossStateMachine;

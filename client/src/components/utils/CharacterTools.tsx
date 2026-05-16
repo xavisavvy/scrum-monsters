@@ -125,7 +125,7 @@ export function CharacterTools({ onBack }: CharacterToolsProps) {
         const newConfig = JSON.parse(input);
         setSpriteConfig(newConfig);
         alert('Configuration imported successfully!');
-      } catch (error) {
+      } catch (_error) {
         alert('Invalid JSON configuration');
       }
     }

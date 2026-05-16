@@ -1218,7 +1218,7 @@ export class CombatManager {
   /**
    * Get damage amount for attack type
    */
-  private getAttackDamage(attackType: string, isEnraged: boolean): number {
+  private getAttackDamage(attackType: string, _isEnraged: boolean): number {
     // Enrage does not increase damage, only frequency
     switch (attackType) {
       case 'light':

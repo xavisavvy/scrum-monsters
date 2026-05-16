@@ -60,14 +60,6 @@ interface BossDisplayProps {
   fullscreen?: boolean;
 }
 
-interface DamageEffect {
-  id: string;
-  damage: number;
-  x: number;
-  y: number;
-  timestamp: number;
-}
-
 export function BossDisplay({ boss, onAttack, fullscreen = false }: BossDisplayProps) {
   const [isDamaged, setIsDamaged] = useState(false);
   const [imageError, setImageError] = useState(false);

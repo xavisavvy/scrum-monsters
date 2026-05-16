@@ -326,7 +326,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       }
     };
 
-    const handlePlayerProjectileFired = ({ playerId, playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }: any) => {
+    const handlePlayerProjectileFired = ({ playerId, playerName: _playerName, startX, startY, targetX, targetY, emoji, targetPlayerId, projectileId }: any) => {
       if (playerId === currentPlayer?.id) return; // Skip own projectiles
       
       // Convert percentage coordinates to world coordinates, then to screen coordinates

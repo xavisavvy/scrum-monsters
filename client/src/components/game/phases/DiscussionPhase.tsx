@@ -6,7 +6,7 @@ import { Discussion } from '@/components/game/Discussion';
 interface DiscussionPhaseProps extends PhaseComponentProps {}
 
 export function DiscussionPhase({
-  lobby,
+  lobby: _lobby,
   boss,
   onBossAttack,
   sidebarCollapsed,

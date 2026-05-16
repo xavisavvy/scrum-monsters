@@ -13,7 +13,7 @@ test.describe('Lobby Accessibility', () => {
   });
 
   test('home page should have no critical accessibility violations', async ({
-    page,
+    page: _page,
     makeAxeBuilder
   }) => {
     const results = await makeAxeBuilder().analyze();

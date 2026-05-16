@@ -151,7 +151,7 @@ export const useGameState = create<GameState>()(
 
     clearTelegraph: () => set({ telegraph: null }),
 
-    setBossPhase: (phase, message, bossType) => {
+    setBossPhase: (phase, message, _bossType) => {
       set({
         bossPhase: phase,
         bossPhaseMessage: message

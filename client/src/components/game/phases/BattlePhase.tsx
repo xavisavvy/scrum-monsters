@@ -24,7 +24,7 @@ import { useFirstEncounter } from '@/lib/hooks/useFirstEncounter';
 interface BattlePhaseProps extends PhaseComponentProps {}
 
 export function BattlePhase({
-  lobby,
+  lobby: _lobby,
   boss,
   onBossAttack,
   onPlayerPositionsUpdate,

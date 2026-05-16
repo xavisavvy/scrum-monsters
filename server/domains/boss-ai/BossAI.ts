@@ -104,7 +104,7 @@ export class BossAI {
     pattern: AttackPattern,
     threatTable: Map<string, ThreatEntry>,
     alivePlayers: string[],
-    context: BattleContext
+    _context: BattleContext
   ): string[] {
     switch (pattern.targetMode) {
       case 'highest_threat': {

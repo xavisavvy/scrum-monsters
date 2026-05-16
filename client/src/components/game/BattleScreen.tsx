@@ -7,7 +7,6 @@ import { Discussion } from './Discussion';
 import { PlayerHUD } from './PlayerHUD';
 import { EmoteModal } from './EmoteModal';
 import { GameOverPhase } from './phases/GameOverPhase';
-import type { PhaseComponentProps } from './phases';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
 import { BossMusicControls } from '@/components/ui/BossMusicControls';
@@ -406,18 +405,18 @@ export function BattleScreen() {
           </div>
         );
 
-      case 'victory':
+      case 'victory': {
         const completedTickets = Array.isArray(currentLobby.completedTickets) ? currentLobby.completedTickets : [];
         const totalStoryPoints = completedTickets.reduce((sum, ticket) => sum + ticket.storyPoints, 0);
-        
+
         // Calculate story points by team
-        const devStoryPoints = completedTickets.reduce((sum, ticket) => 
+        const devStoryPoints = completedTickets.reduce((sum, ticket) =>
           ticket.teamBreakdown?.developers?.participated ? sum + (ticket.teamBreakdown.developers.consensusScore ?? 0) : sum, 0
         );
-        const qaStoryPoints = completedTickets.reduce((sum, ticket) => 
+        const qaStoryPoints = completedTickets.reduce((sum, ticket) =>
           ticket.teamBreakdown?.qa?.participated ? sum + (ticket.teamBreakdown.qa.consensusScore ?? 0) : sum, 0
         );
-        
+
         return (
           <div key={phaseKey} className="relative">
             {/* Cinematic Background - same as start screen */}
@@ -582,12 +581,13 @@ export function BattleScreen() {
             </div>
           </div>
         );
+      }
 
-      case 'next_level':
-        const lastCompletedTicket = Array.isArray(currentLobby.completedTickets) && currentLobby.completedTickets.length > 0 
-          ? currentLobby.completedTickets[currentLobby.completedTickets.length - 1] 
+      case 'next_level': {
+        const lastCompletedTicket = Array.isArray(currentLobby.completedTickets) && currentLobby.completedTickets.length > 0
+          ? currentLobby.completedTickets[currentLobby.completedTickets.length - 1]
           : null;
-        
+
         return (
           <div key={phaseKey} className="relative">
             {/* Cinematic Background - same as start screen */}
@@ -702,6 +702,7 @@ export function BattleScreen() {
             </div>
           </div>
         );
+      }
 
       case 'game_over':
         return (

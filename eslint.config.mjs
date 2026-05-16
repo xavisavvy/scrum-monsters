@@ -137,6 +137,7 @@ export default [
         // WebGL/Three.js
         WebGLRenderingContext: "readonly",
         WebGL2RenderingContext: "readonly",
+        WebGLContextEvent: "readonly",
         // Audio
         Audio: "readonly",
         AudioContext: "readonly",
@@ -176,7 +177,11 @@ export default [
       "@typescript-eslint/no-explicit-any": "warn",
       "@typescript-eslint/explicit-function-return-type": "off",
       "@typescript-eslint/explicit-module-boundary-types": "off",
-      "@typescript-eslint/no-non-null-assertion": "warn",
+      // Disabled: existing usages are all intentional (Map.get after has(),
+      // required env vars, document.getElementById("root")!, audio refs bound
+      // by component lifecycle). Each rewrite to a guard adds noise without
+      // catching bugs.
+      "@typescript-eslint/no-non-null-assertion": "off",
       "@typescript-eslint/no-empty-function": "off",
       "@typescript-eslint/ban-ts-comment": [
         "warn",
