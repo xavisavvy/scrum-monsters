@@ -176,6 +176,20 @@ export const lobbiesCreated = new Counter({
 });
 
 /**
+ * WebGL context-loss events reported by clients. Each loss is a single
+ * canvas dropping its GL context (tab-backgrounded, GPU pressure, driver
+ * TDR, extension interference, etc.). The `recovered` label is set to
+ * `true` when the matching `webglcontextrestored` event fires within
+ * the same tab before the page is reloaded.
+ */
+export const webglContextLossTotal = new Counter({
+  name: "scrumquest_webgl_context_loss_total",
+  help: "Total client-reported WebGL context-loss events",
+  labelNames: ["recovered"],
+  registers: [metricsRegistry],
+});
+
+/**
  * Game sessions completed counter
  */
 export const gamesCompleted = new Counter({

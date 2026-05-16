@@ -55,13 +55,22 @@ export function attachWebglResilience(
   if (canvas[ATTACHED_FLAG]) return;
   canvas[ATTACHED_FLAG] = true;
 
+  // Track loss/restore pairs so the telemetry counter can report whether
+  // the context actually came back vs. stayed dead. Bound to this canvas.
+  let outstandingLoss = false;
+
   canvas.addEventListener('webglcontextlost', (event) => {
     // Critical: tells the browser we want to recover. Without this the
     // context will NEVER be restored by the UA.
     event.preventDefault();
+    outstandingLoss = true;
     // eslint-disable-next-line no-console
     console.warn('[webgl] context lost — recovery requested');
     options.onLost?.(event as WebGLContextEvent);
+    // Fire-and-forget telemetry: increments
+    // scrumquest_webgl_context_loss_total{recovered="false"}. The
+    // counterpart restored=true ping fires from the restore handler.
+    reportContextLoss({ recovered: false });
   });
 
   canvas.addEventListener('webglcontextrestored', () => {
@@ -71,5 +80,29 @@ export function attachWebglResilience(
     // GPU resources (raw textures/buffers held outside the reconciler)
     // would need to be re-created here.
     options.onRestored?.();
+    if (outstandingLoss) {
+      outstandingLoss = false;
+      reportContextLoss({ recovered: true });
+    }
   });
+}
+
+/**
+ * Fire-and-forget POST to /api/telemetry/webgl-context-loss. Failures
+ * are swallowed deliberately — telemetry must never throw into render.
+ */
+function reportContextLoss(body: { recovered: boolean }): void {
+  try {
+    fetch('/api/telemetry/webgl-context-loss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+      keepalive: true,
+      credentials: 'omit',
+    }).catch(() => {
+      /* swallow */
+    });
+  } catch {
+    /* swallow */
+  }
 }

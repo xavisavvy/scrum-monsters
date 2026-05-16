@@ -6,7 +6,7 @@ import profileRoutes from "./auth/profileRoutes.js";
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 import { storage, PgStorage } from './storage.js';
-import { getMetrics, getMetricsContentType, metricsMiddleware } from "./metrics.js";
+import { getMetrics, getMetricsContentType, metricsMiddleware, webglContextLossTotal } from "./metrics.js";
 import { httpLogger } from "./logger.js";
 
 // Import session middleware from index (circular import avoided by lazy loading)
@@ -38,6 +38,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // HTTP metrics middleware — after /metrics route to avoid self-referential noise
   app.use(metricsMiddleware());
+
+  // Client-side telemetry: WebGL context loss reports.
+  // The browser's GL context can drop on tab background, GPU pressure,
+  // driver TDR, etc. The client (webglResilience.ts) fires this endpoint
+  // when it observes a loss; we increment a Prometheus counter so ops
+  // can see frequency in Grafana Cloud. Body must be JSON-parsed by
+  // bodyParser further upstream in index.ts. Public, unauthenticated,
+  // CSRF-exempt (telemetry pings shouldn't be tied to session state).
+  app.post('/api/telemetry/webgl-context-loss', (req, res) => {
+    const recovered = typeof req.body?.recovered === 'boolean'
+      ? String(req.body.recovered)
+      : 'unknown';
+    webglContextLossTotal.inc({ recovered });
+    res.status(204).end();
+  });
 
   // Rate limiting catch-all for /api routes that don't belong to a
   // sub-router. /api/auth/* and /api/user/* are skipped here because
