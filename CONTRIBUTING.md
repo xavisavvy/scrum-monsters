@@ -16,7 +16,7 @@ Thank you for your interest in contributing to our multiplayer scrum poker game!
 
 ### Prerequisites
 
-- **Node.js** 20.16+ and npm
+- **Node.js** 24.x (matches CI) and npm
 - **TypeScript** knowledge for code contributions
 - **Git** for version control
 - **Modern browser** for testing (Chrome, Firefox, Safari)
@@ -25,8 +25,8 @@ Thank you for your interest in contributing to our multiplayer scrum poker game!
 
 1. **Fork & Clone**
    ```bash
-   git clone https://github.com/YOUR-USERNAME/scrum-poker-game.git
-   cd scrum-poker-game
+   git clone https://github.com/YOUR-USERNAME/scrum-monsters.git
+   cd scrum-monsters
    ```
 
 2. **Install Dependencies**
@@ -63,7 +63,7 @@ Thank you for your interest in contributing to our multiplayer scrum poker game!
 │   ├── websocket.ts     # Socket.IO real-time communication
 │   └── routes.ts        # API endpoints
 ├── shared/          # Shared types and schemas
-└── attached_assets/ # Game assets (sprites, audio)
+└── client/public/   # Game assets (sprites, audio, textures)
 ```
 
 ## 📝 Contribution Guidelines
@@ -72,7 +72,7 @@ Thank you for your interest in contributing to our multiplayer scrum poker game!
 
 - **TypeScript**: Use strict typing, avoid `any`
 - **React**: Functional components with hooks
-- **Formatting**: Project uses built-in formatting (Prettier/ESLint coming soon)
+- **Formatting**: ESLint is configured (`npm run lint` / `npm run lint:fix`)
 - **Naming**: 
   - Components: `PascalCase`
   - Functions: `camelCase` 
@@ -247,7 +247,7 @@ We love new ideas! When suggesting features:
 - **WebSocket Events**: Always validate on server-side
 - **React State**: Use proper dependencies in useEffect
 - **TypeScript**: Shared types in `/shared` folder
-- **Assets**: Place in `/attached_assets` for proper loading
+- **Assets**: Place in `client/public/` (images, sounds, textures) for proper loading
 
 ## 🤝 Code of Conduct
 
@@ -325,6 +325,6 @@ By making a contribution to this project, I certify that:
 
 ---
 
-Ready to contribute? Check out our [good first issue](https://github.com/YOUR-REPO/labels/good%20first%20issue) label for beginner-friendly tasks!
+Ready to contribute? Check out our [good first issue](https://github.com/xavisavvy/scrum-monsters/labels/good%20first%20issue) label for beginner-friendly tasks!
 
 **Happy coding!** 🚀✨

@@ -1,6 +1,6 @@
 # Scrum Monsters Licensing
 
-Copyright (c) 2025 Preston Farr
+Copyright (c) 2025-2026 Preston Farr
 
 ## Summary
 - **Code (./client, ./server, ./shared, except ./commercial):** GNU AGPL-3.0-or-later.

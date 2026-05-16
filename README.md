@@ -57,7 +57,7 @@ A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that g
 - **Drizzle ORM** - Type-safe database queries and migrations
 
 ### Database & Storage
-- **PostgreSQL** - Primary database (Neon serverless)
+- **PostgreSQL** - Primary database (via postgres.js driver)
 - **Session Store** - Express sessions with PostgreSQL backend
 - **In-memory Cache** - Game state management for real-time performance
 
@@ -82,7 +82,7 @@ A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that g
 
 - **Node.js** >= 18.0.0
 - **npm** or **yarn** package manager
-- **PostgreSQL** database (or use Neon serverless)
+- **PostgreSQL** database (optional — defaults to in-memory storage)
 
 ## 🚀 Installation & Setup
 
@@ -320,7 +320,7 @@ For questions, bug reports, or feature requests:
 
 ## 🚢 Kubernetes Deployment
 
-ScrumQuest includes full Kubernetes deployment support with environment overlays.
+Scrum Monsters includes full Kubernetes deployment support with environment overlays.
 
 ### Quick Start
 ```bash

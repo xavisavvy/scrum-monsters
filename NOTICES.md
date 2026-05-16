@@ -18,11 +18,13 @@ This project includes third-party software components with the following license
 - **Express** (MIT) - TJ Holowaychuk and contributors
 - **Socket.IO** (MIT) - Automattic
 - **Drizzle ORM** (Apache-2.0) - Drizzle Team
-- **Neon Database** (Apache-2.0) - Neon
+- **postgres.js** (Unlicense) - Rasmus Porsager
+- **connect-pg-simple** (MIT) - Voxpelli
 
 ### Development Tools
 - **ESLint** (MIT) - Nicholas C. Zakas and contributors
-- **Prettier** (MIT) - James Long and contributors
+- **Vitest** (MIT) - Vitest Team
+- **Playwright** (Apache-2.0) - Microsoft
 - **PostCSS** (MIT) - Andrey Sitnik
 
 ## Asset Licenses
@@ -45,4 +47,4 @@ For a complete list of development dependencies and their licenses, see the `pac
 All dependencies are used in compliance with their respective licenses. If you believe there is a license compliance issue, please contact: legal@scrummonsters.com
 
 ---
-Last updated: September 2025
+Last updated: May 2026

@@ -1,6 +1,8 @@
 # Kubernetes Deployment
 
-Deploy ScrumQuest to Kubernetes with environment-specific overlays and GitOps support.
+Deploy Scrum Monsters to Kubernetes with environment-specific overlays and GitOps support.
+
+> **Note:** Kubernetes namespaces, resources, hostnames, and image names below still use the legacy `scrumquest` identifier (cluster-internal — not a user-facing brand name). They will be renamed in a future infrastructure migration.
 
 ## Prerequisites
 

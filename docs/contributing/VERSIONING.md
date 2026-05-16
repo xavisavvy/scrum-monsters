@@ -5,7 +5,7 @@
 
 ## Overview
 
-ScrumQuest uses automated versioning based on [Semantic Versioning](https://semver.org/) (SemVer) and [Conventional Commits](https://www.conventionalcommits.org/).
+Scrum Monsters uses automated versioning based on [Semantic Versioning](https://semver.org/) (SemVer) and [Conventional Commits](https://www.conventionalcommits.org/).
 
 ## Semantic Versioning
 

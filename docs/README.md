@@ -1,6 +1,6 @@
-# ScrumQuest Documentation
+# Scrum Monsters Documentation
 
-This directory contains detailed documentation for ScrumQuest. For a quick start, see the main [README.md](../README.md).
+This directory contains detailed documentation for Scrum Monsters. For a quick start, see the main [README.md](../README.md).
 
 ## Documentation Index
 
@@ -14,7 +14,7 @@ Detailed implementation guides for specific features:
 
 ### Deployment
 
-Guides for deploying ScrumQuest:
+Guides for deploying Scrum Monsters:
 
 - [Replit Deployment](deployment/REPLIT_DEPLOYMENT.md) - Complete guide for Replit hosting
 - [Deployment Fixes](deployment/DEPLOYMENT_FIXES_SUMMARY.md) - Host timeout fixes and troubleshooting
