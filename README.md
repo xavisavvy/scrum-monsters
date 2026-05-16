@@ -14,7 +14,7 @@ A multiplayer scrum poker estimation game with a nostalgic JRPG aesthetic that g
 ### 🎯 Core Gameplay
 - **Multiplayer Lobbies**: Support for up to 32 players with unique invite codes
 - **Recurring Meeting Rooms**: Bookmarkable URLs for daily standups and recurring scrum sessions
-- **Avatar Classes**: Choose from Warrior, Wizard, Rogue, Paladin, and Archer classes
+- **Avatar Classes**: Choose from 10 classes — Ranger, Rogue, Bard, Sorcerer, Wizard, Warrior, Paladin, Cleric, Oathbreaker, and Monk
 - **Boss Battles**: Fight pixel art bosses that scale with ticket complexity
 - **Real-time Combat**: Live projectile attacks with visual effects and sound
 - **Team-based Mechanics**: Developers, QA, and Spectators with different roles
@@ -134,7 +134,7 @@ The application will be available at `http://localhost:5000`
 - **Teams**: Choose between Developer, QA, or Spectator roles
 
 ### 2. Avatar Selection
-- Select your fantasy class (Warrior, Wizard, Rogue, Paladin, Archer)
+- Select your fantasy class — Ranger, Rogue, Bard, Sorcerer, Wizard, Warrior, Paladin, Cleric, Oathbreaker, or Monk
 - Each class has unique projectile types and visual styles
 - 3D avatar preview with character details
 
@@ -272,7 +272,7 @@ npm run release:major # Major release (X.0.0)
 - **Debug Modal**: In-game debug information (Tab key)
 
 ### Testing
-- **Unit/Integration**: `npm test` runs Vitest suite (280+ tests)
+- **Unit/Integration**: `npm test` runs Vitest suite (700+ tests)
 - **E2E**: `npm run test:e2e` runs Playwright browser tests
 - **Coverage**: `npm run test:coverage` generates coverage report
 
