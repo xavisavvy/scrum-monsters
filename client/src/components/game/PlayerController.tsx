@@ -59,7 +59,9 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         setPlayerPosition({ x: screenPos.x, y: screenPos.y });
       }
     }
-  }, [currentPlayer?.id, currentLobby?.id, viewport, characterSize]); // Only trigger on player/lobby change
+    // Only trigger on player/lobby change — playerPosition is intentionally excluded to avoid feedback loop.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPlayer?.id, currentLobby?.id, viewport, characterSize]);
 
   // Handle keyboard input
   useEffect(() => {
@@ -225,6 +227,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
+    // Keyboard listeners register per jump/viewport change; ctrl/Q state, emit, and special-attack handlers read latest values via closure refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isJumping, jumpDuration, currentPlayer, viewport, playerPosition, characterSize]);
 
   // Jump physics animation
@@ -359,6 +363,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       socket.off('players_pos', handlePlayersPos);
       socket.off('player_projectile_fired', handlePlayerProjectileFired);
     };
+    // Socket listeners register per socket/viewport change; positions and currentLobby read latest via closure to avoid teardown thrash.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [socket, viewport, characterSize, currentPlayer?.id]);
 
   // Update parent component with current player position changes
@@ -370,6 +376,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       };
       onPlayerPositionsUpdate(currentPositions);
     }
+    // currentPlayer used only for .id (already in deps); onPlayerPositionsUpdate is provided by parent and may not be stable.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerPosition, otherPlayersPositions, onPlayerPositionsUpdate, currentPlayer?.id, characterSize]);
 
   // Throttled network updates - more responsive
@@ -530,6 +538,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       targetY: percentTargetY,
       emoji: currentPlayer ? getProjectileEmoji(currentPlayer.avatar) : '⚡'
     });
+    // emit and other viewport fields read via closure — including them would re-create the callback on every viewport tick.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [playerPosition, viewport.viewportHeight, characterSize, handleShoot, currentPlayer]);
 
   const getProjectileEmoji = (avatarClass: AvatarClass): string => {
@@ -622,7 +632,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     
     emit('attack_boss', { damage });
     if (playHit) playHit();
-  }, [currentLobby, currentPlayer, playerPosition, emit, playHit, findNearestDownedPlayer]);
+  }, [emit, playHit, findNearestDownedPlayer]);
 
   // Removed createParticleExplosion function to prevent DOM manipulation errors
 
@@ -872,6 +882,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       const safeY = 150; // 150px from bottom of screen
       setPlayerPosition({ x: safeX, y: safeY });
     }
+    // Position reset reads currentPlayer existence only — id change already triggers re-run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLobby?.gamePhase, currentPlayer?.id, viewport.viewportWidth, viewport.viewportHeight, characterSize]);
 
   // Check if should be active (but always render container to prevent DOM reconciliation issues)

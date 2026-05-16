@@ -110,7 +110,7 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
                   </div>
                   
                   <div>
-                    <h4 className="text-lg font-bold text-purple-400 mb-3">Why I'm Credible</h4>
+                    <h4 className="text-lg font-bold text-purple-400 mb-3">Why I&apos;m Credible</h4>
                     <ul className="text-sm text-gray-300 space-y-1">
                       <li>• Lead engineering teams across mobile and web platforms</li>
                       <li>• Ship user-facing software for real teams</li>
@@ -161,7 +161,7 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
 
             {/* Roadmap Section */}
             <section className="bg-black bg-opacity-60 rounded-lg p-8">
-              <h2 className="text-3xl font-bold retro-text-glow mb-6">What's Coming Next</h2>
+              <h2 className="text-3xl font-bold retro-text-glow mb-6">What&apos;s Coming Next</h2>
               
               <div className="grid md:grid-cols-2 gap-8">
                 <div>
@@ -229,7 +229,7 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
                   <h3 className="text-lg font-bold text-green-400 mb-3">Tech Leaders</h3>
                   <p className="text-sm text-gray-300">
                     Boost team productivity with rituals your developers actually enjoy. 
-                    Lightweight process that doesn't get in the way of real work.
+                    Lightweight process that doesn&apos;t get in the way of real work.
                   </p>
                 </div>
                 
@@ -237,7 +237,7 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
                   <div className="text-4xl mb-4">💻</div>
                   <h3 className="text-lg font-bold text-purple-400 mb-3">Developers</h3>
                   <p className="text-sm text-gray-300">
-                    Finally, estimation that doesn't feel like a waste of time. Battle scope creep, 
+                    Finally, estimation that doesn&apos;t feel like a waste of time. Battle scope creep,
                     bugs, and technical debt while you plan.
                   </p>
                 </div>
@@ -282,13 +282,13 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
               <div className="max-w-2xl mx-auto space-y-6">
                 <p className="text-gray-300 leading-relaxed">
                   Questions about Scrum Monsters? Want to discuss partnerships or press inquiries? 
-                  I'd love to hear from you.
+                  I&apos;d love to hear from you.
                 </p>
                 
                 <div className="space-y-4">
                   <p className="text-lg">
                     <span className="text-cyan-400">Email:</span> 
-                    <span className="text-gray-300"> Use subject "Scrum Monsters" for fastest response</span>
+                    <span className="text-gray-300"> Use subject &quot;Scrum Monsters&quot; for fastest response</span>
                   </p>
                   
                   <div className="flex justify-center space-x-6 text-sm">
@@ -307,7 +307,7 @@ export function AboutPage({ onBackToHome, onNavigate }: AboutPageProps) {
           <div className="text-center mt-16 pt-8 border-t border-gray-700">
             <h2 className="text-2xl font-bold retro-text-glow mb-4">Ready to Transform Your Sprint Planning?</h2>
             <p className="text-gray-400 mb-6">
-              Join teams who've made estimation engaging, focused, and fun.
+              Join teams who&apos;ve made estimation engaging, focused, and fun.
             </p>
             <RetroButton
               onClick={handleBackClick}

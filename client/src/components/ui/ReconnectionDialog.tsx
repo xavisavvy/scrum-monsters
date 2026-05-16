@@ -46,7 +46,7 @@ export function ReconnectionDialog({ isOpen, onClose, onRefreshPage }: Reconnect
         {/* Content */}
         <div className="text-gray-200 mb-6">
           <p className="mb-3">
-            We've lost connection to the game server after {reconnection.maxAttempts} attempts. 
+            We&apos;ve lost connection to the game server after {reconnection.maxAttempts} attempts.
             Your game progress is saved and you can continue once reconnected.
           </p>
           

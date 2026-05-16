@@ -39,7 +39,7 @@ export function AbandonQuestModal({ isOpen, onClose, onConfirm }: AbandonQuestMo
               Are you sure you want to abandon this quest?
             </p>
             <p className="text-gray-400 text-sm">
-              All progress will be lost and you'll return to the lobby.
+              All progress will be lost and you&apos;ll return to the lobby.
             </p>
             <p className="text-red-300 text-xs mt-2 font-medium">
               This action cannot be undone!

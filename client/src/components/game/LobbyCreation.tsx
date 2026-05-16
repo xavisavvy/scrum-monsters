@@ -104,7 +104,7 @@ export function LobbyCreation({ onLobbyCreated }: LobbyCreationProps) {
           </RetroButton>
 
           <div className="text-center text-sm text-gray-400">
-            As the host, you'll control the battle progression
+            As the host, you&apos;ll control the battle progression
           </div>
         </form>
       </RetroCard>

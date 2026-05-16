@@ -121,10 +121,12 @@ export function BattleScreen() {
     
     return () => {
       isMountedRef.current = false;
-      // Clear all tracked timeouts to prevent DOM manipulation errors
+      // Clear all tracked timeouts to prevent DOM manipulation errors.
+      // Intentionally reads the live ref at unmount time — disable applies to the .clear() call ESLint flags below.
       timeoutRefs.current.forEach(timeoutId => {
         clearTimeout(timeoutId);
       });
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       timeoutRefs.current.clear();
     };
   }, []);
@@ -266,7 +268,9 @@ export function BattleScreen() {
     return () => {
       stopBossMusic();
     };
-  }, [currentLobby?.gamePhase, fadeInBossMusic, stopBossMusic]); // Removed currentLobby?.boss dependency
+    // currentLobby?.boss deliberately excluded — including it re-runs the music effect on any boss state change (HP, etc.).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLobby?.gamePhase, fadeInBossMusic, stopBossMusic]);
 
   const handleBossAttack = () => {
     const damage = Math.floor(Math.random() * 50) + 10;

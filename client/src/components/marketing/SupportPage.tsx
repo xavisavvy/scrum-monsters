@@ -41,7 +41,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
               Support
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              Need help? We're here to help you get the most out of Scrum Monsters.
+              Need help? We&apos;re here to help you get the most out of Scrum Monsters.
             </p>
           </header>
 
@@ -58,7 +58,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                   <ul className="space-y-3 text-gray-300">
                     <li className="flex items-start">
                       <span className="text-cyan-400 mr-2">1.</span>
-                      <span>Click "🎮 Start a Battle" to create a new lobby</span>
+                      <span>Click &quot;🎮 Start a Battle&quot; to create a new lobby</span>
                     </li>
                     <li className="flex items-start">
                       <span className="text-cyan-400 mr-2">2.</span>
@@ -76,7 +76,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                   <ul className="space-y-3 text-gray-300">
                     <li className="flex items-start">
                       <span className="text-green-400 mr-2">•</span>
-                      <span><strong>Can't hear audio?</strong> Check the mute button in the game menu</span>
+                      <span><strong>Can&apos;t hear audio?</strong> Check the mute button in the game menu</span>
                     </li>
                     <li className="flex items-start">
                       <span className="text-green-400 mr-2">•</span>
@@ -103,7 +103,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                     Get help with technical issues, billing questions, or feature requests.
                   </p>
                   <p className="text-cyan-300 text-sm">
-                    Subject: "Scrum Monsters Support"
+                    Subject: &quot;Scrum Monsters Support&quot;
                   </p>
                   <p className="text-gray-400 text-xs mt-2">
                     Response within 24 hours
@@ -168,7 +168,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                 
                 <div>
                   <h3 className="text-lg font-bold text-yellow-400 mb-2">Is my data secure?</h3>
-                  <p className="text-gray-300">Yes! We don't store any sensitive project data. Only basic session information is kept temporarily for the game to function.</p>
+                  <p className="text-gray-300">Yes! We don&apos;t store any sensitive project data. Only basic session information is kept temporarily for the game to function.</p>
                 </div>
                 
                 <div>
@@ -189,7 +189,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
                 <div>
                   <h3 className="text-lg font-bold text-yellow-400 mb-2">How can I support development, I love this tool!</h3>
                   <p className="text-gray-300 mb-3">
-                    Thank you! Your support means everything to me. If Scrum Monsters has made your team's planning sessions more enjoyable, 
+                    Thank you! Your support means everything to me. If Scrum Monsters has made your team&apos;s planning sessions more enjoyable,
                     you can help keep development going by making a small donation.
                   </p>
                   <RetroButton
@@ -241,7 +241,7 @@ export function SupportPage({ onBackToHome, onNavigate }: SupportPageProps) {
           <div className="text-center mt-16 pt-8 border-t border-gray-700">
             <h2 className="text-2xl font-bold retro-text-glow mb-4">Still Need Help?</h2>
             <p className="text-gray-400 mb-6">
-              Can't find what you're looking for? We're here to help.
+              Can&apos;t find what you&apos;re looking for? We&apos;re here to help.
             </p>
             <RetroButton
               onClick={() => {

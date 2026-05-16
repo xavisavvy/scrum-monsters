@@ -108,7 +108,7 @@ export function FeaturesPage({ onBackToHome, onNavigate }: FeaturesPageProps) {
                   <div className="text-2xl">🎭</div>
                   <div>
                     <h3 className="text-lg font-bold text-pink-400 mb-2">Avatar Classes</h3>
-                    <p className="text-gray-300">Choose from warrior, wizard, ranger, and more. Each class brings unique personality to your team's planning sessions.</p>
+                    <p className="text-gray-300">Choose from warrior, wizard, ranger, and more. Each class brings unique personality to your team&apos;s planning sessions.</p>
                   </div>
                 </div>
                 
@@ -116,7 +116,7 @@ export function FeaturesPage({ onBackToHome, onNavigate }: FeaturesPageProps) {
                   <div className="text-2xl">🎯</div>
                   <div>
                     <h3 className="text-lg font-bold text-blue-400 mb-2">Real-time Multiplayer</h3>
-                    <p className="text-gray-300">See your teammates' actions in real-time. Coordinate attacks, share reactions, and build team cohesion through play.</p>
+                    <p className="text-gray-300">See your teammates&apos; actions in real-time. Coordinate attacks, share reactions, and build team cohesion through play.</p>
                   </div>
                 </div>
                 
@@ -173,7 +173,7 @@ export function FeaturesPage({ onBackToHome, onNavigate }: FeaturesPageProps) {
           <div className="text-center mt-16 pt-8 border-t border-gray-700">
             <h2 className="text-2xl font-bold retro-text-glow mb-4">Ready to Level Up Your Planning?</h2>
             <p className="text-gray-400 mb-6">
-              Join teams who've transformed their estimation process from boring to engaging.
+              Join teams who&apos;ve transformed their estimation process from boring to engaging.
             </p>
             <RetroButton
               onClick={handleBackClick}

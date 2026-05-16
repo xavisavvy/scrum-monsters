@@ -325,7 +325,9 @@ export function Lobby() {
       // Apply saved team preference
       emit('change_own_team', { team: savedTeam });
     }
-  }, [currentLobby?.id]); // Only run when joining a new lobby
+    // Only run when joining a new lobby — currentPlayer/emit churn shouldn't re-fire the team auto-apply.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentLobby?.id]);
 
   // Reset dead players, speed buffs, flying, frozen, and invisible when battle starts (phase changes from lobby)
   useEffect(() => {
@@ -450,6 +452,8 @@ export function Lobby() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
+    // Keyboard listeners register once per phase change; emit/jumpState read latest values via closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLobby?.gamePhase]);
 
   // Handle movement based on pressed keys

@@ -21,7 +21,7 @@ export function CountdownOverlay() {
         { scale: 1, opacity: 1, duration: 0.3, ease: 'power2.out' }
       );
     }
-  }, [countdown?.remainingSeconds]);
+  }, [countdown?.remainingSeconds, countdown?.active]);
 
   // Don't render if no countdown
   if (!countdown) {

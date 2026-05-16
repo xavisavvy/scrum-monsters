@@ -194,7 +194,7 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
               </RetroButton>
 
               <div className="text-center text-sm text-gray-400">
-                As the host, you'll control the battle progression
+                As the host, you&apos;ll control the battle progression
               </div>
             </>
           )}
@@ -226,7 +226,7 @@ export function RoomJoin({ roomId, onLobbyCreatedOrJoined }: Readonly<RoomJoinPr
               </RetroButton>
 
               <div className="text-center text-sm text-gray-400">
-                Join your team's recurring scrum session
+                Join your team&apos;s recurring scrum session
               </div>
             </>
           )}

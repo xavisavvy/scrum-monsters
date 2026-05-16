@@ -82,7 +82,7 @@ export function PhaseRenderer({
           <div className="text-4xl mb-4">❌</div>
           <div className="text-xl mb-2">Unknown Phase</div>
           <div className="text-sm opacity-75">
-            Phase '{currentPhase}' not found in registry
+            Phase &apos;{currentPhase}&apos; not found in registry
           </div>
         </div>
       </div>
