@@ -173,6 +173,51 @@ services:
         reservations:
           memory: 16M
 
+  # Host-level metrics for the Lightsail VM (CPU, memory, disk, network, load).
+  # Mounts the host root read-only so collectors can read /proc and /sys from
+  # the host namespace rather than the container's.
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    pid: host
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--path.rootfs=/rootfs'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/.+)($$|/)'
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+        reservations:
+          memory: 16M
+
+  # Postgres metrics (connections, query rates, cache hit ratio, replication
+  # lag, etc.) for the scrum-monsters Postgres instance. Reuses the existing
+  # app DB user — Phase 44+ could provision a dedicated `pg_monitor` role if
+  # finer-grained metrics (pg_stat_statements, pg_locks across all DBs) are
+  # ever needed.
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:latest
+    container_name: postgres-exporter
+    restart: unless-stopped
+    environment:
+      DATA_SOURCE_NAME: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+        reservations:
+          memory: 16M
+
 volumes:
   postgres_data:    # Named volume — Docker manages location; use docker volume commands for backup
   npm_data:
