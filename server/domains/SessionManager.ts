@@ -683,7 +683,7 @@ export class SessionManager {
       }
 
       return storedToken;
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }

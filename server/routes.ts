@@ -136,7 +136,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/version', (_req, res) => {
     let pkgVersion = 'unknown';
     try {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       pkgVersion = require('../package.json').version || 'unknown';
     } catch {
       // package.json not resolvable in some bundled-server scenarios;

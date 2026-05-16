@@ -26,9 +26,9 @@ const phaseVariants = {
  * the exit of the old child and enter of the new one automatically.
  */
 export function PhaseTransition({
-  fromPhase,
+  fromPhase: _fromPhase,
   toPhase,
-  isTransitioning,
+  isTransitioning: _isTransitioning,
   onTransitionComplete,
   children
 }: PhaseTransitionProps) {

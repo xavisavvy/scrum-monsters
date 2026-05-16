@@ -637,7 +637,7 @@ export function Lobby() {
   useEffect(() => {
     if (!socket || currentLobby?.gamePhase !== 'lobby') return;
 
-    const handleLobbyPlayerPos = ({ playerId, x, y, direction }: { playerId: string; x: number; y: number; direction?: string }) => {
+    const handleLobbyPlayerPos = ({ playerId, x, y: _y, direction }: { playerId: string; x: number; y: number; direction?: string }) => {
       if (playerId === currentPlayer?.id) return; // Skip own updates
 
       setPlayerPositions(prev => {

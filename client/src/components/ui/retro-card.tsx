@@ -1,5 +1,5 @@
 import React from 'react';
-import { GamePanel, type GamePanelProps } from './GamePanel';
+import { GamePanel } from './GamePanel';
 
 interface RetroCardProps {
   children: React.ReactNode;

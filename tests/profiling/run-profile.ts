@@ -94,7 +94,7 @@ async function verifyServer(serverUrl: string): Promise<void> {
         console.log(`✓ Server ready at ${serverUrl}`);
         return;
       }
-    } catch (err) {
+    } catch (_err) {
       if (i < maxRetries - 1) {
         console.log(`Server not ready, retrying in ${retryDelay}ms...`);
         await sleep(retryDelay);

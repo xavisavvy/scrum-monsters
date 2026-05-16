@@ -41,8 +41,8 @@ export const PlayerCharacter = memo(function PlayerCharacter({
   avatarClass,
   playerName,
   position,
-  onPositionChange,
-  onShoot,
+  onPositionChange: _onPositionChange,
+  onShoot: _onShoot,
   isJumping,
   jumpHeight = 0,
   isDead,
@@ -134,7 +134,7 @@ export const PlayerCharacter = memo(function PlayerCharacter({
   // Current sprite animation
   const spriteAnimation = getSpriteAnimation();
 
-  const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+  const handleClick = (_event: React.MouseEvent<HTMLDivElement>) => {
     if (isDead) return;
     
     // Don't handle clicks on the character itself - let them bubble up to parent

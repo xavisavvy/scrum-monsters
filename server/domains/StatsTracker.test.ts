@@ -7,7 +7,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { StatsTracker } from './StatsTracker';
 import { ScopedEventBus } from '../events';
-import type { SessionSummary } from '../../shared/statsTypes';
 import type { IStorage } from '../storage';
 
 describe('StatsTracker', () => {

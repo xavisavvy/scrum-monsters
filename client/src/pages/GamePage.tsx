@@ -39,7 +39,7 @@ export default function GamePage() {
   const navigate = useNavigate();
   const [isAttemptingJoin, setIsAttemptingJoin] = useState(false);
 
-  const { socket, emit, reconnectToLobby, getReconnectToken, clearReconnectionState } = useWebSocket();
+  const { socket, emit, reconnectToLobby, getReconnectToken, clearReconnectionState: _clearReconnectionState } = useWebSocket();
   const {
     currentLobby,
     currentPlayer,
@@ -48,7 +48,7 @@ export default function GamePage() {
     setBoss,
     setInviteLink,
     setError,
-    clearAll,
+    clearAll: _clearAll,
     // Phase 42-02b Task 2: BattleScreen remount control migrated from local
     // state into the store so eventHandlers.ts (session:phase_changed +
     // session:ticket_advanced) can trigger the remount centrally.
@@ -222,7 +222,7 @@ export default function GamePage() {
       setBoss(boss);
     });
 
-    socket.on('boss_attacked', ({ playerId, damage, bossHealth }) => {
+    socket.on('boss_attacked', ({ playerId: _playerId, damage: _damage, bossHealth }) => {
       const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
       if (currentBoss) {
         setBoss({ ...currentBoss, currentHealth: bossHealth });
@@ -264,7 +264,7 @@ export default function GamePage() {
       }
     });
 
-    socket.on('host_transferred', ({ oldHostId, newHostId, newHostName, reason }) => {
+    socket.on('host_transferred', ({ oldHostId: _oldHostId, newHostId, newHostName, reason: _reason }) => {
       const cp = currentPlayerRef.current;
       if (cp?.id === newHostId) {
         toast.success(`You are now the host!`, {

@@ -7,7 +7,7 @@
 
 import { describe, it, expect } from 'vitest';
 import { PatternSequencer } from './PatternSequencer';
-import type { AttackPattern, BossPhaseNumber } from './types';
+import type { AttackPattern } from './types';
 
 describe('PatternSequencer', () => {
   // Test patterns

@@ -8,7 +8,7 @@ import { useGameState } from '@/lib/stores/useGameState';
 interface RevealPhaseProps extends PhaseComponentProps {}
 
 export function RevealPhase({
-  lobby,
+  lobby: _lobby,
   isTransitioning = false
 }: RevealPhaseProps) {
   // Phase 40: first-vote-reveal hint (Sage narrator, fires once on first reveal entry).

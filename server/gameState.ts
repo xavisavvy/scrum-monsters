@@ -960,7 +960,7 @@ class GameStateManager {
     return this.revealScores(lobby.id);
   }
 
-  attackPlayer(attackerId: string, targetId: string, damage: number): { lobby: Lobby; targetHealth: number; gameOver?: boolean; modifier?: number } | null {
+  attackPlayer(attackerId: string, targetId: string, _damage: number): { lobby: Lobby; targetHealth: number; gameOver?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(attackerId);
     if (!lobby || lobby.gamePhase !== 'battle') return null;
 
@@ -1163,7 +1163,7 @@ class GameStateManager {
       case 'avatar_selection':
         lobby.gamePhase = 'battle';
         break;
-      case 'next_level':
+      case 'next_level': {
         // Move to next ticket
         const nextTicketIndex = lobby.completedTickets.length;
         if (nextTicketIndex < lobby.tickets.length) {
@@ -1190,6 +1190,7 @@ class GameStateManager {
           lobby.gamePhase = 'victory';
         }
         break;
+      }
     }
 
     return lobby;
@@ -1744,7 +1745,7 @@ class GameStateManager {
     this.playerPerformanceMap.delete(lobby.id);
   }
 
-  attackBoss(playerId: string, damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any; healedBoss?: boolean; modifier?: number } | null {
+  attackBoss(playerId: string, _damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any; healedBoss?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
 
