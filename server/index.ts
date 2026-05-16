@@ -25,6 +25,7 @@ import { registerRoutes, setSessionMiddleware } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { initializeRedis, shutdownRedis, isRedisConnected } from "./redis";
 import { configureAuth0, syncAuth0ToSession } from "./auth/auth0.js";
+import { globalAuthLimiter } from "./middleware/rateLimiter.js";
 import { validateEnv } from "./config/env.js";
 import { checkDatabaseHealth } from "./db/health.js";
 import { storage, PgStorage } from "./storage.js";
@@ -83,6 +84,11 @@ setSessionMiddleware(sessionMiddleware);
 
 // Initialize Auth0 (only if configured)
 if (process.env.AUTH0_CLIENT_ID && process.env.AUTH0_ISSUER_BASE_URL && process.env.AUTH0_SECRET) {
+  // Gate Auth0 middlewares with a generous app-level rate limit.
+  // syncAuth0ToSession does a per-request DB lookup; without this an
+  // unauthenticated attacker could DoS the storage layer. Probe paths
+  // (/api/health*, /api/version, /api/ws-health, /metrics) are exempt.
+  app.use(globalAuthLimiter);
   app.use(configureAuth0());
   app.use(syncAuth0ToSession());
   httpLogger.info('Auth0 authentication enabled');
