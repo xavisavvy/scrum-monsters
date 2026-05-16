@@ -23,23 +23,10 @@ test.describe('Victory Screen Visual Regression', () => {
     });
   }
 
-  // Test any victory-related UI that's accessible without full game completion
-  test('game completion UI elements - desktop', async ({ page }) => {
-    await page.setViewportSize(viewports.desktop);
-
-    // This test captures any accessible victory-related UI
-    // Adjust selectors based on actual game structure
-    const createButton = page.getByRole('button', { name: /create/i });
-    if (await createButton.isVisible().catch(() => false)) {
-      const nameInput = page.getByPlaceholder(/name/i);
-      if (await nameInput.isVisible().catch(() => false)) {
-        await nameInput.fill('TestPlayer');
-      }
-      await createButton.click();
-      await waitForStableUI(page);
-
-      // Capture initial game state as baseline
-      await expect(page).toHaveScreenshot('game-ui-desktop.png', screenshotOptions(page));
-    }
-  });
+  // TODO: previously this navigated through `/` looking for a generic
+  // "create" button which never matched the marketing landing page, then
+  // silently captured a blank baseline. Now `.fixme` until a real victory
+  // fixture exists (requires completing a battle, which needs a multi-page
+  // mocked flow). Leaving in place so the gap is visible.
+  test.fixme('game completion UI elements - desktop', async () => {});
 });
