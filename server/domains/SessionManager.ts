@@ -121,6 +121,9 @@ export class SessionManager {
       isHost: true,
       hasSubmittedScore: false,
       level: 1,
+      // avatar_selection -> lobby UX gate. Host sees AvatarSelection screen on
+      // create_lobby and flips this true via select_avatar.
+      hasSelectedAvatar: false,
     };
 
     // Initialize lobby
@@ -285,6 +288,11 @@ export class SessionManager {
       isHost: noActiveHost,
       hasSubmittedScore: false,
       level: 1,
+      // Preserve avatar-selection state across stale-player rejoins: if we
+      // restored a non-default avatar from the disconnected player, the user
+      // already made their choice and should skip the AvatarSelection screen.
+      // Fresh joiners (no preservedAvatar) start with the gate closed.
+      hasSelectedAvatar: preservedAvatar !== undefined,
     };
 
     // If becoming host, update lobby.hostId and demote old host

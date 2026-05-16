@@ -64,9 +64,20 @@ kubectl apply -k k8s/overlays/prod     # Deploy to production
 - `shared/gameEvents.ts` - TypeScript interfaces and all WebSocket event definitions
 
 ### Game Flow (Phases)
-`lobby` → `avatar_selection` → `battle` → `scoring` → `reveal` → `discussion` → `victory`/`next_level` → `game_over`
+`lobby` → `battle` → `scoring` → `reveal` → `discussion` → `victory`/`next_level` → `game_over`
 
 Phases are defined as `GamePhase` type in `shared/gameEvents.ts` and managed in `server/gameState.ts`.
+
+**Avatar selection is per-player and client-driven** (not a shared `gamePhase`):
+fresh lobbies stay in `gamePhase: 'lobby'` server-side, but each player's
+`hasSelectedAvatar` flag gates their own client view. While it is `false`,
+`GamePage` renders `<AvatarSelection />` regardless of `gamePhase`. On
+`select_avatar` the server flips the flag and emits `session:avatar_selected`;
+the client mirrors the flip and drops into the Lobby view. Reconnecting
+players with a preserved non-default avatar skip selection automatically.
+The `'avatar_selection'` value in `GamePhase` is legacy/no-longer-emitted —
+kept in the union as a defensive fallback. The `startGame` /
+`proceedToNextPhase` methods on `GameState` are `@deprecated`.
 
 ### Real-time Events
 All WebSocket events defined in `shared/gameEvents.ts` under `ClientToServerEvents` and `ServerToClientEvents` interfaces. When adding events:
