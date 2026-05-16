@@ -275,7 +275,12 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   useEffect(() => {
     if (!socket) return;
 
-    // Create handler functions that can be properly removed
+    // Create handler functions that can be properly removed.
+    // Wire payloads typed `any` here — server emits a shape that diverges from
+    // the boss_ring_attack schema (start{X,Y}/progress vs boss{X,Y}/x/y), so
+    // pulling them through a typed Socket<ServerToClientEvents> would surface
+    // pre-existing schema/handler mismatches that are out of scope.
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const handleBossRingAttack = ({ projectiles: ringProjectiles }: any) => {
       // Convert percentage coordinates to world coordinates, then to screen coordinates
       const convertedProjectiles = ringProjectiles.map((proj: any) => {
@@ -352,6 +357,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       
       setOtherPlayersProjectiles(prev => [...prev, newProjectile]);
     };
+    /* eslint-enable @typescript-eslint/no-explicit-any */
 
     // Add listeners with specific handler references
     socket.on('boss_ring_attack', handleBossRingAttack);

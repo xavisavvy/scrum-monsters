@@ -19,7 +19,7 @@ import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings } from '@/lib/gameTypes';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings, Player, AvatarClass } from '@/lib/gameTypes';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
 import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
@@ -742,7 +742,7 @@ export function Lobby() {
     };
 
     // Handle new player joining - trigger dropping avatar animation
-    const handlePlayerJoined = ({ player }: { player: any }) => {
+    const handlePlayerJoined = ({ player }: { player: Player }) => {
       if (player.id === currentPlayer?.id) return; // Skip own joins
       
       // Trigger door opening animation
@@ -1657,7 +1657,7 @@ export function Lobby() {
   };
 
   // Helper function to safely get avatar class from player
-  const getAvatarClass = (player: any) => {
+  const getAvatarClass = (player: Player | undefined | null) => {
     return player?.avatarClass ?? player?.avatar ?? 'warrior';
   };
 
@@ -2328,7 +2328,7 @@ export function Lobby() {
                 }}
               >
                 <SpriteRenderer
-                  avatarClass={avatar.avatar as any}
+                  avatarClass={avatar.avatar as AvatarClass}
                   animation="idle"
                   direction="right"
                   size={characterSize}
