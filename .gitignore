@@ -40,6 +40,10 @@ vite.config.ts.*
 # Project-shared skills are checked in so they ride along with the repo
 !.claude/skills/
 
+# Local-only AI/agent state directories — never commit
+.hivemind/
+.beads/
+
 # Test coverage
 coverage
 *.lcov
