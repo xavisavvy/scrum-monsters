@@ -80,13 +80,48 @@ export const playersByPhase = new Gauge({
 // ============================================
 
 /**
- * Number of active WebSocket connections
+ * Number of active WebSocket connections, labeled by socket lifecycle state.
+ *
+ * Labels:
+ *   - state="unauthenticated_no_lobby" — connected socket, no user, no lobby
+ *     (e.g. a freshly opened browser tab on the landing page, or a
+ *      monitoring client that did a WS handshake without joining)
+ *   - state="unauthenticated_in_lobby" — guest player in a lobby
+ *   - state="authenticated_no_lobby"   — logged-in user not in a lobby
+ *   - state="authenticated_in_lobby"   — logged-in user actively playing
+ *
+ * The sum across all label values equals the raw socket count
+ * (`io.sockets.sockets.size`). Recover the legacy single-series view with
+ * `sum(scrumquest_websocket_connections)`.
+ *
+ * Motivation (2026-05-16, debug ws-counter-idle-blue-1): the unlabeled
+ * gauge sitting at 1 with `active_players=0` looked like a leak in
+ * dashboards but was actually a real browser tab held open on the lobby
+ * page after disconnecting from a lobby. Splitting by `state` lets the
+ * dashboard distinguish "real player traffic" from "stray sockets" and
+ * prevents this false alarm from recurring.
  */
 export const websocketConnections = new Gauge({
   name: "scrumquest_websocket_connections",
-  help: "Current number of active WebSocket connections",
+  help: "Current number of active WebSocket connections, labeled by lifecycle state",
+  labelNames: ["state"],
   registers: [metricsRegistry],
 });
+
+const WS_STATES = [
+  "unauthenticated_no_lobby",
+  "unauthenticated_in_lobby",
+  "authenticated_no_lobby",
+  "authenticated_in_lobby",
+] as const;
+type WsState = (typeof WS_STATES)[number];
+
+// Initialize all label permutations to 0 so dashboards have stable series
+// from process start (avoids "no data" panels for buckets that haven't
+// seen traffic yet).
+for (const state of WS_STATES) {
+  websocketConnections.labels({ state }).set(0);
+}
 
 /**
  * WebSocket messages received
@@ -216,10 +251,57 @@ export function updatePlayerMetrics(count: number): void {
 }
 
 /**
- * Update WebSocket connection count
+ * Structural type of the socket.io server surface we need to compute
+ * the labeled websocket gauge. Kept narrow so this module doesn't take
+ * a direct dependency on socket.io.
  */
-export function updateWebsocketMetrics(count: number): void {
-  websocketConnections.set(count);
+export interface WebsocketMetricsSocketIO {
+  sockets: {
+    sockets: {
+      // The `socket.data` shape mirrors `SocketData` in server/websocket.ts:
+      // `{ playerId?: string; lobbyId?: string; userId?: number; ... }`.
+      // We only read `userId` (auth state) and `lobbyId` (in-lobby state).
+      values(): IterableIterator<{ data?: { userId?: unknown; lobbyId?: unknown } }>;
+      size: number;
+    };
+  };
+}
+
+/**
+ * Update the labeled `scrumquest_websocket_connections` gauge by walking
+ * the live socket.io socket map and bucketing each socket by auth + lobby
+ * state. Safe to call from `connection`, `disconnect`, and any handler
+ * that mutates `socket.data.userId` / `socket.data.lobbyId`.
+ *
+ * Cost: O(number of open sockets). With our scale (<10k sockets per
+ * instance) this is well under 1ms per call and only fires on socket
+ * lifecycle events — not on the hot per-message path.
+ */
+export function updateWebsocketMetrics(io: WebsocketMetricsSocketIO): void {
+  const counts: Record<WsState, number> = {
+    unauthenticated_no_lobby: 0,
+    unauthenticated_in_lobby: 0,
+    authenticated_no_lobby: 0,
+    authenticated_in_lobby: 0,
+  };
+
+  for (const socket of io.sockets.sockets.values()) {
+    const data = socket.data ?? {};
+    const isAuthed = data.userId != null;
+    const inLobby = typeof data.lobbyId === "string" && data.lobbyId.length > 0;
+    const key: WsState = isAuthed
+      ? inLobby
+        ? "authenticated_in_lobby"
+        : "authenticated_no_lobby"
+      : inLobby
+        ? "unauthenticated_in_lobby"
+        : "unauthenticated_no_lobby";
+    counts[key] += 1;
+  }
+
+  for (const state of WS_STATES) {
+    websocketConnections.labels({ state }).set(counts[state]);
+  }
 }
 
 /**
