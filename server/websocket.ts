@@ -676,8 +676,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       socketLogger.info({ playerId, lobbyId }, 'Player explicitly leaving lobby');
 
-      // Remove player from lobby
-      const updatedLobby = sessionManager.removePlayer(playerId);
+      // Remove player from lobby. session:player_left is emitted from inside
+      // removePlayer; we don't read the returned lobby here anymore (the
+      // legacy player_left emit that needed it was removed in Phase 45-03).
+      sessionManager.removePlayer(playerId);
 
       // Leave socket room
       socket.leave(lobbyId);
@@ -686,13 +688,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socket.data.playerId = undefined;
       socket.data.lobbyId = undefined;
 
-      // Notify remaining players
-      if (updatedLobby) {
-        const leavingPlayer = updatedLobby.players.find(p => p.id === playerId);
-        io.to(lobbyId).emit('player_left', { playerId, playerName: leavingPlayer?.name || 'Unknown' });
-        // Phase 42-02b: lobby_updated removed; player_left + the existing
-        // session:player_left domain event cover roster mutation downstream.
-      }
+      // Phase 45-03: legacy `player_left` emit removed (no client listener).
+      // session:player_left is emitted from sessionManager.removePlayer above
+      // and handled in eventHandlers.ts:58 (mutates players[] + teams[*]).
     });
 
     // Update lobby name (host only)
@@ -950,7 +948,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (lobby) {
         const player = lobby.players.find(p => p.id === playerId);
         if (player) {
-          socket.to(lobby.id).emit('score_submitted', { playerId, team: player.team });
+          // Phase 45-03: legacy `score_submitted` emit removed (no client listener).
+          // estimation:vote_cast below is the canonical signal.
 
           // Emit fine-grained estimation:vote_cast so all clients (including
           // the voter) update their hasSubmittedScore flag and render the vote
@@ -970,12 +969,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           const result = gameState.revealScores(lobby.id);
           if (result) {
             const { lobby: updatedLobby, teamScores, teamConsensus } = result;
-            io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-            // Bug fix (solo-vote-stuck-discussion): the legacy 'scores_revealed'
-            // event carries team aggregates only, and the client never
-            // populated per-player currentScore from it. Emit fine-grained
-            // 'estimation:votes_revealed' per non-empty team so Discussion.tsx
-            // (which reads currentLobby.teams[*].currentScore) can render
+            // Phase 45-03: legacy `scores_revealed` emit removed (no client listener).
+            // Fine-grained estimation:votes_revealed per team below is canonical:
+            // Bug fix (solo-vote-stuck-discussion): the legacy event carried
+            // team aggregates only; the client never populated per-player
+            // currentScore from it. The per-team emit below populates
+            // currentLobby.teams[*].currentScore so Discussion.tsx can render
             // consensus + Advance Now without a full-state refresh.
             if (updatedLobby.teams.developers.length > 0) {
               emitFineGrained(lobby.id, 'estimation:votes_revealed', {
@@ -1013,7 +1012,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             }
 
             if (teamsAgree && updatedLobby.boss?.defeated) {
-              io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
+              // Phase 45-03: legacy `boss_defeated` emit removed (no client listener).
+              // combat:boss_defeated fires from CombatManager + session:phase_changed
+              // covers the battle→victory transition.
             }
           }
         }
@@ -1048,9 +1049,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 oldPhase: 'discussion',
                 newPhase: updatedLobby.gamePhase,
               });
-              if (updatedLobby.boss?.defeated) {
-                io.to(lobby.id).emit('boss_defeated', { lobby: updatedLobby });
-              }
+              // Phase 45-03: legacy `boss_defeated` emit removed (no client listener).
+              // combat:boss_defeated + session:phase_changed cover the transition.
             }, 2000);
           }
         }
@@ -1081,10 +1081,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           });
         }
 
-        // Emit modifier update if it changed
-        if (modifier !== undefined) {
-          io.to(lobby.id).emit('modifier_updated', { modifier });
-        }
+        // Phase 45-03: legacy `modifier_updated` emit removed (no client listener).
+        // combat:modifier_updated fires from CombatManager.applyDamage on the
+        // same call path.
 
         // If boss performs ring attack, broadcast it
         if (ringAttack) {
@@ -1100,22 +1099,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const result = gameState.bossDamagePlayer(playerId, damage);
       if (result) {
-        const { lobby, targetHealth, gameOver } = result;
-        
-        // Broadcast boss damage to room
-        io.to(lobby.id).emit('player_attacked', { 
-          attackerId: 'boss', 
-          targetId: playerId, 
-          damage, 
-          targetHealth 
-        });
-        
-        // Check for game over
-        if (gameOver) {
-          io.to(lobby.id).emit('game_over', { lobby });
-        }
-
-        // Removed lobby_updated: combat:player_damaged event emitted by combatManager
+        // Phase 45-03: legacy `player_attacked` and `game_over` emits removed
+        // (no client listeners). combat:player_damaged fires from CombatManager;
+        // session:phase_changed fires from gameState.bossDamagePlayer when
+        // gameOver flips. Result is consumed only for the side effect of
+        // running the gameState mutation.
+        void result;
       }
     });
 
@@ -1289,9 +1278,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const result = gameState.forceRevealScores(playerId);
       if (result) {
         const { lobby: updatedLobby, teamScores, teamConsensus } = result;
-        io.to(updatedLobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-        // Phase 42-02b row #15: lobby_updated -> session:phase_changed
-        // (battle -> reveal via host force). scores_revealed above carries data.
+        // Phase 45-03: legacy `scores_revealed` emit removed (no client listener).
+        // session:phase_changed below + per-team estimation:votes_revealed
+        // (emitted by the reveal cascade in submit_score path) carry the data.
+        void teamScores; void teamConsensus;
         eventBus.emit('session:phase_changed', {
           lobbyId: updatedLobby.id,
           oldPhase: 'battle',
@@ -1314,7 +1304,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         }
         
         if (teamsAgree && updatedLobby.boss?.defeated) {
-          io.to(updatedLobby.id).emit('boss_defeated', { lobby: updatedLobby });
+          // Phase 45-03: legacy `boss_defeated` emit removed (no client listener).
+          // combat:boss_defeated + session:phase_changed cover the transition.
         }
       }
     });
@@ -1427,10 +1418,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             const revealResult = gameState.revealScores(lobby.id);
             if (revealResult) {
               const { lobby: updatedLobby, teamScores, teamConsensus } = revealResult;
-              io.to(lobby.id).emit('scores_revealed', { teamScores, teamConsensus });
-              // Bug fix (solo-vote-stuck-discussion): mirror the per-team
-              // fine-grained reveal emit so the force-progression path also
-              // populates per-player currentScore client-side.
+              // Phase 45-03: legacy `scores_revealed` emit removed (no client listener).
+              // Per-team estimation:votes_revealed below is the canonical signal —
+              // bug fix (solo-vote-stuck-discussion): mirror the fine-grained
+              // reveal emit so the force-progression path populates per-player
+              // currentScore client-side.
+              void teamConsensus;
               if (updatedLobby.teams.developers.length > 0) {
                 emitFineGrained(lobby.id, 'estimation:votes_revealed', {
                   votes: teamScores.developers,
@@ -1489,25 +1482,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const result = gameState.attackPlayer(playerId, actualTargetId, damage);
       
       if (result) {
-        const { lobby: updatedLobby, targetHealth, gameOver, modifier } = result;
-        io.to(lobby.id).emit('player_attacked', { 
-          attackerId: playerId, 
-          targetId: actualTargetId, 
-          damage, 
-          targetHealth 
-        });
-        
-        // Emit modifier update
-        if (modifier !== undefined) {
-          io.to(lobby.id).emit('modifier_updated', { modifier });
-        }
-        
-        // Check for game over
-        if (gameOver) {
-          io.to(lobby.id).emit('game_over', { lobby: updatedLobby });
-        }
-
-        // Removed lobby_updated: combat:player_damaged event emitted by combatManager
+        // Phase 45-03: legacy `player_attacked`, `modifier_updated`, and
+        // `game_over` emits removed (no client listeners).
+        // combat:player_damaged + combat:modifier_updated fire from
+        // CombatManager.applyDamage; session:phase_changed fires from
+        // gameState.attackPlayer when gameOver flips.
+        void result;
       }
     });
 
@@ -1682,13 +1662,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             })();
           }
 
-          // Notify other players about the reconnection
-          socket.to(lobbyId).emit('player_reconnected', {
-            playerId,
-            playerName: lobbySync.yourPlayer.name
-          });
-          // Phase 42-02b row #22: lobby_updated removed; player_reconnected
-          // is the canonical signal. Reconnecting client receives the full
+          // Phase 45-03: legacy `player_reconnected` emit removed (no client listener).
+          // Reconnecting client receives lobby_sync above; other clients aren't
+          // notified at the socket layer today (no toast UX consumed this).
+          // Reconnecting client receives the full
           // lobby state above via lobby_sync + sendFullState.
 
           socketLogger.info({ playerId, playerName: lobbySync.yourPlayer.name }, 'Player reconnected successfully');
@@ -1771,8 +1748,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           }
         }
 
-        // Broadcast estimation started
-        io.to(lobbyId).emit('estimation_started' as any, { ticketId });
+        // Phase 45-03: legacy `estimation_started as any` emit removed
+        // (no client listener, no schema decl). The first vote of the
+        // estimation will fire estimation:vote_cast which surfaces the
+        // active estimation to peers.
         gameLogger.info({ ticketId, lobbyId }, 'Estimation started');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -1810,10 +1789,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Record activity for host transfer
         sessionManager.recordPlayerActivity(playerId);
 
-        // Broadcast updated vote state
-        const visibility = estimationManager.getAllVoteVisibility(lobbyId);
-        io.to(lobbyId).emit('vote_state_updated' as any, visibility);
-
+        // Phase 45-03: legacy `vote_state_updated as any` emit removed
+        // (no client listener). EstimationManager.castVote fires
+        // estimation:vote_cast (bridged + handled) on the same call path.
         gameLogger.debug({ playerId, vote, team: player.team }, 'Player voted');
       } catch (error) {
         if (error instanceof EstimationNotActiveError) {
@@ -1855,10 +1833,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Record activity
         sessionManager.recordPlayerActivity(playerId);
 
-        // Broadcast updated vote state
-        const visibility = estimationManager.getAllVoteVisibility(lobbyId);
-        io.to(lobbyId).emit('vote_state_updated' as any, visibility);
-
+        // Phase 45-03: legacy `vote_state_updated as any` emit removed
+        // (no client listener). EstimationManager.changeVoteDuringDiscussion
+        // fires estimation:vote_changed; per-vote discussion updates are
+        // also covered by emitFineGrained('estimation:discussion_vote_updated')
+        // elsewhere in the discussion flow.
         gameLogger.debug({ playerId, newVote }, 'Player changed vote during discussion');
       } catch (error) {
         if (error instanceof NotInDiscussionPhaseError) {
@@ -1894,8 +1873,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         estimationManager.pauseTimer(lobbyId, team, playerId);
 
-        // Broadcast timer state
-        io.to(lobbyId).emit('timer_paused' as any, { team });
+        // Phase 45-03: legacy `timer_paused as any` emit removed.
+        // EstimationManager.pauseTimer emits estimation:timer_paused
+        // (bridged in ClientEventEmitter, handled in eventHandlers.ts:379).
         gameLogger.info({ team }, 'Host paused voting timer');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -1925,8 +1905,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         estimationManager.resumeTimer(lobbyId, team, playerId);
 
-        // Broadcast timer state
-        io.to(lobbyId).emit('timer_resumed' as any, { team });
+        // Phase 45-03: legacy `timer_resumed as any` emit removed.
+        // EstimationManager.resumeTimer emits estimation:timer_resumed
+        // (bridged in ClientEventEmitter, handled in eventHandlers.ts:398).
         gameLogger.info({ team }, 'Host resumed voting timer');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -1957,8 +1938,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const additionalMs = additionalSeconds * 1000;
         estimationManager.extendTimer(lobbyId, team, additionalMs, playerId);
 
-        // Broadcast timer state
-        io.to(lobbyId).emit('timer_extended' as any, { team, additionalSeconds });
+        // Phase 45-03: legacy `timer_extended as any` emit removed.
+        // EstimationManager.extendTimer emits estimation:timer_extended
+        // (currently NOT bridged in ClientEventEmitter and NOT handled
+        // client-side — both legacy and fine-grained paths were already
+        // silent; flagged for Phase 45-05 to wire the bridge + handler
+        // if timer-extension UX is desired).
         gameLogger.info({ team, additionalSeconds }, 'Host extended voting timer');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -1988,8 +1973,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         const result = estimationManager.forceEstimate(lobbyId, team, playerId, forcedValue);
 
-        // Broadcast forced estimate
-        io.to(lobbyId).emit('estimate_forced' as any, { team, consensusValue: result.consensusValue });
+        // Phase 45-03: legacy `estimate_forced as any` emit removed.
+        // EstimationManager.forceEstimate emits estimation:estimate_forced
+        // (bridged in ClientEventEmitter; currently NOT handled client-side —
+        // flagged for Phase 45-05 to wire a handler if forced-snap UX is
+        // desired beyond the resulting reveal cascade).
         gameLogger.info({ team, consensusValue: result.consensusValue }, 'Host forced estimate');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -2032,9 +2020,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         estimationManager.enterDiscussionPhase(lobbyId, team);
 
-        // Broadcast phase change
-        const visibility = estimationManager.getAllVoteVisibility(lobbyId);
-        io.to(lobbyId).emit('vote_state_updated' as any, visibility);
+        // Phase 45-03: legacy `vote_state_updated as any` emit removed.
+        // EstimationManager.enterDiscussionPhase emits estimation:discussion_started
+        // (bridged in ClientEventEmitter; currently NOT handled client-side —
+        // flagged for Phase 45-05).
         gameLogger.info({ team }, 'Team entered discussion phase');
       } catch (error) {
         if (error instanceof PlayerNotHostError) {
@@ -2264,8 +2253,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (disconnectResult && lobbyId) {
           const { disconnectedPlayer, hostTransfer } = disconnectResult;
 
-          // Notify other players about the disconnection (but keep player in lobby)
-          io.to(lobbyId).emit('player_disconnected', { playerId });
+          // Phase 45-03: legacy `player_disconnected` emit removed (no client listener).
+          // Player remains in lobby during grace; the players[].isConnected
+          // flag (set elsewhere) drives any visual dim.
 
           const graceMinutes = Math.floor((disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
           socketLogger.info({
@@ -2300,9 +2290,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Fallback to old behavior if reconnection setup fails
           const updatedLobby = sessionManager.removePlayer(playerId);
           if (updatedLobby && lobbyId) {
-            io.to(lobbyId).emit('player_disconnected', { playerId });
-            // Phase 42-02b row #24: lobby_updated removed; player_disconnected
-            // above is the canonical signal for fallback removal.
+            // Phase 45-03: legacy `player_disconnected` emit removed (no client listener).
+            // session:player_left fires from sessionManager.removePlayer above.
           }
           socketLogger.warn({ playerId }, 'Player removed immediately (reconnection unavailable)');
         }

@@ -995,8 +995,16 @@ class GameStateManager {
     // Check for game over
     const gameOver = this.checkGameOver(lobby);
     if (gameOver) {
+      const oldPhase = lobby.gamePhase;
       lobby.gamePhase = 'game_over';
       gameLogger.info('Game over - all developers/QA are downed');
+      // Phase 45-03: replaces the legacy `game_over` socket emit at websocket.ts.
+      // Client renders GameOverPhase off session:phase_changed.
+      eventBus.emit('session:phase_changed', {
+        lobbyId: lobby.id,
+        oldPhase,
+        newPhase: 'game_over',
+      });
     }
 
     return { lobby, targetHealth: targetState.hp, gameOver, modifier };
@@ -1090,8 +1098,16 @@ class GameStateManager {
     // Check for game over
     const gameOver = this.checkGameOver(lobby);
     if (gameOver) {
+      const oldPhase = lobby.gamePhase;
       lobby.gamePhase = 'game_over';
       gameLogger.info('Game over - all developers/QA are downed');
+      // Phase 45-03: replaces the legacy `game_over` socket emit at websocket.ts.
+      // Client renders GameOverPhase off session:phase_changed.
+      eventBus.emit('session:phase_changed', {
+        lobbyId: lobby.id,
+        oldPhase,
+        newPhase: 'game_over',
+      });
     }
 
     return { lobby, targetHealth: targetState.hp, gameOver };
@@ -1393,13 +1409,9 @@ class GameStateManager {
       
       // Emit update via IO
       if (this.io) {
-        this.io.to(lobbyId).emit('voting_timeout', {
-          submittedCount: submittedPlayers.length,
-          totalCount: connectedPlayers.length,
-          message: `Voting time expired. Proceeding with ${submittedPlayers.length} votes.`
-        });
-        // Phase 42-02b row #26: lobby_updated -> session:phase_changed via eventBus
-        // (ClientEventEmitter wires the wire emit + seq + timestamp).
+        // Phase 45-03: legacy `voting_timeout` emit removed (no client listener).
+        // session:phase_changed below is the canonical signal; the "voting time
+        // expired" toast was never consumed by the client.
         eventBus.emit('session:phase_changed', {
           lobbyId,
           oldPhase: 'battle',
@@ -1581,10 +1593,9 @@ class GameStateManager {
         
         // Set up countdown timer
         this.startConsensusCountdown(lobby.id);
-        
-        // Emit countdown started event
-        this.emitConsensusCountdownUpdate(lobby.id, lobby.consensusCountdown);
-        
+
+        // Phase 45-03: emitConsensusCountdownUpdate call removed (no client listener).
+
         return { lobby, teamScores, teamConsensus };
       }
       
@@ -1596,8 +1607,7 @@ class GameStateManager {
     if (lobby.consensusCountdown?.isActive && !teamsAgree) {
       lobby.consensusCountdown = undefined;
       this.clearConsensusCountdown(lobby.id);
-      // Emit countdown cancelled event
-      this.emitConsensusCountdownUpdate(lobby.id, null);
+      // Phase 45-03: emitConsensusCountdownUpdate call removed (no client listener).
     }
 
     return { lobby, teamScores, teamConsensus };
@@ -1622,10 +1632,8 @@ class GameStateManager {
         // Countdown finished - complete consensus
         this.completeConsensus(lobbyId);
         this.clearConsensusCountdown(lobbyId);
-      } else {
-        // Emit countdown update
-        this.emitConsensusCountdownUpdate(lobbyId, lobby.consensusCountdown);
       }
+      // Phase 45-03: emitConsensusCountdownUpdate call removed (no client listener).
     }, 100); // Update every 100ms
     
     this.consensusCountdownIntervals.set(lobbyId, countdownInterval);
@@ -1713,11 +1721,12 @@ class GameStateManager {
     }
   }
 
-  private emitConsensusCountdownUpdate(lobbyId: string, countdown: { isActive: boolean; remainingSeconds: number; startedAt: number } | null): void {
-    if (this.io) {
-      this.io.to(lobbyId).emit('consensus_countdown_update', { countdown });
-    }
-  }
+  // Phase 45-03: emitConsensusCountdownUpdate removed. The legacy
+  // 'consensus_countdown_update' wire emit had no client listener and no
+  // schema declaration. lobby.consensusCountdown is still tracked
+  // server-side for the auto-advance timer, but is not surfaced to clients.
+  // If a "X seconds until auto-advance" UI is desired, add a dedicated
+  // fine-grained event in a future phase.
 
   trackPlayerPerformance(playerId: string, performanceData: {
     estimationTime: number;

@@ -164,13 +164,11 @@ export class ClientEventEmitter {
       });
     });
 
-    this.eventBus.on('estimation:discussion_started', (payload) => {
-      // Emit revealed votes for the team that entered discussion
-      // TODO: In Plan 05-04, this will be populated from actual vote state
-      this.emitToLobby(payload.lobbyId, 'estimation:discussion_started', {
-        team: payload.team,
-      });
-    });
+    // Phase 45-03: estimation:discussion_started bridge removed (no client
+    // listener and no schema declaration). The internal eventBus event is
+    // still emitted from EstimationManager for cross-domain coordination
+    // (CombatManager handler at CombatManager.ts:200 area) — bridge removal
+    // does not affect that.
 
     this.eventBus.on('estimation:discussion_timer_started', (payload) => {
       this.emitToLobby(payload.lobbyId, 'estimation:discussion_timer_started', {
