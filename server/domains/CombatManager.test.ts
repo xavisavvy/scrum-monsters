@@ -1331,6 +1331,7 @@ describe('CombatManager', () => {
           lobbyId: 'lobby1',
           playerId: 'warrior1',
           reviverId: 'cleric1',
+          newHp: 50,
         });
       });
 

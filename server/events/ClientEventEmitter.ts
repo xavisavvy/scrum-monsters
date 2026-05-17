@@ -255,7 +255,7 @@ export class ClientEventEmitter {
       this.emitToLobby(payload.lobbyId, 'combat:player_revived', {
         playerId: payload.playerId,
         reviverId: payload.reviverId,
-        newHp: 50, // Standard revive HP amount
+        newHp: payload.newHp,
       });
     });
 

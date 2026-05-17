@@ -101,6 +101,40 @@ describe('ClientEventEmitter', () => {
       expect(data.timestamp).toBeTypeOf('number');
       expect(data.timestamp).toBeGreaterThan(Date.now() - 1000);
     });
+
+    // Phase 45-01 C5 regression: bridge previously hardcoded newHp: 50,
+    // dropping the actual revived HP from CombatManager (which uses
+    // floor(maxHp * 0.5) — only matches 50 for classes with maxHp=100).
+    it('bridges combat:player_revived with the server-computed newHp (not a literal 50)', () => {
+      eventBus.emit('combat:player_revived', {
+        lobbyId: 'TEST-LOBBY',
+        playerId: 'downed-player',
+        reviverId: 'reviver-player',
+        newHp: 25, // simulates maxHp=50 class
+      });
+
+      expect(emittedEvents).toHaveLength(1);
+      expect(emittedEvents[0]).toMatchObject({
+        room: 'TEST-LOBBY',
+        event: 'combat:player_revived',
+        data: {
+          playerId: 'downed-player',
+          reviverId: 'reviver-player',
+          newHp: 25,
+        },
+      });
+    });
+
+    it('forwards a different revive HP for a different maxHp class', () => {
+      eventBus.emit('combat:player_revived', {
+        lobbyId: 'TEST-LOBBY',
+        playerId: 'tank',
+        reviverId: 'cleric',
+        newHp: 100, // simulates maxHp=200 class
+      });
+
+      expect(emittedEvents[0].data.newHp).toBe(100);
+    });
   });
 
   // =============================================================================
