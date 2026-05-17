@@ -220,25 +220,28 @@ Plans:
 - [x] 44-03-PLAN.md — Deploy orchestrator + auto-rollback + manual rollback script + workflow wiring + operator runbook
 
 ### Phase 45: Socket Schema Drift Reconciliation
-**Goal**: `shared/gameEvents.ts` (the typed `ServerToClientEvents` / `ClientToServerEvents` contracts) agrees with what the server actually emits and what the client actually reads. Three known runtime bugs (silent boss-heal HP corruption, timer state lost on resume, hardcoded revive HP) get fixed. ~20 dead events (emit-without-listener or declared-without-producer) are removed. After the phase, the client `Socket` can be typed `Socket<ServerToClientEvents, ClientToServerEvents>` — clearing the 43 `any` warnings exempted by the per-file ESLint override in `eslint.config.mjs` and surfacing future drift at compile time.
+**Goal**: `shared/gameEvents.ts` (the typed `ServerToClientEvents` / `ClientToServerEvents` contracts) agrees with what the server actually emits and what the client actually reads. Three known runtime bugs (silent boss-heal HP corruption, timer state lost on resume, hardcoded revive HP that drifts for non-100-maxHp classes) get fixed. Two confirmed-broken features (multiplayer revive UX, YouTube music sync) get their handlers wired. One missing-feedback feature (cleric heal-party) gets a `combat:player_healed` event + floating-heal popup. ~17 dead events (emit-without-listener) are removed. After the phase, the client `Socket` can be typed `Socket<ServerToClientEvents, ClientToServerEvents>` — clearing the 43 `any` warnings exempted by the per-file ESLint override in `eslint.config.mjs` and surfacing future drift at compile time.
 **Depends on**: Phase 42 (fine-grained event bus is the architecture this phase reconciles against)
 **Success Criteria** (what must be TRUE):
-  1. The three runtime bugs (`combat:boss_healed` newHp/newHealth, `estimation:timer_started/resumed` missing fields) are fixed with regression test coverage
-  2. The two ClientEventEmitter hardcodes (`newHp: 50` in revive, `source: 'boss'` in damage) thread real values through the bridge
-  3. `boss_ring_attack` schema matches the emit+handler reality; the inline `as any` workarounds in `createRingAttack`, `attackBoss`, and `PlayerController` ring-attack handlers are removed
-  4. The `as any` legacy emit family in `server/websocket.ts` (estimation_started, vote_state_updated, timer_paused/resumed/extended, estimate_forced) is deleted
-  5. The ~17 emit-without-listener events from H5 are either rewired with handlers (youtube_* and revive_* feature verification) or confirmed-dead and deleted
-  6. The per-file `no-explicit-any: off` override in `eslint.config.mjs` for the 4 socket-boundary files is removed; client + server sockets are typed via the schema
-  7. `clientEvents.ts` is absorbed into `gameEvents.ts` (single source of truth for socket event types)
-  8. `npm run lint` reports 0 problems, `npm run check` is clean, all tests pass, smoke test of lobby/battle/reveal/discussion passes including timer pause/resume and multiplayer revive
+  1. C1, C2, C3, C5 (the four real runtime bugs) are fixed with regression test coverage. C6 is documented and resolved (currently functionally correct because no PvP damage flow exists)
+  2. `boss_ring_attack` schema matches the emit+handler reality; no `as any` workarounds remain for ring attack
+  3. The `as any` legacy emit family in `server/websocket.ts` (H1: estimation_started, vote_state_updated, timer_paused/resumed/extended, estimate_forced) is deleted
+  4. The 11 H5 SAFE_TO_DELETE legacy emits are removed; H2 consensus_countdown_update, H3 estimation:discussion_started, H9 session:player_reconnected dead type cleaned up
+  5. Revival UX: peers see who is reviving whom, the per-tick progress bar works (via new `combat:revival_progress` event), and cancel shows feedback
+  6. YouTube sync: host music plays on all peer clients
+  7. Heal-party: cleric heals show a floating-heal popup on each healed player (via new `combat:player_healed` event)
+  8. The 4-file `no-explicit-any: off` ESLint override is gone, both client and server sockets are typed via the schema, and the 43 `(data: any) =>` annotations in `eventHandlers.ts` are inferred
+  9. `clientEvents.ts` is deleted (absorbed into `gameEvents.ts`); single source of truth for socket types
+  10. `npm run lint` reports 0 problems, `npm run check` is clean, all tests pass, smoke test of lobby/battle/reveal/discussion + revive + heal-party + youtube-host-music passes
 
-**Plans**: 4 plans (per [45-PLAN.md](phases/45-socket-schema-drift-reconciliation/45-PLAN.md); detailed drift inventory in [45-RESEARCH.md](phases/45-socket-schema-drift-reconciliation/45-RESEARCH.md))
+**Plans**: 5 plans (overview in [45-CONTEXT.md](phases/45-socket-schema-drift-reconciliation/45-CONTEXT.md); drift inventory in [45-RESEARCH.md](phases/45-socket-schema-drift-reconciliation/45-RESEARCH.md); H5 verdicts in [45-H5-TRIAGE.md](phases/45-socket-schema-drift-reconciliation/45-H5-TRIAGE.md))
 
-Plans:
-- [ ] 45-01-PLAN.md — Critical handler/emit hot-fixes (C1 boss_healed, C2/C3 timer state, C5 revive HP, C6 damage source)
-- [ ] 45-02-PLAN.md — Rewrite `boss_ring_attack` schema to match emit + handler reality
-- [ ] 45-03-PLAN.md — Delete dead wire traffic (`as any` family + emit-without-listener cluster; verify youtube_* / revive_* before delete)
-- [ ] 45-04-PLAN.md — Type the socket, remove the ESLint override, dedupe clientEvents.ts, sweep low-priority cleanup
+Plans (wave 1 = 45-01/02/03 parallel-safe; wave 2 = 45-04 after 45-03; wave 3 = 45-05 last):
+- [ ] 45-01-PLAN.md — Critical handler/emit hot-fixes (C1 boss_healed, C2/C3 timer state, C5 revive HP)
+- [ ] 45-02-PLAN.md — Rewrite `boss_ring_attack` schema to match emit + handler reality (C4)
+- [ ] 45-03-PLAN.md — Delete confirmed-dead wire traffic (H1 as-any family, H2/H3/H9, 11 H5 SAFE_TO_DELETE events)
+- [ ] 45-04-PLAN.md — Restore broken features (revival UX with new combat:revival_progress, YouTube sync handlers, combat:player_healed + floating-heal popup)
+- [ ] 45-05-PLAN.md — Type the socket, remove the ESLint override, dedupe clientEvents.ts, sweep all Low items, address C6
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
