@@ -9,7 +9,7 @@
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
 - ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
 - ✅ **v4.0 Hosting & Deployment** — Phases 32-36 (shipped 2026-03-11)
-- 🚧 **v5.0 UX & Onboarding** — Phases 37-44 (in progress; 7/8 verified, Phase 39 UAT outstanding)
+- 🚧 **v5.0 UX & Onboarding** — Phases 37-44 (all 8 phases complete and verified 2026-05-15; ready to ship)
 
 ## Phases
 
@@ -74,7 +74,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 
 - [x] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes (completed 2026-03-11)
 - [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)
-- [ ] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu
+- [x] **Phase 39: Tutorial Foundation** — Tutorial infrastructure (store, overlays, hint system) and help menu (completed 2026-05-15; Gap #1 resolved via mount + phase-resolution + hydration fixes, commit 3fcbcc1)
 - [x] **Phase 40: Tutorial Content & JRPG Narrator** — Phase-aware walkthroughs, contextual hints, and narrator dialogue boxes (plans complete 2026-05-07; pending /gsd-verify-work)
 - [x] **Phase 41: Reconnection State Bugfix** — Fix stale lobby snapshot/reconnect-token causing duplicate self and lost host status on rejoin (completed 2026-05-06)
 
@@ -219,6 +219,27 @@ Plans:
 - [x] 44-02-PLAN.md — NPM REST API helper module + healthcheck poll module + Bats tests + CI shellcheck/bats gate
 - [x] 44-03-PLAN.md — Deploy orchestrator + auto-rollback + manual rollback script + workflow wiring + operator runbook
 
+### Phase 45: Socket Schema Drift Reconciliation
+**Goal**: `shared/gameEvents.ts` (the typed `ServerToClientEvents` / `ClientToServerEvents` contracts) agrees with what the server actually emits and what the client actually reads. Three known runtime bugs (silent boss-heal HP corruption, timer state lost on resume, hardcoded revive HP) get fixed. ~20 dead events (emit-without-listener or declared-without-producer) are removed. After the phase, the client `Socket` can be typed `Socket<ServerToClientEvents, ClientToServerEvents>` — clearing the 43 `any` warnings exempted by the per-file ESLint override in `eslint.config.mjs` and surfacing future drift at compile time.
+**Depends on**: Phase 42 (fine-grained event bus is the architecture this phase reconciles against)
+**Success Criteria** (what must be TRUE):
+  1. The three runtime bugs (`combat:boss_healed` newHp/newHealth, `estimation:timer_started/resumed` missing fields) are fixed with regression test coverage
+  2. The two ClientEventEmitter hardcodes (`newHp: 50` in revive, `source: 'boss'` in damage) thread real values through the bridge
+  3. `boss_ring_attack` schema matches the emit+handler reality; the inline `as any` workarounds in `createRingAttack`, `attackBoss`, and `PlayerController` ring-attack handlers are removed
+  4. The `as any` legacy emit family in `server/websocket.ts` (estimation_started, vote_state_updated, timer_paused/resumed/extended, estimate_forced) is deleted
+  5. The ~17 emit-without-listener events from H5 are either rewired with handlers (youtube_* and revive_* feature verification) or confirmed-dead and deleted
+  6. The per-file `no-explicit-any: off` override in `eslint.config.mjs` for the 4 socket-boundary files is removed; client + server sockets are typed via the schema
+  7. `clientEvents.ts` is absorbed into `gameEvents.ts` (single source of truth for socket event types)
+  8. `npm run lint` reports 0 problems, `npm run check` is clean, all tests pass, smoke test of lobby/battle/reveal/discussion passes including timer pause/resume and multiplayer revive
+
+**Plans**: 4 plans (per [45-PLAN.md](phases/45-socket-schema-drift-reconciliation/45-PLAN.md); detailed drift inventory in [45-RESEARCH.md](phases/45-socket-schema-drift-reconciliation/45-RESEARCH.md))
+
+Plans:
+- [ ] 45-01-PLAN.md — Critical handler/emit hot-fixes (C1 boss_healed, C2/C3 timer state, C5 revive HP, C6 damage source)
+- [ ] 45-02-PLAN.md — Rewrite `boss_ring_attack` schema to match emit + handler reality
+- [ ] 45-03-PLAN.md — Delete dead wire traffic (`as any` family + emit-without-listener cluster; verify youtube_* / revive_* before delete)
+- [ ] 45-04-PLAN.md — Type the socket, remove the ESLint override, dedupe clientEvents.ts, sweep low-priority cleanup
+
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
@@ -230,14 +251,14 @@ Plans:
 | 32-36 | v4.0 | 14/14 | Complete | 2026-03-11 |
 | 37. State Polish & Bug Fixes | v5.0 | 2/2 | Complete | 2026-03-11 |
 | 38. Interaction Feedback & Transitions | v5.0 | 3/3 | Complete | 2026-03-11 |
-| 39. Tutorial Foundation | v5.0 | 2/2 | Plans complete; UAT outstanding | - |
+| 39. Tutorial Foundation | v5.0 | 2/2 | Complete | 2026-05-15 |
 | 40. Tutorial Content & JRPG Narrator | v5.0 | 2/2 | Complete | 2026-05-07 |
 | 41. Reconnection State Bugfix | v5.0 | 2/2 | Complete | 2026-05-06 |
 | 42. v5.0 Pre-Ship Fixes & Polish | v5.0 | 4/4 | Complete | 2026-05-07 |
 | 43. Auth & User Account Validation | v5.0 | 2/2 | Complete | 2026-05-07 |
 | 44. Zero-Downtime Deploys (Blue-Green) | v5.0 | 3/3 | Complete | 2026-05-09 |
 
-**Total: 8 milestones shipped, 42 phases complete, 144 plans (1 deferred) | v5.0: 7/8 phases complete (Phase 39 UAT outstanding), 20/20 plans done**
+**Total: 8 milestones shipped, 42 phases complete, 144 plans (1 deferred) | v5.0: 8/8 phases complete and verified (2026-05-15), 20/20 plans done — ready to ship**
 
 ---
 *Roadmap created: 2026-02-11*
