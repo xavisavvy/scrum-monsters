@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 import { createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
@@ -1747,11 +1747,7 @@ class GameStateManager {
     this.playerPerformanceMap.delete(lobby.id);
   }
 
-  // ringAttack return shape differs from the boss_ring_attack wire schema
-  // (in-memory uses startX/startY/progress; wire uses bossX/bossY/x/y).
-  // Reconciling them is out of scope here.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  attackBoss(playerId: string, _damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: any; healedBoss?: boolean; modifier?: number } | null {
+  attackBoss(playerId: string, _damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: RingAttack | null; healedBoss?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;
 
@@ -1809,9 +1805,7 @@ class GameStateManager {
     };
   }
 
-  // Return shape diverges from the wire boss_ring_attack schema; see attackBoss note.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private createRingAttack(lobby: Lobby): any {
+  private createRingAttack(lobby: Lobby): RingAttack | null {
     // Get all active (non-downed) non-spectator players
     const targets = lobby.players
       .filter(p => p.team !== 'spectators' && !lobby.playerCombatStates[p.id]?.isDowned)
@@ -1823,15 +1817,7 @@ class GameStateManager {
     if (targets.length === 0) return null;
 
     // Create 6 projectiles in a ring pattern around each player
-    const projectiles: Array<{
-      id: string;
-      startX: number;
-      startY: number;
-      targetX: number;
-      targetY: number;
-      progress: number;
-      emoji: string;
-    }> = [];
+    const projectiles: RingAttackProjectile[] = [];
     const projectileCount = 6;
 
     targets.forEach(target => {
