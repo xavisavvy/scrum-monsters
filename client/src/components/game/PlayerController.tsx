@@ -6,6 +6,7 @@ import { useGameState } from '@/lib/stores/useGameState';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
+import type { RingAttack, RingAttackProjectile } from '@shared/gameEvents';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { useViewport } from '@/lib/hooks/useViewport';
 import { useIsMobile } from '@/hooks/use-is-mobile';
@@ -276,21 +277,16 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     if (!socket) return;
 
     // Create handler functions that can be properly removed.
-    // Wire payloads typed `any` here — server emits a shape that diverges from
-    // the boss_ring_attack schema (start{X,Y}/progress vs boss{X,Y}/x/y), so
-    // pulling them through a typed Socket<ServerToClientEvents> would surface
-    // pre-existing schema/handler mismatches that are out of scope.
-    /* eslint-disable @typescript-eslint/no-explicit-any */
-    const handleBossRingAttack = ({ projectiles: ringProjectiles }: any) => {
+    const handleBossRingAttack = ({ projectiles: ringProjectiles }: RingAttack) => {
       // Convert percentage coordinates to world coordinates, then to screen coordinates
-      const convertedProjectiles = ringProjectiles.map((proj: any) => {
+      const convertedProjectiles = ringProjectiles.map((proj: RingAttackProjectile) => {
         const targetWorld = { x: (proj.targetX / 100) * viewport.worldWidth, y: (proj.targetY / 100) * viewport.worldHeight };
         const targetScreen = viewport.worldToScreen(targetWorld.x, targetWorld.y);
-        
-        // Use projectile's startX/startY as boss position (server sends boss center as 50%, 40%) 
+
+        // Use projectile's startX/startY as boss position (server sends boss center as 50%, 40%)
         const bossWorld = { x: (proj.startX / 100) * viewport.worldWidth, y: (proj.startY / 100) * viewport.worldHeight };
         const bossScreen = viewport.worldToScreen(bossWorld.x, bossWorld.y);
-        
+
         return {
           id: proj.id,
           startX: bossScreen.x,
@@ -301,10 +297,14 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           emoji: proj.emoji
         };
       });
-      
+
       setBossProjectiles(convertedProjectiles);
     };
 
+    // players_pos and player_projectile_fired remain `any` until 45-05 types
+    // the full socket boundary — their schemas need cross-checking against
+    // server emit sites (Phase 45 H5 cluster).
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const handlePlayersPos = ({ positions }: any) => {
       if (!currentPlayer || !positions) return;
       

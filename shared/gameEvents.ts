@@ -164,6 +164,25 @@ export type AvatarClass =
   | "oathbreaker"
   | "monk";
 
+// Ring-attack wire shape — used by boss_ring_attack (server emits the in-memory
+// shape from gameState.createRingAttack directly to clients with no
+// seq/timestamp wrapper, unlike the fine-grained combat:* events).
+export interface RingAttackProjectile {
+  id: string;
+  startX: number;       // boss origin X (percent)
+  startY: number;       // boss origin Y (percent)
+  targetX: number;      // landing X (percent)
+  targetY: number;      // landing Y (percent)
+  progress: number;     // 0-1 animation cursor, advanced client-side
+  emoji: string;
+}
+
+export interface RingAttack {
+  type: 'ring';
+  projectiles: RingAttackProjectile[];
+  targetCount: number;
+}
+
 // Reconnection System Types
 export interface ReconnectToken {
   playerId: string;
@@ -396,18 +415,7 @@ export interface ServerToClientEvents {
   }) => void;
   revive_complete: (data: { targetId: string; reviverId: string }) => void;
   revive_cancelled: (data: { targetId: string; reviverId: string }) => void;
-  boss_ring_attack: (data: {
-    bossX: number;
-    bossY: number;
-    projectiles: Array<{
-      id: string;
-      x: number;
-      y: number;
-      targetX: number;
-      targetY: number;
-      emoji: string;
-    }>;
-  }) => void;
+  boss_ring_attack: (data: RingAttack) => void;
   player_projectile_fired: (data: {
     playerId: string;
     playerName: string;
