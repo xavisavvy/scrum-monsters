@@ -334,6 +334,7 @@ describe('ClassMasteryManager', () => {
           lobbyId: 'lobby1',
           playerId: 'player2',
           reviverId: 'player1',
+          newHp: 50,
         } as CombatPlayerRevivedPayload);
 
         expect(manager.getClassXP('lobby1', 'player1', 'cleric')).toBe(30);

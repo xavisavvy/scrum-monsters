@@ -361,8 +361,9 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
+        // Bridge sends {endsAt, durationMs} but not startedAt; derive it.
         const timerState: TimerState = {
-          startedAt: data.startedAt,
+          startedAt: data.endsAt - data.durationMs,
           durationMs: data.durationMs,
           isActive: true
         };
@@ -401,9 +402,13 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
+        // Resume payload carries only endsAt; recompute the local timer
+        // anchor at "now" for the remaining duration so countdown UIs
+        // computing (Date.now() - startedAt) stay finite.
+        const now = Date.now();
         const timerState: TimerState = {
-          startedAt: data.startedAt,
-          durationMs: data.durationMs,
+          startedAt: now,
+          durationMs: Math.max(0, data.endsAt - now),
           isActive: true
         };
         const updatedLobby = {
@@ -502,10 +507,10 @@ export function setupEventHandlers(socket: Socket): void {
     if (processed) {
       const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
       if (currentBoss) {
-        setBoss({ ...currentBoss, currentHealth: data.newHealth });
+        setBoss({ ...currentBoss, currentHealth: data.newHp });
       }
       if (currentLobby?.boss) {
-        setLobby({ ...currentLobby, boss: { ...currentLobby.boss, currentHealth: data.newHealth } });
+        setLobby({ ...currentLobby, boss: { ...currentLobby.boss, currentHealth: data.newHp } });
       }
     }
   });

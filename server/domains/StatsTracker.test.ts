@@ -271,6 +271,7 @@ describe('StatsTracker', () => {
         lobbyId: 'lobby1',
         playerId: 'player2', // The downed player
         reviverId: 'player1', // The reviver
+        newHp: 50,
       });
 
       const summary = tracker.getSessionSummary('lobby1', 'player1');
@@ -306,6 +307,7 @@ describe('StatsTracker', () => {
         lobbyId: 'lobby1',
         playerId: 'player2',
         reviverId: 'player1',
+        newHp: 50,
       });
 
       expect(storage.incrementUserStat).toHaveBeenCalledWith(
@@ -407,6 +409,7 @@ describe('StatsTracker', () => {
         lobbyId: 'lobby1',
         playerId: 'player2',
         reviverId: 'player1',
+        newHp: 50,
       });
 
       eventBus.emit('combat:player_permanently_downed', {

@@ -282,6 +282,8 @@ export interface CombatPlayerRevivedPayload {
   lobbyId: string;
   playerId: string;
   reviverId: string;
+  /** HP the player was restored to (server-computed, typically floor(maxHp * 0.5)) */
+  newHp: number;
 }
 
 /** Emitted when a battle phase begins */

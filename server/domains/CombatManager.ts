@@ -1612,6 +1612,7 @@ export class CombatManager {
       lobbyId: session.lobbyId,
       playerId: session.targetId,
       reviverId: session.reviverId,
+      newHp: targetState.hp,
     });
 
     // Record revival threat
