@@ -34,10 +34,10 @@ export interface SessionPlayerLeftEvent extends BaseClientEvent {
   playerId: string;
 }
 
-export interface SessionPlayerReconnectedEvent extends BaseClientEvent {
-  playerId: string;
-  playerName: string;
-}
+// Phase 45-03: SessionPlayerReconnectedEvent removed — was never emitted,
+// never bridged, never handled. Legacy `player_reconnected` (no session:
+// prefix) also removed in 45-03; reconnecting clients receive lobby_sync
+// instead.
 
 export interface SessionHostChangedEvent extends BaseClientEvent {
   oldHostId: string;
@@ -215,7 +215,6 @@ export interface ClientEventMap {
   // Session events
   'session:player_joined': SessionPlayerJoinedEvent;
   'session:player_left': SessionPlayerLeftEvent;
-  'session:player_reconnected': SessionPlayerReconnectedEvent;
   'session:host_changed': SessionHostChangedEvent;
   'session:phase_changed': SessionPhaseChangedEvent;
   'session:team_changed': SessionTeamChangedEvent;

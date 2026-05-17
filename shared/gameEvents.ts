@@ -369,41 +369,24 @@ export interface ServerToClientEvents {
     y: number;
   }) => void;
   player_joined: (data: { player: Player; lobby: Lobby }) => void;
-  player_left: (data: { playerId: string; playerName?: string }) => void;
+  // Phase 45-03: player_left, score_submitted, scores_revealed, boss_defeated,
+  // game_over, modifier_updated, voting_timeout, player_disconnected,
+  // player_state_updated, player_attacked removed — superseded by fine-grained
+  // session:* / combat:* / estimation:* events.
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
-  score_submitted: (data: { playerId: string; team: TeamType }) => void;
-  scores_revealed: (data: {
-    teamScores: TeamScores;
-    teamConsensus: TeamConsensus;
-  }) => void;
   boss_attacked: (data: {
     playerId: string;
     damage: number;
     bossHealth: number;
   }) => void;
-  boss_defeated: (data: { lobby: Lobby }) => void;
   quest_abandoned: (data: { lobby: Lobby }) => void;
-  game_over: (data: { lobby: Lobby }) => void;
   boss_healed: (data: { bossHealth: number; healAmount: number }) => void;
-  modifier_updated: (data: { modifier: number }) => void;
   game_error: (data: { message: string; code?: string; tiedValues?: (number | "?")[] }) => void;
-  voting_timeout: (data: { submittedCount: number; totalCount: number; message: string }) => void;
-  player_disconnected: (data: { playerId: string }) => void;
   host_transferred: (data: { oldHostId: string; newHostId: string; newHostName: string; reason: string }) => void;
   timer_updated: (data: { timerState: TimerState | null }) => void;
   youtube_play_synced: (data: { videoId: string; url: string }) => void;
   youtube_stop_synced: () => void;
   players_pos: (data: { positions: Record<string, Position> }) => void;
-  player_state_updated: (data: {
-    playerId: string;
-    combatState: PlayerCombatState;
-  }) => void;
-  player_attacked: (data: {
-    attackerId: string;
-    targetId: string;
-    damage: number;
-    targetHealth: number;
-  }) => void;
   party_healed: (data: {
     healerId: string;
     healedPlayers: Array<{ playerId: string; newHealth: number }>;
@@ -428,7 +411,9 @@ export interface ServerToClientEvents {
     projectileId: string;
   }) => void;
   // Reconnection events
-  player_reconnected: (data: { playerId: string; playerName: string }) => void;
+  // Phase 45-03: player_reconnected removed — superseded by lobby_sync to the
+  // reconnecting client. Other peers receive no fine-grained reconnection
+  // signal today (no toast UX consumed this).
   lobby_sync: (data: LobbySync) => void;
   reconnect_response: (data: ReconnectResponse) => void;
   connection_lost: () => void;

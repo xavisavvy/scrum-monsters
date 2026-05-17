@@ -159,20 +159,17 @@ describe('ClientEventEmitter', () => {
       expect(emittedEvents[0].data.vote).toBeUndefined();
     });
 
-    it('emits discussion_started without vote values (placeholder)', () => {
+    it('does NOT bridge estimation:discussion_started to the wire (Phase 45-03)', () => {
+      // The internal event is still emitted from EstimationManager for
+      // cross-domain coordination (CombatManager listens), but the wire
+      // bridge was removed because no client handler existed and no schema
+      // declaration ever covered it.
       eventBus.emit('estimation:discussion_started', {
         lobbyId: 'TEST-LOBBY',
         team: 'developers',
       });
 
-      expect(emittedEvents).toHaveLength(1);
-      expect(emittedEvents[0]).toMatchObject({
-        room: 'TEST-LOBBY',
-        event: 'estimation:discussion_started',
-        data: {
-          team: 'developers',
-        },
-      });
+      expect(emittedEvents).toHaveLength(0);
     });
   });
 
