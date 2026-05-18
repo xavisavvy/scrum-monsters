@@ -237,11 +237,11 @@ Plans:
 **Plans**: 5 plans (overview in [45-CONTEXT.md](phases/45-socket-schema-drift-reconciliation/45-CONTEXT.md); drift inventory in [45-RESEARCH.md](phases/45-socket-schema-drift-reconciliation/45-RESEARCH.md); H5 verdicts in [45-H5-TRIAGE.md](phases/45-socket-schema-drift-reconciliation/45-H5-TRIAGE.md))
 
 Plans (wave 1 = 45-01/02/03 parallel-safe; wave 2 = 45-04 after 45-03; wave 3 = 45-05 last):
-- [ ] 45-01-PLAN.md — Critical handler/emit hot-fixes (C1 boss_healed, C2/C3 timer state, C5 revive HP)
-- [ ] 45-02-PLAN.md — Rewrite `boss_ring_attack` schema to match emit + handler reality (C4)
-- [ ] 45-03-PLAN.md — Delete confirmed-dead wire traffic (H1 as-any family, H2/H3/H9, 11 H5 SAFE_TO_DELETE events)
-- [ ] 45-04-PLAN.md — Restore broken features (revival UX with new combat:revival_progress, YouTube sync handlers, combat:player_healed + floating-heal popup)
-- [ ] 45-05-PLAN.md — Type the socket, remove the ESLint override, dedupe clientEvents.ts, sweep all Low items, address C6
+- [x] 45-01-PLAN.md — Critical handler/emit hot-fixes (C1 boss_healed, C2/C3 timer state, C5 revive HP) — completed 2026-05-17 (d48195d)
+- [x] 45-02-PLAN.md — Rewrite `boss_ring_attack` schema to match emit + handler reality (C4) — completed 2026-05-17 (0781236)
+- [x] 45-03-PLAN.md — Delete confirmed-dead wire traffic (H1 as-any family, H2/H3/H9, 11 H5 SAFE_TO_DELETE events) — completed 2026-05-17 (6cf8008)
+- [x] 45-04-PLAN.md — Restore broken features (revival UX with new combat:revival_progress, YouTube sync handlers, combat:player_healed + floating-heal popup) — completed 2026-05-17 (2d76510)
+- [x] 45-05-PLAN.md — Type the socket, remove the ESLint override, dedupe clientEvents.ts, sweep all Low items, address C6 — completed 2026-05-18 (feb94b1 + 4b1f483 + 0240117)
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
