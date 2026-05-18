@@ -160,3 +160,225 @@ describe('Phase 45-01 handler regression coverage', () => {
     });
   });
 });
+
+describe('Phase 45-04 broken-feature restoration handler coverage', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({
+      currentLobby: null,
+      currentBoss: null,
+      revivalSessions: {},
+      pendingDamageEvents: [],
+    });
+  });
+
+  describe('Revival UX (combat:revival_started / _progress / _cancelled)', () => {
+    it('combat:revival_started inserts a session keyed by targetId with percent 0', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('combat:revival_started')!({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        durationMs: 3000,
+        seq: 1,
+        timestamp: 0,
+      });
+
+      const sessions = useGameState.getState().revivalSessions;
+      expect(sessions['warrior-1']).toMatchObject({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        percent: 0,
+        durationMs: 3000,
+      });
+    });
+
+    it('combat:revival_progress updates percent on an existing session', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('combat:revival_started')!({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        durationMs: 3000,
+        seq: 1,
+        timestamp: 0,
+      });
+      handlers.get('combat:revival_progress')!({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        percent: 50,
+        remainingMs: 1500,
+        seq: 2,
+        timestamp: 0,
+      });
+
+      expect(useGameState.getState().revivalSessions['warrior-1'].percent).toBe(50);
+    });
+
+    it('combat:revival_progress is a no-op if no session exists for the targetId', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('combat:revival_progress')!({
+        reviverId: 'cleric-1',
+        targetId: 'ghost',
+        percent: 50,
+        remainingMs: 1500,
+        seq: 1,
+        timestamp: 0,
+      });
+
+      expect(useGameState.getState().revivalSessions).toEqual({});
+    });
+
+    it('combat:revival_cancelled removes the session', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('combat:revival_started')!({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        durationMs: 3000,
+        seq: 1,
+        timestamp: 0,
+      });
+      handlers.get('combat:revival_cancelled')!({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        reason: 'cancelled_by_reviver',
+        seq: 2,
+        timestamp: 0,
+      });
+
+      expect(useGameState.getState().revivalSessions['warrior-1']).toBeUndefined();
+    });
+
+    it('combat:player_revived also clears any in-flight revival session', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      const lobby = seedLobby(seedBoss());
+      useGameState.setState({
+        currentLobby: { ...lobby, playerCombatStates: { 'warrior-1': { hp: 0, maxHp: 100, isDowned: true } } } as unknown as Lobby,
+      });
+
+      handlers.get('combat:revival_started')!({
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        durationMs: 3000,
+        seq: 1,
+        timestamp: 0,
+      });
+      handlers.get('combat:player_revived')!({
+        playerId: 'warrior-1',
+        reviverId: 'cleric-1',
+        newHp: 50,
+        seq: 2,
+        timestamp: 0,
+      });
+
+      expect(useGameState.getState().revivalSessions['warrior-1']).toBeUndefined();
+    });
+  });
+
+  describe('combat:player_healed (floating-heal popup)', () => {
+    it('writes new hp and pushes a heal-type entry into pendingDamageEvents', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      const lobby = seedLobby(seedBoss());
+      useGameState.setState({
+        currentLobby: { ...lobby, playerCombatStates: { 'warrior-1': { hp: 10, maxHp: 100, isDowned: false } } } as unknown as Lobby,
+      });
+
+      handlers.get('combat:player_healed')!({
+        playerId: 'warrior-1',
+        healerId: 'cleric-1',
+        healAmount: 40,
+        newHp: 50,
+        seq: 1,
+        timestamp: 0,
+      });
+
+      const state = useGameState.getState();
+      expect(state.currentLobby!.playerCombatStates['warrior-1'].hp).toBe(50);
+      expect(state.pendingDamageEvents).toHaveLength(1);
+      expect(state.pendingDamageEvents[0]).toMatchObject({
+        playerId: 'warrior-1',
+        amount: 40,
+        type: 'heal',
+      });
+    });
+
+    it('clears isDowned when heal brings hp above 0', () => {
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      const lobby = seedLobby(seedBoss());
+      useGameState.setState({
+        currentLobby: { ...lobby, playerCombatStates: { 'warrior-1': { hp: 0, maxHp: 100, isDowned: true } } } as unknown as Lobby,
+      });
+
+      handlers.get('combat:player_healed')!({
+        playerId: 'warrior-1',
+        healerId: 'cleric-1',
+        healAmount: 50,
+        newHp: 50,
+        seq: 1,
+        timestamp: 0,
+      });
+
+      expect(useGameState.getState().currentLobby!.playerCombatStates['warrior-1'].isDowned).toBe(false);
+    });
+  });
+
+  describe('YouTube sync', () => {
+    it('youtube_play_synced dispatches playYoutubeAudio with the wire videoId', async () => {
+      // Mock useAudio via dynamic import; the handler reads useAudio.getState().
+      const { useAudio } = await import('../stores/useAudio');
+      const playSpy = vi.fn();
+      const original = useAudio.getState().playYoutubeAudio;
+      useAudio.setState({ playYoutubeAudio: playSpy });
+
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('youtube_play_synced')!({ videoId: 'abc123', url: 'https://youtu.be/abc123' });
+
+      expect(playSpy).toHaveBeenCalledWith('abc123');
+      useAudio.setState({ playYoutubeAudio: original });
+    });
+
+    it('youtube_play_synced is a no-op if videoId is missing', async () => {
+      const { useAudio } = await import('../stores/useAudio');
+      const playSpy = vi.fn();
+      const original = useAudio.getState().playYoutubeAudio;
+      useAudio.setState({ playYoutubeAudio: playSpy });
+
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('youtube_play_synced')!({ url: 'https://youtu.be/abc123' });
+
+      expect(playSpy).not.toHaveBeenCalled();
+      useAudio.setState({ playYoutubeAudio: original });
+    });
+
+    it('youtube_stop_synced dispatches stopYoutubeAudio', async () => {
+      const { useAudio } = await import('../stores/useAudio');
+      const stopSpy = vi.fn();
+      const original = useAudio.getState().stopYoutubeAudio;
+      useAudio.setState({ stopYoutubeAudio: stopSpy });
+
+      const { socket, handlers } = makeMockSocket();
+      setupEventHandlers(socket);
+
+      handlers.get('youtube_stop_synced')!(undefined);
+
+      expect(stopSpy).toHaveBeenCalled();
+      useAudio.setState({ stopYoutubeAudio: original });
+    });
+  });
+});

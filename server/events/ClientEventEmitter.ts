@@ -265,11 +265,31 @@ export class ClientEventEmitter {
       });
     });
 
+    // Phase 45-04: new combat:revival_progress bridge (throttled to ~2 emits/sec by CombatManager).
+    this.eventBus.on('combat:revival_progress', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:revival_progress', {
+        reviverId: payload.reviverId,
+        targetId: payload.targetId,
+        percent: payload.percent,
+        remainingMs: payload.remainingMs,
+      });
+    });
+
     this.eventBus.on('combat:revival_cancelled', (payload) => {
       this.emitToLobby(payload.lobbyId, 'combat:revival_cancelled', {
         reviverId: payload.reviverId,
         targetId: payload.targetId,
         reason: payload.reason,
+      });
+    });
+
+    // Phase 45-04: bridge combat:player_healed for the floating-heal popup UX.
+    this.eventBus.on('combat:player_healed', (payload) => {
+      this.emitToLobby(payload.lobbyId, 'combat:player_healed', {
+        playerId: payload.playerId,
+        healerId: payload.healerId,
+        healAmount: payload.healAmount,
+        newHp: payload.newHealth,
       });
     });
 
