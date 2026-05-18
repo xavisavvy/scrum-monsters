@@ -102,7 +102,10 @@ class GameStateManager {
     return generateSecureLobbyCode();
   }
 
-  private processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
+  // Phase 45-05B: promoted from private — the websocket.ts watchdog drives
+  // the eventBus emit off the completion list, so it needs to call this. The
+  // internal 100ms revivalWatchdog (constructor) still discards the result.
+  public processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
     const now = Date.now();
     const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
     
@@ -664,6 +667,15 @@ class GameStateManager {
 
   getLobby(lobbyId: string): Lobby | null {
     return this.lobbies.get(lobbyId) || null;
+  }
+
+  /**
+   * Phase 45-05B: typed read-only view of in-progress revival sessions for
+   * the websocket.ts watchdog's throttled combat:revival_progress emit.
+   * Replaces a `(gameState as any).revivalSessions` cast.
+   */
+  public getActiveRevivalSessions(): Iterable<{ lobbyId: string; targetId: string; reviverId: string; startedAt: number }> {
+    return this.revivalSessions.values();
   }
 
   getLobbyByPlayerId(playerId: string): Lobby | null {

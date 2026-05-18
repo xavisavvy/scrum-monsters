@@ -7,7 +7,7 @@ import { Server as SocketIOServer, Socket } from 'socket.io';
 import { Server as HTTPServer } from 'http';
 import type { RequestHandler } from 'express';
 import { randomBytes } from 'crypto';
-import { ClientToServerEvents, ServerToClientEvents, TeamType } from '../shared/gameEvents.js';
+import { ClientToServerEvents, ServerToClientEvents } from '../shared/gameEvents.js';
 import { gameState, setGameStateIO } from './gameState.js';
 import { socketLogger, gameLogger, authLogger } from './logger.js';
 import {
@@ -23,24 +23,15 @@ import {
   initializeClientEventEmitter,
   getClientEventEmitter,
   LobbyNotFoundError,
-  PlayerNotFoundError,
   PlayerNotHostError,
   SessionError,
-  EstimationNotActiveError,
-  VoteNotEligibleError,
-  InvalidVoteValueError,
-  NotInDiscussionPhaseError,
-  ForceEstimateTieError,
-  InvalidForcedValueError,
-  CombatNotActiveError,
-  RevivalNotAllowedError,
-  NotHealerClassError,
 } from './domains/index.js';
 import {
   validatePayload,
   ToggleReadyPayloadSchema,
 } from '../shared/socket-schemas.js';
 import { updateWebsocketMetrics } from "./metrics.js";
+import { ITEM_DEFINITIONS, type ItemType } from '../shared/itemTypes.js';
 
 type InterServerEvents = {};
 type SocketData = {
@@ -108,18 +99,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   /**
    * Phase 42-02b: Helper to emit a fine-grained client event with the
-   * canonical {seq, timestamp} envelope. Mirrors the pattern at line ~505
-   * (avatar_selected) and centralizes sequencer/buffer access for the
-   * 9 lobby_updated migration sites in Task 1b that bypass eventBus.
+   * canonical {seq, timestamp} envelope. Phase 45-05B: delegates to
+   * ClientEventEmitter.emitFineGrained so the sequencer stays encapsulated.
    */
-  const emitFineGrained = (lobbyId: string, event: string, data: Record<string, any>): void => {
-    const emitter = getClientEventEmitter();
-    if (!emitter) return;
-    const seq = (emitter as any).sequencer.nextSeq(lobbyId);
-    const timestamp = Date.now();
-    const payload = { ...data, seq, timestamp };
-    (emitter as any).sequencer.bufferEvent(lobbyId, seq, event, payload);
-    io.to(lobbyId).emit(event as any, payload);
+  const emitFineGrained = (lobbyId: string, event: string, data: Record<string, unknown>): void => {
+    getClientEventEmitter()?.emitFineGrained(lobbyId, event, data);
   };
 
   // ==========================================================================
@@ -222,7 +206,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       totalConnections,
       activeConnections,
       hostConnections: hostConnections.length,
-      activeLobbies: (sessionManager as any).lobbies?.size || 0,
+      activeLobbies: sessionManager.getLobbyCount(),
       disconnectReasons: disconnectReasonsObj
     }, 'Connection statistics');
   }, 5 * 60 * 1000).unref();
@@ -235,12 +219,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   const REVIVAL_PROGRESS_EMIT_INTERVAL_MS = 500;
   const REVIVAL_CHANNEL_DURATION_MS = 3000; // matches gameState.processRevivalSessions completion threshold
   const revivalWatchdogInterval = setInterval(() => {
-    const result = (gameState as any).processRevivalSessions();
+    const result = gameState.processRevivalSessions();
     for (const revival of result) {
       // Completion: thread newHp from gameState's playerCombatStates so the
       // new combat:player_revived handler writes the right hp client-side
       // (also satisfies Phase 45-01 C5 fix for the gameState path).
-      const lobby = (gameState as any).lobbies.get(revival.lobbyId);
+      const lobby = gameState.getLobby(revival.lobbyId);
       const newHp = lobby?.playerCombatStates?.[revival.targetId]?.hp ?? 0;
       eventBus.emit('combat:player_revived', {
         lobbyId: revival.lobbyId,
@@ -251,10 +235,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       lastRevivalProgressBucket.delete(`${revival.lobbyId}:${revival.targetId}`);
     }
     // Emit throttled progress for in-flight gameState revival sessions.
-    const sessions: Map<string, { lobbyId: string; targetId: string; reviverId: string; startedAt: number }> =
-      (gameState as any).revivalSessions;
     const now = Date.now();
-    for (const session of sessions.values()) {
+    for (const session of gameState.getActiveRevivalSessions()) {
       const elapsed = now - session.startedAt;
       if (elapsed >= REVIVAL_CHANNEL_DURATION_MS) continue;
       const key = `${session.lobbyId}:${session.targetId}`;
@@ -329,7 +311,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // Extract authenticated user from session (if available)
     // The session is attached via express-session middleware sharing
     // Auth0 bridge middleware writes userId to req.session.userId
-    const req = socket.request as any;
+    const req = socket.request as { session?: { userId?: number } };
     if (req.session?.userId) {
       const userId = req.session.userId;
       socket.data.userId = userId;
@@ -568,18 +550,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       // `lobby.gamePhase !== 'lobby'`).
       player.hasSelectedAvatar = true;
 
-      // Emit legacy event for App.tsx state transition
-      io.to(lobby.id).emit('avatar_selected', { playerId, avatar: avatarClass });
-
-      // Emit fine-grained event for incremental state updates
-      const emitter = getClientEventEmitter();
-      if (emitter) {
-        const seq = (emitter as any).sequencer.nextSeq(lobby.id);
-        const timestamp = Date.now();
-        const payload = { playerId, avatar: avatarClass, seq, timestamp };
-        (emitter as any).sequencer.bufferEvent(lobby.id, seq, 'session:avatar_selected', payload);
-        io.to(lobby.id).emit('session:avatar_selected', payload);
-      }
+      // Phase 45-05B L6: legacy `avatar_selected` emit removed (GamePage
+      // handler also removed). All viewers consume session:avatar_selected
+      // via eventHandlers.ts — flips hasSelectedAvatar for the own player AND
+      // remote peers, which is what the lobby roster needs.
+      emitFineGrained(lobby.id, 'session:avatar_selected', { playerId, avatar: avatarClass });
     });
 
     socket.on('assign_team', ({ playerId: targetPlayerId, team }) => {
@@ -1774,321 +1749,15 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // ============================================================================
     // ESTIMATION DOMAIN HANDLERS (using EstimationManager)
     // ============================================================================
-
-    // Start estimation for a ticket
-    socket.on('start_estimation' as any, ({ ticketId }: { ticketId: string }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Verify player is host
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
-
-        // Start estimation
-        estimationManager.startEstimation(lobbyId, ticketId);
-
-        // Add all current non-spectator players as eligible voters
-        for (const player of lobby.players) {
-          if (player.team !== 'spectators') {
-            estimationManager.addEligibleVoter(lobbyId, player.id, player.team);
-          }
-        }
-
-        // Phase 45-03: legacy `estimation_started as any` emit removed
-        // (no client listener, no schema decl). The first vote of the
-        // estimation will fire estimation:vote_cast which surfaces the
-        // active estimation to peers.
-        gameLogger.info({ ticketId, lobbyId }, 'Estimation started');
-      } catch (error) {
-        if (error instanceof PlayerNotHostError) {
-          socket.emit('game_error', { message: 'Only the host can start estimation' });
-        } else if (error instanceof LobbyNotFoundError) {
-          socket.emit('game_error', { message: 'Lobby not found' });
-        } else {
-          socketLogger.error({ err: error }, 'Start estimation error');
-          socket.emit('game_error', { message: 'Failed to start estimation' });
-        }
-      }
-    });
-
-    // Cast vote during estimation
-    socket.on('cast_vote' as any, ({ vote }: { vote: number | '?' }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Get player's team from session
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-
-        const player = lobby.players.find(p => p.id === playerId);
-        if (!player) throw new PlayerNotFoundError(playerId);
-
-        // Cast vote through EstimationManager
-        estimationManager.castVote(lobbyId, playerId, player.team, vote);
-
-        // Record activity for host transfer
-        sessionManager.recordPlayerActivity(playerId);
-
-        // Phase 45-03: legacy `vote_state_updated as any` emit removed
-        // (no client listener). EstimationManager.castVote fires
-        // estimation:vote_cast (bridged + handled) on the same call path.
-        gameLogger.debug({ playerId, vote, team: player.team }, 'Player voted');
-      } catch (error) {
-        if (error instanceof EstimationNotActiveError) {
-          socket.emit('game_error', { message: 'No active estimation' });
-        } else if (error instanceof VoteNotEligibleError) {
-          socket.emit('game_error', { message: error.message });
-        } else if (error instanceof InvalidVoteValueError) {
-          socket.emit('game_error', { message: error.message });
-        } else if (error instanceof LobbyNotFoundError) {
-          socket.emit('game_error', { message: 'Lobby not found' });
-        } else {
-          socketLogger.error({ err: error }, 'Vote error');
-          socket.emit('game_error', { message: 'Failed to submit vote' });
-        }
-      }
-    });
-
-    // Change vote during discussion phase
-    socket.on('change_vote' as any, ({ newVote }: { newVote: number | '?' }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Get player's team
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-
-        const player = lobby.players.find(p => p.id === playerId);
-        if (!player) throw new PlayerNotFoundError(playerId);
-
-        // Change vote through EstimationManager
-        estimationManager.changeVoteDuringDiscussion(lobbyId, playerId, player.team, newVote);
-
-        // Record activity
-        sessionManager.recordPlayerActivity(playerId);
-
-        // Phase 45-03: legacy `vote_state_updated as any` emit removed
-        // (no client listener). EstimationManager.changeVoteDuringDiscussion
-        // fires estimation:vote_changed; per-vote discussion updates are
-        // also covered by emitFineGrained('estimation:discussion_vote_updated')
-        // elsewhere in the discussion flow.
-        gameLogger.debug({ playerId, newVote }, 'Player changed vote during discussion');
-      } catch (error) {
-        if (error instanceof NotInDiscussionPhaseError) {
-          socket.emit('game_error', { message: 'Can only change vote during discussion phase' });
-        } else if (error instanceof EstimationNotActiveError) {
-          socket.emit('game_error', { message: 'No active estimation' });
-        } else if (error instanceof VoteNotEligibleError) {
-          socket.emit('game_error', { message: error.message });
-        } else if (error instanceof InvalidVoteValueError) {
-          socket.emit('game_error', { message: error.message });
-        } else {
-          socketLogger.error({ err: error }, 'Change vote error');
-          socket.emit('game_error', { message: 'Failed to change vote' });
-        }
-      }
-    });
-
-    // Pause voting timer (host control)
-    socket.on('pause_voting_timer' as any, ({ team }: { team: TeamType }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Verify player is host
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
-
-        estimationManager.pauseTimer(lobbyId, team, playerId);
-
-        // Phase 45-03: legacy `timer_paused as any` emit removed.
-        // EstimationManager.pauseTimer emits estimation:timer_paused
-        // (bridged in ClientEventEmitter, handled in eventHandlers.ts:379).
-        gameLogger.info({ team }, 'Host paused voting timer');
-      } catch (error) {
-        if (error instanceof PlayerNotHostError) {
-          socket.emit('game_error', { message: 'Only the host can pause the timer' });
-        } else {
-          socketLogger.error({ err: error }, 'Pause timer error');
-          socket.emit('game_error', { message: 'Failed to pause timer' });
-        }
-      }
-    });
-
-    // Resume voting timer (host control)
-    socket.on('resume_voting_timer' as any, ({ team }: { team: TeamType }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Verify player is host
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
-
-        estimationManager.resumeTimer(lobbyId, team, playerId);
-
-        // Phase 45-03: legacy `timer_resumed as any` emit removed.
-        // EstimationManager.resumeTimer emits estimation:timer_resumed
-        // (bridged in ClientEventEmitter, handled in eventHandlers.ts:398).
-        gameLogger.info({ team }, 'Host resumed voting timer');
-      } catch (error) {
-        if (error instanceof PlayerNotHostError) {
-          socket.emit('game_error', { message: 'Only the host can resume the timer' });
-        } else {
-          socketLogger.error({ err: error }, 'Resume timer error');
-          socket.emit('game_error', { message: 'Failed to resume timer' });
-        }
-      }
-    });
-
-    // Extend voting timer (host control)
-    socket.on('extend_voting_timer' as any, ({ team, additionalSeconds }: { team: TeamType; additionalSeconds: number }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Verify player is host
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
-
-        const additionalMs = additionalSeconds * 1000;
-        estimationManager.extendTimer(lobbyId, team, additionalMs, playerId);
-
-        // Phase 45-03: legacy `timer_extended as any` emit removed.
-        // EstimationManager.extendTimer emits estimation:timer_extended
-        // (currently NOT bridged in ClientEventEmitter and NOT handled
-        // client-side — both legacy and fine-grained paths were already
-        // silent; flagged for Phase 45-05 to wire the bridge + handler
-        // if timer-extension UX is desired).
-        gameLogger.info({ team, additionalSeconds }, 'Host extended voting timer');
-      } catch (error) {
-        if (error instanceof PlayerNotHostError) {
-          socket.emit('game_error', { message: 'Only the host can extend the timer' });
-        } else {
-          socketLogger.error({ err: error }, 'Extend timer error');
-          socket.emit('game_error', { message: 'Failed to extend timer' });
-        }
-      }
-    });
-
-    // Force estimate (host control during ties)
-    socket.on('force_estimate' as any, ({ team, forcedValue }: { team: TeamType; forcedValue?: number }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Verify player is host
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
-
-        const result = estimationManager.forceEstimate(lobbyId, team, playerId, forcedValue);
-
-        // Phase 45-03: legacy `estimate_forced as any` emit removed.
-        // EstimationManager.forceEstimate emits estimation:estimate_forced
-        // (bridged in ClientEventEmitter; currently NOT handled client-side —
-        // flagged for Phase 45-05 to wire a handler if forced-snap UX is
-        // desired beyond the resulting reveal cascade).
-        gameLogger.info({ team, consensusValue: result.consensusValue }, 'Host forced estimate');
-      } catch (error) {
-        if (error instanceof PlayerNotHostError) {
-          socket.emit('game_error', { message: 'Only the host can force an estimate' });
-        } else if (error instanceof ForceEstimateTieError) {
-          const err = error as ForceEstimateTieError;
-          socket.emit('game_error', {
-            message: `Vote is tied between [${err.tiedValues.join(', ')}]. Please choose one.`,
-            tiedValues: err.tiedValues
-          });
-        } else if (error instanceof InvalidForcedValueError) {
-          const err = error as InvalidForcedValueError;
-          socket.emit('game_error', {
-            message: `Invalid forced value. Must choose from: [${err.validValues.join(', ')}]`
-          });
-        } else if (error instanceof EstimationNotActiveError) {
-          socket.emit('game_error', { message: 'No active estimation' });
-        } else {
-          socketLogger.error({ err: error }, 'Force estimate error');
-          socket.emit('game_error', { message: 'Failed to force estimate' });
-        }
-      }
-    });
-
-    // Enter discussion phase for a team
-    socket.on('enter_discussion' as any, ({ team }: { team: TeamType }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-
-        if (!playerId || !lobbyId) {
-          socket.emit('game_error', { message: 'Not in a lobby' });
-          return;
-        }
-
-        // Verify player is host
-        const lobby = sessionManager.getLobby(lobbyId);
-        if (!lobby) throw new LobbyNotFoundError(lobbyId);
-        if (lobby.hostId !== playerId) throw new PlayerNotHostError(playerId);
-
-        estimationManager.enterDiscussionPhase(lobbyId, team);
-
-        // Phase 45-03: legacy `vote_state_updated as any` emit removed.
-        // EstimationManager.enterDiscussionPhase emits estimation:discussion_started
-        // (bridged in ClientEventEmitter; currently NOT handled client-side —
-        // flagged for Phase 45-05).
-        gameLogger.info({ team }, 'Team entered discussion phase');
-      } catch (error) {
-        if (error instanceof PlayerNotHostError) {
-          socket.emit('game_error', { message: 'Only the host can start discussion' });
-        } else if (error instanceof EstimationNotActiveError) {
-          socket.emit('game_error', { message: 'No active estimation' });
-        } else {
-          socketLogger.error({ err: error }, 'Enter discussion error');
-          socket.emit('game_error', { message: 'Failed to enter discussion phase' });
-        }
-      }
-    });
+    //
+    // Phase 45-05B: removed 8 dead handlers (start_estimation, cast_vote,
+    // change_vote, pause_voting_timer, resume_voting_timer, extend_voting_timer,
+    // force_estimate, enter_discussion). Each was registered with `as any`
+    // because the event was never declared in ClientToServerEvents — and no
+    // client ever emitted them. They date back to Phase 03 design; the live
+    // estimation flow runs through submit_score / update_discussion_vote /
+    // finalize_estimate plus host-side phase transitions driven by the
+    // EstimationManager event bus.
 
     // Finalize estimate (host only during discussion)
     socket.on('finalize_estimate', (data: { estimate: number }) => {
@@ -2123,48 +1792,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // ============================================================================
     // COMBAT DOMAIN HANDLERS (using CombatManager)
     // ============================================================================
-
-    // Start combat (host initiates combat for a ticket)
-    socket.on('start_combat' as any, (data: { lobbyId: string; ticketIndex?: number }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
-
-      const lobby = sessionManager.getLobby(data.lobbyId);
-      if (!lobby) {
-        socket.emit('game_error', { code: 'LOBBY_NOT_FOUND', message: 'Lobby not found' });
-        return;
-      }
-
-      // Verify host
-      if (lobby.hostId !== playerId) {
-        socket.emit('game_error', { code: 'NOT_HOST', message: 'Only host can start combat' });
-        return;
-      }
-
-      // Initialize combat with active players
-      const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
-      combatManager.initializeCombat(data.lobbyId, players, data.ticketIndex ?? 0, lobby.boss?.sprite);
-
-      gameLogger.info({ lobbyId: data.lobbyId }, 'Combat initialized');
-    });
-
-    // Player heals teammate
-    socket.on('heal_teammate' as any, (data: { targetId: string }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-        if (!playerId || !lobbyId) return;
-
-        combatManager.playerHealTeammate(lobbyId, playerId, data.targetId);
-        gameLogger.debug({ playerId, targetId: data.targetId }, 'Player healed teammate');
-      } catch (error) {
-        if (error instanceof CombatNotActiveError || error instanceof NotHealerClassError) {
-          socket.emit('game_error', { code: (error as any).code, message: error.message });
-        } else {
-          throw error;
-        }
-      }
-    });
+    //
+    // Phase 45-05B: removed dead start_combat / heal_teammate handlers (both
+    // `as any` — never declared in ClientToServerEvents and no client emit).
+    // Combat is initialized by GameState during phase transition; healing is
+    // routed through use_ability / heal_party.
 
     // Player uses class ability
     socket.on('use_ability', ({ abilityId }: { abilityId: string }) => {
@@ -2211,7 +1843,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         return;
       }
 
-      const result = itemManager.useItem(lobby.id, playerId, itemType as any);
+      if (!(itemType in ITEM_DEFINITIONS)) {
+        socket.emit('game_error', { message: `Unknown item type: ${itemType}` });
+        return;
+      }
+      const result = itemManager.useItem(lobby.id, playerId, itemType as ItemType);
       if (!result.success) {
         socket.emit('game_error', { message: result.error || 'Item use failed' });
         return;
@@ -2220,36 +1856,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       gameLogger.debug({ playerId, itemType }, 'Player used item');
     });
 
-    // Start revival
-    socket.on('start_revival' as any, (data: { targetId: string }) => {
-      try {
-        const playerId = socket.data.playerId;
-        const lobbyId = socket.data.lobbyId;
-        if (!playerId || !lobbyId) return;
-
-        const started = combatManager.startRevival(lobbyId, playerId, data.targetId);
-        if (!started) {
-          socket.emit('game_error', { code: 'REVIVAL_CONDITIONS_NOT_MET', message: 'Cannot start revival' });
-        } else {
-          gameLogger.debug({ playerId, targetId: data.targetId }, 'Player started reviving');
-        }
-      } catch (error) {
-        if (error instanceof RevivalNotAllowedError) {
-          socket.emit('game_error', { code: (error as any).code, message: error.message });
-        } else {
-          throw error;
-        }
-      }
-    });
-
-    // Cancel revival
-    socket.on('cancel_revival' as any, () => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
-
-      combatManager.cancelRevival(playerId, 'player_cancelled');
-      gameLogger.debug({ playerId }, 'Player cancelled revival');
-    });
+    // Phase 45-05B: removed dead start_revival / cancel_revival handlers (both
+    // `as any`). Live revival flow uses revive_start / revive_cancel /
+    // revive_tick which are declared in ClientToServerEvents and bound earlier
+    // in this file.
 
     // Attack minion (player targeting spectator minion)
     socket.on('attack_minion', (data: { minionPlayerId: string }) => {
