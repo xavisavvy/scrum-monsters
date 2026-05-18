@@ -323,6 +323,8 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     });
 
     // Progression event handlers
+    // Phase 45-05B L12: `timestamp` is guaranteed by ClientEventEmitter; the
+    // `|| Date.now()` fallbacks were defensive against a shape that never ships.
     socket.on('progression:xp_awarded', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (data.playerId === currentPlayer?.id) {
@@ -331,7 +333,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
           amount: data.amount,
           source: data.source,
           newTotal: data.newTotal,
-          timestamp: data.timestamp || Date.now(),
+          timestamp: data.timestamp,
         });
       }
     });
@@ -343,7 +345,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
           playerId: data.playerId,
           oldLevel: data.oldLevel,
           newLevel: data.newLevel,
-          timestamp: data.timestamp || Date.now(),
+          timestamp: data.timestamp,
         });
       }
     });
@@ -355,7 +357,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
           playerId: data.playerId,
           totalXP: data.totalXP,
           currentLevel: data.currentLevel,
-          timestamp: data.timestamp || Date.now(),
+          timestamp: data.timestamp,
         });
       }
     });

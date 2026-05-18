@@ -351,7 +351,8 @@ export interface ServerToClientEvents {
   // Phase 42-02b: `lobby_updated` retired. Server emits scoped fine-grained
   // events (session:*, combat:*, estimation:*) for every state mutation;
   // tsc --noEmit will catch any forgotten emit. See 42-02b-SUMMARY.md.
-  avatar_selected: (data: { playerId: string; avatar: AvatarClass }) => void;
+  // Phase 45-05B L6: legacy `avatar_selected` removed; replaced by
+  // session:avatar_selected (declared below in the fine-grained block).
   lobby_player_pos: (data: {
     playerId: string;
     x: number;
@@ -359,7 +360,9 @@ export interface ServerToClientEvents {
     direction?: string;
   }) => void;
   lobby_player_jump: (data: { playerId: string; isJumping: boolean }) => void;
-  lobby_player_charge: (data: { playerId: string; isCharging: boolean; chargePower: number }) => void;
+  // Phase 45-05B L7: chargePower optional on the broadcast to match the C→S
+  // optional shape (player_charge). Server defaults to 0 in the emit.
+  lobby_player_charge: (data: { playerId: string; isCharging: boolean; chargePower?: number }) => void;
   lobby_emote: (data: {
     playerId: string;
     message: string;
@@ -378,13 +381,9 @@ export interface ServerToClientEvents {
   // player_state_updated, player_attacked removed — superseded by fine-grained
   // session:* / combat:* / estimation:* events.
   battle_started: (data: { lobby: Lobby; boss: Boss }) => void;
-  boss_attacked: (data: {
-    playerId: string;
-    damage: number;
-    bossHealth: number;
-  }) => void;
+  // Phase 45-05B L4/L5: legacy boss_attacked / boss_healed removed; superseded
+  // by combat:boss_damaged / combat:boss_healed (fine-grained block below).
   quest_abandoned: (data: { lobby: Lobby }) => void;
-  boss_healed: (data: { bossHealth: number; healAmount: number }) => void;
   game_error: (data: { message: string; code?: string; tiedValues?: (number | "?")[] }) => void;
   host_transferred: (data: { oldHostId: string; newHostId: string; newHostName: string; reason: string }) => void;
   timer_updated: (data: { timerState: TimerState | null }) => void;

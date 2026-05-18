@@ -208,31 +208,9 @@ export default function GamePage() {
       setBoss(boss);
     });
 
-    socket.on('boss_attacked', ({ playerId: _playerId, damage: _damage, bossHealth }) => {
-      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
-      if (currentBoss) {
-        setBoss({ ...currentBoss, currentHealth: bossHealth });
-      }
-      if (currentLobby?.boss) {
-        setLobby({
-          ...currentLobby,
-          boss: { ...currentLobby.boss, currentHealth: bossHealth },
-        });
-      }
-    });
-
-    socket.on('boss_healed', ({ bossHealth }: { bossHealth: number }) => {
-      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
-      if (currentBoss) {
-        setBoss({ ...currentBoss, currentHealth: bossHealth });
-      }
-      if (currentLobby?.boss) {
-        setLobby({
-          ...currentLobby,
-          boss: { ...currentLobby.boss, currentHealth: bossHealth },
-        });
-      }
-    });
+    // Phase 45-05B L4/L5: legacy boss_attacked / boss_healed handlers removed;
+    // combat:boss_damaged + combat:boss_healed in eventHandlers.ts now mirror
+    // health to both currentBoss and currentLobby.boss.
 
     socket.on('quest_abandoned', ({ lobby }) => {
       setLobby(lobby);
@@ -273,8 +251,6 @@ export default function GamePage() {
       // Phase 42-02b: lobby_updated handler removed; no listener to detach.
       // Phase 45-05B: avatar_selected handler removed (see session:avatar_selected).
       socket.off('battle_started');
-      socket.off('boss_attacked');
-      socket.off('boss_healed');
       socket.off('quest_abandoned');
       socket.off('game_error');
       socket.off('host_transferred');
