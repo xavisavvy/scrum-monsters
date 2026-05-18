@@ -320,7 +320,7 @@ describe('useEventSync', () => {
       handleEvent('test:event', { seq: 1 }, mockSocket);
       handleEvent('test:event', { seq: 2 }, mockSocket);
 
-      handleFullStateRefresh({}, 10);
+      handleFullStateRefresh({} as never, 10);
 
       expect(useEventSync.getState().lastSeq).toBe(10);
     });
@@ -334,7 +334,7 @@ describe('useEventSync', () => {
 
       expect(useEventSync.getState().pendingEvents.size).toBeGreaterThan(0);
 
-      handleFullStateRefresh({}, 10);
+      handleFullStateRefresh({} as never, 10);
 
       expect(useEventSync.getState().pendingEvents.size).toBe(0);
     });
@@ -348,7 +348,7 @@ describe('useEventSync', () => {
 
       expect(useEventSync.getState().isRecovering).toBe(true);
 
-      handleFullStateRefresh({}, 10);
+      handleFullStateRefresh({} as never, 10);
 
       expect(useEventSync.getState().isRecovering).toBe(false);
     });

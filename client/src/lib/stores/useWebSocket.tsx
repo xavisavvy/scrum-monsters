@@ -39,7 +39,7 @@ interface WebSocketState {
   // Core connection methods
   connect: () => void;
   disconnect: () => void;
-  emit: (event: string, data?: any) => void;
+  emit: (event: string, data?: unknown) => void;
 
   // Reconnection methods
   attemptReconnection: () => void;
@@ -149,7 +149,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
         clearInterval(heartbeatInterval);
       }
       const newHeartbeat = setInterval(() => {
-        socket.emit('client_heartbeat' as any);
+        socket.emit('client_heartbeat');
       }, 25000); // Every 25 seconds - office networks often have 30-60s proxy timeouts
       set({ heartbeatInterval: newHeartbeat });
 
@@ -323,7 +323,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     });
 
     // Progression event handlers
-    socket.on('progression:xp_awarded', (data: any) => {
+    socket.on('progression:xp_awarded', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (data.playerId === currentPlayer?.id) {
         useProgression.getState().handleXPAwarded({
@@ -336,7 +336,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       }
     });
 
-    socket.on('progression:level_up', (data: any) => {
+    socket.on('progression:level_up', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (data.playerId === currentPlayer?.id) {
         useProgression.getState().handleLevelUp({
@@ -348,7 +348,7 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
       }
     });
 
-    socket.on('progression:sync', (data: any) => {
+    socket.on('progression:sync', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (data.playerId === currentPlayer?.id) {
         useProgression.getState().handleSync({
@@ -361,21 +361,21 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
     });
 
     // Class mastery event handlers
-    socket.on('class_mastery:xp_awarded', (data: any) => {
+    socket.on('class_mastery:xp_awarded', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (currentPlayer && data.playerId === currentPlayer.id) {
         useClassMastery.getState().handleXPAwarded(data);
       }
     });
 
-    socket.on('class_mastery:tier_up', (data: any) => {
+    socket.on('class_mastery:tier_up', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (currentPlayer && data.playerId === currentPlayer.id) {
         useClassMastery.getState().handleTierUp(data);
       }
     });
 
-    socket.on('class_mastery:sync', (data: any) => {
+    socket.on('class_mastery:sync', (data) => {
       const { currentPlayer } = useGameState.getState();
       if (currentPlayer && data.playerId === currentPlayer.id) {
         useClassMastery.getState().handleSync(data);
@@ -519,10 +519,16 @@ export const useWebSocket = create<WebSocketState>((set, get) => ({
   emit: (event, data?) => {
     const { socket } = get();
     if (socket && socket.connected) {
+      // Generic emit escape hatch — call sites bypass the typed event map.
+      // Per-event Zod validation runs server-side. Cast narrows to
+      // keyof ClientToServerEvents to satisfy Socket.IO's generic signature.
+      type EventName = keyof ClientToServerEvents;
       if (data !== undefined) {
-        socket.emit(event as any, data);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        socket.emit(event as EventName, data as any);
       } else {
-        socket.emit(event as any);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (socket.emit as any)(event as EventName);
       }
     } else {
       if (import.meta.env.DEV && localStorage.getItem('debug')) {

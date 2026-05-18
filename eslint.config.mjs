@@ -296,19 +296,14 @@ export default [
     },
   },
 
-  // Socket-boundary files — handlers destructure raw wire payloads where the
-  // schema in shared/gameEvents.ts and the actual server emits don't fully
-  // line up (e.g. boss_ring_attack: schema bossX/bossY vs server start{X,Y};
-  // damage events: schema newHp vs handler reads newHealth). Typing these
-  // through `Socket<ServerToClientEvents, ClientToServerEvents>` surfaces
-  // pre-existing schema/handler mismatches that need a dedicated phase to
-  // reconcile — out of scope for a lint cleanup. Disable the rule here until
-  // that work is scoped.
+  // Phase 45-05: server/websocket.ts retains the no-explicit-any override
+  // pending a typed-socket pass (33 `any` annotations in handlers; needs the
+  // io: Server<ClientToServerEvents, ServerToClientEvents> treatment). The
+  // three client-side files (eventHandlers.ts, useEventSync.ts,
+  // useWebSocket.tsx) now use Socket<ServerToClientEvents, ClientToServerEvents>
+  // and have their override removed.
   {
     files: [
-      "client/src/lib/socket/eventHandlers.ts",
-      "client/src/lib/stores/useEventSync.ts",
-      "client/src/lib/stores/useWebSocket.tsx",
       "server/websocket.ts",
     ],
     rules: {
