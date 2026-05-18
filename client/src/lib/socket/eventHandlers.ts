@@ -497,13 +497,16 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
     const processed = handleEvent('combat:boss_damaged', data, socket);
 
     if (processed) {
-      const { currentBoss, setBoss } = useGameState.getState();
+      // Phase 45-05B L4: also mirror to currentLobby.boss (the GamePage
+      // boss_attacked handler used to do this; consolidated here).
+      const { currentBoss, setBoss, currentLobby, setLobby } = useGameState.getState();
+      const newHealth = data.newHp ?? currentBoss?.currentHealth;
       if (currentBoss) {
-        const updatedBoss: Boss = {
-          ...currentBoss,
-          currentHealth: data.newHp ?? currentBoss.currentHealth
-        };
+        const updatedBoss: Boss = { ...currentBoss, currentHealth: newHealth! };
         setBoss(updatedBoss);
+      }
+      if (currentLobby?.boss && newHealth !== undefined) {
+        setLobby({ ...currentLobby, boss: { ...currentLobby.boss, currentHealth: newHealth } });
       }
     }
   });

@@ -442,14 +442,62 @@ export const FinalizeEstimatePayloadSchema = z.object({
 });
 
 // ============================================
+// Phase 45-05B L2/L8: Coverage gaps filled
+// ============================================
+
+/** Update lobby name (host only) */
+export const UpdateLobbyNamePayloadSchema = z.object({
+  name: z.string().min(1).max(100),
+});
+
+/** Heal-party ability use (paladin/cleric) */
+export const HealPartyPayloadSchema = z.object({}).strict();
+
+/** Magic charge lobby UX */
+export const PlayerChargePayloadSchema = z.object({
+  isCharging: z.boolean(),
+  chargePower: z.number().optional(),
+});
+
+/** Battle emote */
+export const BattleEmotePayloadSchema = z.object({
+  message: z.string().min(1),
+  x: z.number(),
+  y: z.number(),
+});
+
+/** Update estimation settings (host only) */
+export const UpdateEstimationSettingsPayloadSchema = z.object({
+  estimationSettings: EstimationSettingsSchema,
+});
+
+/** Use class ability */
+export const UseAbilityPayloadSchema = z.object({
+  abilityId: z.string().min(1),
+});
+
+/** Use inventory item */
+export const UseItemPayloadSchema = z.object({
+  itemType: z.string().min(1),
+});
+
+/** Parameterless events — z.void() so the registry can validate they have no payload */
+export const EmptyPayloadSchema = z.void();
+
+// ============================================
 // Server-to-Client Event Payload Schemas
 // ============================================
 
 /**
  * Game error event payload
+ *
+ * Phase 45-05B L3: aligned with shared/gameEvents.ts ServerToClientEvents —
+ * `code` and `tiedValues` are emitted by force_estimate / use_item / etc.
  */
 export const GameErrorPayloadSchema = z.object({
   message: z.string(),
+  code: z.string().optional(),
+  tiedValues: z.array(ScoreValueSchema).optional(),
 });
 
 /**
@@ -637,6 +685,8 @@ export function parsePayload<T>(schema: z.ZodSchema<T>, data: unknown): T {
 export const ClientEventSchemas = {
   create_lobby: CreateLobbyPayloadSchema,
   join_lobby: JoinLobbyPayloadSchema,
+  leave_lobby: EmptyPayloadSchema,
+  update_lobby_name: UpdateLobbyNamePayloadSchema,
   select_avatar: SelectAvatarPayloadSchema,
   assign_team: AssignTeamPayloadSchema,
   change_own_team: ChangeOwnTeamPayloadSchema,
@@ -647,12 +697,18 @@ export const ClientEventSchemas = {
   lobby_player_jump: LobbyPlayerJumpPayloadSchema,
   lobby_emote: LobbyEmotePayloadSchema,
   toggle_ready: ToggleReadyPayloadSchema,
+  start_battle: EmptyPayloadSchema,
   submit_score: SubmitScorePayloadSchema,
   update_discussion_vote: UpdateDiscussionVotePayloadSchema,
   attack_boss: AttackBossPayloadSchema,
+  proceed_next_level: EmptyPayloadSchema,
+  restart_game: EmptyPayloadSchema,
   player_performance: PlayerPerformancePayloadSchema,
+  abandon_quest: EmptyPayloadSchema,
+  force_reveal: EmptyPayloadSchema,
   update_timer_settings: UpdateTimerSettingsPayloadSchema,
   youtube_play: YoutubePlayPayloadSchema,
+  youtube_stop: EmptyPayloadSchema,
   advancePhaseNow: AdvancePhaseNowPayloadSchema,
   forceVotingProgression: ForceVotingProgressionPayloadSchema,
   player_pos: PlayerPosPayloadSchema,
@@ -660,6 +716,7 @@ export const ClientEventSchemas = {
   revive_start: ReviveTargetPayloadSchema,
   revive_cancel: ReviveTargetPayloadSchema,
   revive_tick: ReviveTargetPayloadSchema,
+  heal_party: HealPartyPayloadSchema,
   player_jump: PlayerJumpPayloadSchema,
   boss_damage_player: BossDamagePlayerPayloadSchema,
   player_projectile: PlayerProjectilePayloadSchema,
@@ -667,6 +724,12 @@ export const ClientEventSchemas = {
   request_missed_events: RequestMissedEventsPayloadSchema,
   attack_minion: AttackMinionPayloadSchema,
   finalize_estimate: FinalizeEstimatePayloadSchema,
+  player_charge: PlayerChargePayloadSchema,
+  battle_emote: BattleEmotePayloadSchema,
+  return_to_lobby: EmptyPayloadSchema,
+  update_estimation_settings: UpdateEstimationSettingsPayloadSchema,
+  use_ability: UseAbilityPayloadSchema,
+  use_item: UseItemPayloadSchema,
 } as const;
 
 /**

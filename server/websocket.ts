@@ -1075,13 +1075,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         const { lobby, bossHealth, ringAttack, healedBoss, modifier } = result;
         
         if (healedBoss) {
-          // Spectator healed the boss
-          io.to(lobby.id).emit('boss_healed', { bossHealth, healAmount: (modifier || 0) + 1 });
+          // Phase 45-05B L5: legacy `boss_healed` emit removed; the
+          // fine-grained combat:boss_healed (bridged from gameState's
+          // spectator-heal path via eventBus elsewhere) is the single source.
+          eventBus.emit('combat:boss_healed', {
+            lobbyId: lobby.id,
+            healAmount: (modifier || 0) + 1,
+            bossHealth,
+          });
         } else {
-          // Normal attack
-          io.to(lobby.id).emit('boss_attacked', { playerId, damage, bossHealth });
-
-          // Emit EventBus event for ProgressionManager XP tracking
+          // Phase 45-05B L4: legacy `boss_attacked` emit removed; the
+          // combat:boss_damaged event below is the canonical signal
+          // (handler now mirrors to both currentBoss and currentLobby.boss).
           eventBus.emit('combat:boss_damaged', {
             lobbyId: lobby.id,
             playerId,

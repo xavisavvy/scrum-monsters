@@ -238,7 +238,12 @@ export class ClientEventEmitter {
         playerId: payload.playerId,
         damage: payload.damage,
         newHp: payload.playerHealth,
-        source: 'boss', // Default source if not provided
+        // Phase 45-05B C6: hardcoded 'boss' is correct today — every internal
+        // combat:player_damaged emit traces back to CombatManager.applyDamage
+        // from a boss-attack path. When PvP damage lands, add a `source` field
+        // to CombatPlayerDamagedPayload and thread it through here. Tracked as
+        // a follow-up under [[player-damage-source-pvp]].
+        source: 'boss',
       });
     });
 
