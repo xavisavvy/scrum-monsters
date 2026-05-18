@@ -529,6 +529,16 @@ export class ClientEventEmitter {
   }
 
   /**
+   * Public entrypoint for ad-hoc fine-grained emits from server/websocket.ts
+   * call sites that bypass the eventBus (legacy lobby_updated migration sites
+   * from Phase 42-02b). Wraps the private emitToLobby so callers don't reach
+   * into the sequencer directly.
+   */
+  public emitFineGrained(lobbyId: string, event: string, data: Record<string, unknown>): void {
+    this.emitToLobby(lobbyId, event, data);
+  }
+
+  /**
    * Emit event to lobby with sequence number and timestamp
    *
    * @param lobbyId - Lobby room identifier

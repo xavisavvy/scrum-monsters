@@ -351,6 +351,15 @@ export class SessionManager {
   }
 
   /**
+   * Number of active lobbies (Phase 45-05B: typed accessor for the periodic
+   * connection-stats log; replaces a `(sessionManager as any).lobbies.size`
+   * cast in server/websocket.ts).
+   */
+  getLobbyCount(): number {
+    return this.lobbies.size;
+  }
+
+  /**
    * Gets the lobby a player is currently in
    */
   getPlayerLobby(playerId: string): Lobby | null {

@@ -296,21 +296,6 @@ export default [
     },
   },
 
-  // Phase 45-05: server/websocket.ts retains the no-explicit-any override
-  // pending a typed-socket pass (33 `any` annotations in handlers; needs the
-  // io: Server<ClientToServerEvents, ServerToClientEvents> treatment). The
-  // three client-side files (eventHandlers.ts, useEventSync.ts,
-  // useWebSocket.tsx) now use Socket<ServerToClientEvents, ClientToServerEvents>
-  // and have their override removed.
-  {
-    files: [
-      "server/websocket.ts",
-    ],
-    rules: {
-      "@typescript-eslint/no-explicit-any": "off",
-    },
-  },
-
   // k6 load test files
   {
     files: ["tests/load/**/*.js"],

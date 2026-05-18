@@ -199,25 +199,9 @@ export default function GamePage() {
     // 'battle') and session:ticket_advanced (mid-battle ticket change),
     // driven by useGameState.requestBattleRemount().
 
-    socket.on('avatar_selected', ({ playerId, avatar }) => {
-      // Mirror session:avatar_selected: flip hasSelectedAvatar so the
-      // per-player Lobby gate (renderGamePhase) advances this user.
-      const cl = currentLobbyRef.current;
-      if (cl) {
-        const updatedLobby = {
-          ...cl,
-          players: cl.players.map(p =>
-            p.id === playerId ? { ...p, avatar, avatarClass: avatar, hasSelectedAvatar: true } : p
-          )
-        };
-        setLobby(updatedLobby);
-      }
-
-      const cp = currentPlayerRef.current;
-      if (cp?.id === playerId) {
-        setPlayer({ ...cp, avatar, avatarClass: avatar, hasSelectedAvatar: true });
-      }
-    });
+    // Phase 45-05B L6: legacy `avatar_selected` handler removed; the
+    // session:avatar_selected handler in eventHandlers.ts already does the
+    // same hasSelectedAvatar flip on lobby + currentPlayer.
 
     socket.on('battle_started', ({ lobby, boss }) => {
       setLobby(lobby);
@@ -287,7 +271,7 @@ export default function GamePage() {
       socket.off('lobby_sync');
       socket.off('reconnect_response');
       // Phase 42-02b: lobby_updated handler removed; no listener to detach.
-      socket.off('avatar_selected');
+      // Phase 45-05B: avatar_selected handler removed (see session:avatar_selected).
       socket.off('battle_started');
       socket.off('boss_attacked');
       socket.off('boss_healed');
