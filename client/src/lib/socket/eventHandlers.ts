@@ -2,31 +2,39 @@ import { Socket } from 'socket.io-client';
 import { useEventSync } from '../stores/useEventSync';
 import { useGameState } from '../stores/useGameState';
 import { useAudio } from '../stores/useAudio';
-import { Lobby, Player, Boss, TeamType, AvatarClass, GamePhase, TimerState, JiraTicket, TimerSettings, JiraSettings, EstimationSettings } from '@shared/gameEvents';
+import { Lobby, Player, Boss, TeamType, AvatarClass, GamePhase, TimerState, JiraTicket, TimerSettings, JiraSettings, EstimationSettings, ServerToClientEvents, ClientToServerEvents } from '@shared/gameEvents';
+
+// Phase 45-05: typed socket so payload shapes are inferred from the
+// ServerToClientEvents map; removes the per-file no-explicit-any override.
+export type TypedClientSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 /**
  * Sets up centralized event handlers for all domain events.
  * All events go through sequence tracking and gap detection.
  * State updates only occur when events are successfully processed.
  */
-export function setupEventHandlers(socket: Socket): void {
+export function setupEventHandlers(socket: TypedClientSocket): void {
   // ============================================================================
   // SESSION DOMAIN EVENTS
   // ============================================================================
 
-  socket.on('session:player_joined', (data: any) => {
+  socket.on('session:player_joined', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:player_joined', data, socket);
 
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
+        // Phase 45-05: schema marks data.avatar optional (new joiners may
+        // not have selected one yet). Default to 'warrior' until the
+        // session:avatar_selected event lands.
+        const avatar: AvatarClass = data.avatar ?? 'warrior';
         const newPlayer: Player = {
           id: data.playerId,
           name: data.playerName,
           team: data.team,
-          avatar: data.avatar,
-          avatarClass: data.avatar,
+          avatar,
+          avatarClass: avatar,
           isHost: false,
           hasSubmittedScore: false,
           level: 1
@@ -56,7 +64,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:player_left', (data: any) => {
+  socket.on('session:player_left', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:player_left', data, socket);
 
@@ -80,7 +88,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:host_changed', (data: any) => {
+  socket.on('session:host_changed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:host_changed', data, socket);
 
@@ -100,7 +108,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:phase_changed', (data: any) => {
+  socket.on('session:phase_changed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:phase_changed', data, socket);
 
@@ -126,7 +134,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:team_changed', (data: any) => {
+  socket.on('session:team_changed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:team_changed', data, socket);
 
@@ -157,7 +165,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:avatar_selected', (data: any) => {
+  socket.on('session:avatar_selected', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:avatar_selected', data, socket);
 
@@ -194,7 +202,7 @@ export function setupEventHandlers(socket: Socket): void {
   // useEventSync seq gate, then applies a scoped setLobby update.
   // --------------------------------------------------------------------------
 
-  socket.on('session:tickets_updated', (data: any) => {
+  socket.on('session:tickets_updated', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:tickets_updated', data, socket);
 
@@ -206,7 +214,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:player_ready_changed', (data: any) => {
+  socket.on('session:player_ready_changed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:player_ready_changed', data, socket);
 
@@ -223,7 +231,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:lobby_renamed', (data: any) => {
+  socket.on('session:lobby_renamed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:lobby_renamed', data, socket);
 
@@ -235,7 +243,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:settings_updated', (data: any) => {
+  socket.on('session:settings_updated', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:settings_updated', data, socket);
 
@@ -252,7 +260,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:game_reset', (data: any) => {
+  socket.on('session:game_reset', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:game_reset', data, socket);
 
@@ -263,7 +271,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('session:ticket_advanced', (data: any) => {
+  socket.on('session:ticket_advanced', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('session:ticket_advanced', data, socket);
 
@@ -298,7 +306,7 @@ export function setupEventHandlers(socket: Socket): void {
   // ESTIMATION DOMAIN EVENTS
   // ============================================================================
 
-  socket.on('estimation:vote_cast', (data: any) => {
+  socket.on('estimation:vote_cast', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:vote_cast', data, socket);
 
@@ -316,22 +324,21 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:votes_revealed', (data: any) => {
+  socket.on('estimation:votes_revealed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:votes_revealed', data, socket);
 
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
-        // Canonical payload (shared/clientEvents.ts EstimationVotesRevealedEvent):
-        //   { votes: Record<playerId, score | '?'>, team: TeamType }
-        // One event is emitted per non-empty team server-side; merge votes for
-        // the players belonging to data.team. Tolerate the legacy shape
-        // ({ teamScores: { developers, qa } }) too, in case any older emit
-        // site is still in the wild — harmless if absent.
-        const votesByPlayer: Record<string, number | '?'> | undefined =
-          data?.votes ?? data?.teamScores?.[data?.team] ?? undefined;
-        const eventTeam: 'developers' | 'qa' | undefined = data?.team;
+        // Canonical payload (schema): { votes: Record<playerId, score | '?'>, team: TeamType }
+        // One event emitted per non-empty team server-side; merge votes for
+        // the players belonging to data.team. The legacy `teamScores` fallback
+        // was removed in Phase 45-03 when the legacy scores_revealed emit was deleted.
+        const votesByPlayer: Record<string, number | '?'> | undefined = data?.votes;
+        // Schema declares team as TeamType (which includes 'spectators'), but
+        // votes_revealed is only ever emitted for 'developers' | 'qa'.
+        const eventTeam = data?.team === 'spectators' ? undefined : data?.team;
 
         if (!votesByPlayer) return;
 
@@ -349,13 +356,13 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:consensus_reached', (data: any) => {
+  socket.on('estimation:consensus_reached', (data) => {
     const { handleEvent } = useEventSync.getState();
     handleEvent('estimation:consensus_reached', data, socket);
     // State already updated via votes_revealed
   });
 
-  socket.on('estimation:timer_started', (data: any) => {
+  socket.on('estimation:timer_started', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:timer_started', data, socket);
 
@@ -377,7 +384,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:timer_paused', (data: any) => {
+  socket.on('estimation:timer_paused', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:timer_paused', data, socket);
 
@@ -396,7 +403,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:timer_resumed', (data: any) => {
+  socket.on('estimation:timer_resumed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:timer_resumed', data, socket);
 
@@ -421,7 +428,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:timer_expired', (data: any) => {
+  socket.on('estimation:timer_expired', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:timer_expired', data, socket);
 
@@ -437,7 +444,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:discussion_timer_started', (data: any) => {
+  socket.on('estimation:discussion_timer_started', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:discussion_timer_started', data, socket);
 
@@ -451,7 +458,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:discussion_ended', (data: any) => {
+  socket.on('estimation:discussion_ended', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:discussion_ended', data, socket);
 
@@ -462,7 +469,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('estimation:discussion_vote_updated', (data: any) => {
+  socket.on('estimation:discussion_vote_updated', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('estimation:discussion_vote_updated', data, socket);
 
@@ -485,7 +492,7 @@ export function setupEventHandlers(socket: Socket): void {
   // COMBAT DOMAIN EVENTS
   // ============================================================================
 
-  socket.on('combat:boss_damaged', (data: any) => {
+  socket.on('combat:boss_damaged', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:boss_damaged', data, socket);
 
@@ -494,14 +501,14 @@ export function setupEventHandlers(socket: Socket): void {
       if (currentBoss) {
         const updatedBoss: Boss = {
           ...currentBoss,
-          currentHealth: data.newHp ?? data.newHealth ?? currentBoss.currentHealth
+          currentHealth: data.newHp ?? currentBoss.currentHealth
         };
         setBoss(updatedBoss);
       }
     }
   });
 
-  socket.on('combat:boss_healed', (data: any) => {
+  socket.on('combat:boss_healed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:boss_healed', data, socket);
 
@@ -516,7 +523,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:boss_defeated', (data: any) => {
+  socket.on('combat:boss_defeated', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:boss_defeated', data, socket);
 
@@ -531,7 +538,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:player_damaged', (data: any) => {
+  socket.on('combat:player_damaged', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:player_damaged', data, socket);
 
@@ -565,7 +572,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:player_downed', (data: any) => {
+  socket.on('combat:player_downed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:player_downed', data, socket);
 
@@ -587,7 +594,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:player_revived', (data: any) => {
+  socket.on('combat:player_revived', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:player_revived', data, socket);
 
@@ -614,7 +621,7 @@ export function setupEventHandlers(socket: Socket): void {
   });
 
   // Phase 45-04: revival channel UX for peers.
-  socket.on('combat:revival_started', (data: any) => {
+  socket.on('combat:revival_started', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:revival_started', data, socket);
     if (!processed) return;
@@ -627,14 +634,14 @@ export function setupEventHandlers(socket: Socket): void {
     });
   });
 
-  socket.on('combat:revival_progress', (data: any) => {
+  socket.on('combat:revival_progress', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:revival_progress', data, socket);
     if (!processed) return;
     useGameState.getState().updateRevivalProgress(data.targetId, data.percent);
   });
 
-  socket.on('combat:revival_cancelled', (data: any) => {
+  socket.on('combat:revival_cancelled', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:revival_cancelled', data, socket);
     if (!processed) return;
@@ -642,7 +649,7 @@ export function setupEventHandlers(socket: Socket): void {
   });
 
   // Phase 45-04: floating heal popup, mirrors the combat:player_damaged pattern.
-  socket.on('combat:player_healed', (data: any) => {
+  socket.on('combat:player_healed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:player_healed', data, socket);
     if (!processed) return;
@@ -674,7 +681,7 @@ export function setupEventHandlers(socket: Socket): void {
     });
   });
 
-  socket.on('combat:modifier_updated', (data: any) => {
+  socket.on('combat:modifier_updated', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:modifier_updated', data, socket);
 
@@ -690,7 +697,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:countdown_started', (data: any) => {
+  socket.on('combat:countdown_started', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:countdown_started', data, socket);
 
@@ -704,7 +711,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:countdown_tick', (data: any) => {
+  socket.on('combat:countdown_tick', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:countdown_tick', data, socket);
 
@@ -718,7 +725,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:countdown_complete', (data: any) => {
+  socket.on('combat:countdown_complete', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:countdown_complete', data, socket);
 
@@ -738,7 +745,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:team_attack', (data: any) => {
+  socket.on('combat:team_attack', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:team_attack', data, socket);
 
@@ -754,7 +761,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:boss_telegraph', (data: any) => {
+  socket.on('combat:boss_telegraph', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:boss_telegraph', data, socket);
     if (processed) {
@@ -775,7 +782,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:boss_enraged', (data: any) => {
+  socket.on('combat:boss_enraged', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:boss_enraged', data, socket);
     if (processed) {
@@ -784,7 +791,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:boss_phase_transition', (data: any) => {
+  socket.on('combat:boss_phase_transition', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:boss_phase_transition', data, socket);
     if (processed) {
@@ -797,7 +804,7 @@ export function setupEventHandlers(socket: Socket): void {
   // MINION EVENTS
   // ============================================================================
 
-  socket.on('combat:minion_spawned', (data: any) => {
+  socket.on('combat:minion_spawned', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:minion_spawned', data, socket);
 
@@ -812,13 +819,13 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:minion_attack', (data: any) => {
+  socket.on('combat:minion_attack', (data) => {
     const { handleEvent } = useEventSync.getState();
     handleEvent('combat:minion_attack', data, socket);
     // Visual effects handled by UI components
   });
 
-  socket.on('combat:minion_heal_boss', (data: any) => {
+  socket.on('combat:minion_heal_boss', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:minion_heal_boss', data, socket);
 
@@ -834,7 +841,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:minion_damaged', (data: any) => {
+  socket.on('combat:minion_damaged', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:minion_damaged', data, socket);
 
@@ -850,7 +857,7 @@ export function setupEventHandlers(socket: Socket): void {
     }
   });
 
-  socket.on('combat:minion_killed', (data: any) => {
+  socket.on('combat:minion_killed', (data) => {
     const { handleEvent } = useEventSync.getState();
     const processed = handleEvent('combat:minion_killed', data, socket);
 
@@ -880,7 +887,7 @@ export function setupEventHandlers(socket: Socket): void {
   // ============================================================================
 
   // Host plays YouTube music → all peers load and play the same video.
-  socket.on('youtube_play_synced', (data: any) => {
+  socket.on('youtube_play_synced', (data) => {
     if (!data?.videoId) return;
     useAudio.getState().playYoutubeAudio(data.videoId);
   });
@@ -893,7 +900,7 @@ export function setupEventHandlers(socket: Socket): void {
   // SYSTEM EVENTS
   // ============================================================================
 
-  socket.on('system:full_state', (data: any) => {
+  socket.on('system:full_state', (data) => {
     const { handleFullStateRefresh } = useEventSync.getState();
     const { setLobby } = useGameState.getState();
 
@@ -901,10 +908,11 @@ export function setupEventHandlers(socket: Socket): void {
     setLobby(data.lobby);
   });
 
-  socket.on('system:missed_events', (data: any) => {
+  socket.on('system:missed_events', (data) => {
     const { handleMissedEventsReplay } = useEventSync.getState();
-
-    handleMissedEventsReplay(data.events);
+    // Schema declares `data.events[i].data` as `unknown` (true at the wire boundary);
+    // useEventSync narrows back to `{ seq? } & Record<string, unknown>` for indexing.
+    handleMissedEventsReplay(data.events as Array<{ event: string; data: { seq?: number } & Record<string, unknown> }>);
   });
 }
 

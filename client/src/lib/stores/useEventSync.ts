@@ -1,24 +1,31 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Socket } from 'socket.io-client';
+import type { Lobby, ServerToClientEvents, ClientToServerEvents } from '@shared/gameEvents';
+
+// Phase 45-05: typed socket so emit() calls type-check against ClientToServerEvents.
+type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
+
+/** A wire payload from any server event — narrowed by the receiving handler. */
+type WirePayload = Record<string, unknown> & { seq: number };
 
 interface EventSyncState {
   lastSeq: number;
-  pendingEvents: Map<number, { event: string; data: any }>;
+  pendingEvents: Map<number, { event: string; data: Record<string, unknown> }>;
   isRecovering: boolean;
-  pendingOptimistic: Map<string, any>;
+  pendingOptimistic: Map<string, unknown>;
 
   // Event processing and recovery
-  handleEvent: (event: string, data: any & { seq: number }, socket: Socket) => boolean;
+  handleEvent: (event: string, data: WirePayload, socket: TypedSocket) => boolean;
   processEventQueue: () => void;
-  requestMissedEvents: (socket: Socket, lastSeq: number) => void;
-  handleMissedEventsReplay: (events: Array<{ event: string; data: any }>) => void;
-  handleFullStateRefresh: (lobby: any, seq: number) => void;
+  requestMissedEvents: (socket: TypedSocket, lastSeq: number) => void;
+  handleMissedEventsReplay: (events: Array<{ event: string; data: { seq?: number } & Record<string, unknown> }>) => void;
+  handleFullStateRefresh: (lobby: Lobby, seq: number) => void;
 
   // Optimistic updates
-  setOptimistic: (key: string, value: any) => void;
+  setOptimistic: <T>(key: string, value: T) => void;
   clearOptimistic: (key: string) => void;
-  reconcile: (key: string, serverValue: any) => any;
+  reconcile: <T>(key: string, serverValue: T) => T;
 
   // Reset
   reset: () => void;
@@ -31,7 +38,7 @@ export const useEventSync = create<EventSyncState>()(
     isRecovering: false,
     pendingOptimistic: new Map(),
 
-    handleEvent: (event: string, data: any & { seq: number }, socket: Socket): boolean => {
+    handleEvent: (event: string, data: WirePayload, socket: TypedSocket): boolean => {
       const { lastSeq, pendingEvents } = get();
       const { seq, ...payload } = data;
 
@@ -84,7 +91,7 @@ export const useEventSync = create<EventSyncState>()(
       }
     },
 
-    requestMissedEvents: (socket: Socket, lastSeq: number) => {
+    requestMissedEvents: (socket: TypedSocket, lastSeq: number) => {
       const { isRecovering } = get();
 
       // Skip if already recovering
@@ -93,10 +100,10 @@ export const useEventSync = create<EventSyncState>()(
       }
 
       set({ isRecovering: true });
-      socket.emit('request_missed_events' as any, { lastSeq });
+      socket.emit('request_missed_events', { lastSeq });
     },
 
-    handleMissedEventsReplay: (events: Array<{ event: string; data: any }>) => {
+    handleMissedEventsReplay: (events) => {
       // Process each event in order
       events.forEach((evt) => {
         const { seq } = evt.data;
@@ -112,7 +119,8 @@ export const useEventSync = create<EventSyncState>()(
       get().processEventQueue();
     },
 
-    handleFullStateRefresh: (lobby: any, seq: number) => {
+    handleFullStateRefresh: (lobby, seq: number) => {
+      void lobby;
       set({
         lastSeq: seq,
         pendingEvents: new Map(),
@@ -120,7 +128,7 @@ export const useEventSync = create<EventSyncState>()(
       });
     },
 
-    setOptimistic: (key: string, value: any) => {
+    setOptimistic: <T>(key: string, value: T) => {
       const { pendingOptimistic } = get();
       const newOptimistic = new Map(pendingOptimistic);
       newOptimistic.set(key, value);
@@ -134,7 +142,7 @@ export const useEventSync = create<EventSyncState>()(
       set({ pendingOptimistic: newOptimistic });
     },
 
-    reconcile: (key: string, serverValue: any): any => {
+    reconcile: <T>(key: string, serverValue: T): T => {
       const { pendingOptimistic } = get();
 
       // Get optimistic value

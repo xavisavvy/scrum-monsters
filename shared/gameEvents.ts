@@ -243,6 +243,10 @@ export interface ReconnectResponse {
 
 // WebSocket Events (Socket.IO function signature format)
 export interface ClientToServerEvents {
+  // Phase 45-05: parameterless heartbeat sent every 25s by useWebSocket.tsx to
+  // keep idle proxy connections alive (NPM / VPS-level timeouts ~30-60s).
+  // Server handler at server/websocket.ts is a no-op acknowledgment.
+  client_heartbeat: () => void;
   create_lobby: (data: {
     lobbyName: string;
     hostName: string;
