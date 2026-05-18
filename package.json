@@ -108,7 +108,7 @@
     "howler": "^2.2.4",
     "input-otp": "^1.4.2",
     "ioredis": "^5.10.1",
-    "lucide-react": "^0.563.0",
+    "lucide-react": "^1.16.0",
     "matter-js": "^0.20.0",
     "memorystore": "^1.6.8",
     "meshline": "^3.3.1",
