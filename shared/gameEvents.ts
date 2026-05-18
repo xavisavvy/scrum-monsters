@@ -387,17 +387,11 @@ export interface ServerToClientEvents {
   youtube_play_synced: (data: { videoId: string; url: string }) => void;
   youtube_stop_synced: () => void;
   players_pos: (data: { positions: Record<string, Position> }) => void;
-  party_healed: (data: {
-    healerId: string;
-    healedPlayers: Array<{ playerId: string; newHealth: number }>;
-  }) => void;
-  revive_progress: (data: {
-    targetId: string;
-    reviverId: string;
-    progress: number;
-  }) => void;
-  revive_complete: (data: { targetId: string; reviverId: string }) => void;
-  revive_cancelled: (data: { targetId: string; reviverId: string }) => void;
+  // Phase 45-04: party_healed, revive_progress, revive_complete,
+  // revive_cancelled removed — replaced by combat:player_healed +
+  // combat:revival_started / revival_progress / revival_cancelled +
+  // combat:player_revived (the gameState legacy revival path now emits
+  // via eventBus, matching the CombatManager path).
   boss_ring_attack: (data: RingAttack) => void;
   player_projectile_fired: (data: {
     playerId: string;
@@ -462,7 +456,9 @@ export interface ServerToClientEvents {
   'combat:player_downed': (data: { playerId: string; countdownSeconds: number; seq: number; timestamp: number }) => void;
   'combat:player_revived': (data: { playerId: string; reviverId: string; newHp: number; seq: number; timestamp: number }) => void;
   'combat:revival_started': (data: { reviverId: string; targetId: string; durationMs: number; seq: number; timestamp: number }) => void;
+  'combat:revival_progress': (data: { reviverId: string; targetId: string; percent: number; remainingMs: number; seq: number; timestamp: number }) => void;
   'combat:revival_cancelled': (data: { reviverId: string; targetId: string; reason: string; seq: number; timestamp: number }) => void;
+  'combat:player_healed': (data: { playerId: string; healerId: string; healAmount: number; newHp: number; seq: number; timestamp: number }) => void;
   'combat:player_entered_battle': (data: { playerId: string; seq: number; timestamp: number }) => void;
   'combat:modifier_updated': (data: { modifier: number; seq: number; timestamp: number }) => void;
   'combat:countdown_started': (data: { durationSeconds: number; startedAt: number; seq: number; timestamp: number }) => void;

@@ -103,6 +103,8 @@ interface RevivalSession {
   startedAt: number;
   channelDurationMs: number;
   intervalHandle: NodeJS.Timeout;
+  /** Last emitted progress bucket (Math.floor(elapsed / PROGRESS_EMIT_INTERVAL_MS)); -1 means no emit yet. Phase 45-04. */
+  lastProgressBucket: number;
 }
 
 /**
@@ -148,6 +150,8 @@ export class CombatManager {
   private readonly BATTLE_ENTRY_TRANSITION_MS = 1500;
   private readonly DOWN_TIMER_MS = 10000;           // 10 seconds
   private readonly REVIVAL_CHANNEL_DURATION_MS = 2500;
+  /** Phase 45-04: throttle combat:revival_progress to every 500ms (5 emits per channel). */
+  private readonly REVIVAL_PROGRESS_EMIT_INTERVAL_MS = 500;
   private readonly REVIVAL_DISTANCE_THRESHOLD = 10;
   private readonly MODIFIER_INTERVAL_MS = 10000;
   private readonly MODIFIER_INCREMENT = 0.1;
@@ -1516,6 +1520,7 @@ export class CombatManager {
       intervalHandle: setInterval(() => {
         this.tickRevival(sessionKey);
       }, 100) as NodeJS.Timeout,
+      lastProgressBucket: -1,
     };
 
     this.revivalSessions.set(sessionKey, session);
@@ -1567,6 +1572,25 @@ export class CombatManager {
     const elapsed = Date.now() - session.startedAt;
     if (elapsed >= session.channelDurationMs) {
       this.completeRevival(sessionKey);
+      return;
+    }
+
+    // Phase 45-04: emit combat:revival_progress at most once per PROGRESS_EMIT_INTERVAL_MS
+    // (every 500ms — 5 emits across a 2500ms channel). Throttled by bucketing
+    // elapsed time so the tick interval stays at 100ms (responsive to cancel
+    // conditions) but wire traffic stays bounded.
+    const bucket = Math.floor(elapsed / this.REVIVAL_PROGRESS_EMIT_INTERVAL_MS);
+    if (bucket > session.lastProgressBucket) {
+      session.lastProgressBucket = bucket;
+      const percent = Math.min(100, Math.floor((elapsed / session.channelDurationMs) * 100));
+      const remainingMs = Math.max(0, session.channelDurationMs - elapsed);
+      this.eventBus.emit('combat:revival_progress', {
+        lobbyId: session.lobbyId,
+        reviverId: session.reviverId,
+        targetId: session.targetId,
+        percent,
+        remainingMs,
+      });
     }
   }
 

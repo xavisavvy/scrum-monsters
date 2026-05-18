@@ -1,6 +1,7 @@
 import { Socket } from 'socket.io-client';
 import { useEventSync } from '../stores/useEventSync';
 import { useGameState } from '../stores/useGameState';
+import { useAudio } from '../stores/useAudio';
 import { Lobby, Player, Boss, TeamType, AvatarClass, GamePhase, TimerState, JiraTicket, TimerSettings, JiraSettings, EstimationSettings } from '@shared/gameEvents';
 
 /**
@@ -591,7 +592,7 @@ export function setupEventHandlers(socket: Socket): void {
     const processed = handleEvent('combat:player_revived', data, socket);
 
     if (processed) {
-      const { currentLobby, setLobby } = useGameState.getState();
+      const { currentLobby, setLobby, clearRevivalSession } = useGameState.getState();
       if (currentLobby) {
         const updatedLobby = {
           ...currentLobby,
@@ -607,7 +608,70 @@ export function setupEventHandlers(socket: Socket): void {
         };
         setLobby(updatedLobby);
       }
+      // Phase 45-04: clear the peer-visible revival channel state on completion.
+      clearRevivalSession(data.playerId);
     }
+  });
+
+  // Phase 45-04: revival channel UX for peers.
+  socket.on('combat:revival_started', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:revival_started', data, socket);
+    if (!processed) return;
+    useGameState.getState().upsertRevivalSession({
+      reviverId: data.reviverId,
+      targetId: data.targetId,
+      percent: 0,
+      startedAt: Date.now(),
+      durationMs: data.durationMs,
+    });
+  });
+
+  socket.on('combat:revival_progress', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:revival_progress', data, socket);
+    if (!processed) return;
+    useGameState.getState().updateRevivalProgress(data.targetId, data.percent);
+  });
+
+  socket.on('combat:revival_cancelled', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:revival_cancelled', data, socket);
+    if (!processed) return;
+    useGameState.getState().clearRevivalSession(data.targetId);
+  });
+
+  // Phase 45-04: floating heal popup, mirrors the combat:player_damaged pattern.
+  socket.on('combat:player_healed', (data: any) => {
+    const { handleEvent } = useEventSync.getState();
+    const processed = handleEvent('combat:player_healed', data, socket);
+    if (!processed) return;
+    const { currentLobby, setLobby, addPendingDamage } = useGameState.getState();
+    if (currentLobby) {
+      const updatedLobby = {
+        ...currentLobby,
+        playerCombatStates: {
+          ...currentLobby.playerCombatStates,
+          [data.playerId]: {
+            ...currentLobby.playerCombatStates[data.playerId],
+            hp: data.newHp,
+            // If this heal restored a downed player above 0 hp, lift the flag.
+            isDowned: data.newHp > 0 ? false : currentLobby.playerCombatStates[data.playerId]?.isDowned,
+          },
+        },
+      };
+      setLobby(updatedLobby);
+    }
+    addPendingDamage({
+      id: `heal-${data.playerId}-${data.seq ?? Date.now()}`,
+      playerId: data.playerId,
+      amount: data.healAmount,
+      type: 'heal',
+      position: {
+        x: typeof window !== 'undefined' ? window.innerWidth / 2 : 0,
+        y: typeof window !== 'undefined' ? window.innerHeight / 2 : 0,
+      },
+    });
   });
 
   socket.on('combat:modifier_updated', (data: any) => {
@@ -812,6 +876,20 @@ export function setupEventHandlers(socket: Socket): void {
   });
 
   // ============================================================================
+  // YOUTUBE SYNC (Phase 45-04)
+  // ============================================================================
+
+  // Host plays YouTube music → all peers load and play the same video.
+  socket.on('youtube_play_synced', (data: any) => {
+    if (!data?.videoId) return;
+    useAudio.getState().playYoutubeAudio(data.videoId);
+  });
+
+  socket.on('youtube_stop_synced', () => {
+    useAudio.getState().stopYoutubeAudio();
+  });
+
+  // ============================================================================
   // SYSTEM EVENTS
   // ============================================================================
 
@@ -873,6 +951,11 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:player_damaged');
   socket.off('combat:player_downed');
   socket.off('combat:player_revived');
+  // Phase 45-04
+  socket.off('combat:revival_started');
+  socket.off('combat:revival_progress');
+  socket.off('combat:revival_cancelled');
+  socket.off('combat:player_healed');
   socket.off('combat:modifier_updated');
   socket.off('combat:countdown_started');
   socket.off('combat:countdown_tick');
@@ -885,6 +968,10 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('combat:minion_heal_boss');
   socket.off('combat:minion_damaged');
   socket.off('combat:minion_killed');
+
+  // YouTube sync (Phase 45-04)
+  socket.off('youtube_play_synced');
+  socket.off('youtube_stop_synced');
 
   // System events
   socket.off('system:full_state');

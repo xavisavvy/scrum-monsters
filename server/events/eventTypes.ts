@@ -337,6 +337,17 @@ export interface CombatRevivalStartedPayload {
   durationMs: number;
 }
 
+/** Emitted periodically while a revival channel is in progress (Phase 45-04) */
+export interface CombatRevivalProgressPayload {
+  lobbyId: string;
+  reviverId: string;
+  targetId: string;
+  /** 0-100, percent of channelDurationMs elapsed */
+  percent: number;
+  /** Milliseconds left until completeRevival fires */
+  remainingMs: number;
+}
+
 /** Emitted when revival is cancelled (moved, took damage, target died) */
 export interface CombatRevivalCancelledPayload {
   lobbyId: string;
@@ -536,6 +547,7 @@ export interface DomainEventMap {
   'combat:boss_enraged': CombatBossEnragedPayload;
   'combat:boss_telegraph': CombatBossTelegraphPayload;
   'combat:revival_started': CombatRevivalStartedPayload;
+  'combat:revival_progress': CombatRevivalProgressPayload;
   'combat:revival_cancelled': CombatRevivalCancelledPayload;
   'combat:player_permanently_downed': CombatPlayerPermanentlyDownedPayload;
   'combat:cleanup_complete': CombatCleanupCompletePayload;

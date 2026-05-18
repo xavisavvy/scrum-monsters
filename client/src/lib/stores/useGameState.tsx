@@ -35,6 +35,20 @@ export interface PendingDamageEvent {
   playerId: string;
   amount: number;
   position: { x: number; y: number };
+  /** Phase 45-04: 'damage' (default) renders red `-N`; 'heal' renders green `+N`. */
+  type?: 'damage' | 'heal';
+}
+
+/** Phase 45-04: peer-visible revival channel state, keyed by targetId. */
+export interface RevivalSessionState {
+  reviverId: string;
+  targetId: string;
+  /** 0-100; updated by combat:revival_progress; starts at 0 on combat:revival_started. */
+  percent: number;
+  /** Wall-clock the channel began; used by UI for an optimistic progress fallback. */
+  startedAt: number;
+  /** Channel duration as reported by combat:revival_started. */
+  durationMs: number;
 }
 
 interface GameState {
@@ -53,6 +67,8 @@ interface GameState {
   bossEnraged: boolean;
   bossEnrageMessage: string | null;
   pendingDamageEvents: PendingDamageEvent[];
+  /** Phase 45-04: active revival channels keyed by targetId. */
+  revivalSessions: Record<string, RevivalSessionState>;
   // Phase 42-02b Task 2: BattleScreen remount control. Ownership migrated out
   // of GamePage local state into the store so eventHandlers.ts (session:phase_changed
   // + session:ticket_advanced) can trigger the remount without prop drilling.
@@ -77,6 +93,10 @@ interface GameState {
   setBossEnraged: (message: string) => void;
   addPendingDamage: (evt: PendingDamageEvent) => void;
   clearPendingDamage: (id: string) => void;
+  // Phase 45-04: revival session control.
+  upsertRevivalSession: (session: RevivalSessionState) => void;
+  updateRevivalProgress: (targetId: string, percent: number) => void;
+  clearRevivalSession: (targetId: string) => void;
   // Phase 42-02b Task 2: triggers a one-tick BattleScreen unmount/remount
   // (matches the previous GamePage behavior: 100ms unmount window so React
   // disposes the old <BattleScreen> tree before the new key mounts).
@@ -101,6 +121,7 @@ export const useGameState = create<GameState>()(
     bossEnraged: false,
     bossEnrageMessage: null,
     pendingDamageEvents: [],
+    revivalSessions: {},
     battleRemountKey: 0,
     isBattleUnmounting: false,
 
@@ -179,6 +200,24 @@ export const useGameState = create<GameState>()(
     clearPendingDamage: (id) =>
       set((s) => ({ pendingDamageEvents: s.pendingDamageEvents.filter((e) => e.id !== id) })),
 
+    upsertRevivalSession: (session) =>
+      set((s) => ({ revivalSessions: { ...s.revivalSessions, [session.targetId]: session } })),
+
+    updateRevivalProgress: (targetId, percent) =>
+      set((s) => {
+        const existing = s.revivalSessions[targetId];
+        if (!existing) return {};
+        return { revivalSessions: { ...s.revivalSessions, [targetId]: { ...existing, percent } } };
+      }),
+
+    clearRevivalSession: (targetId) =>
+      set((s) => {
+        if (!s.revivalSessions[targetId]) return {};
+        const next = { ...s.revivalSessions };
+        delete next[targetId];
+        return { revivalSessions: next };
+      }),
+
     requestBattleRemount: () => {
       set({ isBattleUnmounting: true });
       setTimeout(() => {
@@ -205,6 +244,7 @@ export const useGameState = create<GameState>()(
       bossEnraged: false,
       bossEnrageMessage: null,
       pendingDamageEvents: [],
+      revivalSessions: {},
       battleRemountKey: 0,
       isBattleUnmounting: false,
     })

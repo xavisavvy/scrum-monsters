@@ -135,6 +135,41 @@ describe('ClientEventEmitter', () => {
 
       expect(emittedEvents[0].data.newHp).toBe(100);
     });
+
+    // Phase 45-04 — new event bridges
+    it('bridges combat:revival_progress with throttle-friendly percent + remainingMs', () => {
+      eventBus.emit('combat:revival_progress', {
+        lobbyId: 'TEST-LOBBY',
+        reviverId: 'cleric-1',
+        targetId: 'warrior-1',
+        percent: 60,
+        remainingMs: 1000,
+      });
+
+      expect(emittedEvents).toHaveLength(1);
+      expect(emittedEvents[0]).toMatchObject({
+        room: 'TEST-LOBBY',
+        event: 'combat:revival_progress',
+        data: { reviverId: 'cleric-1', targetId: 'warrior-1', percent: 60, remainingMs: 1000 },
+      });
+    });
+
+    it('bridges combat:player_healed mapping internal newHealth → wire newHp', () => {
+      eventBus.emit('combat:player_healed', {
+        lobbyId: 'TEST-LOBBY',
+        playerId: 'warrior-1',
+        healerId: 'cleric-1',
+        healAmount: 40,
+        newHealth: 50,
+      });
+
+      expect(emittedEvents).toHaveLength(1);
+      expect(emittedEvents[0]).toMatchObject({
+        room: 'TEST-LOBBY',
+        event: 'combat:player_healed',
+        data: { playerId: 'warrior-1', healerId: 'cleric-1', healAmount: 40, newHp: 50 },
+      });
+    });
   });
 
   // =============================================================================

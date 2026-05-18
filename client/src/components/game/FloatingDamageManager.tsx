@@ -6,6 +6,8 @@ interface ActiveDamage {
   id: string;
   amount: number;
   position: { x: number; y: number };
+  /** Phase 45-04: forward the damage/heal discriminator to FloatingDamage. */
+  type?: 'damage' | 'heal';
 }
 
 export function FloatingDamageManager() {
@@ -20,7 +22,7 @@ export function FloatingDamageManager() {
         processedRef.current.add(evt.id);
         setActive((prev) => [
           ...prev,
-          { id: evt.id, amount: evt.amount, position: evt.position },
+          { id: evt.id, amount: evt.amount, position: evt.position, type: evt.type },
         ]);
       }
     });
@@ -43,6 +45,7 @@ export function FloatingDamageManager() {
           key={d.id}
           amount={d.amount}
           startPosition={d.position}
+          type={d.type}
           onComplete={() => handleComplete(d.id)}
         />
       ))}

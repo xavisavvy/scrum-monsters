@@ -1039,6 +1039,16 @@ class GameStateManager {
 
       if (playerState.hp > oldHp) {
         healedPlayers.push({ playerId: player.id, newHealth: playerState.hp });
+        // Phase 45-04: emit combat:player_healed per healed player so each
+        // client can render a floating +N popup. Mirrors the per-player
+        // shape of combat:player_damaged on the damage side.
+        eventBus.emit('combat:player_healed', {
+          lobbyId: lobby.id,
+          playerId: player.id,
+          healerId,
+          healAmount: playerState.hp - oldHp,
+          newHealth: playerState.hp,
+        });
       }
     }
 

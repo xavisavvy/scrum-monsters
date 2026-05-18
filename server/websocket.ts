@@ -228,12 +228,46 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
+  // Phase 45-04: legacy `revive_complete` emit replaced by combat:player_revived
+  // via eventBus. processRevivalSessions returns the in-progress sessions too
+  // so the bridge can emit throttled combat:revival_progress per channel.
+  const lastRevivalProgressBucket = new Map<string, number>();
+  const REVIVAL_PROGRESS_EMIT_INTERVAL_MS = 500;
+  const REVIVAL_CHANNEL_DURATION_MS = 3000; // matches gameState.processRevivalSessions completion threshold
   const revivalWatchdogInterval = setInterval(() => {
-    const completedRevivals = (gameState as any).processRevivalSessions();
-    for (const revival of completedRevivals) {
-      io.to(revival.lobbyId).emit('revive_complete', {
-        targetId: revival.targetId,
-        reviverId: revival.reviverId
+    const result = (gameState as any).processRevivalSessions();
+    for (const revival of result) {
+      // Completion: thread newHp from gameState's playerCombatStates so the
+      // new combat:player_revived handler writes the right hp client-side
+      // (also satisfies Phase 45-01 C5 fix for the gameState path).
+      const lobby = (gameState as any).lobbies.get(revival.lobbyId);
+      const newHp = lobby?.playerCombatStates?.[revival.targetId]?.hp ?? 0;
+      eventBus.emit('combat:player_revived', {
+        lobbyId: revival.lobbyId,
+        playerId: revival.targetId,
+        reviverId: revival.reviverId,
+        newHp,
+      });
+      lastRevivalProgressBucket.delete(`${revival.lobbyId}:${revival.targetId}`);
+    }
+    // Emit throttled progress for in-flight gameState revival sessions.
+    const sessions: Map<string, { lobbyId: string; targetId: string; reviverId: string; startedAt: number }> =
+      (gameState as any).revivalSessions;
+    const now = Date.now();
+    for (const session of sessions.values()) {
+      const elapsed = now - session.startedAt;
+      if (elapsed >= REVIVAL_CHANNEL_DURATION_MS) continue;
+      const key = `${session.lobbyId}:${session.targetId}`;
+      const bucket = Math.floor(elapsed / REVIVAL_PROGRESS_EMIT_INTERVAL_MS);
+      if ((lastRevivalProgressBucket.get(key) ?? -1) >= bucket) continue;
+      lastRevivalProgressBucket.set(key, bucket);
+      const percent = Math.min(100, Math.floor((elapsed / REVIVAL_CHANNEL_DURATION_MS) * 100));
+      eventBus.emit('combat:revival_progress', {
+        lobbyId: session.lobbyId,
+        reviverId: session.reviverId,
+        targetId: session.targetId,
+        percent,
+        remainingMs: Math.max(0, REVIVAL_CHANNEL_DURATION_MS - elapsed),
       });
     }
   }, 100);
@@ -1498,14 +1532,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
       const result = gameState.healParty(playerId);
       if (result) {
-        const { lobby, healedPlayers } = result;
-        io.to(lobby.id).emit('party_healed', { healerId: playerId, healedPlayers });
-        // Removed lobby_updated: party_healed event contains all necessary info
+        // Phase 45-04: legacy party_healed socket emit removed.
+        // gameState.healParty now emits combat:player_healed per healed
+        // player via eventBus; bridge forwards each to clients which
+        // render +N floating popups.
         gameLogger.info({ playerId }, 'Priest healed party');
       }
     });
 
     // Revival system
+    // Phase 45-04: legacy revive_progress/revive_cancelled socket emits
+    // replaced by eventBus.emit('combat:revival_started' / '...:cancelled')
+    // so the bridge surfaces them to the new client handlers.
     socket.on('revive_start', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
@@ -1514,7 +1552,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (success) {
         const lobby = gameState.getLobbyByPlayerId(playerId);
         if (lobby) {
-          io.to(lobby.id).emit('revive_progress', { targetId, reviverId: playerId, progress: 0 });
+          eventBus.emit('combat:revival_started', {
+            lobbyId: lobby.id,
+            reviverId: playerId,
+            targetId,
+            durationMs: 3000,
+          });
         }
       }
     });
@@ -1527,7 +1570,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       if (success) {
         const lobby = gameState.getLobbyByPlayerId(playerId);
         if (lobby) {
-          io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+          eventBus.emit('combat:revival_cancelled', {
+            lobbyId: lobby.id,
+            reviverId: playerId,
+            targetId,
+            reason: 'cancelled_by_reviver',
+          });
         }
       }
     });
@@ -1542,7 +1590,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Revival was cancelled due to distance or state changes
         const lobby = gameState.getLobbyByPlayerId(playerId);
         if (lobby) {
-          io.to(lobby.id).emit('revive_cancelled', { targetId, reviverId: playerId });
+          eventBus.emit('combat:revival_cancelled', {
+            lobbyId: lobby.id,
+            reviverId: playerId,
+            targetId,
+            reason: 'invalid_state',
+          });
         }
       }
     });
