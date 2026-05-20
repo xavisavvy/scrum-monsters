@@ -300,7 +300,7 @@ jobs:
           echo "percentage=$COVERAGE" >> $GITHUB_OUTPUT
 
       - name: Update coverage badge
-        uses: schneegans/dynamic-badges-action@v1.7.0
+        uses: schneegans/dynamic-badges-action@v1.8.0
         with:
           auth: ${{ secrets.GIST_SECRET }}
           gistID: 2dc22fe821097a745ca169e89e8159f1
