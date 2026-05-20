@@ -86,7 +86,11 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          # Self-hosted runners (Ubuntu noble) ship python3.12 system-wide and
+          # don't populate the hosted-tool-cache that setup-python expects for
+          # arbitrary versions, so pinning '3.11' fails with "version not found
+          # for this operating system." 3.12 is what's actually installed.
+          python-version: '3.12'
           cache: 'pip'
           cache-dependency-path: 'requirements-schemathesis.txt'
 
