@@ -979,12 +979,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           if (result) {
             const { lobby: updatedLobby, teamScores, teamConsensus } = result;
             // Phase 45-03: legacy `scores_revealed` emit removed (no client listener).
-            // Fine-grained estimation:votes_revealed per team below is canonical:
-            // Bug fix (solo-vote-stuck-discussion): the legacy event carried
-            // team aggregates only; the client never populated per-player
-            // currentScore from it. The per-team emit below populates
-            // currentLobby.teams[*].currentScore so Discussion.tsx can render
-            // consensus + Advance Now without a full-state refresh.
+            // Fine-grained estimation:votes_revealed per team below is canonical.
+            // The client handler mirrors each player's currentScore into BOTH
+            // players[] and teams[*]; Discussion.tsx renders the vote grid from
+            // teams.developers/qa, so that mirror is what makes votes appear.
             if (updatedLobby.teams.developers.length > 0) {
               emitFineGrained(lobby.id, 'estimation:votes_revealed', {
                 votes: teamScores.developers,
@@ -997,8 +995,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                 team: 'qa',
               });
             }
-            // Phase 42-02b row #8: lobby_updated -> session:phase_changed
-            // (battle -> reveal). scores_revealed above carries the data.
+            // Phase 42-02b row #8: lobby_updated -> session:phase_changed.
+            // revealScores() already advanced the phase to 'discussion', so this
+            // emits a single battle->discussion transition (votes_revealed above
+            // carries the per-player scores).
             eventBus.emit('session:phase_changed', {
               lobbyId: lobby.id,
               oldPhase: 'battle',
@@ -1292,10 +1292,20 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const result = gameState.forceRevealScores(playerId);
       if (result) {
         const { lobby: updatedLobby, teamScores, teamConsensus } = result;
-        // Phase 45-03: legacy `scores_revealed` emit removed (no client listener).
-        // session:phase_changed below + per-team estimation:votes_revealed
-        // (emitted by the reveal cascade in submit_score path) carry the data.
-        void teamScores; void teamConsensus;
+        // Emit per-team estimation:votes_revealed here so the Discussion screen
+        // receives per-player scores when the host uses force-reveal.
+        if (updatedLobby.teams.developers.length > 0) {
+          emitFineGrained(updatedLobby.id, 'estimation:votes_revealed', {
+            votes: teamScores.developers,
+            team: 'developers',
+          });
+        }
+        if (updatedLobby.teams.qa.length > 0) {
+          emitFineGrained(updatedLobby.id, 'estimation:votes_revealed', {
+            votes: teamScores.qa,
+            team: 'qa',
+          });
+        }
         eventBus.emit('session:phase_changed', {
           lobbyId: updatedLobby.id,
           oldPhase: 'battle',
@@ -1414,30 +1424,18 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (result) {
           const { lobby, message } = result;
 
-          // Phase 42-02b row #17: lobby_updated -> session:phase_changed
-          // (host force voting progression).
-          eventBus.emit('session:phase_changed', {
-            lobbyId,
-            oldPhase: 'battle',
-            newPhase: lobby.gamePhase,
-          });
-
-          // Notify everyone about the forced progression
+          // Notify everyone about the forced progression.
           io.to(lobbyId).emit('game_error', { message });
-
           gameLogger.info({ lobbyId, message }, 'Forced voting progression');
 
-          // If phase changed to reveal, trigger reveal logic
+          // If the force advanced to reveal, run the reveal cascade and emit a
+          // SINGLE battle->discussion transition (revealScores advances the phase
+          // to 'discussion') — matching submit_score / force_reveal and avoiding
+          // a transient 'reveal' interstitial flashing over the result screen.
           if (lobby.gamePhase === 'reveal') {
             const revealResult = gameState.revealScores(lobby.id);
             if (revealResult) {
-              const { lobby: updatedLobby, teamScores, teamConsensus } = revealResult;
-              // Phase 45-03: legacy `scores_revealed` emit removed (no client listener).
-              // Per-team estimation:votes_revealed below is the canonical signal —
-              // bug fix (solo-vote-stuck-discussion): mirror the fine-grained
-              // reveal emit so the force-progression path populates per-player
-              // currentScore client-side.
-              void teamConsensus;
+              const { lobby: updatedLobby, teamScores } = revealResult;
               if (updatedLobby.teams.developers.length > 0) {
                 emitFineGrained(lobby.id, 'estimation:votes_revealed', {
                   votes: teamScores.developers,
@@ -1450,11 +1448,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
                   team: 'qa',
                 });
               }
-              // Phase 42-02b row #18: lobby_updated -> session:phase_changed
-              // (reveal cascade after force progression).
               eventBus.emit('session:phase_changed', {
                 lobbyId: lobby.id,
-                oldPhase: 'reveal',
+                oldPhase: 'battle',
                 newPhase: updatedLobby.gamePhase,
               });
             }

@@ -8,7 +8,7 @@ import type { Server as SocketIOServer } from 'socket.io';
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
 // when the voting timeout safety net auto-advances battle->reveal. Avoids the
 // retired lobby_updated full-state push.
-import { eventBus } from './domains/index.js';
+import { eventBus, getClientEventEmitter } from './domains/index.js';
 
 interface RevivalSession {
   reviverId: string;
@@ -1413,6 +1413,41 @@ class GameStateManager {
     gameLogger.debug({ lobbyId }, 'Voting timeout started - 3 minutes until auto-advance');
   }
 
+  /**
+   * Shared reveal cascade for the auto-advance paths (3-minute voting timeout
+   * and host-timer expiry). Caller must have set lobby.gamePhase = 'reveal'
+   * first. Emits per-team estimation:votes_revealed (so the client populates
+   * the Discussion vote grid) then a SINGLE battle->discussion phase change —
+   * matching the submit_score / force_reveal paths, which avoids a transient
+   * 'reveal' interstitial flashing over the result screen. No-ops without IO.
+   */
+  private emitRevealCascade(lobbyId: string): void {
+    if (!this.io) return;
+    const revealResult = this.revealScores(lobbyId);
+    if (!revealResult) return;
+    const { lobby: revealedLobby, teamScores } = revealResult;
+    const emitter = getClientEventEmitter();
+    if (revealedLobby.teams.developers.length > 0) {
+      emitter.emitFineGrained(lobbyId, 'estimation:votes_revealed', {
+        votes: teamScores.developers,
+        team: 'developers',
+      });
+    }
+    if (revealedLobby.teams.qa.length > 0) {
+      emitter.emitFineGrained(lobbyId, 'estimation:votes_revealed', {
+        votes: teamScores.qa,
+        team: 'qa',
+      });
+    }
+    // Single battle->discussion transition (revealScores already advanced the
+    // phase to 'discussion'); the normal submit_score path emits the same.
+    eventBus.emit('session:phase_changed', {
+      lobbyId,
+      oldPhase: 'battle',
+      newPhase: 'discussion',
+    });
+  }
+
   // Handle voting timeout - force progression with available votes
   private handleVotingTimeout(lobbyId: string): void {
     const lobby = this.lobbies.get(lobbyId);
@@ -1428,19 +1463,9 @@ class GameStateManager {
     if (submittedPlayers.length > 0) {
       lobby.gamePhase = 'reveal';
       this.votingTimeouts.delete(lobbyId);
-      
-      // Emit update via IO
-      if (this.io) {
-        // Phase 45-03: legacy `voting_timeout` emit removed (no client listener).
-        // session:phase_changed below is the canonical signal; the "voting time
-        // expired" toast was never consumed by the client.
-        eventBus.emit('session:phase_changed', {
-          lobbyId,
-          oldPhase: 'battle',
-          newPhase: 'reveal',
-        });
-      }
-
+      // Phase 45-03: legacy `voting_timeout` toast emit removed (no client
+      // listener). The reveal cascade below is the canonical signal.
+      this.emitRevealCascade(lobbyId);
       gameLogger.info({ voteCount: submittedPlayers.length }, 'Auto-advanced to reveal phase');
     } else {
       gameLogger.info('No votes submitted - keeping in battle phase');
@@ -2055,6 +2080,7 @@ class GameStateManager {
     lobby.gamePhase = 'reveal';
     lobby.currentTimer = undefined;
     this.timerIntervals.delete(lobbyId);
+    this.emitRevealCascade(lobbyId);
   }
 
   forceReveal(playerId: string): Lobby | null {
