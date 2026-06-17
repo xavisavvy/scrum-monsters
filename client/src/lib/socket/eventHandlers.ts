@@ -342,16 +342,37 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
 
         if (!votesByPlayer) return;
 
+        const updatedPlayers = currentLobby.players.map(p => {
+          // If event is team-scoped, only mutate that team's players.
+          if (eventTeam && p.team !== eventTeam) return p;
+          const score = votesByPlayer[p.id];
+          return score !== undefined ? { ...p, currentScore: score } : p;
+        });
+        // Mirror scores into teams[*]: Discussion.tsx renders the vote grid from
+        // currentLobby.teams.developers/qa, NOT players[]. Re-derive teams from
+        // the updated players so the two collections can't drift (same invariant
+        // the session:player_joined / player_left handlers maintain).
         const updatedLobby = {
           ...currentLobby,
-          players: currentLobby.players.map(p => {
-            // If event is team-scoped, only mutate that team's players.
-            if (eventTeam && p.team !== eventTeam) return p;
-            const score = votesByPlayer[p.id];
-            return score !== undefined ? { ...p, currentScore: score } : p;
-          })
+          players: updatedPlayers,
+          teams: {
+            ...currentLobby.teams,
+            developers: updatedPlayers.filter(p => p.team === 'developers'),
+            qa: updatedPlayers.filter(p => p.team === 'qa'),
+            spectators: updatedPlayers.filter(p => p.team === 'spectators'),
+          },
         };
         setLobby(updatedLobby);
+
+        // Keep the local player's own currentScore in sync — Discussion's
+        // auto-select and "Current vote" echo read currentPlayer.currentScore.
+        const { currentPlayer, setPlayer } = useGameState.getState();
+        if (currentPlayer && (!eventTeam || currentPlayer.team === eventTeam)) {
+          const mine = votesByPlayer[currentPlayer.id];
+          if (mine !== undefined) {
+            setPlayer({ ...currentPlayer, currentScore: mine });
+          }
+        }
       }
     }
   });
@@ -360,6 +381,15 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
     const { handleEvent } = useEventSync.getState();
     handleEvent('estimation:consensus_reached', data, socket);
     // State already updated via votes_revealed
+  });
+
+  socket.on('estimation:estimate_forced', (data) => {
+    // Defensive/forward-looking: estimation:estimate_forced has no production
+    // emitter today (only EstimationManager.forceEstimate, which has no live
+    // socket caller). Still routed through handleEvent so the sequence counter
+    // stays consistent and it isn't treated as a gap; there is no client state
+    // field for a forced estimate, so there is nothing else to apply.
+    useEventSync.getState().handleEvent('estimation:estimate_forced', data, socket);
   });
 
   socket.on('estimation:timer_started', (data) => {
@@ -476,14 +506,27 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
     if (processed) {
       const { currentLobby, setLobby } = useGameState.getState();
       if (currentLobby) {
-        // Mirror the existing per-vote update shape used by estimation:vote_cast
-        // and the legacy lobby_updated discussion path.
+        // Mirror per-vote updates into BOTH players[] and teams[*] —
+        // Discussion.tsx renders the live vote grid from teams.developers/qa,
+        // so a players-only write would never show mid-discussion re-votes.
+        const updatedPlayers = currentLobby.players.map(p =>
+          p.id === data.playerId ? { ...p, currentScore: data.score as number | '?' } : p
+        );
         setLobby({
           ...currentLobby,
-          players: currentLobby.players.map(p =>
-            p.id === data.playerId ? { ...p, currentScore: data.score as number | '?' } : p
-          ),
+          players: updatedPlayers,
+          teams: {
+            ...currentLobby.teams,
+            developers: updatedPlayers.filter(p => p.team === 'developers'),
+            qa: updatedPlayers.filter(p => p.team === 'qa'),
+            spectators: updatedPlayers.filter(p => p.team === 'spectators'),
+          },
         });
+        // Keep currentPlayer in sync if this is the local player's vote.
+        const { currentPlayer, setPlayer } = useGameState.getState();
+        if (currentPlayer && currentPlayer.id === data.playerId) {
+          setPlayer({ ...currentPlayer, currentScore: data.score as number | '?' });
+        }
       }
     }
   });
@@ -917,6 +960,15 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
     // useEventSync narrows back to `{ seq? } & Record<string, unknown>` for indexing.
     handleMissedEventsReplay(data.events as Array<{ event: string; data: { seq?: number } & Record<string, unknown> }>);
   });
+
+  // Council H1: wire recovery re-dispatch. useEventSync's processEventQueue and
+  // handleMissedEventsReplay call this to re-apply buffered / missed events
+  // through their registered handlers above, so recovered state mutations land
+  // (previously the payloads were discarded and only lastSeq advanced).
+  useEventSync.getState().setReplayDispatch((event, data) => {
+    const emitter = socket as unknown as { listeners(ev: string): Array<(payload: unknown) => void> };
+    emitter.listeners(event).forEach((fn) => fn(data));
+  });
 }
 
 /**
@@ -947,6 +999,7 @@ export function teardownEventHandlers(socket: Socket): void {
   socket.off('estimation:timer_paused');
   socket.off('estimation:timer_resumed');
   socket.off('estimation:timer_expired');
+  socket.off('estimation:estimate_forced');
   socket.off('estimation:discussion_timer_started');
   socket.off('estimation:discussion_ended');
   // Phase 42-02b
@@ -987,4 +1040,8 @@ export function teardownEventHandlers(socket: Socket): void {
   // System events
   socket.off('system:full_state');
   socket.off('system:missed_events');
+
+  // Council H1: drop the recovery re-dispatch bridge — its closure captures
+  // this socket, so clear it to avoid re-applying through a torn-down socket.
+  useEventSync.getState().setReplayDispatch(null);
 }

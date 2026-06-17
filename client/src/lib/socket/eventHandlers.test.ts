@@ -23,6 +23,9 @@ function makeMockSocket(): { socket: any; handlers: Map<string, Handler> } {
     }),
     off: vi.fn(),
     emit: vi.fn(),
+    // Mirrors socket.io-client Emitter.listeners — used by the H1 recovery
+    // re-dispatch bridge to re-apply buffered/missed events.
+    listeners: vi.fn((event: string) => (handlers.has(event) ? [handlers.get(event)!] : [])),
   };
   return { socket, handlers };
 }
@@ -380,5 +383,136 @@ describe('Phase 45-04 broken-feature restoration handler coverage', () => {
       expect(stopSpy).toHaveBeenCalled();
       useAudio.setState({ stopYoutubeAudio: original });
     });
+  });
+});
+
+describe('Reveal vote mirror — teams[*] populated so Discussion renders (council C1)', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null, currentPlayer: null });
+  });
+
+  function seedTeamLobby(): Lobby {
+    const dev = { id: 'd1', name: 'Dev1', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', hasSubmittedScore: true, level: 1 };
+    const qa = { id: 'q1', name: 'Qa1', team: 'qa', isHost: false, avatar: 'mage', avatarClass: 'mage', hasSubmittedScore: true, level: 1 };
+    return {
+      id: 'lobby-1',
+      hostId: 'd1',
+      players: [dev, qa],
+      teams: { developers: [dev], qa: [qa], spectators: [] },
+      gamePhase: 'discussion',
+      tickets: [],
+      completedTickets: [],
+    } as unknown as Lobby;
+  }
+
+  it('estimation:votes_revealed writes currentScore into BOTH players[] and teams[*]', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+    useGameState.setState({ currentLobby: seedTeamLobby() });
+
+    handlers.get('estimation:votes_revealed')!({ votes: { d1: 8 }, team: 'developers', seq: 1, timestamp: 0 });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Council C1 regression guard: Discussion.tsx renders from teams.developers,
+    // NOT players[]. A players-only write left the vote grid empty.
+    expect(lobby.teams.developers[0].currentScore).toBe(8);
+    expect(lobby.players.find(p => p.id === 'd1')!.currentScore).toBe(8);
+  });
+
+  it('does not clobber the first team when the second team\'s reveal arrives', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+    useGameState.setState({ currentLobby: seedTeamLobby() });
+
+    const h = handlers.get('estimation:votes_revealed')!;
+    h({ votes: { d1: 8 }, team: 'developers', seq: 1, timestamp: 0 });
+    h({ votes: { q1: 5 }, team: 'qa', seq: 2, timestamp: 0 });
+
+    const lobby = useGameState.getState().currentLobby!;
+    expect(lobby.teams.developers[0].currentScore).toBe(8);
+    expect(lobby.teams.qa[0].currentScore).toBe(5);
+  });
+
+  it('mirrors the local player\'s revealed score into currentPlayer (Discussion auto-select)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+    const lobby = seedTeamLobby();
+    useGameState.setState({ currentLobby: lobby, currentPlayer: lobby.players[0] });
+
+    handlers.get('estimation:votes_revealed')!({ votes: { d1: 13 }, team: 'developers', seq: 1, timestamp: 0 });
+
+    expect(useGameState.getState().currentPlayer!.currentScore).toBe(13);
+  });
+
+  it('estimation:discussion_vote_updated also mirrors into teams[*]', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+    useGameState.setState({ currentLobby: seedTeamLobby() });
+
+    handlers.get('estimation:discussion_vote_updated')!({ playerId: 'q1', score: 3, seq: 1, timestamp: 0 });
+
+    const lobby = useGameState.getState().currentLobby!;
+    expect(lobby.teams.qa[0].currentScore).toBe(3);
+    expect(lobby.players.find(p => p.id === 'q1')!.currentScore).toBe(3);
+  });
+});
+
+describe('Recovery re-applies events, not just lastSeq (council H1)', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useEventSync.getState().setReplayDispatch(null);
+    useGameState.setState({ currentLobby: null, currentBoss: null, currentPlayer: null });
+  });
+
+  function seedBattleLobby(): Lobby {
+    const dev = { id: 'd1', name: 'Dev1', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', hasSubmittedScore: true, level: 1 };
+    return {
+      id: 'lobby-1',
+      hostId: 'd1',
+      players: [dev],
+      teams: { developers: [dev], qa: [], spectators: [] },
+      gamePhase: 'battle',
+      tickets: [],
+      completedTickets: [],
+    } as unknown as Lobby;
+  }
+
+  it('drains a buffered out-of-order votes_revealed once the gap is filled', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+    useGameState.setState({ currentLobby: seedBattleLobby() });
+
+    // seq 2 arrives before seq 1 → buffered, NOT applied yet.
+    handlers.get('estimation:votes_revealed')!({ votes: { d1: 8 }, team: 'developers', seq: 2, timestamp: 0 });
+    expect(useGameState.getState().currentLobby!.teams.developers[0].currentScore).toBeUndefined();
+
+    // In-order seq 1 fills the gap → drain re-dispatches seq 2 → votes applied.
+    handlers.get('session:phase_changed')!({ lobbyId: 'lobby-1', oldPhase: 'battle', newPhase: 'discussion', seq: 1, timestamp: 0 });
+
+    const lobby = useGameState.getState().currentLobby!;
+    expect(lobby.gamePhase).toBe('discussion');
+    // Pre-H1-fix this stayed undefined — processEventQueue advanced seq but dropped the payload.
+    expect(lobby.teams.developers[0].currentScore).toBe(8);
+  });
+
+  it('applies missed votes_revealed delivered via system:missed_events', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+    useGameState.setState({ currentLobby: seedBattleLobby() });
+
+    // Gap: seq 2 buffered while waiting for seq 1.
+    handlers.get('estimation:votes_revealed')!({ votes: { d1: 5 }, team: 'developers', seq: 2, timestamp: 0 });
+    expect(useGameState.getState().currentLobby!.teams.developers[0].currentScore).toBeUndefined();
+
+    // Server replays the missing seq 1; recovery drains the contiguous seq 2 too.
+    handlers.get('system:missed_events')!({
+      events: [
+        { event: 'session:phase_changed', data: { lobbyId: 'lobby-1', oldPhase: 'battle', newPhase: 'discussion', seq: 1, timestamp: 0 } },
+      ],
+    });
+
+    // Pre-H1-fix this stayed undefined — handleMissedEventsReplay discarded payloads.
+    expect(useGameState.getState().currentLobby!.teams.developers[0].currentScore).toBe(5);
   });
 });

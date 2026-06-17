@@ -14,6 +14,14 @@ interface EventSyncState {
   pendingEvents: Map<number, { event: string; data: Record<string, unknown> }>;
   isRecovering: boolean;
   pendingOptimistic: Map<string, unknown>;
+  /**
+   * Bridge to re-apply a recovered event by invoking its registered socket
+   * handler. Registered by setupEventHandlers; null in isolation (unit tests),
+   * where recovery falls back to advancing lastSeq without re-applying.
+   */
+  replayDispatch: ((event: string, data: Record<string, unknown>) => void) | null;
+  /** Reentrancy guard so re-dispatch during a queue drain can't recurse. */
+  isDraining: boolean;
 
   // Event processing and recovery
   handleEvent: (event: string, data: WirePayload, socket: TypedSocket) => boolean;
@@ -21,6 +29,7 @@ interface EventSyncState {
   requestMissedEvents: (socket: TypedSocket, lastSeq: number) => void;
   handleMissedEventsReplay: (events: Array<{ event: string; data: { seq?: number } & Record<string, unknown> }>) => void;
   handleFullStateRefresh: (lobby: Lobby, seq: number) => void;
+  setReplayDispatch: (fn: ((event: string, data: Record<string, unknown>) => void) | null) => void;
 
   // Optimistic updates
   setOptimistic: <T>(key: string, value: T) => void;
@@ -37,6 +46,8 @@ export const useEventSync = create<EventSyncState>()(
     pendingEvents: new Map(),
     isRecovering: false,
     pendingOptimistic: new Map(),
+    replayDispatch: null,
+    isDraining: false,
 
     handleEvent: (event: string, data: WirePayload, socket: TypedSocket): boolean => {
       const { lastSeq, pendingEvents } = get();
@@ -70,24 +81,45 @@ export const useEventSync = create<EventSyncState>()(
     },
 
     processEventQueue: () => {
-      const { lastSeq, pendingEvents } = get();
-      let currentSeq = lastSeq;
-      const newPendingEvents = new Map(pendingEvents);
+      const { replayDispatch, isDraining } = get();
 
-      // Process consecutive events from the queue
-      while (newPendingEvents.has(currentSeq + 1)) {
-        const nextEvent = newPendingEvents.get(currentSeq + 1);
-        if (!nextEvent) break;
+      // No dispatcher wired (isolation / unit tests): preserve legacy behavior —
+      // advance lastSeq across the contiguous run without re-applying.
+      if (!replayDispatch) {
+        const { lastSeq, pendingEvents } = get();
+        const newPendingEvents = new Map(pendingEvents);
+        let currentSeq = lastSeq;
+        while (newPendingEvents.has(currentSeq + 1)) {
+          newPendingEvents.delete(currentSeq + 1);
+          currentSeq++;
+        }
+        set({ lastSeq: currentSeq, pendingEvents: newPendingEvents });
+        return;
+      }
 
-        // Remove from pending
-        newPendingEvents.delete(currentSeq + 1);
-        currentSeq++;
+      // Re-dispatch below re-enters handleEvent -> processEventQueue; guard it.
+      if (isDraining) return;
+      set({ isDraining: true });
+      try {
+        // Drain the contiguous run, re-applying each event through its handler
+        // so buffered state mutations (votes, phase, hp, ...) actually land —
+        // previously the payload was dropped and only lastSeq advanced.
+        while (true) {
+          const { lastSeq, pendingEvents } = get();
+          const entry = pendingEvents.get(lastSeq + 1);
+          if (!entry) break;
 
-        // Update state
-        set({
-          lastSeq: currentSeq,
-          pendingEvents: newPendingEvents
-        });
+          // Remove BEFORE re-dispatch so the handler's handleEvent sees this as
+          // the next in-order event (seq === lastSeq + 1), advances, and applies.
+          const newPendingEvents = new Map(pendingEvents);
+          newPendingEvents.delete(lastSeq + 1);
+          set({ pendingEvents: newPendingEvents });
+
+          // Re-attach the seq stripped at buffer time (storage contract).
+          replayDispatch(entry.event, { ...entry.data, seq: lastSeq + 1 });
+        }
+      } finally {
+        set({ isDraining: false });
       }
     },
 
@@ -104,18 +136,41 @@ export const useEventSync = create<EventSyncState>()(
     },
 
     handleMissedEventsReplay: (events) => {
-      // Process each event in order
-      events.forEach((evt) => {
-        const { seq } = evt.data;
-        if (seq) {
-          set({ lastSeq: seq });
+      const { replayDispatch } = get();
+
+      // Apply server-supplied missed events in seq order. With a dispatcher
+      // wired, each in-order event is re-applied through its handler; without
+      // one (unit tests), they buffer and the legacy drain below advances seq.
+      const ordered = [...events].sort(
+        (a, b) => (a.data.seq ?? 0) - (b.data.seq ?? 0)
+      );
+
+      for (const evt of ordered) {
+        const seq = evt.data.seq;
+        if (seq === undefined) continue;
+
+        const { lastSeq } = get();
+        if (seq <= lastSeq) continue; // already applied
+
+        if (seq === lastSeq + 1 && replayDispatch) {
+          // In order: re-apply (the wire payload already carries its seq).
+          replayDispatch(evt.event, evt.data);
+        } else {
+          // Still gapped (or no dispatcher): buffer for the drain below. Strip
+          // seq to match the storage contract used by handleEvent.
+          const payload: Record<string, unknown> = { ...evt.data };
+          delete payload.seq;
+          const newPendingEvents = new Map(get().pendingEvents);
+          newPendingEvents.set(seq, { event: evt.event, data: payload });
+          set({ pendingEvents: newPendingEvents });
         }
-      });
+      }
 
       // Recovery complete
       set({ isRecovering: false });
 
-      // Process any remaining queued events
+      // Drain anything now contiguous (re-applies with a dispatcher; legacy
+      // seq-advance without one).
       get().processEventQueue();
     },
 
@@ -126,6 +181,10 @@ export const useEventSync = create<EventSyncState>()(
         pendingEvents: new Map(),
         isRecovering: false
       });
+    },
+
+    setReplayDispatch: (fn) => {
+      set({ replayDispatch: fn });
     },
 
     setOptimistic: <T>(key: string, value: T) => {
@@ -162,11 +221,15 @@ export const useEventSync = create<EventSyncState>()(
     },
 
     reset: () => {
+      // Note: replayDispatch is intentionally NOT cleared here — it is tied to
+      // the socket lifecycle (set in setupEventHandlers, cleared in teardown),
+      // so a mid-session reset must not degrade recovery to seq-advance-only.
       set({
         lastSeq: 0,
         pendingEvents: new Map(),
         pendingOptimistic: new Map(),
-        isRecovering: false
+        isRecovering: false,
+        isDraining: false
       });
     }
   }))
