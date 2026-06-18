@@ -235,7 +235,7 @@ describe('MusicControls', () => {
 
       // Confirm the emit payload has non-empty videoId and no playlistId key
       const emitCall = mockSocketEmit.mock.calls.find(
-        ([event]: [string]) => event === 'youtube_play',
+        (args: unknown[]) => args[0] === 'youtube_play',
       );
       expect(emitCall).toBeDefined();
       const payload = emitCall![1] as Record<string, unknown>;
@@ -278,7 +278,7 @@ describe('MusicControls', () => {
 
       // Confirm: videoId === '' and no playlistId key
       const emitCall = mockSocketEmit.mock.calls.find(
-        ([event]: [string]) => event === 'youtube_play',
+        (args: unknown[]) => args[0] === 'youtube_play',
       );
       expect(emitCall).toBeDefined();
       const payload = emitCall![1] as Record<string, unknown>;
