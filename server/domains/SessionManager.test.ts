@@ -36,6 +36,51 @@ describe('SessionManager - Lobby Lifecycle', () => {
       expect(lobby.completedTickets).toEqual([]);
     });
 
+    it('rejects creation past MAX_LOBBIES capacity (Security: H-5)', () => {
+      const prev = process.env.MAX_LOBBIES;
+      process.env.MAX_LOBBIES = '2';
+      try {
+        const sm = new SessionManager({ eventBus: new ScopedEventBus() });
+        sm.createLobby('A', 'L1');
+        sm.createLobby('B', 'L2');
+        expect(sm.getLobbyCount()).toBe(2);
+        // Third creation must be rejected, not silently grow the map.
+        expect(() => sm.createLobby('C', 'L3')).toThrow(/capacity/i);
+        expect(sm.getLobbyCount()).toBe(2);
+      } finally {
+        if (prev === undefined) delete process.env.MAX_LOBBIES;
+        else process.env.MAX_LOBBIES = prev;
+      }
+    });
+
+    it('reaps only lobbies idle beyond the TTL, cleaning up state (Security: H-5)', () => {
+      const sm = new SessionManager({ eventBus: new ScopedEventBus() });
+      const lobby = sm.createLobby('A', 'L1');
+      const hostId = lobby.players[0].id;
+      const start = Date.now();
+      const TTL = 30 * 60 * 1000;
+
+      // Within TTL → not reaped.
+      expect(sm.reapIdleLobbies(start + 60_000)).toEqual([]);
+      expect(sm.getLobbyCount()).toBe(1);
+
+      // Beyond TTL → reaped and fully cleaned up.
+      const reaped = sm.reapIdleLobbies(start + TTL + 1000);
+      expect(reaped).toContain(lobby.id);
+      expect(sm.getLobbyCount()).toBe(0);
+      expect(sm.getPlayerLobby(hostId)).toBeNull();
+    });
+
+    it('recordLobbyActivity keeps a lobby within the idle window', () => {
+      const sm = new SessionManager({ eventBus: new ScopedEventBus() });
+      const lobby = sm.createLobby('A', 'L1');
+      const t = Date.now();
+      sm.recordLobbyActivity(lobby.id);
+      // Checking just under one TTL after the activity stamp must not reap it.
+      expect(sm.reapIdleLobbies(t + 30 * 60 * 1000 - 5000)).toEqual([]);
+      expect(sm.getLobbyCount()).toBe(1);
+    });
+
     it('should initialize playerCombatStates for host', () => {
       const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
       const hostId = lobby.players[0].id;
