@@ -8,6 +8,7 @@ export default [
   // Ignore patterns
   {
     ignores: [
+      ".claude/**",
       "node_modules/**",
       "dist/**",
       "build/**",
