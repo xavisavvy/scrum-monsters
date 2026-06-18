@@ -27,6 +27,7 @@ import {
   AvatarClass,
 } from '../../shared/gameEvents';
 import {
+  SessionError,
   LobbyNotFoundError,
   PlayerNotFoundError,
   PlayerNotHostError,
@@ -78,6 +79,10 @@ export class SessionManager {
   private playerActivity = new Map<string, number>();
 
   // Constants
+  // Hard ceiling on concurrent lobbies. Bounds memory against create_lobby
+  // flooding (no per-socket rate limit exists on the WS layer yet — H-6).
+  // Override via MAX_LOBBIES env for larger deployments. (Security: H-5)
+  private readonly MAX_LOBBIES = Number(process.env.MAX_LOBBIES) || 500;
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
   // Aligned with DISCONNECT_GRACE_PERIOD so a player in the grace window cannot hold a structurally expired token. Trade-off: wider replay window — acceptable given HMAC signature + per-player binding. (Phase 41)
   private readonly TOKEN_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes
@@ -108,6 +113,17 @@ export class SessionManager {
     lobbyName: string,
     options?: CreateLobbyOptions
   ): Lobby {
+    // Reject when at capacity so a flood of create_lobby calls cannot exhaust
+    // server memory. The create_lobby handler catches SessionError and relays
+    // a game_error to the client. (Security: H-5)
+    if (this.lobbies.size >= this.MAX_LOBBIES) {
+      gameLogger.warn(
+        { lobbyCount: this.lobbies.size, max: this.MAX_LOBBIES },
+        'Lobby capacity reached; rejecting create_lobby'
+      );
+      throw new SessionError('LOBBY_CAPACITY_REACHED', 'Server is at capacity. Please try again shortly.');
+    }
+
     // Generate lobby ID
     const lobbyId =
       options?.customLobbyId ||

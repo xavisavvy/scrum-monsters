@@ -36,6 +36,23 @@ describe('SessionManager - Lobby Lifecycle', () => {
       expect(lobby.completedTickets).toEqual([]);
     });
 
+    it('rejects creation past MAX_LOBBIES capacity (Security: H-5)', () => {
+      const prev = process.env.MAX_LOBBIES;
+      process.env.MAX_LOBBIES = '2';
+      try {
+        const sm = new SessionManager({ eventBus: new ScopedEventBus() });
+        sm.createLobby('A', 'L1');
+        sm.createLobby('B', 'L2');
+        expect(sm.getLobbyCount()).toBe(2);
+        // Third creation must be rejected, not silently grow the map.
+        expect(() => sm.createLobby('C', 'L3')).toThrow(/capacity/i);
+        expect(sm.getLobbyCount()).toBe(2);
+      } finally {
+        if (prev === undefined) delete process.env.MAX_LOBBIES;
+        else process.env.MAX_LOBBIES = prev;
+      }
+    });
+
     it('should initialize playerCombatStates for host', () => {
       const lobby = sessionManager.createLobby('Host Player', 'Test Lobby');
       const hostId = lobby.players[0].id;
