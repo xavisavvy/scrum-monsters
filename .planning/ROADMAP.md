@@ -243,6 +243,17 @@ Plans (wave 1 = 45-01/02/03 parallel-safe; wave 2 = 45-04 after 45-03; wave 3 = 
 - [x] 45-04-PLAN.md — Restore broken features (revival UX with new combat:revival_progress, YouTube sync handlers, combat:player_healed + floating-heal popup) — completed 2026-05-17 (2d76510)
 - [x] 45-05-PLAN.md — Type the socket, remove the ESLint override, dedupe clientEvents.ts, sweep all Low items, address C6 — completed 2026-05-18 (feb94b1 + 4b1f483 + 0240117)
 
+### Phase 46: Music Controls & History
+**Goal**: Persistent music controls accessible from both Lobby and BattleScreen, with a YouTube URL input, live sync to all players, and a top-10 recently-used history stored per-host (showing video title, not raw URL).
+**Depends on**: Phase 45 (YouTube sync handlers wired)
+**Requirements**: MUSIC-01, MUSIC-02, MUSIC-03, MUSIC-04, MUSIC-05
+**Plans:** 3 plans
+
+Plans:
+- [ ] 46-01-PLAN.md — Helpers + playlist contracts: musicHistory localStorage, oEmbed title fetch, widen youtube_play payload end-to-end (schema/type/server/player/store/handler)
+- [ ] 46-02-PLAN.md — MusicControls.tsx component: host write + non-host read-only, oEmbed title, history dropdown, playlist note
+- [ ] 46-03-PLAN.md — Wiring: hoist YoutubeAudioPlayer to GamePage, swap BattleScreen controls, add to Lobby, delete BossMusicControls
+
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
