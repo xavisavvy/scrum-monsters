@@ -40,7 +40,7 @@
     "db:push": "drizzle-kit push",
     "db:migrate:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
-    "prepare": "husky",
+    "prepare": "node -e \"try{require('node:child_process').execSync('husky',{stdio:'inherit'})}catch{}\"",
     "audit": "audit-ci --config .audit-ci.json",
     "scan": "trivy fs --scanners vuln,secret,misconfig --skip-dirs node_modules,dist,.planning,client/public,playwright-report,test-results,coverage --severity HIGH,CRITICAL --exit-code 0 .",
     "scan:secrets": "trivy fs --scanners secret --exit-code 1 .",
