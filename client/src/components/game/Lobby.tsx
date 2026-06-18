@@ -15,6 +15,7 @@ import { SpeechBubble } from './SpeechBubble';
 import { EmoteModal } from './EmoteModal';
 import { MagicEffect } from './MagicEffect';
 import { LobbyReadyButton } from './LobbyReadyButton';
+import { MusicControls } from '@/components/ui/MusicControls';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -1715,8 +1716,9 @@ export function Lobby() {
     >
       <style>{spectatorStyles}</style>
       
-      {/* Mute Button - Top Right */}
-      <div className="absolute top-4 right-4 z-50">
+      {/* Music Controls + Mute Button - Top Right */}
+      <div className="absolute top-4 right-4 z-50 flex items-center gap-2">
+        <MusicControls />
         <RetroButton
           onClick={toggleMute}
           size="sm"
