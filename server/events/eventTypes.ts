@@ -12,7 +12,7 @@
  * Event naming convention: domain:action (e.g., estimation:vote_cast)
  */
 
-import { GamePhase, TeamType, AvatarClass } from '../../shared/gameEvents';
+import { GamePhase, TeamType, AvatarClass, CompletedTicket } from '../../shared/gameEvents';
 import type {
   ProgressionXPAwardedPayload,
   ProgressionLevelUpPayload,
@@ -90,6 +90,7 @@ export interface SessionPhaseChangedPayload {
   lobbyId: string;
   oldPhase: GamePhase;
   newPhase: GamePhase;
+  completedTickets?: CompletedTicket[];
 }
 
 /** Emitted when a lobby is destroyed (all players left or host closed) */

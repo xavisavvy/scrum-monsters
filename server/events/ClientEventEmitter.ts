@@ -91,6 +91,7 @@ export class ClientEventEmitter {
       this.emitToLobby(payload.lobbyId, 'session:phase_changed', {
         oldPhase: payload.oldPhase,
         newPhase: payload.newPhase,
+        ...(payload.completedTickets !== undefined && { completedTickets: payload.completedTickets }),
       });
     });
 

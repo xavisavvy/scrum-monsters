@@ -1762,10 +1762,19 @@ class GameStateManager {
       // Progress to next phase/ticket
       // Count active participants for consistent health scaling
       const activeParticipants = lobby.players.filter(p => p.team === 'developers' || p.team === 'qa').length;
-      
+
       lobby.currentTicket = lobby.tickets[lobby.completedTickets.length];
       lobby.boss = this.createBossFromTickets(lobby.tickets.slice(lobby.completedTickets.length), activeParticipants);
     }
+
+    // Broadcast the phase change and the updated completedTickets so clients
+    // can display accurate story-point totals on the victory/next_level screen.
+    eventBus.emit('session:phase_changed', {
+      lobbyId,
+      oldPhase: 'discussion',
+      newPhase: lobby.gamePhase,
+      completedTickets: lobby.completedTickets,
+    });
   }
 
   // Phase 45-03: emitConsensusCountdownUpdate removed. The legacy

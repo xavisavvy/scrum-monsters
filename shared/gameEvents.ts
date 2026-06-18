@@ -420,7 +420,7 @@ export interface ServerToClientEvents {
   'session:player_joined': (data: { playerId: string; playerName: string; team: TeamType; avatar?: AvatarClass; seq: number; timestamp: number }) => void;
   'session:player_left': (data: { playerId: string; seq: number; timestamp: number }) => void;
   'session:host_changed': (data: { oldHostId: string; newHostId: string; newHostName: string; seq: number; timestamp: number }) => void;
-  'session:phase_changed': (data: { oldPhase: GamePhase; newPhase: GamePhase; seq: number; timestamp: number }) => void;
+  'session:phase_changed': (data: { oldPhase: GamePhase; newPhase: GamePhase; completedTickets?: CompletedTicket[]; seq: number; timestamp: number }) => void;
   'session:team_changed': (data: { playerId: string; oldTeam: TeamType; newTeam: TeamType; seq: number; timestamp: number }) => void;
   'session:avatar_selected': (data: { playerId: string; avatar: AvatarClass; seq: number; timestamp: number }) => void;
   // Note: payload intentionally does not include hasSelectedAvatar — clients
