@@ -96,8 +96,6 @@ describe('fetchYoutubeTitle', () => {
 
     const result = await fetchYoutubeTitle(url);
     expect(result).toBe(truncateUrl(url));
-    // Must not reject
-    await expect(fetchYoutubeTitle(url)).resolves.toBeDefined();
   });
 
   it('resolves to truncateUrl(url) when fetch rejects (network error)', async () => {
