@@ -101,12 +101,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BAL-01 | Phase 42 (42-03) | Complete |
 | AUTH-01 | Phase 43 (43-01 + 43-02) | Complete (2026-05-08) |
 | INFRA-01 | Phase 44 | Pending |
+| MUSIC-01 | Phase 46 | Pending |
+| MUSIC-02 | Phase 46 | Pending |
+| MUSIC-03 | Phase 46 | Pending |
+| MUSIC-04 | Phase 46 | Pending |
+| MUSIC-05 | Phase 46 | Pending |
 
 **Coverage:**
-- v5.0 requirements: 19 total
-- Mapped to phases: 19
+- v5.0 requirements: 24 total
+- Mapped to phases: 24
 - Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-11*
-*Last updated: 2026-05-08 — Added INFRA-01 (zero-downtime blue-green deploys) for Phase 44; AUTH-01 marked complete.*
+*Last updated: 2026-06-17 — Added MUSIC-01..05 (music controls & history) for Phase 46.*
