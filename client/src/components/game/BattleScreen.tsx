@@ -9,8 +9,7 @@ import { EmoteModal } from './EmoteModal';
 import { GameOverPhase } from './phases/GameOverPhase';
 import { RetroCard } from '@/components/ui/retro-card';
 import { RetroButton } from '@/components/ui/retro-button';
-import { BossMusicControls } from '@/components/ui/BossMusicControls';
-import { YoutubeAudioPlayer } from '@/components/ui/YoutubeAudioPlayer';
+import { MusicControls } from '@/components/ui/MusicControls';
 import { CinematicBackground } from '@/components/ui/CinematicBackground';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { PlayerController } from './PlayerController';
@@ -333,7 +332,7 @@ export function BattleScreen() {
               }}
               data-no-shoot
             >
-              <BossMusicControls />
+              <MusicControls />
             </div>
 
             {/* Player Character Controller */}
@@ -400,7 +399,7 @@ export function BattleScreen() {
               }}
               data-no-shoot
             >
-              <BossMusicControls />
+              <MusicControls />
             </div>
 
             {/* Team Competition Components */}
@@ -818,8 +817,6 @@ export function BattleScreen() {
         onClose={() => setShowTeamCompetitionModal(false)}
       />
 
-      {/* YouTube Audio Player (hidden) */}
-      <YoutubeAudioPlayer />
     </div>
     </>
   );
