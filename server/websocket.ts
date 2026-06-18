@@ -26,8 +26,10 @@ import {
   PlayerNotHostError,
   SessionError,
 } from './domains/index.js';
+import type { z } from 'zod';
 import {
   validatePayload,
+  ClientEventSchemas,
   ToggleReadyPayloadSchema,
   BossDamagePlayerPayloadSchema,
 } from '../shared/socket-schemas.js';
@@ -333,7 +335,30 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // Update Prometheus WebSocket connection gauge
     updateWebsocketMetrics(io);
 
-    socket.on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
+    // Central validation gateway (Security: M-2). Every client event is
+    // validated against its schema in ClientEventSchemas before the handler
+    // runs; malformed/out-of-shape payloads are rejected with a game_error and
+    // never reach game state. Replaces ~50 hand-rolled (mostly absent) checks.
+    // `disconnect` is a lifecycle event and stays on raw socket.on below.
+    const on = <E extends keyof typeof ClientEventSchemas>(
+      event: E,
+      handler: (data: z.infer<(typeof ClientEventSchemas)[E]>) => void,
+    ): void => {
+      socket.on(event as keyof ClientToServerEvents, ((raw: unknown) => {
+        const result = validatePayload(ClientEventSchemas[event] as z.ZodType<unknown>, raw);
+        if (!result.success) {
+          socketLogger.warn(
+            { event, socketId: socket.id, issues: result.error.issues.slice(0, 3) },
+            'Rejected invalid socket payload',
+          );
+          socket.emit('game_error', { message: `Invalid ${String(event)} payload` });
+          return;
+        }
+        handler(result.data as z.infer<(typeof ClientEventSchemas)[E]>);
+      }) as never);
+    };
+
+    on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
       try {
         const lobby = sessionManager.createLobby(hostName, lobbyName, initialSettings);
 
@@ -416,7 +441,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('join_lobby', ({ lobbyId, playerName }) => {
+    on('join_lobby', ({ lobbyId, playerName }) => {
       try {
         const { lobby, player } = sessionManager.joinLobby(lobbyId, playerName);
 
@@ -530,7 +555,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('select_avatar', ({ avatarClass }) => {
+    on('select_avatar', ({ avatarClass }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -563,7 +588,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       emitFineGrained(lobby.id, 'session:avatar_selected', { playerId, avatar: avatarClass });
     });
 
-    socket.on('assign_team', ({ playerId: targetPlayerId, team }) => {
+    on('assign_team', ({ playerId: targetPlayerId, team }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -596,7 +621,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('change_own_team', ({ team }) => {
+    on('change_own_team', ({ team }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -647,7 +672,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('add_tickets', ({ tickets }) => {
+    on('add_tickets', ({ tickets }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -665,7 +690,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.info({ playerId, ticketCount: tickets.length, lobbyId: lobby.id }, 'Host added tickets');
     });
 
-    socket.on('remove_ticket', ({ ticketId }) => {
+    on('remove_ticket', ({ ticketId }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -684,7 +709,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Explicit leave lobby (user clicked back to menu)
-    socket.on('leave_lobby', () => {
+    on('leave_lobby', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
@@ -709,7 +734,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Update lobby name (host only)
-    socket.on('update_lobby_name', ({ name }) => {
+    on('update_lobby_name', ({ name }) => {
       socketLogger.debug({ name }, 'update_lobby_name received');
 
       const playerId = socket.data.playerId;
@@ -743,7 +768,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Lobby movement events for 2D sidescroller playground
-    socket.on('lobby_player_pos', ({ x, y, direction }) => {
+    on('lobby_player_pos', ({ x, y, direction }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
@@ -764,7 +789,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       });
     });
 
-    socket.on('lobby_player_jump', ({ isJumping }) => {
+    on('lobby_player_jump', ({ isJumping }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
@@ -783,7 +808,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       });
     });
 
-    socket.on('player_charge', ({ isCharging, chargePower }: { isCharging: boolean; chargePower?: number }) => {
+    on('player_charge', ({ isCharging, chargePower }: { isCharging: boolean; chargePower?: number }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       
@@ -802,7 +827,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       });
     });
 
-    socket.on('lobby_emote', ({ message, x, y }) => {
+    on('lobby_emote', ({ message, x, y }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
@@ -831,7 +856,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.debug({ playerId, lobbyId, message: message.trim() }, 'Player emoted in lobby');
     });
 
-    socket.on('toggle_ready', (data) => {
+    on('toggle_ready', (data) => {
       const result = validatePayload(ToggleReadyPayloadSchema, data);
       if (!result.success) {
         socket.emit('game_error', { message: 'Invalid toggle_ready payload' });
@@ -863,7 +888,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Handle battle emotes
-    socket.on('battle_emote', ({ message, x, y }) => {
+    on('battle_emote', ({ message, x, y }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       if (!playerId || !lobbyId) return;
@@ -892,7 +917,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.debug({ playerId, lobbyId, message: message.trim() }, 'Player battle emoted');
     });
 
-    socket.on('start_battle', () => {
+    on('start_battle', () => {
       const playerId = socket.data.playerId;
       socketLogger.debug({ socketId: socket.id, playerId }, 'start_battle received');
 
@@ -952,7 +977,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('submit_score', ({ score }) => {
+    on('submit_score', ({ score }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1036,7 +1061,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('update_discussion_vote', ({ score }) => {
+    on('update_discussion_vote', ({ score }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1072,7 +1097,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('attack_boss', ({ damage }) => {
+    on('attack_boss', ({ damage }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1118,7 +1143,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // It is therefore only valid for a player to report damage to ITSELF.
     // Without the self-target guard, any client could down (or, via a negative
     // value, heal) any player in any lobby and force game_over. (Security: H-1)
-    socket.on('boss_damage_player', (data) => {
+    on('boss_damage_player', (data) => {
       const attackerId = socket.data.playerId;
       if (!attackerId) return;
 
@@ -1150,7 +1175,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Player projectile broadcasting for multiplayer visibility
-    socket.on('player_projectile', ({ startX, startY, targetX, targetY, emoji, targetPlayerId }) => {
+    on('player_projectile', ({ startX, startY, targetX, targetY, emoji, targetPlayerId }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1177,7 +1202,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.debug({ playerName: player.name, emoji, targetType: targetPlayerId ? 'player' : 'boss' }, 'Broadcasting projectile');
     });
 
-    socket.on('proceed_next_level', () => {
+    on('proceed_next_level', () => {
       try {
         const playerId = socket.data.playerId;
         const lobbyId = socket.data.lobbyId;
@@ -1250,7 +1275,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('abandon_quest', () => {
+    on('abandon_quest', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1268,7 +1293,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('restart_game', () => {
+    on('restart_game', () => {
       socketLogger.debug('Server received restart_game event');
       const playerId = socket.data.playerId;
       if (!playerId) {
@@ -1289,7 +1314,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('return_to_lobby', () => {
+    on('return_to_lobby', () => {
       socketLogger.debug('Server received return_to_lobby event');
       const playerId = socket.data.playerId;
       if (!playerId) {
@@ -1312,7 +1337,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('force_reveal', () => {
+    on('force_reveal', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1361,7 +1386,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('youtube_play', ({ videoId, url }) => {
+    on('youtube_play', ({ videoId, url }) => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       
@@ -1379,7 +1404,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.debug({ playerId, url }, 'Host started YouTube music');
     });
 
-    socket.on('youtube_stop', () => {
+    on('youtube_stop', () => {
       const playerId = socket.data.playerId;
       const lobbyId = socket.data.lobbyId;
       
@@ -1397,7 +1422,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.debug({ playerId }, 'Host stopped YouTube music');
     });
 
-    socket.on('advancePhaseNow', () => {
+    on('advancePhaseNow', () => {
       try {
         // Identity MUST come from the authenticated socket, never the payload.
         // The previous implementation compared two attacker-supplied values
@@ -1439,7 +1464,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('forceVotingProgression', ({ lobbyId }) => {
+    on('forceVotingProgression', ({ lobbyId }) => {
       try {
         const playerId = socket.data.playerId;
         if (!playerId) {
@@ -1492,7 +1517,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Position sync for combat - batched for performance
-    socket.on('player_pos', ({ x, y }: { x: number; y: number }) => {
+    on('player_pos', ({ x, y }: { x: number; y: number }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1504,7 +1529,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Player vs player combat
-    socket.on('attack_player', ({ targetId, damage }: { targetId: string; damage: number }) => {
+    on('attack_player', ({ targetId, damage }: { targetId: string; damage: number }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1529,7 +1554,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Party healing (priest special ability)
-    socket.on('heal_party', () => {
+    on('heal_party', () => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1547,7 +1572,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // Phase 45-04: legacy revive_progress/revive_cancelled socket emits
     // replaced by eventBus.emit('combat:revival_started' / '...:cancelled')
     // so the bridge surfaces them to the new client handlers.
-    socket.on('revive_start', ({ targetId }: { targetId: string }) => {
+    on('revive_start', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1565,7 +1590,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('revive_cancel', ({ targetId }: { targetId: string }) => {
+    on('revive_cancel', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1583,7 +1608,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('revive_tick', ({ targetId }: { targetId: string }) => {
+    on('revive_tick', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1604,7 +1629,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Jumping state sync
-    socket.on('player_jump', ({ isJumping }: { isJumping: boolean }) => {
+    on('player_jump', ({ isJumping }: { isJumping: boolean }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1615,7 +1640,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Timer settings update
-    socket.on('update_timer_settings', ({ timerSettings }) => {
+    on('update_timer_settings', ({ timerSettings }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1626,7 +1651,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('update_jira_settings', ({ jiraSettings }) => {
+    on('update_jira_settings', ({ jiraSettings }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1637,7 +1662,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('update_estimation_settings', ({ estimationSettings }) => {
+    on('update_estimation_settings', ({ estimationSettings }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1651,7 +1676,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Reconnection handler
-    socket.on('reconnect_with_token', ({ reconnectToken }) => {
+    on('reconnect_with_token', ({ reconnectToken }) => {
       try {
         const response = sessionManager.attemptPlayerReconnect(reconnectToken);
 
@@ -1744,7 +1769,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Client heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
-    socket.on('client_heartbeat', () => {
+    on('client_heartbeat', () => {
       // Simply acknowledge - the act of receiving this message resets infrastructure idle timers
       const playerId = socket.data.playerId;
       if (playerId) {
@@ -1753,7 +1778,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Handle missed events request (sequence gap recovery)
-    socket.on('request_missed_events', ({ lastSeq }) => {
+    on('request_missed_events', ({ lastSeq }) => {
       const lobbyId = socket.data.lobbyId;
       if (!lobbyId) {
         socketLogger.warn('request_missed_events: No lobbyId in socket data');
@@ -1792,7 +1817,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // EstimationManager event bus.
 
     // Finalize estimate (host only during discussion)
-    socket.on('finalize_estimate', (data: { estimate: number }) => {
+    on('finalize_estimate', (data: { estimate: number }) => {
       try {
         const playerId = socket.data.playerId;
         const lobbyId = socket.data.lobbyId;
@@ -1831,7 +1856,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // routed through use_ability / heal_party.
 
     // Player uses class ability
-    socket.on('use_ability', ({ abilityId }: { abilityId: string }) => {
+    on('use_ability', ({ abilityId }: { abilityId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1860,7 +1885,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       gameLogger.debug({ playerId, abilityId }, 'Player used ability');
     });
 
-    socket.on('use_item', ({ itemType }: { itemType: string }) => {
+    on('use_item', ({ itemType }: { itemType: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
@@ -1894,7 +1919,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // in this file.
 
     // Attack minion (player targeting spectator minion)
-    socket.on('attack_minion', (data: { minionPlayerId: string }) => {
+    on('attack_minion', (data: { minionPlayerId: string }) => {
       try {
         const playerId = socket.data.playerId;
         const lobbyId = socket.data.lobbyId;

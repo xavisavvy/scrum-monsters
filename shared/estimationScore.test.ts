@@ -35,7 +35,6 @@ describe('isValidEstimationScore (Security: M-1)', () => {
 
   it('rejects non-numeric, non-"?" payloads', () => {
     for (const bad of ['XS', 'abc', '', null, undefined, {}, [], true, () => 1]) {
-      // @ts-expect-error — intentionally passing invalid types
       expect(isValidEstimationScore(bad)).toBe(false);
     }
   });

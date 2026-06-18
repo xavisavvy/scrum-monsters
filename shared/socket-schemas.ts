@@ -716,7 +716,10 @@ export const ClientEventSchemas = {
   revive_start: ReviveTargetPayloadSchema,
   revive_cancel: ReviveTargetPayloadSchema,
   revive_tick: ReviveTargetPayloadSchema,
-  heal_party: HealPartyPayloadSchema,
+  // heal_party carries no payload; the client emits it with no args, so the
+  // wire value is `undefined`. Use the void schema (HealPartyPayloadSchema is
+  // a strict empty-object that would reject `undefined`). (Security: M-2)
+  heal_party: EmptyPayloadSchema,
   player_jump: PlayerJumpPayloadSchema,
   boss_damage_player: BossDamagePlayerPayloadSchema,
   player_projectile: PlayerProjectilePayloadSchema,
@@ -730,6 +733,7 @@ export const ClientEventSchemas = {
   update_estimation_settings: UpdateEstimationSettingsPayloadSchema,
   use_ability: UseAbilityPayloadSchema,
   use_item: UseItemPayloadSchema,
+  client_heartbeat: EmptyPayloadSchema,
 } as const;
 
 /**
