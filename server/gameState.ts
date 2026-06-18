@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile, isValidEstimationScore } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 import { createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
@@ -1329,6 +1329,14 @@ class GameStateManager {
 
     const player = lobby.players.find(p => p.id === playerId);
     if (!player || player.team === 'spectators') return null;
+
+    // Reject values outside the configured estimation scale (abstain '?' is
+    // always allowed). Without this, a client could submit arbitrary/huge/NaN
+    // values that corrupt consensus math and the reveal grid. (Security: M-1)
+    if (!isValidEstimationScore(score, lobby.estimationSettings)) {
+      gameLogger.warn({ playerId, lobbyId: lobby.id, score }, 'Rejected out-of-scale submit_score');
+      return null;
+    }
 
     player.currentScore = score;
     player.hasSubmittedScore = true;

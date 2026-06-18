@@ -661,6 +661,39 @@ export const ESTIMATION_SCALES: Record<EstimationScaleType, EstimationScale> = {
   }
 };
 
+/**
+ * Validates a submitted estimation score on the server. Accepts the abstain
+ * sentinel `'?'` or any numeric value that belongs to a built-in scale deck
+ * (Fibonacci / doubling / T-shirt point mappings) or this lobby's custom
+ * T-shirt mapping. A legitimate client only ever submits a value from its
+ * configured deck — all of which are covered here — so this never rejects a
+ * real vote, while rejecting arbitrary/out-of-range/NaN/non-numeric values
+ * that would corrupt consensus math and the reveal grid. (Security: M-1)
+ */
+export function isValidEstimationScore(
+  score: unknown,
+  settings?: EstimationSettings
+): score is number | '?' {
+  if (score === '?') return true;
+  if (typeof score !== 'number' || !Number.isFinite(score)) return false;
+  for (const scale of Object.values(ESTIMATION_SCALES)) {
+    for (const opt of scale.options) {
+      if (opt === score) return true;
+    }
+    if (scale.pointMapping) {
+      for (const pts of Object.values(scale.pointMapping)) {
+        if (pts === score) return true;
+      }
+    }
+  }
+  if (settings?.customTshirtMapping) {
+    for (const pts of Object.values(settings.customTshirtMapping)) {
+      if (pts === score) return true;
+    }
+  }
+  return false;
+}
+
 export interface CharacterStats {
   str: number; // Strength - Physical damage, HP
   dex: number; // Dexterity - Attack speed, critical chance
