@@ -2,7 +2,7 @@ import React, { ReactNode } from 'react';
 import { Boss } from '@shared/gameEvents';
 import { BossDisplay } from '@/components/game/BossDisplay';
 import { TimerDisplay } from '@/components/game/TimerDisplay';
-import { BossMusicControls } from '@/components/ui/BossMusicControls';
+import { MusicControls } from '@/components/ui/MusicControls';
 import { TeamPerformanceTracker } from '@/components/game/TeamPerformanceTracker';
 import { TeamCelebration } from '@/components/game/TeamCelebration';
 import { PlayerController } from '@/components/game/PlayerController';
@@ -111,7 +111,7 @@ export function PhaseContainer({
       {/* Boss Music Controls - Top Right */}
       {showBossMusic && (
         <div className="absolute top-6 right-6 z-40" data-no-shoot>
-          <BossMusicControls />
+          <MusicControls />
         </div>
       )}
 
