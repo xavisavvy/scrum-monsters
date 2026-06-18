@@ -34,6 +34,25 @@ import {
   BossDamagePlayerPayloadSchema,
 } from '../shared/socket-schemas.js';
 import { redactLobbyForWire } from './events/ClientEventEmitter.js';
+import { SocketRateLimiter, type RateLimitConfig } from './middleware/socketRateLimiter.js';
+
+// Per-event WebSocket rate limits (Security: H-6). ONLY expensive / abusable
+// events are listed — high-frequency gameplay events (movement, charge, jump,
+// votes, emotes, attacks) are intentionally omitted so real-time
+// responsiveness is never throttled. Limits are generous for legitimate use
+// and only bite on floods. Skipped entirely under NODE_ENV=test.
+const WS_RATE_LIMITS: Readonly<Record<string, RateLimitConfig>> = {
+  create_lobby: { capacity: 5, refillPerSec: 0.2 },        // burst 5, ~1 / 5s sustained
+  join_lobby: { capacity: 10, refillPerSec: 1 },
+  add_tickets: { capacity: 30, refillPerSec: 3 },
+  remove_ticket: { capacity: 30, refillPerSec: 3 },
+  update_lobby_name: { capacity: 20, refillPerSec: 2 },
+  reconnect_with_token: { capacity: 10, refillPerSec: 1 },
+  update_jira_settings: { capacity: 20, refillPerSec: 2 },
+  update_timer_settings: { capacity: 20, refillPerSec: 2 },
+  update_estimation_settings: { capacity: 20, refillPerSec: 2 },
+  youtube_play: { capacity: 20, refillPerSec: 2 },
+};
 import { updateWebsocketMetrics } from "./metrics.js";
 import { ITEM_DEFINITIONS, type ItemType } from '../shared/itemTypes.js';
 
@@ -287,6 +306,19 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     }
   }, 30000);
 
+  // Idle-lobby reaper (Security: H-5). Removes lobbies that have received no
+  // client event for LOBBY_IDLE_TTL — i.e. abandoned/orphaned lobbies with no
+  // connected clients. Connected clients heartbeat every ~25s (stamping
+  // activity via the gateway), so active lobbies are never reaped. Bounds
+  // memory together with the MAX_LOBBIES cap.
+  const idleLobbyReaperInterval = setInterval(() => {
+    try {
+      sessionManager.reapIdleLobbies();
+    } catch (err) {
+      socketLogger.error({ err }, 'idleLobbyReaper failed');
+    }
+  }, 5 * 60 * 1000);
+
   // Periodic recompute of the labeled websocketConnections gauge.
   // Many code paths mutate socket.data.lobbyId / socket.data.userId
   // (create_lobby, join_lobby, leave_lobby, reconnect, etc.) without
@@ -335,16 +367,27 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // Update Prometheus WebSocket connection gauge
     updateWebsocketMetrics(io);
 
+    // Per-socket rate limiter for expensive/abusable events (Security: H-6).
+    // Disabled under test to keep unit/integration tests deterministic.
+    const isTest = process.env.NODE_ENV === 'test';
+    const rateLimiter = new SocketRateLimiter(WS_RATE_LIMITS);
+
     // Central validation gateway (Security: M-2). Every client event is
-    // validated against its schema in ClientEventSchemas before the handler
-    // runs; malformed/out-of-shape payloads are rejected with a game_error and
-    // never reach game state. Replaces ~50 hand-rolled (mostly absent) checks.
-    // `disconnect` is a lifecycle event and stays on raw socket.on below.
+    // rate-checked (H-6), then validated against its schema in
+    // ClientEventSchemas before the handler runs; malformed/out-of-shape
+    // payloads are rejected with a game_error and never reach game state.
+    // Replaces ~50 hand-rolled (mostly absent) checks. `disconnect` is a
+    // lifecycle event and stays on raw socket.on below.
     const on = <E extends keyof typeof ClientEventSchemas>(
       event: E,
       handler: (data: z.infer<(typeof ClientEventSchemas)[E]>) => void,
     ): void => {
       socket.on(event as keyof ClientToServerEvents, ((raw: unknown) => {
+        if (!isTest && !rateLimiter.allow(event as string)) {
+          socketLogger.warn({ event, socketId: socket.id }, 'Rate limit exceeded for socket event');
+          socket.emit('game_error', { message: 'Rate limit exceeded. Please slow down.' });
+          return;
+        }
         const result = validatePayload(ClientEventSchemas[event] as z.ZodType<unknown>, raw);
         if (!result.success) {
           socketLogger.warn(
@@ -353,6 +396,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           );
           socket.emit('game_error', { message: `Invalid ${String(event)} payload` });
           return;
+        }
+        // Stamp lobby activity so the idle-lobby reaper (H-5) never reaps a
+        // lobby that is still receiving client events.
+        if (socket.data.lobbyId) {
+          sessionManager.recordLobbyActivity(socket.data.lobbyId);
         }
         handler(result.data as z.infer<(typeof ClientEventSchemas)[E]>);
       }) as never);
@@ -2027,6 +2075,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       clearInterval(websocketMetricsInterval);
       clearInterval(revivalWatchdogInterval);
       clearInterval(sessionDisconnectSweeperInterval);
+      clearInterval(idleLobbyReaperInterval);
       eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);
       pendingPositionUpdates.clear();
     }

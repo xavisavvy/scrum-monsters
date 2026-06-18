@@ -77,12 +77,20 @@ export class SessionManager {
   private disconnectedPlayers = new Map<string, DisconnectedPlayer>();
   private reconnectTokens = new Map<string, ReconnectToken>();
   private playerActivity = new Map<string, number>();
+  // Last time any client event touched a lobby. Stamped on create + on every
+  // validated socket event (incl. the 25s client_heartbeat), so a lobby with
+  // any connected client stays fresh. Drives the idle-lobby reaper. (H-5)
+  private lobbyActivity = new Map<string, number>();
 
   // Constants
   // Hard ceiling on concurrent lobbies. Bounds memory against create_lobby
   // flooding (no per-socket rate limit exists on the WS layer yet — H-6).
   // Override via MAX_LOBBIES env for larger deployments. (Security: H-5)
   private readonly MAX_LOBBIES = Number(process.env.MAX_LOBBIES) || 500;
+  // A lobby with no client event (not even a heartbeat) for this long has no
+  // connected clients and is reaped to bound memory. Connected clients
+  // heartbeat every ~25s, so active lobbies never hit this. (Security: H-5)
+  private readonly LOBBY_IDLE_TTL = 30 * 60 * 1000; // 30 minutes
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
   // Aligned with DISCONNECT_GRACE_PERIOD so a player in the grace window cannot hold a structurally expired token. Trade-off: wider replay window — acceptable given HMAC signature + per-player binding. (Phase 41)
   private readonly TOKEN_EXPIRY_TIME = 10 * 60 * 1000; // 10 minutes
@@ -208,6 +216,7 @@ export class SessionManager {
     this.lobbies.set(lobbyId, lobby);
     this.playerToLobby.set(hostId, lobbyId);
     this.playerActivity.set(hostId, Date.now());
+    this.lobbyActivity.set(lobbyId, Date.now());
 
     // Emit domain event. team + avatar must be included so other clients'
     // incremental session:player_joined handler can place this player on the
@@ -376,6 +385,54 @@ export class SessionManager {
   }
 
   /**
+   * Records that a lobby received client activity (called from the socket
+   * gateway on every validated event). Keeps the idle-lobby reaper from
+   * reaping lobbies that still have connected clients. (Security: H-5)
+   */
+  recordLobbyActivity(lobbyId: string): void {
+    if (this.lobbies.has(lobbyId)) {
+      this.lobbyActivity.set(lobbyId, Date.now());
+    }
+  }
+
+  /**
+   * Reaps lobbies that have received no client event (not even a heartbeat)
+   * for LOBBY_IDLE_TTL — i.e. abandoned/orphaned lobbies with no connected
+   * clients. Returns the reaped lobby IDs. Bounds memory together with the
+   * MAX_LOBBIES cap. (Security: H-5)
+   */
+  reapIdleLobbies(now: number = Date.now()): string[] {
+    const reaped: string[] = [];
+    // Snapshot ids: removePlayer mutates this.lobbies during the sweep.
+    for (const lobbyId of [...this.lobbies.keys()]) {
+      const last = this.lobbyActivity.get(lobbyId) ?? 0;
+      if (now - last <= this.LOBBY_IDLE_TTL) continue;
+
+      const lobby = this.lobbies.get(lobbyId);
+      if (!lobby) continue;
+
+      // Remove every player; the final removal empties the lobby and triggers
+      // the existing destroy path (lobby_destroyed + event-scope cleanup).
+      for (const playerId of lobby.players.map((p) => p.id)) {
+        this.removePlayer(playerId);
+      }
+      // Belt-and-suspenders: ensure the lobby and its activity entry are gone
+      // even if it had zero players when reaped.
+      if (this.lobbies.delete(lobbyId)) {
+        this.eventBus.emit('session:lobby_destroyed', { lobbyId });
+        this.eventBus.cleanupScope(lobbyId);
+      }
+      this.lobbyActivity.delete(lobbyId);
+      reaped.push(lobbyId);
+    }
+
+    if (reaped.length > 0) {
+      gameLogger.info({ count: reaped.length, lobbyIds: reaped }, 'Reaped idle lobbies');
+    }
+    return reaped;
+  }
+
+  /**
    * Gets the lobby a player is currently in
    */
   getPlayerLobby(playerId: string): Lobby | null {
@@ -424,6 +481,7 @@ export class SessionManager {
     // Check if lobby is empty
     if (lobby.players.length === 0) {
       this.lobbies.delete(lobbyId);
+      this.lobbyActivity.delete(lobbyId);
       this.eventBus.emit('session:lobby_destroyed', {
         lobbyId,
       });
