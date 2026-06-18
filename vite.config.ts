@@ -49,6 +49,9 @@ export default defineConfig({
   build: {
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
+    // Explicitly set target to avoid Vite computing browser-specific overrides
+    // (e.g. safari14) that trigger esbuild destructuring downleveling it can't perform.
+    target: ['chrome96', 'firefox95', 'safari15', 'edge96', 'es2022'],
     rollupOptions: {
       output: {
         manualChunks(id) {
