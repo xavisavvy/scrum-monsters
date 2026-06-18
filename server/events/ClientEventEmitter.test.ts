@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { ClientEventEmitter } from './ClientEventEmitter';
+import { ClientEventEmitter, redactLobbyForWire } from './ClientEventEmitter';
 import { ScopedEventBus } from './ScopedEventBus';
 import { LobbyEventSequencer } from './LobbyEventSequencer';
 
@@ -480,6 +480,75 @@ describe('ClientEventEmitter', () => {
       emitter.sendFullState('TEST-LOBBY', mockLobby);
 
       expect(emittedEvents[0].data.seq).toBe(2); // Current sequence after 2 events
+    });
+  });
+
+  // =============================================================================
+  // redactLobbyForWire — pre-reveal vote secrecy (Security: H-3)
+  // =============================================================================
+
+  describe('redactLobbyForWire', () => {
+    const makeLobby = (gamePhase: string): any => ({
+      id: 'TEST-LOBBY',
+      gamePhase,
+      players: [
+        { id: 'p1', name: 'Alice', currentScore: 8, hasSubmittedScore: true },
+        { id: 'p2', name: 'Bob', currentScore: 13, hasSubmittedScore: true },
+        { id: 'p3', name: 'Carol', currentScore: undefined, hasSubmittedScore: false },
+      ],
+    });
+
+    it.each(['battle', 'scoring'])(
+      'strips currentScore during the secret %s phase but keeps hasSubmittedScore',
+      (phase) => {
+        const redacted = redactLobbyForWire(makeLobby(phase));
+        expect(redacted.players.map((p: any) => p.currentScore)).toEqual([
+          undefined,
+          undefined,
+          undefined,
+        ]);
+        // "X has voted" indicators must still work
+        expect(redacted.players.map((p: any) => p.hasSubmittedScore)).toEqual([
+          true,
+          true,
+          false,
+        ]);
+      }
+    );
+
+    it.each(['lobby', 'reveal', 'discussion', 'victory', 'game_over'])(
+      'leaves scores intact during the non-secret %s phase',
+      (phase) => {
+        const lobby = makeLobby(phase);
+        const redacted = redactLobbyForWire(lobby);
+        // Same reference returned (no needless clone) and scores preserved
+        expect(redacted).toBe(lobby);
+        expect(redacted.players[0].currentScore).toBe(8);
+      }
+    );
+
+    it('does not mutate the source lobby', () => {
+      const lobby = makeLobby('battle');
+      redactLobbyForWire(lobby);
+      expect(lobby.players[0].currentScore).toBe(8);
+    });
+  });
+
+  describe('sendFullState redaction (Security: H-3)', () => {
+    it('never puts a submitted currentScore on the wire during battle', () => {
+      const mockLobby: any = {
+        id: 'TEST-LOBBY',
+        gamePhase: 'battle',
+        players: [{ id: 'p1', name: 'Alice', currentScore: 21, hasSubmittedScore: true }],
+      };
+
+      emitter.sendFullState('TEST-LOBBY', mockLobby, 'socket-123');
+
+      const wireLobby = emittedEvents[0].data.lobby;
+      expect(wireLobby.players[0].currentScore).toBeUndefined();
+      expect(wireLobby.players[0].hasSubmittedScore).toBe(true);
+      // Source lobby is untouched
+      expect(mockLobby.players[0].currentScore).toBe(21);
     });
   });
 
