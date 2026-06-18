@@ -250,7 +250,7 @@ Plans (wave 1 = 45-01/02/03 parallel-safe; wave 2 = 45-04 after 45-03; wave 3 = 
 **Plans:** 3 plans
 
 Plans:
-- [ ] 46-01-PLAN.md — Helpers + playlist contracts: musicHistory localStorage, oEmbed title fetch, widen youtube_play payload end-to-end (schema/type/server/player/store/handler)
+- [ ] 46-01-PLAN.md — Utility helpers: musicHistory localStorage (save/load/trim), oEmbed title fetch, URL helpers (extractVideoId, extractPlaylistId, isPlaylistUrl, truncateUrl)
 - [ ] 46-02-PLAN.md — MusicControls.tsx component: host write + non-host read-only, oEmbed title, history dropdown, playlist note
 - [ ] 46-03-PLAN.md — Wiring: hoist YoutubeAudioPlayer to GamePage, swap BattleScreen controls, add to Lobby, delete BossMusicControls
 
