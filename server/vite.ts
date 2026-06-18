@@ -2,17 +2,13 @@ import express, { type Express } from "express";
 import fs from "fs";
 import path, { dirname } from "path";
 import { fileURLToPath } from "url";
-import { createServer as createViteServer, createLogger, type ServerOptions } from "vite";
+import type { ServerOptions } from "vite";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 import { type Server } from "http";
-import viteConfig from "../vite.config";
-import { nanoid } from "nanoid";
 import { injectMetaTags } from "./seoMiddleware";
 import { httpLogger } from './logger.js';
 import { htmlLimiter } from "./middleware/rateLimiter.js";
-
-const viteLogger = createLogger();
 
 export function log(message: string, source = "express") {
   // Strip CR/LF/control chars before logging to neutralize log-injection
@@ -25,6 +21,16 @@ export function log(message: string, source = "express") {
 }
 
 export async function setupVite(app: Express, server: Server) {
+  // Lazy-load Vite and the Vite config ONLY in development. Both are
+  // devDependencies, stripped from the production image by `npm ci --omit=dev`.
+  // A top-level static import would be hoisted into dist/index.js and crash
+  // `node dist/index.js` on startup with ERR_MODULE_NOT_FOUND. setupVite is
+  // never invoked in production (server/index.ts guards on NODE_ENV).
+  const { createServer: createViteServer, createLogger } = await import("vite");
+  const { default: viteConfig } = await import("../vite.config");
+  const { nanoid } = await import("nanoid");
+  const viteLogger = createLogger();
+
   const serverOptions: ServerOptions = {
     middlewareMode: true,
     hmr: { server },
