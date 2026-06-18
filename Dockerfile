@@ -28,7 +28,11 @@ RUN addgroup --system --gid 1001 nodejs && \
 # Copy built assets (includes dist/public from vite build)
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
+
+# Install only production dependencies — devDeps (vite, esbuild, typescript, etc.)
+# are not needed at runtime and are a large source of CVEs in the image.
+RUN npm ci --omit=dev --legacy-peer-deps
+
 # Copy drizzle config + schema for db:push
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/shared ./shared
