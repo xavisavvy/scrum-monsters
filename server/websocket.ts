@@ -1392,16 +1392,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
         const result = gameState.manualAdvancePhase(lobbyId);
         if (result) {
-          const { lobby: updatedLobby } = result;
-
-          // Phase 42-02b row #16: lobby_updated -> session:phase_changed
-          // (host manual advance from discussion).
-          eventBus.emit('session:phase_changed', {
-            lobbyId,
-            oldPhase: 'discussion',
-            newPhase: updatedLobby.gamePhase,
-          });
-
+          // session:phase_changed (with completedTickets) is emitted inside
+          // completeConsensus, which manualAdvancePhase delegates to.
           gameLogger.info({ playerId, lobbyId }, 'Host manually advanced phase');
         } else {
           socket.emit('game_error', { message: 'Cannot advance phase - consensus not reached' });

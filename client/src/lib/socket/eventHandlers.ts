@@ -117,7 +117,8 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
       if (currentLobby) {
         const updatedLobby = {
           ...currentLobby,
-          gamePhase: data.newPhase as GamePhase
+          gamePhase: data.newPhase as GamePhase,
+          ...(data.completedTickets !== undefined && { completedTickets: data.completedTickets }),
         };
         setLobby(updatedLobby);
 
