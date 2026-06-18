@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { httpLogger } from '../logger.js';
 
+// Insecure default used only for local development. Reused in the production
+// guard below so the literal can't drift between default and check. (H-4)
+const DEFAULT_SESSION_SECRET = "scrumquest-dev-secret-change-in-production";
+
 // Environment variable schema
 const envSchema = z.object({
   DATABASE_URL: z.string().url().optional(),
-  SESSION_SECRET: z.string().min(1).default("scrumquest-dev-secret-change-in-production"),
+  SESSION_SECRET: z.string().min(1).default(DEFAULT_SESSION_SECRET),
   PORT: z.coerce.number().default(5000),
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
   DB_POOL_MAX: z.coerce.number().min(1).max(100).default(10),
@@ -21,6 +25,20 @@ const envSchema = z.object({
 }).refine((data) => {
   if (data.NODE_ENV === "production" && !data.DATABASE_URL) {
     httpLogger.error('DATABASE_URL is required in production. Set it in .env and restart.');
+    process.exit(1);
+  }
+  return true;
+}).refine((data) => {
+  // The default SESSION_SECRET is a publicly-committed constant. Using it in
+  // production lets anyone forge session cookies and reconnect tokens (the same
+  // secret is the HMAC fallback in SessionManager). Fail-fast like DATABASE_URL.
+  // (Security: H-4)
+  if (
+    data.NODE_ENV === "production" &&
+    (!data.SESSION_SECRET ||
+      data.SESSION_SECRET === DEFAULT_SESSION_SECRET)
+  ) {
+    httpLogger.error('SESSION_SECRET must be set to a strong, unique value in production (the built-in default is not allowed). Set it in .env and restart.');
     process.exit(1);
   }
   return true;

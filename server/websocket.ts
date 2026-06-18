@@ -29,7 +29,9 @@ import {
 import {
   validatePayload,
   ToggleReadyPayloadSchema,
+  BossDamagePlayerPayloadSchema,
 } from '../shared/socket-schemas.js';
+import { redactLobbyForWire } from './events/ClientEventEmitter.js';
 import { updateWebsocketMetrics } from "./metrics.js";
 import { ITEM_DEFINITIONS, type ItemType } from '../shared/itemTypes.js';
 
@@ -434,28 +436,32 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         // Handle late joiners - emit appropriate events based on current lobby phase
         const currentPhase = lobby.gamePhase;
 
+        // Redact secret vote values before any full-lobby emit to this socket
+        // (defeats the pre-reveal vote leak on late-join — Security fix H-3).
+        const wireLobby = redactLobbyForWire(lobby);
+
         if (currentPhase === 'lobby' || currentPhase === 'avatar_selection') {
           // Normal flow - player goes through avatar selection first
-          socket.emit('lobby_joined', { lobby, player });
+          socket.emit('lobby_joined', { lobby: wireLobby, player });
         } else {
           // Late joiner - skip directly to current phase
           socketLogger.info({ playerName, currentPhase }, 'Late joiner entering active phase');
 
           // Emit lobby_joined first for state setup
-          socket.emit('lobby_joined', { lobby, player });
+          socket.emit('lobby_joined', { lobby: wireLobby, player });
 
           // Then immediately emit the phase-specific event to advance them
           if (currentPhase === 'battle' || currentPhase === 'scoring' || currentPhase === 'discussion' || currentPhase === 'reveal') {
             // Emit battle_started to transition client to battle screen
             if (lobby.boss) {
-              socket.emit('battle_started', { lobby, boss: lobby.boss });
+              socket.emit('battle_started', { lobby: wireLobby, boss: lobby.boss });
               socketLogger.info({ playerName }, 'Late joiner advanced to battle phase');
             }
           }
         }
 
         socket.emit('lobby_sync', {
-          lobby,
+          lobby: wireLobby,
           yourPlayer: player,
           reconnectToken,
           pendingActions: {},
@@ -1106,10 +1112,31 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
     
-    // Boss damage to player
-    socket.on('boss_damage_player', ({ playerId, damage }: { playerId: string; damage: number }) => {
+    // Boss damage to player.
+    // This event is client-reported: boss projectile collisions are simulated
+    // client-side (PlayerController) and the hit player reports its own damage.
+    // It is therefore only valid for a player to report damage to ITSELF.
+    // Without the self-target guard, any client could down (or, via a negative
+    // value, heal) any player in any lobby and force game_over. (Security: H-1)
+    socket.on('boss_damage_player', (data) => {
       const attackerId = socket.data.playerId;
       if (!attackerId) return;
+
+      const validation = validatePayload(BossDamagePlayerPayloadSchema, data);
+      if (!validation.success) {
+        socket.emit('game_error', { message: 'Invalid boss_damage_player payload' });
+        return;
+      }
+      const { playerId, damage } = validation.data;
+
+      // A player may only report boss damage against themselves.
+      if (playerId !== attackerId) {
+        socketLogger.warn(
+          { attackerId, targetId: playerId },
+          'Rejected boss_damage_player targeting another player'
+        );
+        return;
+      }
 
       const result = gameState.bossDamagePlayer(playerId, damage);
       if (result) {
@@ -1370,11 +1397,19 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       socketLogger.debug({ playerId }, 'Host stopped YouTube music');
     });
 
-    socket.on('advancePhaseNow', ({ lobbyId, playerId }) => {
+    socket.on('advancePhaseNow', () => {
       try {
+        // Identity MUST come from the authenticated socket, never the payload.
+        // The previous implementation compared two attacker-supplied values
+        // (`lobby.hostId === payload.playerId`), letting any lobby member spoof
+        // a host-only phase advance since `hostId` is broadcast to all clients.
+        // (Security: H-2)
+        const playerId = socket.data.playerId;
+        const lobbyId = socket.data.lobbyId;
+
         // Only allow host to manually advance phases
-        const lobby = gameState.getLobby(lobbyId);
-        if (!lobby || lobby.hostId !== playerId) {
+        const lobby = lobbyId ? gameState.getLobby(lobbyId) : undefined;
+        if (!lobbyId || !lobby || !playerId || lobby.hostId !== playerId) {
           socket.emit('game_error', { message: 'Only the host can manually advance phases' });
           return;
         }
@@ -1635,9 +1670,13 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // Join socket room
           socket.join(lobbyId);
 
-          // Send successful reconnection response
-          socket.emit('lobby_sync', lobbySync);
-          socket.emit('reconnect_response', response);
+          // Send successful reconnection response. Redact secret vote values
+          // from the synced lobby during pre-reveal phases — both `lobby_sync`
+          // and the `lobbySync` nested in `reconnect_response` carry the full
+          // lobby on the wire, so both must be redacted (Security fix H-3).
+          const wireSync = { ...lobbySync, lobby: redactLobbyForWire(lobbySync.lobby) };
+          socket.emit('lobby_sync', wireSync);
+          socket.emit('reconnect_response', { ...response, lobbySync: wireSync });
 
           // Reinitialize fine-grained event sequence for reconnected player
           const emitter = getClientEventEmitter();
