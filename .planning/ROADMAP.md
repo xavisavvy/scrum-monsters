@@ -250,9 +250,9 @@ Plans (wave 1 = 45-01/02/03 parallel-safe; wave 2 = 45-04 after 45-03; wave 3 = 
 **Plans:** 3 plans
 
 Plans:
-- [ ] 46-01-PLAN.md — Utility helpers: musicHistory localStorage (save/load/trim), oEmbed title fetch, URL helpers (extractVideoId, extractPlaylistId, isPlaylistUrl, truncateUrl)
-- [ ] 46-02-PLAN.md — MusicControls.tsx component: host write + non-host read-only, oEmbed title, history dropdown, playlist note
-- [ ] 46-03-PLAN.md — Wiring: hoist YoutubeAudioPlayer to GamePage, swap BattleScreen controls, add to Lobby, delete BossMusicControls
+- [x] 46-01-PLAN.md — Utility helpers: musicHistory localStorage (save/load/trim), oEmbed title fetch, URL helpers (extractVideoId, extractPlaylistId, isPlaylistUrl, truncateUrl)
+- [x] 46-02-PLAN.md — MusicControls.tsx component: host write + non-host read-only, oEmbed title, history dropdown, playlist note
+- [x] 46-03-PLAN.md — Wiring: hoist YoutubeAudioPlayer to GamePage, swap BattleScreen controls, add to Lobby, delete BossMusicControls
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -271,8 +271,9 @@ Plans:
 | 42. v5.0 Pre-Ship Fixes & Polish | v5.0 | 4/4 | Complete | 2026-05-07 |
 | 43. Auth & User Account Validation | v5.0 | 2/2 | Complete | 2026-05-07 |
 | 44. Zero-Downtime Deploys (Blue-Green) | v5.0 | 3/3 | Complete | 2026-05-09 |
+| 46. Music Controls & History | v6.0 | 3/3 | Complete | 2026-06-17 |
 
-**Total: 8 milestones shipped, 42 phases complete, 144 plans (1 deferred) | v5.0: 8/8 phases complete and verified (2026-05-15), 20/20 plans done — ready to ship**
+**Total: 8 milestones shipped, 43 phases complete, 147 plans (1 deferred) | Phase 46 complete 2026-06-17**
 
 ---
 *Roadmap created: 2026-02-11*
