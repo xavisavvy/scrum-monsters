@@ -35,7 +35,7 @@ decisions:
 metrics:
   duration_seconds: 600
   completed_date: "2026-06-17"
-  tasks_completed: 1
+  tasks_completed: 2
   files_created: 0
   files_modified: 5
   files_deleted: 1
@@ -51,30 +51,18 @@ metrics:
 |------|------|--------|-------|
 | 1 | Hoist YoutubeAudioPlayer; swap BattleScreen controls; add to Lobby; delete BossMusicControls | b6f5523 | GamePage.tsx, BattleScreen.tsx, Lobby.tsx, PhaseContainer.tsx, MusicControls.test.tsx (deleted: BossMusicControls.tsx) |
 
-## Task 2: PENDING HUMAN CHECKPOINT
+## Task 2: HUMAN VERIFICATION — APPROVED
 
-**Status:** Awaiting two-browser live verification.
+**Status:** ✓ Passed — human-verified 2026-06-17
 
-**What was built:**
-- `YoutubeAudioPlayer` mounted exactly once in the `GamePage` fragment (persists across lobby/battle transitions)
-- `MusicControls` replaces `BossMusicControls` in `BattleScreen.tsx` (both battle and discussion phases)
-- `MusicControls` added to `Lobby.tsx` top-right region (flex wrapper, gap-2 next to mute button)
-- `BossMusicControls.tsx` deleted
-- `PhaseContainer.tsx` also migrated (was an undiscovered second importer)
-
-**How to verify (9 steps):**
-1. `npm run dev`, open http://localhost:5000 in two browser windows
-2. Window A creates a lobby and picks an avatar (becomes host); Window B joins and picks avatar
-3. In Window A's LOBBY, open Music Settings, paste a YouTube watch URL, click Play — audio should play in BOTH windows; history dropdown should show the video title
-4. Window B (non-host) should show NO URL input — only read-only "Music playing" status
-5. Host clicks Stop — audio stops in both windows
-6. Start the battle — MusicControls should still appear top-right in battle screen; play/stop should sync to both windows
-7. Enter battle — verify play still works (proves GamePage player mount survived the lobby→battle transition; Pitfall 1 closed)
-8a. Paste a watch URL with playlist param (`watch?v=ID&list=...`) — first video should play in both windows (no warning note)
-8b. Paste a bare playlist URL (`playlist?list=...`) — should show accept-only note; entry saved to history; play submits but no inline audio (server rejects empty videoId — Option B behavior)
-9. Reload Window A host browser, rejoin same lobby, open Music Settings — history dropdown should still list previous entries (localStorage persistence)
-
-**Resume signal:** Type "approved" or describe any step that failed.
+All 9 verification steps passed:
+- Live YouTube audio plays in both windows (host + peer) from both Lobby and BattleScreen
+- Non-host sees read-only status (no URL input)
+- Play/stop syncs to all clients
+- GamePage player mount survives lobby→battle transition (Pitfall 1 closed)
+- watch?v=ID&list=... plays first video with no warning note
+- Bare playlist?list=... shows accept-only note, saves to history, server rejects empty videoId (Option B expected behavior)
+- History persists across page reload (per-host localStorage)
 
 ## What Was Built
 
@@ -143,3 +131,4 @@ Files modified:
 
 Commits:
 - b6f5523 — feat(46-03): hoist YoutubeAudioPlayer to GamePage; replace BossMusicControls — FOUND
+- Human checkpoint: approved 2026-06-17
