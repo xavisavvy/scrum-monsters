@@ -21,6 +21,32 @@ import { ScopedEventBus } from './ScopedEventBus';
 import { LobbyEventSequencer, BufferedEvent } from './LobbyEventSequencer';
 import { Lobby } from '../../shared/gameEvents';
 
+/**
+ * Phases in which per-player vote values (`currentScore`) are still secret.
+ * Voting happens in `battle`/`scoring`; the `reveal` phase is what discloses
+ * them, so anything at or after reveal may carry scores on the wire.
+ */
+const SECRET_SCORE_PHASES = new Set<string>(['battle', 'scoring']);
+
+/**
+ * Strip secret per-player vote values from a lobby before it crosses the wire
+ * during pre-reveal phases. `hasSubmittedScore` is preserved so clients can
+ * still render "X has voted" indicators without seeing the value.
+ *
+ * Without this, full-lobby emits (lobby_joined / battle_started / lobby_sync /
+ * system:full_state) on join & reconnect leak every already-submitted estimate
+ * to any client, defeating blind planning poker. (Security fix: H-3)
+ */
+export function redactLobbyForWire(lobby: Lobby): Lobby {
+  if (!SECRET_SCORE_PHASES.has(lobby.gamePhase)) return lobby;
+  return {
+    ...lobby,
+    players: lobby.players.map((p) =>
+      p.currentScore === undefined ? p : { ...p, currentScore: undefined }
+    ),
+  };
+}
+
 export interface ClientEventEmitterDeps {
   io: Server;
   eventBus: ScopedEventBus;
@@ -580,7 +606,7 @@ export class ClientEventEmitter {
     const timestamp = Date.now();
 
     const payload = {
-      lobby,
+      lobby: redactLobbyForWire(lobby),
       seq,
       timestamp,
     };
