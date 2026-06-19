@@ -68,7 +68,15 @@ deploy_bluegreen_main() {
   fi
 
   echo "[7/9] Drizzle migration (before swap — preserves rollback semantics; see Pitfall 5)"
-  docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm "app-$INACTIVE" npx drizzle-kit push --force
+  # drizzle-kit is a devDependency and is stripped from the runtime image by
+  # `npm ci --omit=dev` (the image ships slim on purpose). A bare `npx
+  # drizzle-kit` installs it into an npx temp dir that drizzle.config.ts's
+  # `import ... from 'drizzle-kit'` cannot resolve ("Cannot find module
+  # 'drizzle-kit'"). Install it into the ephemeral migration container's
+  # /app/node_modules first so it resolves. Keep the version in sync with
+  # package.json devDependencies.
+  docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm "app-$INACTIVE" \
+    sh -c 'npm install --no-save --no-audit --no-fund --legacy-peer-deps drizzle-kit@^0.31.10 && npx drizzle-kit push --force'
 
   echo "[8/9] Swap NPM upstream to app-$INACTIVE"
   set +x  # never trace the password even if BASH_XTRACEFD lands enabled
