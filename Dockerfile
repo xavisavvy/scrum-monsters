@@ -33,9 +33,12 @@ COPY --from=builder /app/package*.json ./
 # are not needed at runtime and are a large source of CVEs in the image.
 RUN npm ci --omit=dev --legacy-peer-deps
 
-# Copy drizzle config + schema for db:push
+# Copy drizzle config + schema + migrations for `drizzle-kit migrate` at deploy.
+# The migrations/ folder (SQL + meta journal) MUST be in the image — `migrate`
+# applies these files at runtime, unlike `push` which diffed live and needed none.
 COPY --from=builder /app/drizzle.config.ts ./
 COPY --from=builder /app/shared ./shared
+COPY --from=builder /app/migrations ./migrations
 
 # Set ownership
 RUN chown -R scrumquest:nodejs /app

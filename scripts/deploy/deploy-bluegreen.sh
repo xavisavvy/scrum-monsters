@@ -68,11 +68,23 @@ deploy_bluegreen_main() {
   fi
 
   echo "[7/9] Drizzle migration (before swap — preserves rollback semantics; see Pitfall 5)"
-  # drizzle-kit is a runtime (deploy-time) dependency — it must be in the image
-  # so `npm ci --omit=dev` keeps it and this resolves. (A deploy-time `npm
-  # install` cannot add it: the container runs NODE_ENV=production, so npm
-  # defaults to --omit=dev and skips it.)
-  docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm "app-$INACTIVE" npx drizzle-kit push --force
+  # Versioned migrations via `drizzle-kit migrate`: applies pending journal
+  # entries (migrations/*.sql) non-interactively. We deliberately do NOT use
+  # `push` here — push diffs schema-vs-DB at runtime and can hit interactive
+  # resolvers (e.g. a column rename ambiguity) that have no TTY in CI; in that
+  # state it printed an error yet exited 0, so the schema silently never applied
+  # and the deploy swapped anyway. `migrate` just runs reviewed SQL and exits
+  # non-zero on failure. drizzle-kit is a runtime dependency baked into the image
+  # (npm ci --omit=dev keeps it) so this resolves.
+  #
+  # GATE: a failed migration MUST abort the deploy BEFORE the NPM swap — never
+  # promote an image whose schema did not apply. Check the exit code explicitly
+  # (a bare command under `set -e` proved insufficient once — see above).
+  if ! docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm "app-$INACTIVE" npx drizzle-kit migrate; then
+    echo "ERROR: drizzle-kit migrate failed. Aborting WITHOUT NPM swap (old color still serving)." >&2
+    docker compose -f "$COMPOSE_FILE" stop "app-$INACTIVE" || true
+    return 1
+  fi
 
   echo "[8/9] Swap NPM upstream to app-$INACTIVE"
   set +x  # never trace the password even if BASH_XTRACEFD lands enabled

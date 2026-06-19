@@ -1,3 +1,13 @@
+CREATE TABLE "class_mastery_progress" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"user_id" integer NOT NULL,
+	"avatar_class" text NOT NULL,
+	"class_xp" integer DEFAULT 0 NOT NULL,
+	"current_tier" text DEFAULT 'Novice' NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	CONSTRAINT "class_mastery_progress_user_id_avatar_class_unique" UNIQUE("user_id","avatar_class")
+);
+--> statement-breakpoint
 CREATE TABLE "estimation_history" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"user_id" integer NOT NULL,
@@ -36,6 +46,8 @@ CREATE TABLE "user_profiles" (
 	"music_volume" real DEFAULT 0.5,
 	"sfx_volume" real DEFAULT 0.7,
 	"settings" json,
+	"total_xp" integer DEFAULT 0 NOT NULL,
+	"current_level" integer DEFAULT 1 NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "user_profiles_user_id_unique" UNIQUE("user_id")
 );
@@ -50,6 +62,10 @@ CREATE TABLE "user_stats" (
 	"total_damage_dealt" integer DEFAULT 0 NOT NULL,
 	"total_healing" integer DEFAULT 0 NOT NULL,
 	"revives_performed" integer DEFAULT 0 NOT NULL,
+	"total_votes" integer DEFAULT 0 NOT NULL,
+	"consensus_rate" real DEFAULT 0,
+	"avg_voting_speed_ms" integer DEFAULT 0,
+	"total_deaths" integer DEFAULT 0 NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "user_stats_user_id_unique" UNIQUE("user_id")
 );
@@ -67,6 +83,7 @@ CREATE TABLE "users" (
 	CONSTRAINT "users_email_unique" UNIQUE("email")
 );
 --> statement-breakpoint
+ALTER TABLE "class_mastery_progress" ADD CONSTRAINT "class_mastery_progress_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "estimation_history" ADD CONSTRAINT "estimation_history_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "oauth_accounts" ADD CONSTRAINT "oauth_accounts_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "user_profiles" ADD CONSTRAINT "user_profiles_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
