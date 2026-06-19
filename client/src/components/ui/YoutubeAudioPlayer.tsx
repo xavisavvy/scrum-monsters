@@ -46,7 +46,16 @@ declare global {
 export function YoutubeAudioPlayer() {
   const { setYoutubePlayer, stopYoutubeAudio } = useAudio();
   const playerRef = useRef<YTPlayer | null>(null);
+  // `containerRef` is the React-owned wrapper that stays mounted. `mountRef` is
+  // a throwaway inner node we hand to the YouTube IFrame API. The API REPLACES
+  // the element it's given with an <iframe>; if we hand it the React-managed
+  // node, that node vanishes from the DOM and React's sibling references in the
+  // parent (GamePage's fragment) go stale — the next sibling reorder commits an
+  // insertBefore against a node that's "not a child", crashing the whole tree
+  // (the avatar→lobby transition). Giving the API a nested child to consume
+  // keeps the outer node React-stable.
   const containerRef = useRef<HTMLDivElement>(null);
+  const mountRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // Load YouTube IFrame API
@@ -65,9 +74,9 @@ export function YoutubeAudioPlayer() {
     };
 
     const initializePlayer = () => {
-      if (!containerRef.current) return;
+      if (!mountRef.current) return;
 
-      playerRef.current = new window.YT.Player(containerRef.current, {
+      playerRef.current = new window.YT.Player(mountRef.current, {
         height: '0',
         width: '0',
         playerVars: {
@@ -105,10 +114,14 @@ export function YoutubeAudioPlayer() {
   }, [setYoutubePlayer, stopYoutubeAudio]);
 
   return (
-    <div 
+    <div
       ref={containerRef}
       className="absolute opacity-0 pointer-events-none"
       style={{ left: '-9999px', top: '-9999px' }}
-    />
+    >
+      {/* The YouTube IFrame API replaces THIS inner node with its <iframe>,
+          leaving the React-owned wrapper above untouched. */}
+      <div ref={mountRef} />
+    </div>
   );
 }
