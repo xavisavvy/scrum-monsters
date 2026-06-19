@@ -107,7 +107,17 @@ export function serveStatic(app: Express) {
       // Inject SEO meta tags for social media crawlers
       const requestPath = req.originalUrl.split('?')[0]; // Strip query params
       const processed = injectMetaTags(cachedHtml, requestPath);
-      res.status(200).set({ "Content-Type": "text/html" }).end(processed);
+      // The entry HTML references hashed chunk filenames that change every
+      // deploy. It MUST NOT be cached: a stale index.html points at chunk
+      // hashes that 404 after a deploy, which fires Vite's `vite:preloadError`
+      // and traps users on the "Scrum Monsters was updated / Reload" screen —
+      // reload just re-serves the cached stale HTML. `no-store` forces every
+      // navigation/reload to fetch fresh HTML with the current hashes. (Hashed
+      // assets under /assets are immutable and stay long-cached.)
+      res.status(200).set({
+        "Content-Type": "text/html",
+        "Cache-Control": "no-store, must-revalidate",
+      }).end(processed);
     } catch (_error) {
       res.status(500).send('Internal Server Error');
     }
