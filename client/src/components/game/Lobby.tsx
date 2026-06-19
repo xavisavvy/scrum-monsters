@@ -1783,20 +1783,24 @@ export function Lobby() {
               📋
             </button>
           </div>
-          {inviteLink && (
+          {(inviteLink || isHost) && (
             <div className="mt-4 space-y-3">
               <div className="relative" data-hint-target="lobby-invite">
-                <div className="flex gap-2 justify-center">
-                  <RetroButton size="sm" onClick={copyInviteLink}>
-                    Copy Invite Link
-                  </RetroButton>
-                  <RetroButton 
-                    size="sm" 
-                    variant="secondary"
-                    onClick={() => setShowQRCode(!showQRCode)}
-                  >
-                    {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
-                  </RetroButton>
+                <div className="flex gap-2 justify-center flex-wrap">
+                  {inviteLink && (
+                    <>
+                      <RetroButton size="sm" onClick={copyInviteLink}>
+                        Copy Invite Link
+                      </RetroButton>
+                      <RetroButton
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => setShowQRCode(!showQRCode)}
+                      >
+                        {showQRCode ? 'Hide QR Code' : 'Show QR Code'}
+                      </RetroButton>
+                    </>
+                  )}
                   {isHost && (
                     <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
                       <DialogTrigger asChild>

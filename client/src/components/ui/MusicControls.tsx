@@ -103,7 +103,7 @@ export function MusicControls() {
 
           {showSettings && (
             <div className="relative">
-              <div className="absolute left-0 mt-2 z-[60] min-w-80 max-w-md">
+              <div className="absolute right-0 mt-2 z-[60] min-w-80 max-w-md">
                 <RetroCard title="Custom Boss Music">
                   <div className="space-y-3">
                     {isYoutubeAudioActive && (
