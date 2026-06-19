@@ -100,6 +100,14 @@ export default defineConfig({
   // can patch the removed LuminanceFormat import before it's processed.
   optimizeDeps: {
     exclude: ["three-stdlib"],
+    // Match build.target above. Without this, dev pre-bundling falls back to
+    // Vite's default ESBUILD_MODULES_TARGET (chrome87/safari14/es2020/…), which
+    // makes esbuild try to downlevel destructuring it can't ("Transforming
+    // destructuring … is not supported yet") and breaks `dev:ci` — the server
+    // E2E runs against. A modern target needs no destructuring transform.
+    esbuildOptions: {
+      target: ['chrome96', 'firefox95', 'safari15', 'edge96', 'es2022'],
+    },
   },
   // Add support for large models and audio files
   assetsInclude: ["**/*.gltf", "**/*.glb", "**/*.mp3", "**/*.ogg", "**/*.wav"],
