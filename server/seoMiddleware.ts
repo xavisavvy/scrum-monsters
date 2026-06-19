@@ -74,24 +74,30 @@ function getMetaForPath(path: string): MetaConfig {
 
 export function injectMetaTags(html: string, requestPath: string): string {
   const meta = getMetaForPath(requestPath);
-  // requestPath is user-controlled (req.originalUrl); escape before
-  // embedding into href / content attributes.
+  // EVERY interpolated value below is user-influenced: requestPath comes from
+  // req.originalUrl, and meta.title/description embed the path-derived lobbyId
+  // for /game/:lobbyId routes (see getMetaForPath). All of them must be
+  // HTML-attribute-escaped before landing in <title>/content="…"/href="…",
+  // or `/game/"><script>…` breaks out of the attribute. CodeQL js/reflected-xss.
   const safePath = escapeHtmlAttr(requestPath === '/' ? '' : requestPath);
   const canonicalUrl = `${SITE_URL}${safePath}`;
-  const ogImage = meta.ogImage || DEFAULT_OG_IMAGE;
+  const title = escapeHtmlAttr(meta.title);
+  const description = escapeHtmlAttr(meta.description);
+  const ogType = escapeHtmlAttr(meta.ogType || 'website');
+  const ogImage = escapeHtmlAttr(meta.ogImage || DEFAULT_OG_IMAGE);
 
   const metaTags = `
-    <title>${meta.title}</title>
-    <meta name="description" content="${meta.description}" />
-    <meta property="og:type" content="${meta.ogType || 'website'}" />
+    <title>${title}</title>
+    <meta name="description" content="${description}" />
+    <meta property="og:type" content="${ogType}" />
     <meta property="og:site_name" content="${SITE_NAME}" />
-    <meta property="og:title" content="${meta.title}" />
-    <meta property="og:description" content="${meta.description}" />
+    <meta property="og:title" content="${title}" />
+    <meta property="og:description" content="${description}" />
     <meta property="og:image" content="${ogImage}" />
     <meta property="og:url" content="${canonicalUrl}" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="${meta.title}" />
-    <meta name="twitter:description" content="${meta.description}" />
+    <meta name="twitter:title" content="${title}" />
+    <meta name="twitter:description" content="${description}" />
     <meta name="twitter:image" content="${ogImage}" />
     <link rel="canonical" href="${canonicalUrl}" />`;
 
