@@ -7,3 +7,8 @@ shared/api-types.generated.ts linguist-generated=true
 # Shell scripts must keep LF endings on Windows checkouts — they run inside
 # WSL/Linux containers and bash treats CRLF as syntax errors.
 *.sh text eol=lf
+
+# Drizzle migration SQL must stay LF on every platform: `drizzle-kit migrate`
+# records sha256(file bytes) in __drizzle_migrations, so a CRLF rewrite would
+# change the hash and make an already-applied migration look pending.
+migrations/**/*.sql text eol=lf
