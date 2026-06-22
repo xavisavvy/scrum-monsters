@@ -1687,19 +1687,9 @@ export function Lobby() {
   const renderPlayerSprite = (avatarClass: string) => {
     const avatar = AVATAR_CLASSES[avatarClass as keyof typeof AVATAR_CLASSES];
     
+    // Delegates to AVATAR_CLASSES registry — monk and all classes resolve correctly
     const getClassIcon = (avatarClass: string): string => {
-      const icons: Record<string, string> = {
-        ranger: '🏹',
-        rogue: '🗡️', 
-        bard: '🎵',
-        sorcerer: '🔥',
-        wizard: '🧙',
-        warrior: '⚔️',
-        paladin: '🛡️',
-        cleric: '✨',
-        oathbreaker: '⚡'
-      };
-      return icons[avatarClass] || '⚔️';
+      return AVATAR_CLASSES[avatarClass as AvatarClass]?.icon ?? '⚔️';
     };
 
     return (

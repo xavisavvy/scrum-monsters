@@ -1,7 +1,7 @@
 import React, { memo } from 'react';
 import { useSpriteAnimation, SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { useImageDimensions } from '@/hooks/useImageDimensions';
-import { AvatarClass } from '@/lib/gameTypes';
+import { AvatarClass, AVATAR_CLASSES } from '@/lib/gameTypes';
 
 interface SpriteRendererProps {
   avatarClass: AvatarClass;
@@ -106,19 +106,8 @@ export const SpriteRenderer = memo(function SpriteRenderer({
     </div>
   );
   
-  // Helper function for class icons
+  // Helper function for class icons — delegates to AVATAR_CLASSES registry
   function getClassIcon(avatarClass: string): string {
-    const icons: Record<string, string> = {
-      ranger: '🏹',
-      rogue: '🗡️', 
-      bard: '🎵',
-      sorcerer: '🔥',
-      wizard: '🧙',
-      warrior: '⚔️',
-      paladin: '🛡️',
-      cleric: '✨',
-      oathbreaker: '⚡'
-    };
-    return icons[avatarClass] || '⚔️';
+    return AVATAR_CLASSES[avatarClass as AvatarClass]?.icon ?? '⚔️';
   }
 });
