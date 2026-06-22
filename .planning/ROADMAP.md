@@ -279,7 +279,13 @@ Plans:
   2. `AVATAR_CLASSES` is `Record<AvatarClass, ClassDef>` with role/baseDamage/icon; `HEALER_CLASSES` and `getClassBaseDamage` derive from it; adding a class without an entry is a `tsc` error (client `AVATAR_IMAGES` typed `Record<AvatarClass,string>`, kept client-side)
   3. `SPRITE_TO_BOSS_TYPE` and `availableBosses` derive from `Object.values(BOSS_BEHAVIORS)` (the rank-1 follow-up to the filename fix shipped in PR #167)
   4. `buffType`/`debuffType` are literal unions, not bare `string`; no regressions (existing ability/combat tests pass)
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans (wave 1 = 47-01/04 parallel-safe; wave 2 = 47-02/03 after 47-01 — 47-03 shares shared/gameEvents.ts with 47-01 so it follows, not parallel):
+- [ ] 47-01-PLAN.md — EXT-01a: ability-effect payload + wire + bridge fields, BuffType/DebuffType unions, durationMs forwarding (no behavior change)
+- [ ] 47-02-PLAN.md — EXT-01b: buff/shield/debuff handler branches, applyHealEffect dedup, activeDebuffs map, 8-ability regression suite
+- [ ] 47-03-PLAN.md — EXT-02: AVATAR_CLASSES -> Record<AvatarClass, ClassDef> (role/baseDamage/icon), derive HEALER_CLASSES + getClassBaseDamage, retype AVATAR_IMAGES, collapse 3 getClassIcon maps (fixes monk)
+- [ ] 47-04-PLAN.md — EXT-03: add sprite/description to BossBehavior, derive SPRITE_TO_BOSS_TYPE + availableBosses from BOSS_BEHAVIORS (fixes golem AI), 5-boss round-trip test
 
 ### Phase 48: Testability Seams
 **Goal**: Core server logic (GameState, domain wiring, socket handlers) is reachable by unit tests with byte-identical production behavior — the safety net every later refactor depends on.
