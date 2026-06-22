@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Maintainability & Extensibility
 status: executing
-stopped_at: Completed 47-01-PLAN.md
-last_updated: "2026-06-22T06:06:46.215Z"
+stopped_at: Completed 47-04-PLAN.md
+last_updated: "2026-06-22T06:14:58.905Z"
 last_activity: 2026-06-22
 progress:
   total_phases: 6
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
   percent: 0
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 Milestone: v6.0 Maintainability & Extensibility — PLANNING
 Phase: 47 (ability-effects-data-driven-registries) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
 Last activity: 2026-06-22
 
-Progress: [███░░░░░░░] 25%
+Progress: [█████░░░░░] 50%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [███░░░░░░░] 25%
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
 | v5.0 UX & Onboarding | 37-41 | 11/11 | In progress | - |
 | Phase 47-ability-effects-data-driven-registries P01 | 10min | 2 tasks | 5 files |
+| Phase 47 P04 | 4 minutes | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -104,6 +105,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase ?]: [47-01] BuffType union = 'damage_boost' | 'crit_boost' | 'dodge' | 'cooldown_reduction' derived from CLASS_ABILITY_CONFIGS values
 - [Phase ?]: [47-01] durationMs populated at 10000ms for buff abilities and 8000ms for oathbreaker_aura_of_dread; paladin shield abilities deliberately omitted (handler supplies default)
 - [Phase ?]: [47-01] gameEvents.ts wire type uses inline import('./abilityTypes').BuffType to avoid circular imports
+- [Phase ?]: [47-04] SPRITE_TO_BOSS_TYPE derived via Object.fromEntries(Object.values(BOSS_BEHAVIORS)) — drift impossible by construction
+- [Phase ?]: [47-04] availableBosses = Object.values(BOSS_BEHAVIORS) — inline array deleted from gameState.ts
+- [Phase ?]: [47-04] TECH_DEBT_GOLEM_BEHAVIOR.sprite = 'technical-debt-golem.png' — live golem-AI mismatch fixed at source
 
 ### Pending Todos
 
@@ -119,8 +123,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-06-22T06:06:46.203Z
-Stopped at: Completed 47-01-PLAN.md
+Last session: 2026-06-22T06:14:58.893Z
+Stopped at: Completed 47-04-PLAN.md
 Resume file: None
 Next action: /gsd:plan-phase 47 (Ability Effects & Data-Driven Registries) — leads with the deferred rank-2 ability-effect handler bug
 

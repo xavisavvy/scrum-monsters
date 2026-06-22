@@ -285,7 +285,7 @@ Plans (wave 1 = 47-01/04 parallel-safe; wave 2 = 47-02/03 after 47-01 — 47-03 
 - [x] 47-01-PLAN.md — EXT-01a: ability-effect payload + wire + bridge fields, BuffType/DebuffType unions, durationMs forwarding (no behavior change)
 - [ ] 47-02-PLAN.md — EXT-01b: buff/shield/debuff handler branches, applyHealEffect dedup, activeDebuffs map, 8-ability regression suite
 - [ ] 47-03-PLAN.md — EXT-02: AVATAR_CLASSES -> Record<AvatarClass, ClassDef> (role/baseDamage/icon), derive HEALER_CLASSES + getClassBaseDamage, retype AVATAR_IMAGES, collapse 3 getClassIcon maps (fixes monk)
-- [ ] 47-04-PLAN.md — EXT-03: add sprite/description to BossBehavior, derive SPRITE_TO_BOSS_TYPE + availableBosses from BOSS_BEHAVIORS (fixes golem AI), 5-boss round-trip test
+- [x] 47-04-PLAN.md — EXT-03: add sprite/description to BossBehavior, derive SPRITE_TO_BOSS_TYPE + availableBosses from BOSS_BEHAVIORS (fixes golem AI), 5-boss round-trip test
 
 ### Phase 48: Testability Seams
 **Goal**: Core server logic (GameState, domain wiring, socket handlers) is reachable by unit tests with byte-identical production behavior — the safety net every later refactor depends on.
@@ -362,7 +362,7 @@ Plans (wave 1 = 47-01/04 parallel-safe; wave 2 = 47-02/03 after 47-01 — 47-03 
 | 44. Zero-Downtime Deploys (Blue-Green) | v5.0 | 3/3 | Complete | 2026-05-09 |
 | 45. Socket Schema Drift Reconciliation | v5.0 | 5/5 | Complete | 2026-05-18 |
 | 46. Music Controls & History | v5.0 | 3/3 | Complete | 2026-06-17 |
-| 47. Ability Effects & Data-Driven Registries | v6.0 | 1/4 | In Progress|  |
+| 47. Ability Effects & Data-Driven Registries | v6.0 | 2/4 | In Progress|  |
 | 48. Testability Seams | v6.0 | 0/TBD | Planned | - |
 | 49. State Source-of-Truth Consolidation | v6.0 | 0/TBD | Planned | - |
 | 50. Finish GameState → Domain-Manager Migration | v6.0 | 0/TBD | Planned | - |
