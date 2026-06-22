@@ -567,7 +567,11 @@ ASVS assessment: Not applicable — no security-relevant code is modified.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Both questions below have a documented recommendation that the Phase 48 plans implement:
+> Q1 → Option A (extract three handler bodies to `server/websocket.handlers.ts`) is used by 48-03 Task 2;
+> Q2 → new tests use `createLobby()` (existing `as any` left as-is) is used by 48-01 Task 2.
 
 1. **Handler extraction scope for MAINT-03**
    - What we know: `create_lobby`, `disconnect`, and `reconnect_with_token` are closure-bound inside `setupWebSocket`. The review says "Do not do the full `HandlerCtx` overhaul."
