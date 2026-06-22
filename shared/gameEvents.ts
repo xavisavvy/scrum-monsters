@@ -706,22 +706,32 @@ export interface CharacterStats {
   cha: number; // Charisma - Team buffs, leadership bonuses
 }
 
-export const AVATAR_CLASSES: Record<
-  AvatarClass,
-  {
-    name: string;
-    description: string;
-    color: string;
-    stats: CharacterStats;
-    specialties: string[];
-  }
-> = {
+export type ClassRole = 'tank' | 'healer' | 'dps';
+
+export interface ClassDef {
+  name: string;
+  description: string;
+  color: string;
+  stats: CharacterStats;
+  specialties: string[];
+  /** Derives HEALER_CLASSES: role === 'healer' */
+  role: ClassRole;
+  /** Base damage before mastery multiplier — matches the old CombatManager switch */
+  baseDamage: number;
+  /** Emoji icon used in all getClassIcon lookups (never an image path) */
+  icon: string;
+}
+
+export const AVATAR_CLASSES: Record<AvatarClass, ClassDef> = {
   ranger: {
     name: "Ranger",
     description: "Swift archer with keen eyes",
     color: "#228B22",
     stats: { str: 12, dex: 16, con: 10, wis: 14, int: 12, cha: 14 },
     specialties: ["Ranged Combat", "Tracking", "Nature Magic"],
+    role: 'dps',
+    baseDamage: 20,
+    icon: '🏹',
   },
   rogue: {
     name: "Rogue",
@@ -729,6 +739,9 @@ export const AVATAR_CLASSES: Record<
     color: "#2F4F4F",
     stats: { str: 10, dex: 18, con: 8, wis: 12, int: 14, cha: 16 },
     specialties: ["Stealth", "Critical Strikes", "Lockpicking"],
+    role: 'dps',
+    baseDamage: 20,
+    icon: '🗡️',
   },
   bard: {
     name: "Bard",
@@ -736,6 +749,9 @@ export const AVATAR_CLASSES: Record<
     color: "#9370DB",
     stats: { str: 6, dex: 12, con: 10, wis: 12, int: 16, cha: 22 },
     specialties: ["Support Magic", "Inspiration", "Versatility"],
+    role: 'healer',
+    baseDamage: 12,
+    icon: '🎵',
   },
   sorcerer: {
     name: "Sorcerer",
@@ -743,6 +759,9 @@ export const AVATAR_CLASSES: Record<
     color: "#FF4500",
     stats: { str: 6, dex: 10, con: 12, wis: 8, int: 22, cha: 20 },
     specialties: ["Elemental Magic", "Raw Power", "Metamagic"],
+    role: 'dps',
+    baseDamage: 25,
+    icon: '🔥',
   },
   wizard: {
     name: "Wizard",
@@ -750,6 +769,9 @@ export const AVATAR_CLASSES: Record<
     color: "#4169E1",
     stats: { str: 6, dex: 8, con: 10, wis: 16, int: 22, cha: 16 },
     specialties: ["Arcane Knowledge", "Spell Variety", "Research"],
+    role: 'dps',
+    baseDamage: 25,
+    icon: '🧙',
   },
   warrior: {
     name: "Warrior",
@@ -757,6 +779,9 @@ export const AVATAR_CLASSES: Record<
     color: "#B22222",
     stats: { str: 20, dex: 10, con: 16, wis: 8, int: 6, cha: 18 },
     specialties: ["Melee Combat", "Defense", "Leadership"],
+    role: 'tank',
+    baseDamage: 15,
+    icon: '⚔️',
   },
   paladin: {
     name: "Paladin",
@@ -764,6 +789,9 @@ export const AVATAR_CLASSES: Record<
     color: "#FFD700",
     stats: { str: 16, dex: 8, con: 14, wis: 12, int: 10, cha: 18 },
     specialties: ["Divine Magic", "Protection", "Healing"],
+    role: 'healer',
+    baseDamage: 15,
+    icon: '🛡️',
   },
   cleric: {
     name: "Cleric",
@@ -771,6 +799,9 @@ export const AVATAR_CLASSES: Record<
     color: "#F0F8FF",
     stats: { str: 10, dex: 6, con: 12, wis: 20, int: 12, cha: 18 },
     specialties: ["Healing Magic", "Divine Power", "Support"],
+    role: 'healer',
+    baseDamage: 12,
+    icon: '✨',
   },
   oathbreaker: {
     name: "Oathbreaker",
@@ -778,6 +809,9 @@ export const AVATAR_CLASSES: Record<
     color: "#8A2BE2",
     stats: { str: 16, dex: 10, con: 14, wis: 8, int: 12, cha: 18 },
     specialties: ["Dark Magic", "Corruption", "Fear Aura"],
+    role: 'tank',
+    baseDamage: 15,
+    icon: '💀',
   },
   monk: {
     name: "Monk",
@@ -785,6 +819,9 @@ export const AVATAR_CLASSES: Record<
     color: "#8B4513",
     stats: { str: 14, dex: 16, con: 14, wis: 18, int: 10, cha: 12 },
     specialties: ["Martial Arts", "Inner Peace", "Chi Manipulation"],
+    role: 'dps',
+    baseDamage: 20,
+    icon: '🥋',
   },
 };
 
