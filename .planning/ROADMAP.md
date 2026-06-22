@@ -296,7 +296,12 @@ Plans (wave 1 = 47-01/04 parallel-safe; wave 2 = 47-02/03 after 47-01 — 47-03 
   2. The module-scope monkey-patch of `combatManager.applyDamageToPlayer` is replaced by a first-class `damageInterceptor` dependency, with all 7 internal `applyDamageToPlayer` call sites verified to route through it (shield absorption no longer ships untested)
   3. Domain wiring is a `wireDomains(deps): { dispose() }` factory (production call at module bottom unchanged); a server-side `makeMockSocket` enables unit tests for `create_lobby`, disconnect/host-transfer, and `reconnect_with_token`
   4. No runtime behavior change; full suite still green
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans (wave 1 = 48-01/48-02 parallel-safe; wave 2 = 48-03 after 48-01 + 48-02 because it edits server/domains/index.ts shared with 48-02 and its handler tests rely on 48-01 exported GameStateManager):
+- [ ] 48-01-PLAN.md: MAINT-01 export GameStateManager + startWatchdogs opt + public handleVotingTimeout + seam tests
+- [ ] 48-02-PLAN.md: MAINT-02 first-class damageInterceptor dep, route all 7 call sites, delete monkey-patch, wire shield at construction, interceptor test
+- [ ] 48-03-PLAN.md: MAINT-03 wireDomains factory (9 named listeners + dispose), server-side makeMockSocket, extract + test create_lobby / disconnect-host-transfer / reconnect_with_token
 
 ### Phase 49: State Source-of-Truth Consolidation
 **Goal**: Each piece of game state has one authoritative store; handlers stop hand-mirroring, closing the existing team-staleness and boss-HP-divergence bugs.
