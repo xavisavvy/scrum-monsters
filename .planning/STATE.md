@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Maintainability & Extensibility
-status: planning
-stopped_at: v5.0 shipped (Phases 37-46); v6.0 roadmap drafted (Phases 47-52) from the 2026-06-21 review council
-last_updated: "2026-06-21T23:30:00.000Z"
-last_activity: 2026-06-21
+status: executing
+stopped_at: Completed 47-01-PLAN.md
+last_updated: "2026-06-22T06:06:46.215Z"
+last_activity: 2026-06-22
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
   percent: 0
 ---
 
@@ -21,16 +21,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 47 — ability-effects-and-data-driven-registries (v6.0 milestone start)
+**Current focus:** Phase 47 — ability-effects-data-driven-registries
 
 ## Current Position
 
 Milestone: v6.0 Maintainability & Extensibility — PLANNING
-Phase: 47 — not yet planned (next: /gsd:plan-phase 47)
-Status: v6.0 roadmap drafted from `.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md`
-Last activity: 2026-06-21
+Phase: 47 (ability-effects-data-driven-registries) — EXECUTING
+Plan: 2 of 4
+Status: Ready to execute
+Last activity: 2026-06-22
 
-Progress: [          ] 0% (0 of 6 phases)
+Progress: [███░░░░░░░] 25%
 
 ## Performance Metrics
 
@@ -51,6 +52,7 @@ Progress: [          ] 0% (0 of 6 phases)
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
 | v5.0 UX & Onboarding | 37-41 | 11/11 | In progress | - |
+| Phase 47-ability-effects-data-driven-registries P01 | 10min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -99,6 +101,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [44-02] Bash deploy helpers split into source-able modules (npm-api.sh, health-poll.sh) under scripts/deploy/lib/; PATH-shim mocking via mktemp tmp dirs is the bats convention for this repo
 - [44-02] npm_login fails loudly on requires_2fa response (extra 8th bats test added — Rule 2 critical security functionality per executor brief; total 13 bats tests > plan-stated 12)
 - [44-02] CI deploy-scripts job uses apt-get install shellcheck bats jq on ubuntu-latest; ci-success needs[] gates branch protection on the new job
+- [Phase ?]: [47-01] BuffType union = 'damage_boost' | 'crit_boost' | 'dodge' | 'cooldown_reduction' derived from CLASS_ABILITY_CONFIGS values
+- [Phase ?]: [47-01] durationMs populated at 10000ms for buff abilities and 8000ms for oathbreaker_aura_of_dread; paladin shield abilities deliberately omitted (handler supplies default)
+- [Phase ?]: [47-01] gameEvents.ts wire type uses inline import('./abilityTypes').BuffType to avoid circular imports
 
 ### Pending Todos
 
@@ -114,8 +119,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-06-21
-Stopped at: v5.0 shipped (Phases 37-46 reconciled). Ran a 76-agent adversarial maintainability/extensibility review council → `.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md` (32 verified findings). Shipped 2 live bugs in PR #167 (golem AI filename, monk icon). Drafted v6.0 roadmap (Phases 47-52).
+Last session: 2026-06-22T06:06:46.203Z
+Stopped at: Completed 47-01-PLAN.md
 Resume file: None
 Next action: /gsd:plan-phase 47 (Ability Effects & Data-Driven Registries) — leads with the deferred rank-2 ability-effect handler bug
 
