@@ -1940,4 +1940,103 @@ describe('CombatManager', () => {
       });
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Registry-driven parity tests (Plan 47-03)
+  // ---------------------------------------------------------------------------
+
+  describe('getClassBaseDamage registry parity (Plan 47-03)', () => {
+    /**
+     * All 10 AvatarClass values and their expected baseDamage from AVATAR_CLASSES.
+     * These values must match the old switch in CombatManager exactly.
+     */
+    const CLASS_BASE_DAMAGES: Array<[AvatarClass, number]> = [
+      ['warrior',     15],
+      ['paladin',     15],
+      ['oathbreaker', 15],
+      ['ranger',      20],
+      ['rogue',       20],
+      ['monk',        20],
+      ['sorcerer',    25],
+      ['wizard',      25],
+      ['cleric',      12],
+      ['bard',        12],
+    ];
+
+    it.each(CLASS_BASE_DAMAGES)(
+      '%s base damage equals %i (registry parity)',
+      (avatarClass, expectedDamage) => {
+        // Configure mock to return the class under test
+        getPlayerClass = vi.fn(() => avatarClass);
+        combatManager = new CombatManager({ eventBus, getPlayerTeam, getPlayerClass });
+
+        const players = [
+          { id: 'testPlayer', team: 'developers' as TeamType },
+          { id: 'dummy', team: 'developers' as TeamType },
+        ];
+        combatManager.initializeCombat('parityLobby', players, 0);
+
+        const damage = combatManager.playerAttackBoss('parityLobby', 'testPlayer');
+        // masteryMultiplier is 1.0 by default → damage should equal baseDamage exactly
+        expect(damage).toBe(expectedDamage);
+      }
+    );
+  });
+
+  describe('HEALER_CLASSES derivation from registry (Plan 47-03)', () => {
+    /**
+     * Healer classes (role === 'healer' in AVATAR_CLASSES) should be allowed to
+     * heal teammates; non-healers should throw NotHealerClassError.
+     */
+    const HEALER_CLASS_IDS: AvatarClass[] = ['cleric', 'paladin', 'bard'];
+    const NON_HEALER_CLASS_IDS: AvatarClass[] = ['warrior', 'ranger', 'rogue', 'monk', 'sorcerer', 'wizard', 'oathbreaker'];
+
+    it.each(HEALER_CLASS_IDS)(
+      '%s (healer role) does NOT throw NotHealerClassError when healing',
+      (healerClass) => {
+        getPlayerClass = vi.fn((_, playerId: string) => {
+          if (playerId === 'healerPlayer') return healerClass;
+          return 'ranger';
+        });
+        combatManager = new CombatManager({ eventBus, getPlayerTeam, getPlayerClass });
+
+        const players = [
+          { id: 'healerPlayer', team: 'developers' as TeamType },
+          { id: 'targetPlayer', team: 'developers' as TeamType },
+        ];
+        combatManager.initializeCombat('healerLobby', players, 0);
+
+        // Reduce target HP so they can be healed
+        const state = combatManager.getCombatState('healerLobby');
+        const targetState = state!.players.get('targetPlayer');
+        targetState!.hp = 50;
+
+        // Should not throw NotHealerClassError (healer class allowed)
+        expect(() => {
+          combatManager.playerHealTeammate('healerLobby', 'healerPlayer', 'targetPlayer');
+        }).not.toThrow(NotHealerClassError);
+      }
+    );
+
+    it.each(NON_HEALER_CLASS_IDS)(
+      '%s (non-healer role) throws NotHealerClassError when healing',
+      (nonHealerClass) => {
+        getPlayerClass = vi.fn((_, playerId: string) => {
+          if (playerId === 'nonHealerPlayer') return nonHealerClass;
+          return 'ranger';
+        });
+        combatManager = new CombatManager({ eventBus, getPlayerTeam, getPlayerClass });
+
+        const players = [
+          { id: 'nonHealerPlayer', team: 'developers' as TeamType },
+          { id: 'targetPlayer', team: 'developers' as TeamType },
+        ];
+        combatManager.initializeCombat('nonHealerLobby', players, 0);
+
+        expect(() => {
+          combatManager.playerHealTeammate('nonHealerLobby', 'nonHealerPlayer', 'targetPlayer');
+        }).toThrow(NotHealerClassError);
+      }
+    );
+  });
 });

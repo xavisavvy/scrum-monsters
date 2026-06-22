@@ -21,7 +21,7 @@ import type {
   EstimationFullConsensusReachedPayload,
   MinionState,
 } from '../events';
-import { TeamType, AvatarClass } from '../../shared/gameEvents';
+import { TeamType, AvatarClass, AVATAR_CLASSES } from '../../shared/gameEvents';
 import {
   CombatNotActiveError,
   PlayerNotInCombatError,
@@ -167,8 +167,10 @@ export class CombatManager {
   private readonly LEVEL_DAMAGE_SCALING = 0.05;   // +5% damage per average level
   private readonly PHASE_3_ATTACK_INTERVAL_MS = 2000; // Faster attacks in phase 3 (enrage)
 
-  // Healer classes that can revive
-  private readonly HEALER_CLASSES: AvatarClass[] = ['cleric', 'paladin', 'bard'];
+  // Healer classes that can revive — derived from AVATAR_CLASSES registry (role === 'healer')
+  private readonly HEALER_CLASSES: AvatarClass[] = (
+    Object.entries(AVATAR_CLASSES) as [AvatarClass, typeof AVATAR_CLASSES[AvatarClass]][]
+  ).filter(([, def]) => def.role === 'healer').map(([cls]) => cls);
 
   // Countdown constants
   private readonly COUNTDOWN_DURATION_SECONDS = 10;
@@ -605,39 +607,9 @@ export class CombatManager {
    * @param masteryMultiplier Mastery damage multiplier (1.0 Novice, 1.1 Expert, 1.2 Master)
    */
   private getClassBaseDamage(avatarClass: AvatarClass | null | undefined, masteryMultiplier: number = 1.0): number {
-    let baseDamage: number;
-
-    switch (avatarClass) {
-      // Tank classes - lower damage
-      case 'warrior':
-      case 'paladin':
-      case 'oathbreaker':
-        baseDamage = 15;
-        break;
-
-      // DPS classes - standard damage
-      case 'ranger':
-      case 'rogue':
-      case 'monk':
-        baseDamage = 20;
-        break;
-
-      // Glass cannon - high damage
-      case 'sorcerer':
-      case 'wizard':
-        baseDamage = 25;
-        break;
-
-      // Healer classes - lowest damage
-      case 'cleric':
-      case 'bard':
-        baseDamage = 12;
-        break;
-
-      default:
-        baseDamage = 20; // Default to standard DPS damage
-    }
-
+    // Registry-driven lookup — single source of truth in AVATAR_CLASSES.
+    // Falls back to 20 (standard DPS) for null/undefined/unknown class, matching the old switch default.
+    const baseDamage = avatarClass != null ? (AVATAR_CLASSES[avatarClass]?.baseDamage ?? 20) : 20;
     return Math.floor(baseDamage * masteryMultiplier);
   }
 
