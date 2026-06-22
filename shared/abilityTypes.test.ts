@@ -10,7 +10,6 @@ import {
   CLASS_ABILITY_CONFIGS,
   type BuffType,
   type DebuffType,
-  type AbilityDefinition,
   type AbilityEffectAppliedPayload,
 } from './abilityTypes';
 

@@ -404,6 +404,33 @@ describe('AbilityManager - Effect Application', () => {
       targetIds: ['boss'],
     }));
   });
+
+  it('should emit buffType for warrior_berserker_rage (buff ability)', () => {
+    abilityManager.useAbility('lobby-1', 'player-1', 'warrior_berserker_rage');
+
+    const call = emitSpy.mock.calls.find((c: any) => c[0] === 'ability:effect_applied');
+    const payload = call?.[1] as any;
+    expect(payload).toBeDefined();
+    expect(payload.buffType).toBe('damage_boost');
+    expect(payload.durationMs).toBe(10000);
+    expect(payload.debuffType).toBeUndefined();
+  });
+
+  it('should emit buffType undefined for paladin_holy_shield (shield ability)', () => {
+    deps.getPlayerClass = vi.fn(() => 'paladin' as AvatarClass);
+    const paladinManager = new AbilityManager(deps);
+    const paladinEmitSpy = vi.spyOn(deps.eventBus, 'emit');
+
+    paladinManager.useAbility('lobby-1', 'player-1', 'paladin_holy_shield');
+
+    const call = paladinEmitSpy.mock.calls.find((c: any) => c[0] === 'ability:effect_applied');
+    const payload = call?.[1] as any;
+    expect(payload).toBeDefined();
+    expect(payload.effectType).toBe('shield');
+    expect(payload.buffType).toBeUndefined();
+    expect(payload.debuffType).toBeUndefined();
+    expect(payload.durationMs).toBeUndefined();
+  });
 });
 
 describe('AbilityManager - Cooldown Reset', () => {
