@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: UX & Onboarding
-status: completed
-stopped_at: Completed Phase 46 — Music Controls & History (3/3 plans)
-last_updated: "2026-06-17T22:35:00.000Z"
-last_activity: 2026-06-17
+milestone: v6.0
+milestone_name: Maintainability & Extensibility
+status: planning
+stopped_at: v5.0 shipped (Phases 37-46); v6.0 roadmap drafted (Phases 47-52) from the 2026-06-21 review council
+last_updated: "2026-06-21T23:30:00.000Z"
+last_activity: 2026-06-21
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 20
-  completed_plans: 20
-  percent: 100
+  total_phases: 6
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 43 — auth-user-account-validation
+**Current focus:** Phase 47 — ability-effects-and-data-driven-registries (v6.0 milestone start)
 
 ## Current Position
 
-Phase: 46 — COMPLETE
-Plan: 3 of 3 (all complete)
-Status: Phase 46 complete
-Last activity: 2026-06-17
+Milestone: v6.0 Maintainability & Extensibility — PLANNING
+Phase: 47 — not yet planned (next: /gsd:plan-phase 47)
+Status: v6.0 roadmap drafted from `.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md`
+Last activity: 2026-06-21
 
-Progress: [██████████] 100%
+Progress: [          ] 0% (0 of 6 phases)
 
 ## Performance Metrics
 
@@ -114,11 +114,11 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-06-17
-Stopped at: Completed Phase 46 — Music Controls & History (musicHistory utils, youtubeTitle utils, MusicControls component, GamePage hoist + wiring)
+Last session: 2026-06-21
+Stopped at: v5.0 shipped (Phases 37-46 reconciled). Ran a 76-agent adversarial maintainability/extensibility review council → `.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md` (32 verified findings). Shipped 2 live bugs in PR #167 (golem AI filename, monk icon). Drafted v6.0 roadmap (Phases 47-52).
 Resume file: None
-Next action: Phase 47 or next milestone planning
+Next action: /gsd:plan-phase 47 (Ability Effects & Data-Driven Registries) — leads with the deferred rank-2 ability-effect handler bug
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-08 — Completed 44-02 (scripts/deploy/lib/npm-api.sh + health-poll.sh, 13 bats tests, CI deploy-scripts job); commits 47cc14a + 8546614*
+*Last updated: 2026-06-21 — v5.0 shipped; v6.0 Maintainability & Extensibility milestone drafted from review council (Phases 47-52); PR #167 ships the 2 live bugs*

@@ -1,5 +1,30 @@
 # Project Milestones: ScrumQuest
 
+## v5.0 UX & Onboarding (Shipped: 2026-06-17)
+
+**Delivered:** Made ScrumQuest welcoming to new players and polished for everyone — graceful empty/loading/error states, responsive interaction feedback and cinematic phase transitions, a full tutorial system with JRPG narrator dialogue, reconnection-state integrity, working Auth0 sign-in, zero-downtime blue-green deploys, a socket-schema drift reconciliation (typed sockets, ESLint override removed), and persistent music controls with history.
+
+**Phases completed:** 37-46 (10 phases, 27 plans)
+
+**Key accomplishments:**
+- State polish: themed empty states, loading skeletons, JRPG error boundaries (Phase 37)
+- Interaction feedback: button/vote-card animations, toasts, phase interstitials (Phase 38)
+- Tutorial system: isolated `useTutorial` store, spotlight/hint overlays, phase-aware walkthroughs, typewriter narrator boxes (Phases 39-40)
+- Reconnection bugfix: snapshot/token coherence, identity + host preservation on rejoin (Phase 41)
+- Pre-ship fixes: boss-damage client feedback, auto-advance toggle, retired `lobby_updated` for fine-grained events, XP pacing (Phase 42)
+- Auth: Auth0 round-trip working end-to-end, graceful unconfigured UX, env hardening + integration tests (Phase 43)
+- Zero-downtime blue-green deploys via NPM upstream swap with auto-rollback (Phase 44)
+- Socket schema drift reconciliation: typed `ServerToClientEvents`/`ClientToServerEvents`, ESLint `any` override removed, 4 runtime bugs fixed, dead events purged (Phase 45)
+- Persistent music controls with per-host top-10 history (Phase 46)
+
+**Stats:**
+- 10 phases, 27 plans
+- 825 tests passing at ship
+
+**What's next:** v6.0 Maintainability & Extensibility (Phases 47-52), seeded by the 2026-06-21 adversarial review council (`.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md`)
+
+---
+
 ## v3.1 Tech Debt Cleanup (Shipped: 2026-02-24)
 
 **Delivered:** Clean codebase baseline — migrated 394 console statements to Pino structured logging, enforced ESLint no-console at error level, removed unused dependencies, and completed graceful server shutdown client UX.

@@ -9,7 +9,8 @@
 - ✅ **v3.0 Production Optimization** — Phases 26-29 (shipped 2026-02-20)
 - ✅ **v3.1 Tech Debt Cleanup** — Phases 30-31 (completed 2026-02-24, 1 plan deferred)
 - ✅ **v4.0 Hosting & Deployment** — Phases 32-36 (shipped 2026-03-11)
-- 🚧 **v5.0 UX & Onboarding** — Phases 37-44 (all 8 phases complete and verified 2026-05-15; ready to ship)
+- ✅ **v5.0 UX & Onboarding** — Phases 37-46 (shipped 2026-06-17)
+- 🚧 **v6.0 Maintainability & Extensibility** — Phases 47-52 (planning; seeded by the 2026-06-21 adversarial review council)
 
 ## Phases
 
@@ -68,9 +69,9 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 
 </details>
 
-### 🚧 v5.0 UX & Onboarding (In Progress)
+### ✅ v5.0 UX & Onboarding (Shipped 2026-06-17)
 
-**Milestone Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback.
+**Milestone Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback. (Phases 45-46 — socket schema reconciliation and music controls — landed under this milestone as it extended.)
 
 - [x] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes (completed 2026-03-11)
 - [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)
@@ -254,6 +255,88 @@ Plans:
 - [x] 46-02-PLAN.md — MusicControls.tsx component: host write + non-host read-only, oEmbed title, history dropdown, playlist note
 - [x] 46-03-PLAN.md — Wiring: hoist YoutubeAudioPlayer to GamePage, swap BattleScreen controls, add to Lobby, delete BossMusicControls
 
+---
+
+### 🚧 v6.0 Maintainability & Extensibility (Planning)
+
+**Milestone Goal:** Pay down the structural debt the 2026-06-21 adversarial review council identified — **without regressing performance** — so that adding a feature (socket event, avatar class, boss, ability, spell) becomes a compile-checked, single-file, safe change instead of error-prone shotgun surgery. Source of record: [`.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md`](reviews/MAINTAINABILITY-REVIEW-2026-06-21.md) (32 verified findings; performance guardian cleared every item — guardrails are acceptance criteria, not blockers).
+
+**Sequencing principle (from the review):** consolidate state and build test seams *before* the large refactors; add data/payload fields *before* the handlers that read them; extract god-component seams *last*, only the verified ones.
+
+- [ ] **Phase 47: Ability Effects & Data-Driven Registries** — Make every ability effect actually apply; give per-class/per-boss data a single typed source of truth (Theme 6; ranks 2, 5, 16-part)
+- [ ] **Phase 48: Testability Seams** — Constructable singletons, kill the runtime monkey-patch, `wireDomains` factory, mock-socket handler tests (Theme 7; rank 14)
+- [ ] **Phase 49: State Source-of-Truth Consolidation** — Derive `teams[]`, make CombatManager the single boss-HP truth, field-scoped Zustand selectors (Theme 1; ranks 3, 4, 8)
+- [ ] **Phase 50: Finish the GameState → Domain-Manager Migration** — Ordered, reversible decommission of dead/duplicate GameState code; revival migration + `session:host_transferred` (Theme 2; ranks 9, 10)
+- [ ] **Phase 51: Event-Contract Hardening & Handler Boilerplate** — Typed emit, `satisfies` parity guards, `Sequenced<T>`, `registerSyncedLobbyHandler` helpers (Themes 4 & 5; ranks 12, 13)
+- [ ] **Phase 52: Client God-Component Decomposition** — Movement refs, magic-effect reducer, verified Lobby.tsx seams, PlayerController dedup + coordinate helpers (Theme 3; ranks 6, 7, 11, 15)
+
+### Phase 47: Ability Effects & Data-Driven Registries
+**Goal**: Every ability `effectType` is honored (no silently-dropped buff/shield/debuff), and per-class/per-boss data lives in one `Record<Union,...>`-typed registry so adding a class/boss/effect is a compile-checked single-file change.
+**Depends on**: none (independent — leads the milestone; absorbs the live ability-effect bug deferred from PR #167)
+**Requirements**: EXT-01 (ability effect completeness), EXT-02 (typed class registry), EXT-03 (typed boss registry)
+**Success Criteria** (what must be TRUE):
+  1. The 8 abilities emitting `buff`/`shield`/`debuff` (warrior berserker_rage, bard inspire, ranger eagle_eye, rogue shadow_step, wizard time_warp, paladin holy_shield/divine_intervention, oathbreaker aura_of_dread) apply their effect; `AbilityEffectAppliedPayload` carries `buffType?`/`debuffType?`/`durationMs?` and `AbilityManager` forwards them; the duplicated heal loop is one `applyHealEffect` helper
+  2. `AVATAR_CLASSES` is `Record<AvatarClass, ClassDef>` with role/baseDamage/icon; `HEALER_CLASSES` and `getClassBaseDamage` derive from it; adding a class without an entry is a `tsc` error (client `AVATAR_IMAGES` typed `Record<AvatarClass,string>`, kept client-side)
+  3. `SPRITE_TO_BOSS_TYPE` and `availableBosses` derive from `Object.values(BOSS_BEHAVIORS)` (the rank-1 follow-up to the filename fix shipped in PR #167)
+  4. `buffType`/`debuffType` are literal unions, not bare `string`; no regressions (existing ability/combat tests pass)
+**Plans**: TBD
+
+### Phase 48: Testability Seams
+**Goal**: Core server logic (GameState, domain wiring, socket handlers) is reachable by unit tests with byte-identical production behavior — the safety net every later refactor depends on.
+**Depends on**: none (pure-refactor seams; should land before Phases 49-52)
+**Requirements**: MAINT-01 (constructable GameState), MAINT-02 (first-class damageInterceptor), MAINT-03 (wireDomains factory + mock-socket)
+**Success Criteria** (what must be TRUE):
+  1. `GameStateManager` is exported and constructable with `{ startWatchdogs?: boolean }` (default true); `handleVotingTimeout` is public; tests instantiate it with no `as any` and no leaked timers
+  2. The module-scope monkey-patch of `combatManager.applyDamageToPlayer` is replaced by a first-class `damageInterceptor` dependency, with all 7 internal `applyDamageToPlayer` call sites verified to route through it (shield absorption no longer ships untested)
+  3. Domain wiring is a `wireDomains(deps): { dispose() }` factory (production call at module bottom unchanged); a server-side `makeMockSocket` enables unit tests for `create_lobby`, disconnect/host-transfer, and `reconnect_with_token`
+  4. No runtime behavior change; full suite still green
+**Plans**: TBD
+
+### Phase 49: State Source-of-Truth Consolidation
+**Goal**: Each piece of game state has one authoritative store; handlers stop hand-mirroring, closing the existing team-staleness and boss-HP-divergence bugs.
+**Depends on**: Phase 48 (characterization tests pin behavior before consolidation)
+**Requirements**: MAINT-04 (team derivation), MAINT-05 (single boss-HP truth), MAINT-06 (scoped selectors)
+**Success Criteria** (what must be TRUE):
+  1. `withTeamsDerived(lobby)` recomputes `teams` from `players` and is threaded through every player-mutating `setLobby` — including the currently-unmirrored `session:avatar_selected` and `session:host_changed` — closing the `team_changed` push-before-map bug; covered by a unit test + regression test
+  2. `CombatManager` is the single source of boss HP via `applyBasicDamageToBoss`; `gameState.attackBoss` delegates to it; basic attacks now trigger `checkPhaseTransition`; the manual `eventBus.emit('combat:boss_damaged')` at `websocket.ts` ~L1169 is removed so there is no double-emit
+  3. Hot battle components use field-scoped Zustand selectors (scalar primitives, `useShallow` only for multi-field destructures), starting with `PlayerCharacter` + fixing `PlayerController`'s whole-store subscription so `React.memo` can bail out
+  4. **Perf guardrail (acceptance criterion):** no selector returns a fresh object per render; a single boss hit no longer re-renders the whole battle tree
+**Plans**: TBD
+
+### Phase 50: Finish the GameState → Domain-Manager Migration
+**Goal**: The stalled monolith→domain-manager migration is completed in an ordered, reversible way; dead/duplicate GameState code and redundant background loops are removed.
+**Depends on**: Phases 48, 49 (test seams + state consolidation in place)
+**Requirements**: MAINT-07 (decommission dead methods + alias fix), MAINT-08 (revival migration + host_transferred event)
+**Success Criteria** (what must be TRUE):
+  1. `syncPlayerToLobby` registers the alias unconditionally (fixes the latent reconnect staleness) — done *first*, before any deletion
+  2. The proven-dead duplicate methods (`createLobby`/`joinLobby`/`removePlayer`/`updatePlayerTeam`/`updatePlayerAvatar`) are deleted after an identical-shape audit; timer/jira/estimation settings migrate cleanly into `SessionManager`; **battle methods (`attackBoss`/`startBattle`/`submitScore`/`revealScores`) are explicitly NOT shim-migrated** (left for a dedicated ownership-transfer design)
+  3. All revival traffic routes through `CombatManager`; the redundant gameState revival watchdog and the `websocket.ts` legacy watchdog are gone (two 100ms ticks → zero); a new `session:host_transferred` eventBus event removes the `io.to(...).emit` from the disconnect sweeper
+  4. No regression in reconnection (Phase 41 invariants), revival, or host-transfer behavior
+**Plans**: TBD
+
+### Phase 51: Event-Contract Hardening & Handler Boilerplate
+**Goal**: Adding or changing a fine-grained socket event produces a `tsc` error on mismatch instead of a silent production drift (the C1/C2/C3/C5 bug class); the ~50 copy-pasted client handler envelopes collapse into tested helpers.
+**Depends on**: Phase 49 (helpers route lobby writes through `withTeamsDerived`)
+**Requirements**: EXT-04 (compile-time event contract), MAINT-09 (handler helpers + teardown), MAINT-10 (coordinate helpers)
+**Success Criteria** (what must be TRUE):
+  1. `emitFineGrained`/`emitToLobby` are constrained to `keyof ServerToClientEvents`; a `satisfies` guard cross-checks the `ClientEventEmitter` bridge against the wire-bound event union; `ClientEventSchemas` has `satisfies Record<keyof ClientToServerEvents, z.ZodTypeAny>` + a key-set parity test
+  2. Wire unions are substituted where a domain union exists (`itemType: ItemType`, `avatar`/`avatarClass: AvatarClass`); a `Sequenced<T>` wrapper types the ~40 fine-grained events (control messages excluded). Server-private types (`bossType`) and the mis-cited minion `attackType` are explicitly NOT changed
+  3. `registerSyncedLobbyHandler` and `registerSyncedHandler` own the seq-guard + null-check + setLobby envelope for the ~40 uniform handlers; the ~7 intentionally-non-standard handlers stay explicit; the hand-synced teardown off-list is replaced by a registered-name array (or a CI on()/off() parity test)
+  4. `worldToPercent`/`percentToWorld` helpers replace the 5 open-coded coordinate sites with consistent clamping; no wire or runtime change
+**Plans**: TBD
+
+### Phase 52: Client God-Component Decomposition
+**Goal**: `Lobby.tsx` (2862 lines) and `PlayerController.tsx` shrink along the *verified* seams, isolating re-render scope and making spells/movement testable — without touching the 60fps loops' performance.
+**Depends on**: Phases 48 (tests), 49 (state consolidation), 51 (movement reads ride the new helpers)
+**Requirements**: MAINT-11 (movement-loop refs), MAINT-12 (magic-effect reducer), MAINT-13 (Lobby seam extraction), MAINT-14 (PlayerController dedup)
+**Success Criteria** (what must be TRUE):
+  1. The 16ms movement `useEffect` no longer recreates on buff/jump changes — buff Sets and `jumpState.jumpHeight` are refs, dep array collapsed; a fake-timers test asserts one interval per movement session (same fix in `PlayerController`)
+  2. The 13 magic-effect `useState` slots become one `useReducer` (`BuffState`/`BuffAction`); the ~300-line `if`-cascade becomes `detectedEffects.forEach(e => dispatch(buildAction(e, resolveTargets(e))))`; reducer is unit-tested; `DISPEL_ALL` is one action
+  3. Verified seams extracted: `applySpellEffects`+`resolveTargets` dedup, `TavernLighting`, `LobbySettingsDialog` (host+phase guard preserved exactly), `LobbyAvatar` (explicit props, not an `isLocal` flag), and `useLobbyMovement` *last*. The debunked seams (unified emote spell hook, descriptor settings form, afterimage "dup") are deliberately left alone
+  4. `PlayerController` Ctrl-shoot logic (3× verbatim) → `handleShootAtTarget`; the two cooldown tickers → `startCooldown`
+  5. **Perf guardrail (acceptance criterion):** `dpr`+`PerformanceMonitor` live *inside* the extracted scene (Canvas never a controlled prop-receiver); extracted scene is `React.memo`'d; React DevTools profiler confirms render counts did not increase
+**Plans**: TBD
+
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-6 | v1.0 | 30/30 | Complete | 2026-02-02 |
@@ -271,10 +354,17 @@ Plans:
 | 42. v5.0 Pre-Ship Fixes & Polish | v5.0 | 4/4 | Complete | 2026-05-07 |
 | 43. Auth & User Account Validation | v5.0 | 2/2 | Complete | 2026-05-07 |
 | 44. Zero-Downtime Deploys (Blue-Green) | v5.0 | 3/3 | Complete | 2026-05-09 |
-| 46. Music Controls & History | v6.0 | 3/3 | Complete | 2026-06-17 |
+| 45. Socket Schema Drift Reconciliation | v5.0 | 5/5 | Complete | 2026-05-18 |
+| 46. Music Controls & History | v5.0 | 3/3 | Complete | 2026-06-17 |
+| 47. Ability Effects & Data-Driven Registries | v6.0 | 0/TBD | Planned | - |
+| 48. Testability Seams | v6.0 | 0/TBD | Planned | - |
+| 49. State Source-of-Truth Consolidation | v6.0 | 0/TBD | Planned | - |
+| 50. Finish GameState → Domain-Manager Migration | v6.0 | 0/TBD | Planned | - |
+| 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/TBD | Planned | - |
+| 52. Client God-Component Decomposition | v6.0 | 0/TBD | Planned | - |
 
-**Total: 8 milestones shipped, 43 phases complete, 147 plans (1 deferred) | Phase 46 complete 2026-06-17**
+**Total: 9 milestones shipped, 46 phases complete, 155 plans (1 deferred) | v5.0 shipped 2026-06-17; v6.0 (Phases 47-52) in planning**
 
 ---
 *Roadmap created: 2026-02-11*
-*Last updated: 2026-05-08 — Plan 43-02 shipped (supertest harness, mockOidc helper, 15 new tests across server/component/store, AUTH0_* all-or-nothing env refine); 705/705 tests pass; AUTH-01 complete*
+*Last updated: 2026-06-21 — v5.0 marked shipped (Phases 37-46 reconciled; Phase 45 row restored, Phase 46 re-tagged v5.0); v6.0 Maintainability & Extensibility milestone added (Phases 47-52) from the adversarial review council in `.planning/reviews/MAINTAINABILITY-REVIEW-2026-06-21.md`*
