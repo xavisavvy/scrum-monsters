@@ -491,6 +491,9 @@ export class ClientEventEmitter {
         effectType: payload.effectType,
         targetIds: payload.targetIds,
         value: payload.value,
+        buffType: payload.buffType,
+        debuffType: payload.debuffType,
+        durationMs: payload.durationMs,
       });
     });
 
