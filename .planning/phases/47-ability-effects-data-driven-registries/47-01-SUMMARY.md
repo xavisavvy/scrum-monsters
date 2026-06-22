@@ -122,6 +122,18 @@ None - no external service configuration required.
 - `damage_boost` and `shield` buffTypes have existing consumers in the buff system (`getDamageMultiplier`, `reduceShield`) and will work end-to-end after plan 47-02 adds the handler branches
 - `crit_boost`, `dodge`, and `attack_slow` are stored and forwarded but have no runtime consumers yet — future work per CONTEXT deferred section
 
+## Self-Check: PASSED
+
+- shared/abilityTypes.test.ts: FOUND
+- shared/abilityTypes.ts: FOUND
+- server/domains/AbilityManager.ts: FOUND
+- server/events/ClientEventEmitter.ts: FOUND
+- 47-01-SUMMARY.md: FOUND
+- c9c5161 (test RED task 1): FOUND
+- 816852f (feat GREEN task 1): FOUND
+- c122ec8 (test RED task 2): FOUND
+- 5336776 (feat GREEN task 2): FOUND
+
 ---
 *Phase: 47-ability-effects-data-driven-registries*
 *Completed: 2026-06-22*
