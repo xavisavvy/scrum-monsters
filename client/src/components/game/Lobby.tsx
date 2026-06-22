@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, Suspense } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
@@ -16,6 +16,7 @@ import { EmoteModal } from './EmoteModal';
 import { MagicEffect } from './MagicEffect';
 import { LobbyReadyButton } from './LobbyReadyButton';
 import { MusicControls } from '@/components/ui/MusicControls';
+import { MobileControls } from './MobileControls';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -456,6 +457,27 @@ export function Lobby() {
     // Keyboard listeners register once per phase change; emit/jumpState read latest values via closure.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLobby?.gamePhase]);
+
+  // Mobile touch input handlers — feed the same keys Set as keyboard input
+  const handleMobileKeyDown = useCallback((code: string) => {
+    if (code === 'Space') {
+      setJumpState(prev => {
+        if (prev.isJumping) return prev;
+        emit('lobby_player_jump', { isJumping: true });
+        return { isJumping: true, jumpHeight: 0 };
+      });
+      return;
+    }
+    setKeys(prev => new Set(prev).add(code));
+  }, [emit]);
+
+  const handleMobileKeyUp = useCallback((code: string) => {
+    setKeys(prev => {
+      const next = new Set(prev);
+      next.delete(code);
+      return next;
+    });
+  }, []);
 
   // Handle movement based on pressed keys
   useEffect(() => {
@@ -2826,6 +2848,14 @@ export function Lobby() {
         isOpen={showEmoteModal}
         onClose={() => setShowEmoteModal(false)}
         onSubmit={handleEmoteSubmit}
+      />
+
+      {/* Mobile D-pad for lobby movement */}
+      <MobileControls
+        onKeyDown={handleMobileKeyDown}
+        onKeyUp={handleMobileKeyUp}
+        isActive={isMobile && currentLobby?.gamePhase === 'lobby'}
+        actionButtons={[{ label: 'JUMP', code: 'Space' }]}
       />
     </div>
   );

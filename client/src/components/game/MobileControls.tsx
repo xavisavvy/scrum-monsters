@@ -1,12 +1,25 @@
 import React from 'react';
 
+interface ActionButton {
+  label: string;
+  code: string;
+  className?: string;
+}
+
+const DEFAULT_ACTION_BUTTONS: ActionButton[] = [
+  { label: 'SHOOT', code: 'ControlLeft' },
+  { label: 'JUMP', code: 'Space' },
+  { label: 'SPECIAL', code: 'KeyQ', className: 'bg-purple-900/60 border-purple-400/50' },
+];
+
 interface MobileControlsProps {
   onKeyDown: (code: string) => void;
   onKeyUp: (code: string) => void;
   isActive: boolean;
+  actionButtons?: ActionButton[];
 }
 
-export function MobileControls({ onKeyDown, onKeyUp, isActive }: MobileControlsProps) {
+export function MobileControls({ onKeyDown, onKeyUp, isActive, actionButtons = DEFAULT_ACTION_BUTTONS }: MobileControlsProps) {
   if (!isActive) return null;
 
   const makeButtonHandlers = (code: string) => ({
@@ -88,27 +101,16 @@ export function MobileControls({ onKeyDown, onKeyUp, isActive }: MobileControlsP
         style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}
       >
         <div className="flex gap-2 items-end pointer-events-none">
-          <button
-            className={`${actionButtonClass} pointer-events-auto`}
-            style={{ touchAction: 'none' }}
-            {...makeButtonHandlers('ControlLeft')}
-          >
-            SHOOT
-          </button>
-          <button
-            className={`${actionButtonClass} pointer-events-auto`}
-            style={{ touchAction: 'none' }}
-            {...makeButtonHandlers('Space')}
-          >
-            JUMP
-          </button>
-          <button
-            className={`${actionButtonClass} pointer-events-auto bg-purple-900/60 border-purple-400/50 pointer-events-auto`}
-            style={{ touchAction: 'none' }}
-            {...makeButtonHandlers('KeyQ')}
-          >
-            SPECIAL
-          </button>
+          {actionButtons.map((btn) => (
+            <button
+              key={btn.code}
+              className={`${actionButtonClass} pointer-events-auto${btn.className ? ` ${btn.className}` : ''}`}
+              style={{ touchAction: 'none' }}
+              {...makeButtonHandlers(btn.code)}
+            >
+              {btn.label}
+            </button>
+          ))}
         </div>
       </div>
     </div>
