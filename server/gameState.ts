@@ -8,7 +8,7 @@ import type { Server as SocketIOServer } from 'socket.io';
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
 // when the voting timeout safety net auto-advances battle->reveal. Avoids the
 // retired lobby_updated full-state push.
-import { eventBus, getClientEventEmitter } from './domains/index.js';
+import { eventBus, getClientEventEmitter, BOSS_BEHAVIORS } from './domains/index.js';
 
 interface RevivalSession {
   reviverId: string;
@@ -1250,34 +1250,9 @@ class GameStateManager {
     
     gameLogger.debug({ activeParticipants, participantScaling, scaledHealth }, 'Boss health scaling calculated');
     
-    // Available boss types with simplified sprite names
-    const availableBosses = [
-      { 
-        sprite: 'bug-hydra.png', 
-        name: 'Bug Hydra', 
-        description: 'Legendary Beast of Endless Bugs' 
-      },
-      { 
-        sprite: 'sprint-demon.png', 
-        name: 'Sprint Demon', 
-        description: 'Infernal Master of Rushed Deadlines' 
-      },
-      { 
-        sprite: 'deadline-dragon.png', 
-        name: 'Deadline Dragon', 
-        description: 'Ancient Terror of Time Constraints' 
-      },
-      { 
-        sprite: 'technical-debt-golem.png', 
-        name: 'Technical Debt Golem', 
-        description: 'Crushing Burden of Legacy Code' 
-      },
-      { 
-        sprite: 'scope-creep-beast.png', 
-        name: 'Scope Creep Beast', 
-        description: 'Ever-Expanding Horror of Feature Bloat' 
-      }
-    ];
+    // Available boss types derived from the single behavior registry —
+    // sprite, name, and description are now authoritative on each BossBehavior.
+    const availableBosses = Object.values(BOSS_BEHAVIORS);
     
     // Randomly select a boss type
     const selectedBoss = availableBosses[Math.floor(Math.random() * availableBosses.length)];
