@@ -129,7 +129,9 @@ const patterns: AttackPattern[] = [
 
 export const TECH_DEBT_GOLEM_BEHAVIOR: BossBehavior = {
   bossType: 'tech-debt-golem',
-  name: 'Tech Debt Golem',
+  name: 'Technical Debt Golem',
+  sprite: 'technical-debt-golem.png',
+  description: 'Crushing Burden of Legacy Code',
   patterns,
   phaseTransitionMessages: {
     1: '',

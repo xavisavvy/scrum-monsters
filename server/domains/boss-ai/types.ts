@@ -95,6 +95,8 @@ export type BossType =
 export interface BossBehavior {
   bossType: BossType;
   name: string;
+  sprite: string;
+  description: string;
   patterns: AttackPattern[];
   phaseTransitionMessages: Record<BossPhaseNumber, string>;
 }

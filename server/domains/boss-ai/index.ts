@@ -16,6 +16,7 @@ export { ThreatEvaluator } from './ThreatEvaluator';
 // Boss definitions
 export {
   BOSS_BEHAVIORS,
+  SPRITE_TO_BOSS_TYPE,
   getBossBehavior,
   getBossTypeFromSprite,
 } from './boss-definitions';

@@ -40,15 +40,13 @@ export function getBossBehavior(bossType: BossType): BossBehavior {
 
 /**
  * Sprite filename to BossType mapping
- * Maps sprite filenames to BossType enum values
+ * Derived from BOSS_BEHAVIORS so it can never drift from the behavior table.
+ * The golem fix is structural: TECH_DEBT_GOLEM_BEHAVIOR.sprite = 'technical-debt-golem.png'
+ * becomes the map key by construction — the old hand-written 'tech-debt-golem.png' key is gone.
  */
-const SPRITE_TO_BOSS_TYPE: Record<string, BossType> = {
-  'bug-hydra.png': 'bug-hydra',
-  'sprint-demon.png': 'sprint-demon',
-  'deadline-dragon.png': 'deadline-dragon',
-  'tech-debt-golem.png': 'tech-debt-golem',
-  'scope-creep-beast.png': 'scope-creep-beast',
-};
+export const SPRITE_TO_BOSS_TYPE: Record<string, BossType> = Object.fromEntries(
+  Object.values(BOSS_BEHAVIORS).map((b) => [b.sprite, b.bossType])
+);
 
 /**
  * Get boss type from sprite filename

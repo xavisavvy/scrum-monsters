@@ -4,7 +4,70 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { BossAI } from './BossAI';
+import { BOSS_BEHAVIORS, getBossTypeFromSprite, SPRITE_TO_BOSS_TYPE } from './boss-definitions';
 import type { BossType, BattleContext, ThreatEntry } from './types';
+
+// =========================================================================
+// Task 1 (TDD RED): BossBehavior sprite + description fields
+// =========================================================================
+describe('BossBehavior sprite and description fields', () => {
+  it('all 5 boss behaviors have a non-empty sprite field', () => {
+    for (const behavior of Object.values(BOSS_BEHAVIORS)) {
+      expect(behavior.sprite, `${behavior.bossType} should have sprite`).toBeTruthy();
+      expect(typeof behavior.sprite).toBe('string');
+    }
+  });
+
+  it('all 5 boss behaviors have a non-empty description field', () => {
+    for (const behavior of Object.values(BOSS_BEHAVIORS)) {
+      expect(behavior.description, `${behavior.bossType} should have description`).toBeTruthy();
+      expect(typeof behavior.description).toBe('string');
+    }
+  });
+
+  it('TECH_DEBT_GOLEM_BEHAVIOR.sprite is technical-debt-golem.png (golem fix)', () => {
+    expect(BOSS_BEHAVIORS['tech-debt-golem'].sprite).toBe('technical-debt-golem.png');
+  });
+
+  it('bug-hydra sprite is bug-hydra.png', () => {
+    expect(BOSS_BEHAVIORS['bug-hydra'].sprite).toBe('bug-hydra.png');
+  });
+
+  it('sprint-demon sprite is sprint-demon.png', () => {
+    expect(BOSS_BEHAVIORS['sprint-demon'].sprite).toBe('sprint-demon.png');
+  });
+
+  it('deadline-dragon sprite is deadline-dragon.png', () => {
+    expect(BOSS_BEHAVIORS['deadline-dragon'].sprite).toBe('deadline-dragon.png');
+  });
+
+  it('scope-creep-beast sprite is scope-creep-beast.png', () => {
+    expect(BOSS_BEHAVIORS['scope-creep-beast'].sprite).toBe('scope-creep-beast.png');
+  });
+});
+
+// =========================================================================
+// Task 2 (TDD RED): Derived SPRITE_TO_BOSS_TYPE + round-trip/regression
+// =========================================================================
+describe('SPRITE_TO_BOSS_TYPE derived from BOSS_BEHAVIORS', () => {
+  it('has exactly 5 entries (one per boss)', () => {
+    expect(Object.keys(SPRITE_TO_BOSS_TYPE).length).toBe(5);
+  });
+
+  it('all 5 sprite→bossType pairs round-trip via getBossTypeFromSprite', () => {
+    for (const behavior of Object.values(BOSS_BEHAVIORS)) {
+      expect(getBossTypeFromSprite(behavior.sprite)).toBe(behavior.bossType);
+    }
+  });
+
+  it('golem regression: getBossTypeFromSprite(technical-debt-golem.png) === tech-debt-golem', () => {
+    expect(getBossTypeFromSprite('technical-debt-golem.png')).toBe('tech-debt-golem');
+  });
+
+  it('old wrong golem key tech-debt-golem.png returns null (stale key gone)', () => {
+    expect(getBossTypeFromSprite('tech-debt-golem.png')).toBeNull();
+  });
+});
 
 describe('BossAI', () => {
   describe('creates BossAI for each boss type', () => {

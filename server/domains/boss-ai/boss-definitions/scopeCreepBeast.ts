@@ -129,6 +129,8 @@ const patterns: AttackPattern[] = [
 export const SCOPE_CREEP_BEAST_BEHAVIOR: BossBehavior = {
   bossType: 'scope-creep-beast',
   name: 'Scope Creep Beast',
+  sprite: 'scope-creep-beast.png',
+  description: 'Ever-Expanding Horror of Feature Bloat',
   patterns,
   phaseTransitionMessages: {
     1: '',

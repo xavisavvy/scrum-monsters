@@ -128,6 +128,8 @@ const patterns: AttackPattern[] = [
 export const DEADLINE_DRAGON_BEHAVIOR: BossBehavior = {
   bossType: 'deadline-dragon',
   name: 'Deadline Dragon',
+  sprite: 'deadline-dragon.png',
+  description: 'Ancient Terror of Time Constraints',
   patterns,
   phaseTransitionMessages: {
     1: '',
