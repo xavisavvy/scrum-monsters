@@ -2008,7 +2008,7 @@ export function Lobby() {
                   {/* QR Code for easy mobile sharing */}
                   <div className="bg-white p-4 rounded-lg inline-block">
                     <QRCode
-                      value={inviteLink}
+                      value={inviteLink ?? ''}
                       size={128}
                       level="M"
                     />
