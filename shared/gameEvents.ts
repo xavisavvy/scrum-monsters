@@ -553,6 +553,9 @@ export interface ServerToClientEvents {
     effectType: string;
     targetIds: string[];
     value: number;
+    buffType?: import('./abilityTypes').BuffType;
+    debuffType?: import('./abilityTypes').DebuffType;
+    durationMs?: number;
     seq: number;
     timestamp: number;
   }) => void;

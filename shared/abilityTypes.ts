@@ -9,6 +9,18 @@ import { AvatarClass } from './gameEvents';
 import { ClassAbilityDef } from './classMasteryTypes';
 
 /**
+ * Buff type narrows the kind of buff an ability applies.
+ * Derived from the actual buffType values in CLASS_ABILITY_CONFIGS — no extras.
+ */
+export type BuffType = 'damage_boost' | 'crit_boost' | 'dodge' | 'cooldown_reduction';
+
+/**
+ * Debuff type narrows the kind of debuff an ability applies.
+ * Derived from the actual debuffType values in CLASS_ABILITY_CONFIGS.
+ */
+export type DebuffType = 'attack_slow';
+
+/**
  * Effect type categorizes what an ability does mechanically
  */
 export type AbilityEffectType =
@@ -37,8 +49,9 @@ export interface AbilityDefinition extends ClassAbilityDef {
   effectType: AbilityEffectType; // What the ability does
   targetType: AbilityTargetType; // Who/what it affects
   power: number;                 // Damage/heal amount or buff strength
-  buffType?: string;             // e.g., 'damage_boost', 'crit_boost', 'cooldown_reduction'
-  debuffType?: string;           // e.g., 'attack_slow', 'defense_down'
+  buffType?: BuffType;           // Buff kind (narrowed from bare string)
+  debuffType?: DebuffType;       // Debuff kind (narrowed from bare string)
+  durationMs?: number;           // Active duration of the buff/debuff in ms (distinct from cooldownMs)
 }
 
 /**
@@ -71,6 +84,7 @@ export const CLASS_ABILITY_CONFIGS: Record<AvatarClass, {
       targetType: 'self',
       power: 50,                   // +50% damage for duration
       buffType: 'damage_boost',
+      durationMs: 10000,           // 10 second active buff duration
     },
   },
 
@@ -118,6 +132,7 @@ export const CLASS_ABILITY_CONFIGS: Record<AvatarClass, {
       targetType: 'boss',
       power: 0,
       debuffType: 'attack_slow',   // Reduces boss attack speed
+      durationMs: 8000,            // 8 second active debuff duration
     },
   },
 
@@ -156,6 +171,7 @@ export const CLASS_ABILITY_CONFIGS: Record<AvatarClass, {
       targetType: 'party',
       power: 30,                   // +30% damage to party
       buffType: 'damage_boost',
+      durationMs: 10000,           // 10 second active buff duration
     },
     ability_2: {
       id: 'bard_ballad_of_heroes',
@@ -191,6 +207,7 @@ export const CLASS_ABILITY_CONFIGS: Record<AvatarClass, {
       targetType: 'self',
       power: 40,                   // +40% crit chance
       buffType: 'crit_boost',
+      durationMs: 10000,           // 10 second active buff duration
     },
   },
 
@@ -215,6 +232,7 @@ export const CLASS_ABILITY_CONFIGS: Record<AvatarClass, {
       targetType: 'self',
       power: 0,                    // Dodge buff (no numeric value)
       buffType: 'dodge',
+      durationMs: 10000,           // 10 second active buff duration
     },
   },
 
@@ -262,6 +280,7 @@ export const CLASS_ABILITY_CONFIGS: Record<AvatarClass, {
       targetType: 'party',
       power: 0,                    // Cooldown reduction (special effect)
       buffType: 'cooldown_reduction',
+      durationMs: 10000,           // 10 second active buff duration
     },
   },
 
@@ -349,4 +368,7 @@ export interface AbilityEffectAppliedPayload {
   effectType: AbilityEffectType;
   targetIds: string[];          // Player IDs or 'boss'
   value: number;                // Damage/heal amount or buff power
+  buffType?: BuffType;          // Populated for buff abilities
+  debuffType?: DebuffType;      // Populated for debuff abilities
+  durationMs?: number;          // Active duration of the buff/debuff in ms
 }
