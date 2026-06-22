@@ -117,7 +117,8 @@ export const SpriteRenderer = memo(function SpriteRenderer({
       warrior: '⚔️',
       paladin: '🛡️',
       cleric: '✨',
-      oathbreaker: '⚡'
+      oathbreaker: '⚡',
+      monk: '👊'
     };
     return icons[avatarClass] || '⚔️';
   }

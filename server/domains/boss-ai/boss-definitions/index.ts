@@ -46,7 +46,7 @@ const SPRITE_TO_BOSS_TYPE: Record<string, BossType> = {
   'bug-hydra.png': 'bug-hydra',
   'sprint-demon.png': 'sprint-demon',
   'deadline-dragon.png': 'deadline-dragon',
-  'tech-debt-golem.png': 'tech-debt-golem',
+  'technical-debt-golem.png': 'tech-debt-golem',
   'scope-creep-beast.png': 'scope-creep-beast',
 };
 
