@@ -7,6 +7,7 @@
 
 import { ScopedEventBus } from '../events';
 import { LobbyEventSequencer, createClientEventEmitter, ClientEventEmitter } from '../events';
+import { BuffType } from '../../shared/abilityTypes';
 import { SessionManager } from './SessionManager';
 import { EstimationManager } from './EstimationManager';
 import { CombatManager } from './CombatManager';
@@ -214,14 +215,15 @@ const statsTracker = new StatsTracker({
 });
 
 // =============================================================================
-// Active Buff Tracking (damage_boost, shield)
+// Active Buff Tracking (damage_boost, shield, + stored-only: crit_boost, dodge, cooldown_reduction)
+// and Active Debuff Tracking (attack_slow — stored; no consumer yet, see deferred-ideas)
 // =============================================================================
 
 interface ActiveBuff {
   playerId: string;
   lobbyId: string;
-  buffType: 'damage_boost' | 'shield';
-  value: number; // damage_boost: 1.5 multiplier, shield: remaining absorption HP
+  buffType: BuffType | 'shield'; // widened: crit_boost/dodge/cooldown_reduction stored but no consumer yet
+  value: number; // damage_boost: multiplier value, shield: remaining absorption HP
   expiresAt: number; // Date.now() + durationMs
   timeoutHandle: NodeJS.Timeout;
 }
@@ -295,6 +297,90 @@ function cleanupBuffs(lobbyId: string) {
   }
 }
 
+// =============================================================================
+// Active Debuff Tracking (boss-targeted; separate from player buffs to avoid
+// polluting the narrowly-typed ActiveBuff.buffType with debuff categories)
+// =============================================================================
+
+interface ActiveDebuff {
+  lobbyId: string;
+  playerId: string; // caster
+  debuffType: string;
+  value: number;
+  expiresAt: number;
+  timeoutHandle: NodeJS.Timeout;
+}
+
+// key: `${lobbyId}` — boss debuffs are lobby-scoped (one boss per lobby)
+const activeDebuffs = new Map<string, ActiveDebuff[]>();
+
+function addDebuff(
+  lobbyId: string,
+  playerId: string,
+  debuffType: string,
+  value: number,
+  durationMs: number,
+) {
+  const existing = activeDebuffs.get(lobbyId) ?? [];
+  // Remove existing debuff of same type (refresh, don't stack)
+  const filtered = existing.filter(d => d.debuffType !== debuffType);
+  const expiresAt = Date.now() + durationMs;
+  const handle = setTimeout(() => {
+    const debuffs = activeDebuffs.get(lobbyId);
+    if (!debuffs) return;
+    const remaining = debuffs.filter(d => d.debuffType !== debuffType);
+    if (remaining.length === 0) activeDebuffs.delete(lobbyId);
+    else activeDebuffs.set(lobbyId, remaining);
+  }, durationMs);
+  filtered.push({ lobbyId, playerId, debuffType, value, expiresAt, timeoutHandle: handle });
+  activeDebuffs.set(lobbyId, filtered);
+}
+
+function cleanupDebuffs(lobbyId: string) {
+  const debuffs = activeDebuffs.get(lobbyId);
+  if (debuffs) {
+    for (const d of debuffs) clearTimeout(d.timeoutHandle);
+    activeDebuffs.delete(lobbyId);
+  }
+}
+
+// =============================================================================
+// Shared heal helper
+// =============================================================================
+
+/**
+ * Shared heal loop — applies HP-clamped healing to each target and emits
+ * combat:player_healed for targets with actualHeal > 0.
+ * Called by both item:effect_applied and ability:effect_applied heal branches
+ * so the logic is never duplicated.
+ */
+function applyHealEffect(
+  lobbyId: string,
+  targetIds: string[],
+  value: number,
+  healerId: string,
+) {
+  for (const targetId of targetIds) {
+    const combatState = combatManager.getCombatState(lobbyId);
+    if (!combatState) break;
+    const targetState = combatState.players.get(targetId);
+    if (targetState && targetState.combatState === 'fighting') {
+      const oldHp = targetState.hp;
+      targetState.hp = Math.min(targetState.maxHp, targetState.hp + value);
+      const actualHeal = targetState.hp - oldHp;
+      if (actualHeal > 0) {
+        eventBus.emit('combat:player_healed', {
+          lobbyId,
+          playerId: targetId,
+          healerId,
+          healAmount: actualHeal,
+          newHealth: targetState.hp,
+        });
+      }
+    }
+  }
+}
+
 // Reset ability cooldowns when combat is initialized (new ticket)
 eventBus.on('combat:battle_initialized', (payload) => {
   abilityManager.resetCooldowns(payload.lobbyId);
@@ -319,6 +405,7 @@ eventBus.on('session:lobby_destroyed', (payload) => {
 eventBus.on('session:lobby_destroyed', (payload) => {
   itemManager.cleanupLobby(payload.lobbyId);
   cleanupBuffs(payload.lobbyId);
+  cleanupDebuffs(payload.lobbyId);
   statsTracker.cleanupLobby(payload.lobbyId);
 });
 
@@ -336,28 +423,10 @@ eventBus.on('estimation:discussion_ended', (payload) => {
 // Apply item effects (mirrors ability:effect_applied pattern)
 eventBus.on('item:effect_applied', (payload) => {
   if (payload.effectType === 'heal') {
-    // Heal the player who used the item
-    for (const targetId of payload.targetIds) {
-      const combatState = combatManager.getCombatState(payload.lobbyId);
-      if (!combatState) break;
-      const targetState = combatState.players.get(targetId);
-      if (targetState && targetState.combatState === 'fighting') {
-        const oldHp = targetState.hp;
-        targetState.hp = Math.min(targetState.maxHp, targetState.hp + payload.value);
-        const actualHeal = targetState.hp - oldHp;
-        if (actualHeal > 0) {
-          eventBus.emit('combat:player_healed', {
-            lobbyId: payload.lobbyId,
-            playerId: targetId,
-            healerId: payload.playerId,
-            healAmount: actualHeal,
-            newHealth: targetState.hp,
-          });
-        }
-      }
-    }
+    // Heal the player who used the item — delegate to shared helper
+    applyHealEffect(payload.lobbyId, payload.targetIds, payload.value, payload.playerId);
   } else if (payload.effectType === 'buff') {
-    // damage_boost: timed damage multiplier
+    // damage_boost: timed damage multiplier — items currently only grant damage_boost (correct for current item set)
     addBuff(payload.lobbyId, payload.playerId, {
       playerId: payload.playerId,
       lobbyId: payload.lobbyId,
@@ -424,26 +493,50 @@ eventBus.on('ability:effect_applied', (payload) => {
   }
 
   if (payload.effectType === 'heal') {
-    // Apply healing through CombatManager for each target
-    for (const targetId of payload.targetIds) {
-      const combatState = combatManager.getCombatState(payload.lobbyId);
-      if (!combatState) break;
-      const targetState = combatState.players.get(targetId);
-      if (targetState && targetState.combatState === 'fighting') {
-        const oldHp = targetState.hp;
-        targetState.hp = Math.min(targetState.maxHp, targetState.hp + payload.value);
-        const actualHeal = targetState.hp - oldHp;
-        if (actualHeal > 0) {
-          eventBus.emit('combat:player_healed', {
-            lobbyId: payload.lobbyId,
-            playerId: targetId,
-            healerId: payload.playerId,
-            healAmount: actualHeal,
-            newHealth: targetState.hp,
-          });
-        }
-      }
-    }
+    // Apply healing through shared helper (same logic as item:effect_applied heal branch)
+    applyHealEffect(payload.lobbyId, payload.targetIds, payload.value, payload.playerId);
+  }
+
+  if (payload.effectType === 'buff') {
+    // Apply a timed buff. Reads buffType from payload (NOT hardcoded — abilities can grant
+    // different buff kinds unlike items which always grant damage_boost).
+    //
+    // damage_boost → consumer exists (getDamageMultiplier → combat:boss_damaged hook)
+    // crit_boost   → TODO: consumer in future phase (stored only)
+    // dodge        → TODO: consumer in future phase (stored only)
+    // cooldown_reduction → TODO: consumer in future phase (stored only)
+    addBuff(payload.lobbyId, payload.playerId, {
+      playerId: payload.playerId,
+      lobbyId: payload.lobbyId,
+      buffType: payload.buffType ?? 'damage_boost',
+      value: payload.value,
+      expiresAt: Date.now() + (payload.durationMs ?? 10000),
+    });
+  }
+
+  if (payload.effectType === 'shield') {
+    // Apply a timed shield (mirroring item:effect_applied shield branch).
+    // consumer exists: reduceShield → combatManager.applyDamageToPlayer monkey-patch
+    addBuff(payload.lobbyId, payload.playerId, {
+      playerId: payload.playerId,
+      lobbyId: payload.lobbyId,
+      buffType: 'shield',
+      value: payload.value,
+      expiresAt: Date.now() + (payload.durationMs ?? 15000),
+    });
+  }
+
+  if (payload.effectType === 'debuff') {
+    // Store boss-targeted debuff in a dedicated map (not activeBuffs) to avoid
+    // polluting the player-buff map with boss-scoped state.
+    // attack_slow → TODO: consumer in future phase (stored only)
+    addDebuff(
+      payload.lobbyId,
+      payload.playerId,
+      payload.debuffType ?? 'attack_slow',
+      payload.value,
+      payload.durationMs ?? 10000,
+    );
   }
 
   if (payload.effectType === 'taunt') {
