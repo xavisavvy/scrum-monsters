@@ -346,7 +346,12 @@ Plans:
   2. Wire unions are substituted where a domain union exists (`itemType: ItemType`, `avatar`/`avatarClass: AvatarClass`); a `Sequenced<T>` wrapper types the ~40 fine-grained events (control messages excluded). Server-private types (`bossType`) and the mis-cited minion `attackType` are explicitly NOT changed
   3. `registerSyncedLobbyHandler` and `registerSyncedHandler` own the seq-guard + null-check + setLobby envelope for the ~40 uniform handlers; the ~7 intentionally-non-standard handlers stay explicit; the hand-synced teardown off-list is replaced by a registered-name array (or a CI on()/off() parity test)
   4. `worldToPercent`/`percentToWorld` helpers replace the 5 open-coded coordinate sites with consistent clamping; no wire or runtime change
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans (wave 1 = 51-01/02/03 all parallel-safe; zero files_modified overlap — research-verified, executable in parallel worktrees):
+- [ ] 51-01-PLAN.md — EXT-04: emit constrained to keyof ServerToClientEvents, _BRIDGE_COVERAGE + ClientEventSchemas satisfies guards, Sequenced<T>, ItemType/AvatarClass substitutions; proven by tsc-fails-on-injected-drift
+- [ ] 51-02-PLAN.md — MAINT-09: registerSyncedLobbyHandler/registerSyncedHandler (~17 + ~11 helper-eligible), ~22 explicit, registered-name teardown, helper-equivalence + teardown-parity tests
+- [ ] 51-03-PLAN.md — MAINT-10: worldToPercent/percentToWorld replace 5 coordinate sites; sites 2+4 clamping canonicalization documented + projectile-render proof
 
 ### Phase 52: Client God-Component Decomposition
 **Goal**: `Lobby.tsx` (2862 lines) and `PlayerController.tsx` shrink along the *verified* seams, isolating re-render scope and making spells/movement testable — without touching the 60fps loops' performance.
@@ -383,7 +388,7 @@ Plans:
 | 48. Testability Seams | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 49. State Source-of-Truth Consolidation | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 50. Finish GameState → Domain-Manager Migration | v6.0 | 2/2 | Complete   | 2026-06-23 |
-| 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/TBD | Planned | - |
+| 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/3 | Planned | - |
 | 52. Client God-Component Decomposition | v6.0 | 0/TBD | Planned | - |
 
 **Total: 9 milestones shipped, 46 phases complete, 155 plans (1 deferred) | v5.0 shipped 2026-06-17; v6.0 (Phases 47-52) in planning**
