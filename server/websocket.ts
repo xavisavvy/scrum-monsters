@@ -1540,58 +1540,30 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     on('revive_start', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
-
-      const success = gameState.startRevive(playerId, targetId);
-      if (success) {
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          eventBus.emit('combat:revival_started', {
-            lobbyId: lobby.id,
-            reviverId: playerId,
-            targetId,
-            durationMs: 3000,
-          });
+      // Phase 50-02: route through CombatManager (self-manages 100ms interval +
+      // combat:revival_started emit internally — do NOT duplicate eventBus.emit here).
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) return;
+      try {
+        const success = combatManager.startRevival(lobby.id, playerId, targetId);
+        if (!success) {
+          socket.emit('game_error', { message: 'Cannot start revival' });
         }
+      } catch (err) {
+        // RevivalNotAllowedError for non-healer classes
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
-    on('revive_cancel', ({ targetId }: { targetId: string }) => {
+    on('revive_cancel', ({ targetId: _targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
-
-      const success = gameState.cancelRevive(playerId, targetId);
-      if (success) {
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          eventBus.emit('combat:revival_cancelled', {
-            lobbyId: lobby.id,
-            reviverId: playerId,
-            targetId,
-            reason: 'cancelled_by_reviver',
-          });
-        }
-      }
+      // Phase 50-02: CombatManager.cancelRevival emits combat:revival_cancelled internally
+      combatManager.cancelRevival(playerId, 'cancelled_by_reviver');
     });
 
-    on('revive_tick', ({ targetId }: { targetId: string }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
-
-      // Update keep-alive and validate revival conditions
-      const isValid = gameState.tickRevive(playerId, targetId);
-      if (!isValid) {
-        // Revival was cancelled due to distance or state changes
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          eventBus.emit('combat:revival_cancelled', {
-            lobbyId: lobby.id,
-            reviverId: playerId,
-            targetId,
-            reason: 'invalid_state',
-          });
-        }
-      }
-    });
+    // revive_tick removed in Phase 50-02: CombatManager's internal setInterval
+    // per-session replaces the external keep-alive pattern (Pitfall 6 — no ack contract).
 
     // Jumping state sync
     on('player_jump', ({ isJumping }: { isJumping: boolean }) => {

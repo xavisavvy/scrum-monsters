@@ -2138,3 +2138,102 @@ describe('CombatManager — damageInterceptor seam (MAINT-02)', () => {
     expect(cm.getCombatState(LOBBY)!.players.get('player3')!.hp).toBe(100);
   });
 });
+
+// MAINT-08: CombatManager self-managed revival — no-double-emit gate (Task 3)
+describe('CombatManager — MAINT-08 revival routing (no external watchdogs)', () => {
+  let eventBus: ScopedEventBus;
+  let combatManager: CombatManager;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+
+    eventBus = new ScopedEventBus();
+    const getPlayerTeam = vi.fn((_lobbyId: string, playerId: string) => {
+      if (playerId.startsWith('cleric')) return 'qa' as const;
+      return 'developers' as const;
+    });
+    const getPlayerClass = vi.fn((_lobbyId: string, playerId: string) => {
+      if (playerId === 'cleric1') return 'cleric' as const;
+      if (playerId === 'warrior1') return 'warrior' as const;
+      return 'ranger' as const;
+    });
+
+    combatManager = new CombatManager({ eventBus, getPlayerTeam, getPlayerClass });
+
+    const players = [
+      { id: 'warrior1', team: 'developers' as const },
+      { id: 'cleric1', team: 'qa' as const },
+    ];
+    combatManager.initializeCombat('lobby1', players, 0);
+
+    // Put warrior in downed state
+    const state = combatManager.getCombatState('lobby1');
+    const warrior = state!.players.get('warrior1');
+    warrior!.combatState = 'downed';
+    warrior!.isDowned = true;
+    warrior!.hp = 0;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('combat:player_revived fires EXACTLY ONCE (no double-emit with watchdogs absent)', () => {
+    const revivedSpy = vi.fn();
+    eventBus.on('combat:player_revived', revivedSpy);
+
+    combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+
+    // Advance past channelDurationMs (2500ms default)
+    vi.advanceTimersByTime(3000);
+
+    // Must fire exactly once — no double-emit from a removed watchdog
+    expect(revivedSpy).toHaveBeenCalledTimes(1);
+    expect(revivedSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lobbyId: 'lobby1',
+        playerId: 'warrior1',
+        reviverId: 'cleric1',
+      })
+    );
+  });
+
+  it('cancelRevival clears session and emits combat:revival_cancelled exactly once', () => {
+    const cancelledSpy = vi.fn();
+    eventBus.on('combat:revival_cancelled', cancelledSpy);
+
+    combatManager.startRevival('lobby1', 'cleric1', 'warrior1');
+    combatManager.cancelRevival('cleric1', 'cancelled_by_reviver');
+
+    expect(cancelledSpy).toHaveBeenCalledTimes(1);
+    expect(cancelledSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        lobbyId: 'lobby1',
+        reviverId: 'cleric1',
+        reason: 'cancelled_by_reviver',
+      })
+    );
+  });
+
+  it('non-healer reviver path throws RevivalNotAllowedError (handler try/catch required)', () => {
+    // warrior1 was set downed in beforeEach. Reset warrior1 to fighting so it
+    // can be a reviver candidate — RevivalNotAllowedError fires on class check,
+    // not on reviver-state check (which returns false for downed revisers).
+    const state = combatManager.getCombatState('lobby1');
+    const warrior = state!.players.get('warrior1');
+    warrior!.combatState = 'fighting';
+    warrior!.isDowned = false;
+    warrior!.hp = 100;
+
+    // Now down the cleric so warrior has a valid target
+    const cleric = state!.players.get('cleric1');
+    cleric!.combatState = 'downed';
+    cleric!.isDowned = true;
+    cleric!.hp = 0;
+
+    // warrior1's class is 'warrior' (not a healer) — should throw
+    expect(() => {
+      combatManager.startRevival('lobby1', 'warrior1', 'cleric1');
+    }).toThrow(RevivalNotAllowedError);
+  });
+});
