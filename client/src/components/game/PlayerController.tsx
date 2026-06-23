@@ -3,6 +3,7 @@ import { PlayerCharacter, PlayerPosition, Projectile } from './PlayerCharacter';
 import { ProjectileSystem } from './ProjectileSystem';
 import { MobileControls } from './MobileControls';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useShallow } from 'zustand/react/shallow';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
@@ -13,11 +14,31 @@ import { useIsMobile } from '@/hooks/use-is-mobile';
 
 interface PlayerControllerProps {
   // Remove containerWidth/Height - viewport system handles this
+  /**
+   * Callback invoked with all player positions (current + others) whenever positions change.
+   * @important Callers must wrap this in `useCallback` for React.memo to bail out on parent
+   * re-renders. An inline function here creates a new reference every render, defeating memo.
+   */
   onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
 }
 
-export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerProps) {
-  const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
+export const PlayerController = React.memo(function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerProps) {
+  // Field-scoped selectors — re-render only when these specific fields change (MAINT-06)
+  // boss is intentionally excluded so boss-HP updates do not re-render this component
+  const currentPlayer = useGameState(useShallow(s => s.currentPlayer ? {
+    id: s.currentPlayer.id,
+    team: s.currentPlayer.team,
+    avatar: s.currentPlayer.avatar,
+    name: s.currentPlayer.name,
+  } : null));
+  const currentLobby = useGameState(useShallow(s => s.currentLobby ? {
+    id: s.currentLobby.id,
+    gamePhase: s.currentLobby.gamePhase,
+    players: s.currentLobby.players,
+    playerPositions: s.currentLobby.playerPositions,
+    playerCombatStates: s.currentLobby.playerCombatStates,
+  } : null));
+  const addAttackAnimation = useGameState(s => s.addAttackAnimation);
   const { emit, socket } = useWebSocket();
   const { playHit } = useAudio();
   const viewport = useViewport();
@@ -857,7 +878,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
                      projectile.targetY >= bossAreaY && 
                      projectile.targetY <= bossAreaY + bossAreaHeight;
       
-      if (hitBoss && currentLobby?.boss) {
+      if (hitBoss && currentLobby?.gamePhase === 'battle') {
         // Calculate damage (story points scale)
         const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
         
@@ -1172,4 +1193,4 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       )}
     </div>
   );
-}
+});
