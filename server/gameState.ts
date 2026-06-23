@@ -36,11 +36,11 @@ function generateSecureId(): string {
   return randomBytes(8).toString('hex').substring(0, 13);
 }
 
-class GameStateManager {
+export class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
   private playerToLobby: Map<string, string> = new Map();
   private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
-  private revivalWatchdog: NodeJS.Timeout;
+  private revivalWatchdog!: NodeJS.Timeout;
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
@@ -51,22 +51,25 @@ class GameStateManager {
   // Reconnection system
   private disconnectedPlayers: Map<string, DisconnectedPlayer> = new Map(); // key: playerId
   private reconnectTokens: Map<string, ReconnectToken> = new Map(); // key: token string
-  private disconnectWatchdog: NodeJS.Timeout;
+  private disconnectWatchdog!: NodeJS.Timeout;
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
   private readonly TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
   private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + randomBytes(16).toString('hex');
 
-  constructor(io?: SocketIOServer) {
+  constructor(io?: SocketIOServer, opts?: { startWatchdogs?: boolean }) {
     this.io = io;
-    // Start revival watchdog timer
-    this.revivalWatchdog = setInterval(() => {
-      this.processRevivalSessions();
-    }, 100); // Check every 100ms
-    
-    // Start disconnect watchdog timer
-    this.disconnectWatchdog = setInterval(() => {
-      this.processDisconnectedPlayers();
-    }, 30000); // Check every 30 seconds
+    const startWatchdogs = opts?.startWatchdogs ?? true;
+    if (startWatchdogs) {
+      // Start revival watchdog timer
+      this.revivalWatchdog = setInterval(() => {
+        this.processRevivalSessions();
+      }, 100); // Check every 100ms
+
+      // Start disconnect watchdog timer
+      this.disconnectWatchdog = setInterval(() => {
+        this.processDisconnectedPlayers();
+      }, 30000); // Check every 30 seconds
+    }
   }
 
   private syncLobbyToCache(lobby: Lobby): void {
@@ -1432,7 +1435,7 @@ class GameStateManager {
   }
 
   // Handle voting timeout - force progression with available votes
-  private handleVotingTimeout(lobbyId: string): void {
+  public handleVotingTimeout(lobbyId: string): void {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'battle') return;
 
