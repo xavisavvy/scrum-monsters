@@ -526,9 +526,14 @@ export class CombatManager {
   }
 
   /**
-   * Player attacks boss (click-to-attack)
+   * Basic attack on boss (from attack_boss socket event via gameState.attackBoss delegate).
+   * Single authoritative HP drain for basic attacks — replaces gameState.attackBoss HP write.
+   * The combat:boss_damaged emit below is the ONLY combat:boss_damaged for basic attacks;
+   * do NOT duplicate it elsewhere (the websocket.ts manual emit was removed — MAINT-05).
+   * Also calls checkPhaseTransition so phase-2/enrage triggers correctly on basic attacks.
+   * Previously named playerAttackBoss (MAINT-05).
    */
-  playerAttackBoss(lobbyId: string, playerId: string): number {
+  applyBasicDamageToBoss(lobbyId: string, playerId: string): { damage: number; newHp: number } {
     // Get combat state
     const combatState = this.combatStates.get(lobbyId);
     if (!combatState || !combatState.boss) {
@@ -551,7 +556,7 @@ export class CombatManager {
     const boss = combatState.boss;
     boss.hp = Math.max(0, boss.hp - damage);
 
-    // Emit boss damaged event
+    // Emit boss damaged event — canonical single emit for basic attacks (MAINT-05)
     this.eventBus.emit('combat:boss_damaged', {
       lobbyId,
       playerId,
@@ -607,7 +612,7 @@ export class CombatManager {
       });
     }
 
-    return damage;
+    return { damage, newHp: boss.hp };
   }
 
   /**
