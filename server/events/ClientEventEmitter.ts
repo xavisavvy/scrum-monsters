@@ -113,6 +113,17 @@ export class ClientEventEmitter {
       });
     });
 
+    this.eventBus.on('session:host_transferred', (payload) => {
+      // Wire to legacy 'host_transferred' event (GamePage.tsx:232 listens here).
+      // Different wire name than 'session:host_changed' — see Pitfall 4.
+      this.emitToLobby(payload.lobbyId, 'host_transferred', {
+        oldHostId: payload.oldHostId,
+        newHostId: payload.newHostId,
+        newHostName: payload.newHostName,
+        reason: 'Host disconnected (grace period expired)',
+      });
+    });
+
     this.eventBus.on('session:phase_changed', (payload) => {
       this.emitToLobby(payload.lobbyId, 'session:phase_changed', {
         oldPhase: payload.oldPhase,

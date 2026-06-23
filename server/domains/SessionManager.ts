@@ -1071,6 +1071,13 @@ export class SessionManager {
                 newHostId: newHost.id,
               });
 
+              this.eventBus.emit('session:host_transferred', {
+                lobbyId: lobby.id,
+                oldHostId,
+                newHostId: newHost.id,
+                newHostName: newHost.name,
+              });
+
               gameLogger.info({
                 lobbyId: lobby.id,
                 oldHostId,

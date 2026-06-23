@@ -85,6 +85,14 @@ export interface SessionHostChangedPayload {
   newHostId: string;
 }
 
+/** Emitted when deferred host transfer completes (grace period expiry path) */
+export interface SessionHostTransferredPayload {
+  lobbyId: string;
+  oldHostId: string;
+  newHostId: string;
+  newHostName: string;
+}
+
 /** Emitted when game phase transitions */
 export interface SessionPhaseChangedPayload {
   lobbyId: string;
@@ -512,6 +520,7 @@ export interface DomainEventMap {
   'session:player_left': SessionPlayerLeftPayload;
   'session:player_disconnected': SessionPlayerDisconnectedPayload;
   'session:host_changed': SessionHostChangedPayload;
+  'session:host_transferred': SessionHostTransferredPayload;
   'session:phase_changed': SessionPhaseChangedPayload;
   'session:lobby_destroyed': SessionLobbyDestroyedPayload;
   'session:team_changed': SessionTeamChangedPayload;
