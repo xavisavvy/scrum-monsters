@@ -35,6 +35,7 @@ import {
 } from '../shared/socket-schemas.js';
 import { redactLobbyForWire } from './events/ClientEventEmitter.js';
 import { SocketRateLimiter, type RateLimitConfig } from './middleware/socketRateLimiter.js';
+import { handleCreateLobby, handleReconnectWithToken, handleDisconnect, type HandlerDeps } from './websocket.handlers.js';
 
 // Per-event WebSocket rate limits (Security: H-6). ONLY expensive / abusable
 // events are listed — high-frequency gameplay events (movement, charge, jump,
@@ -187,7 +188,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   // Connection monitoring for Replit
   let totalConnections = 0;
-  let activeConnections = 0;
+  // Mutable ref so handleDisconnect (extracted for testability) can decrement it.
+  const activeConnections = { value: 0 };
   const disconnectReasons = new Map<string, number>();
 
   // Position batching for performance - aggregate updates and broadcast every 100ms
@@ -227,7 +229,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     socketLogger.info({
       totalConnections,
-      activeConnections,
+      activeConnections: activeConnections.value,
       hostConnections: hostConnections.length,
       activeLobbies: sessionManager.getLobbyCount(),
       disconnectReasons: disconnectReasonsObj
@@ -336,7 +338,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
     totalConnections++;
-    activeConnections++;
+    activeConnections.value++;
 
     // Log connection details
     const transport = socket.conn.transport.name;
@@ -359,7 +361,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       transport,
       ip: forwardedFor,
       userAgent: userAgent.substring(0, 100),
-      activeConnections,
+      activeConnections: activeConnections.value,
       authenticated: !!socket.data.userId,
       userId: socket.data.userId
     }, 'Player connected');
@@ -406,88 +408,21 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }) as never);
     };
 
-    on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
-      try {
-        const lobby = sessionManager.createLobby(hostName, lobbyName, initialSettings);
+    // Assemble deps for the three extracted handlers (MAINT-03).
+    // These are the same singletons and closure-local values the handlers
+    // previously closed over — no behavior change.
+    const handlerDeps: HandlerDeps = {
+      gameState,
+      io,
+      sessionManager,
+      progressionManager,
+      classMasteryManager,
+      registerPlayerUserId,
+      activeConnections,
+      disconnectReasons,
+    };
 
-        // Sync player-lobby mapping to gameState for battle functions
-        gameState.syncPlayerToLobby(lobby.hostId, lobby);
-
-        // Get the correct host based on environment
-        const host = process.env.NODE_ENV === 'production'
-          ? 'https://scrummonsters.com'
-          : `http://localhost:${process.env.PORT || '5001'}`;
-        const inviteLink = `${host}/join/${lobby.id}`;
-
-        // Store player-socket mapping
-        socket.data.playerId = lobby.hostId;
-        socket.data.lobbyId = lobby.id;
-
-        // Join socket room
-        socket.join(lobby.id);
-
-        // Generate reconnect token for the host
-        const reconnectToken = sessionManager.generateReconnectToken(lobby.hostId, lobby.id, hostName);
-
-        socket.emit('lobby_created', { lobby, inviteLink });
-        socket.emit('lobby_sync', {
-          lobby,
-          yourPlayer: lobby.players[0],
-          reconnectToken,
-          pendingActions: {},
-          stateChanges: {}
-        });
-
-        // Register player-user mapping and emit progression sync for authenticated users
-        if (socket.data.userId) {
-          registerPlayerUserId(lobby.hostId, socket.data.userId);
-          (async () => {
-            try {
-              await progressionManager.loadPlayerXP(lobby.id, lobby.hostId, socket.data.userId!);
-              const totalXP = progressionManager.getPlayerXP(lobby.id, lobby.hostId);
-              const currentLevel = progressionManager.getPlayerLevel(lobby.id, lobby.hostId);
-              socket.emit('progression:sync', {
-                playerId: lobby.hostId,
-                totalXP,
-                currentLevel,
-                seq: 0,
-                timestamp: Date.now(),
-              });
-            } catch (err) {
-              socketLogger.error({ err }, 'Failed to sync progression for host');
-            }
-          })();
-
-          // Load class mastery (fire-and-forget, non-blocking)
-          (async () => {
-            try {
-              await classMasteryManager.loadAllClassMastery(lobby.id, lobby.hostId, socket.data.userId!);
-              // Build mastery data from loaded state
-              const masteryData = classMasteryManager.getAllMasteryData(lobby.id, lobby.hostId);
-              if (Object.keys(masteryData).length > 0) {
-                socket.emit('class_mastery:sync', {
-                  playerId: lobby.hostId,
-                  masteryData,
-                  seq: 0,
-                  timestamp: Date.now(),
-                });
-              }
-            } catch (err) {
-              socketLogger.error({ err }, 'Failed to sync class mastery');
-            }
-          })();
-        }
-
-        socketLogger.info({ lobbyId: lobby.id, hostName }, 'Lobby created');
-      } catch (error) {
-        socketLogger.error({ err: error }, 'Error creating lobby');
-        if (error instanceof SessionError) {
-          socket.emit('game_error', { message: error.message });
-        } else {
-          socket.emit('game_error', { message: 'Failed to create lobby' });
-        }
-      }
-    });
+    on('create_lobby', (data) => { handleCreateLobby(socket, data, handlerDeps); });
 
     on('join_lobby', ({ lobbyId, playerName }) => {
       try {
@@ -1724,97 +1659,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     });
 
     // Reconnection handler
-    on('reconnect_with_token', ({ reconnectToken }) => {
-      try {
-        const response = sessionManager.attemptPlayerReconnect(reconnectToken);
-
-        if (response.result === 'success' && response.lobbySync) {
-          const { lobbySync } = response;
-          const playerId = lobbySync.yourPlayer.id;
-          const lobbyId = lobbySync.lobby.id;
-
-          // Sync player-lobby mapping to gameState for battle functions
-          gameState.syncPlayerToLobby(playerId, lobbySync.lobby);
-
-          // Update socket data
-          socket.data.playerId = playerId;
-          socket.data.lobbyId = lobbyId;
-
-          // Join socket room
-          socket.join(lobbyId);
-
-          // Send successful reconnection response. Redact secret vote values
-          // from the synced lobby during pre-reveal phases — both `lobby_sync`
-          // and the `lobbySync` nested in `reconnect_response` carry the full
-          // lobby on the wire, so both must be redacted (Security fix H-3).
-          const wireSync = { ...lobbySync, lobby: redactLobbyForWire(lobbySync.lobby) };
-          socket.emit('lobby_sync', wireSync);
-          socket.emit('reconnect_response', { ...response, lobbySync: wireSync });
-
-          // Reinitialize fine-grained event sequence for reconnected player
-          const emitter = getClientEventEmitter();
-          emitter.sendFullState(lobbyId, lobbySync.lobby, socket.id);
-
-          // Register player-user mapping and emit progression sync for authenticated users
-          if (socket.data.userId) {
-            registerPlayerUserId(playerId, socket.data.userId);
-            (async () => {
-              try {
-                await progressionManager.loadPlayerXP(lobbyId, playerId, socket.data.userId!);
-                const totalXP = progressionManager.getPlayerXP(lobbyId, playerId);
-                const currentLevel = progressionManager.getPlayerLevel(lobbyId, playerId);
-                socket.emit('progression:sync', {
-                  playerId,
-                  totalXP,
-                  currentLevel,
-                  seq: 0,
-                  timestamp: Date.now(),
-                });
-              } catch (err) {
-                socketLogger.error({ err }, 'Failed to sync progression on reconnect');
-              }
-            })();
-
-            // Load class mastery (fire-and-forget, non-blocking)
-            (async () => {
-              try {
-                await classMasteryManager.loadAllClassMastery(lobbyId, playerId, socket.data.userId!);
-                // Build mastery data from loaded state
-                const masteryData = classMasteryManager.getAllMasteryData(lobbyId, playerId);
-                if (Object.keys(masteryData).length > 0) {
-                  socket.emit('class_mastery:sync', {
-                    playerId,
-                    masteryData,
-                    seq: 0,
-                    timestamp: Date.now(),
-                  });
-                }
-              } catch (err) {
-                socketLogger.error({ err }, 'Failed to sync class mastery');
-              }
-            })();
-          }
-
-          // Phase 45-03: legacy `player_reconnected` emit removed (no client listener).
-          // Reconnecting client receives lobby_sync above; other clients aren't
-          // notified at the socket layer today (no toast UX consumed this).
-          // Reconnecting client receives the full
-          // lobby state above via lobby_sync + sendFullState.
-
-          socketLogger.info({ playerId, playerName: lobbySync.yourPlayer.name }, 'Player reconnected successfully');
-        } else {
-          // Send failed reconnection response
-          socket.emit('reconnect_response', response);
-          socketLogger.warn({ message: response.message }, 'Reconnection failed');
-        }
-      } catch (error) {
-        socketLogger.error({ err: error }, 'Error handling reconnect');
-        socket.emit('reconnect_response', {
-          result: 'server_error',
-          message: 'Server error during reconnection'
-        });
-      }
-    });
+    on('reconnect_with_token', (data) => { handleReconnectWithToken(socket, data, handlerDeps); });
 
     // Client heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
     on('client_heartbeat', () => {
@@ -1986,85 +1831,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('disconnect', (reason) => {
-      activeConnections--;
-      const playerId = socket.data.playerId;
-      const lobbyId = socket.data.lobbyId;
-
-      // Update Prometheus WebSocket connection gauge
-      updateWebsocketMetrics(io);
-
-      // Track disconnect reasons for monitoring
-      disconnectReasons.set(reason, (disconnectReasons.get(reason) || 0) + 1);
-
-      // Enhanced logging for host disconnects
-      const lobby = lobbyId ? sessionManager.getLobby(lobbyId) : null;
-      const lobbyHostId = lobby?.hostId;
-      const isHost = lobby && lobbyHostId === playerId;
-
-      // Phase 41-02: include playerId and lobbyHostId so future host/player-id
-      // asymmetries (e.g. socket.data.playerId being overwritten by a phantom
-      // join) are observable directly from disconnect logs.
-      socketLogger.info({
-        socketId: socket.id,
-        reason,
-        isHost,
-        playerId,
-        lobbyHostId,
-        lobbyId,
-        activeConnections,
-      }, 'Player disconnected');
-
-      if (playerId) {
-        // Use SessionManager reconnection system
-        const disconnectResult = sessionManager.handlePlayerDisconnect(playerId);
-        if (disconnectResult && lobbyId) {
-          const { disconnectedPlayer, hostTransfer } = disconnectResult;
-
-          // Phase 45-03: legacy `player_disconnected` emit removed (no client listener).
-          // Player remains in lobby during grace; the players[].isConnected
-          // flag (set elsewhere) drives any visual dim.
-
-          const graceMinutes = Math.floor((disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
-          socketLogger.info({
-            playerId,
-            playerName: disconnectedPlayer.playerName,
-            graceMinutes
-          }, 'Player can reconnect during grace period');
-
-          // Phase 41-02: host transfer is now deferred until grace expiry
-          // (see SessionManager.processDisconnectedPlayers + the
-          // sessionDisconnectSweeper interval above). hostTransfer is always
-          // undefined on the disconnect path post-Phase-41-02; this branch is
-          // retained as a no-op safety net for any future code path that
-          // re-introduces immediate transfer.
-          if (hostTransfer) {
-            io.to(lobbyId).emit('host_transferred', {
-              oldHostId: hostTransfer.oldHostId,
-              newHostId: hostTransfer.newHostId,
-              newHostName: hostTransfer.newHostName,
-              reason: 'Host disconnected'
-            });
-
-            // Phase 42-02b row #23: lobby_updated removed;
-            // host_transferred above is the canonical signal.
-            socketLogger.info({
-              oldHostId: hostTransfer.oldHostId,
-              newHostId: hostTransfer.newHostId,
-              newHostName: hostTransfer.newHostName
-            }, 'Host transferred due to disconnect');
-          }
-        } else {
-          // Fallback to old behavior if reconnection setup fails
-          const updatedLobby = sessionManager.removePlayer(playerId);
-          if (updatedLobby && lobbyId) {
-            // Phase 45-03: legacy `player_disconnected` emit removed (no client listener).
-            // session:player_left fires from sessionManager.removePlayer above.
-          }
-          socketLogger.warn({ playerId }, 'Player removed immediately (reconnection unavailable)');
-        }
-      }
-    });
+    socket.on('disconnect', (reason) => { handleDisconnect(socket, reason, handlerDeps); });
   });
 
   // Return both io and a cleanup function for graceful shutdown
