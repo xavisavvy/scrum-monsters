@@ -334,7 +334,7 @@ Plans (wave 1 = 49-01/02/03 all parallel-safe; zero files_modified overlap):
 **Plans**: 2 plans
 
 Plans:
-- [ ] 50-01-PLAN.md — MAINT-07: syncPlayerToLobby alias fix (first), settings -> SessionManager, delete 4 safe dead methods (removePlayer DEFERRED, battle methods NOT migrated)
+- [x] 50-01-PLAN.md — MAINT-07: syncPlayerToLobby alias fix (first), settings -> SessionManager, delete 4 safe dead methods (removePlayer DEFERRED, battle methods NOT migrated)
 - [ ] 50-02-PLAN.md — MAINT-08: revival -> CombatManager, remove both 100ms watchdogs, session:host_transferred event + bridge
 
 ### Phase 51: Event-Contract Hardening & Handler Boilerplate
@@ -382,7 +382,7 @@ Plans:
 | 47. Ability Effects & Data-Driven Registries | v6.0 | 4/4 | Complete   | 2026-06-22 |
 | 48. Testability Seams | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 49. State Source-of-Truth Consolidation | v6.0 | 3/3 | Complete   | 2026-06-23 |
-| 50. Finish GameState → Domain-Manager Migration | v6.0 | 0/2 | Planned | - |
+| 50. Finish GameState → Domain-Manager Migration | v6.0 | 1/2 | In Progress|  |
 | 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/TBD | Planned | - |
 | 52. Client God-Component Decomposition | v6.0 | 0/TBD | Planned | - |
 
