@@ -6,6 +6,7 @@
  */
 
 import { ScopedEventBus } from '../events';
+import type { DomainEventMap } from '../events';
 import { LobbyEventSequencer, createClientEventEmitter, ClientEventEmitter } from '../events';
 import { BuffType } from '../../shared/abilityTypes';
 import { SessionManager } from './SessionManager';
@@ -406,147 +407,206 @@ function applyHealEffect(
   }
 }
 
-// Reset ability cooldowns when combat is initialized (new ticket)
-eventBus.on('combat:battle_initialized', (payload) => {
-  abilityManager.resetCooldowns(payload.lobbyId);
-});
+// =============================================================================
+// wireDomains factory (MAINT-03)
+//
+// Extracts the 9 module-scope eventBus.on(...) registrations into a factory
+// that returns { dispose() } for teardown-safe test usage.
+//
+// IMPORTANT: defined INSIDE domains/index.ts so it closes over the
+// module-private helpers (activeBuffs, activeDebuffs, reduceShield, addBuff,
+// addDebuff, cleanupBuffs, cleanupDebuffs, getDamageMultiplier,
+// getShieldAbsorption, applyHealEffect).
+// =============================================================================
 
-// Cleanup ability state when lobby is destroyed
-eventBus.on('session:lobby_destroyed', (payload) => {
-  abilityManager.cleanupLobby(payload.lobbyId);
-});
+export interface WireDomainsContext {
+  eventBus: ScopedEventBus;
+  abilityManager: AbilityManager;
+  comboManager: ComboManager;
+  itemManager: ItemManager;
+  combatManager: CombatManager;
+  statsTracker: StatsTracker;
+  sessionManager: SessionManager;
+}
 
-// Reset combo state when combat is initialized (new ticket)
-eventBus.on('combat:battle_initialized', (payload) => {
-  comboManager.resetCombos(payload.lobbyId);
-});
+export function wireDomains(ctx: WireDomainsContext): { dispose(): void } {
+  const { eventBus: bus } = ctx;
 
-// Cleanup combo state when lobby is destroyed
-eventBus.on('session:lobby_destroyed', (payload) => {
-  comboManager.cleanupLobby(payload.lobbyId);
-});
+  // Each listener stored in a named const so eventBus.off() can remove it
+  // individually. The three session:lobby_destroyed listeners each get their
+  // own named const (Pitfall 5: arrow functions produce new refs per call).
 
-// Cleanup item state when lobby is destroyed
-eventBus.on('session:lobby_destroyed', (payload) => {
-  itemManager.cleanupLobby(payload.lobbyId);
-  cleanupBuffs(payload.lobbyId);
-  cleanupDebuffs(payload.lobbyId);
-  statsTracker.cleanupLobby(payload.lobbyId);
-});
+  // 1. Reset ability cooldowns when combat is initialized (new ticket)
+  const onBattleInitAbility = (payload: { lobbyId: string }) => {
+    ctx.abilityManager.resetCooldowns(payload.lobbyId);
+  };
+  bus.on('combat:battle_initialized', onBattleInitAbility);
 
-// Award items on ticket completion (discussion_ended = ticket done)
-eventBus.on('estimation:discussion_ended', (payload) => {
-  const lobby = sessionManager.getLobby(payload.lobbyId);
-  if (!lobby) return;
-  // Award 1 random item to each player in the lobby
-  for (const player of lobby.players) {
-    if (player.team === 'spectators') continue; // Spectators don't get items
-    itemManager.awardItem(payload.lobbyId, player.id);
-  }
-});
+  // 2. Cleanup ability state when lobby is destroyed
+  const onLobbyDestroyedAbility = (payload: { lobbyId: string }) => {
+    ctx.abilityManager.cleanupLobby(payload.lobbyId);
+  };
+  bus.on('session:lobby_destroyed', onLobbyDestroyedAbility);
 
-// Apply item effects (mirrors ability:effect_applied pattern)
-eventBus.on('item:effect_applied', (payload) => {
-  if (payload.effectType === 'heal') {
-    // Heal the player who used the item — delegate to shared helper
-    applyHealEffect(payload.lobbyId, payload.targetIds, payload.value, payload.playerId);
-  } else if (payload.effectType === 'buff') {
-    // damage_boost: timed damage multiplier — items currently only grant damage_boost (correct for current item set)
-    addBuff(payload.lobbyId, payload.playerId, {
-      playerId: payload.playerId,
-      lobbyId: payload.lobbyId,
-      buffType: 'damage_boost',
-      value: payload.value, // 1.5x multiplier
-      expiresAt: Date.now() + (payload.durationMs ?? 10000),
-    });
-  } else if (payload.effectType === 'shield') {
-    // shield: timed damage absorption buffer
-    addBuff(payload.lobbyId, payload.playerId, {
-      playerId: payload.playerId,
-      lobbyId: payload.lobbyId,
-      buffType: 'shield',
-      value: payload.value, // 50 HP absorption
-      expiresAt: Date.now() + (payload.durationMs ?? 15000),
-    });
-  }
-});
+  // 3. Reset combo state when combat is initialized (new ticket)
+  const onBattleInitCombo = (payload: { lobbyId: string }) => {
+    ctx.comboManager.resetCombos(payload.lobbyId);
+  };
+  bus.on('combat:battle_initialized', onBattleInitCombo);
 
-// Hook damage_boost into boss damage (apply bonus damage on hit)
-eventBus.on('combat:boss_damaged', (payload) => {
-  // Skip combo damage (prefixed with 'combo:')
-  if (payload.playerId.startsWith('combo:')) return;
-  const multiplier = getDamageMultiplier(payload.lobbyId, payload.playerId);
-  if (multiplier > 1.0) {
-    const bonusDamage = Math.floor(payload.damage * (multiplier - 1.0));
-    if (bonusDamage > 0) {
-      combatManager.applyAbilityDamageToBoss(payload.lobbyId, payload.playerId, bonusDamage);
+  // 4. Cleanup combo state when lobby is destroyed
+  const onLobbyDestroyedCombo = (payload: { lobbyId: string }) => {
+    ctx.comboManager.cleanupLobby(payload.lobbyId);
+  };
+  bus.on('session:lobby_destroyed', onLobbyDestroyedCombo);
+
+  // 5. Cleanup item state when lobby is destroyed
+  const onLobbyDestroyedItems = (payload: { lobbyId: string }) => {
+    ctx.itemManager.cleanupLobby(payload.lobbyId);
+    cleanupBuffs(payload.lobbyId);
+    cleanupDebuffs(payload.lobbyId);
+    ctx.statsTracker.cleanupLobby(payload.lobbyId);
+  };
+  bus.on('session:lobby_destroyed', onLobbyDestroyedItems);
+
+  // 6. Award items on ticket completion (discussion_ended = ticket done)
+  const onDiscussionEndedItems = (payload: { lobbyId: string }) => {
+    const lobby = ctx.sessionManager.getLobby(payload.lobbyId);
+    if (!lobby) return;
+    // Award 1 random item to each player in the lobby
+    for (const player of lobby.players) {
+      if (player.team === 'spectators') continue; // Spectators don't get items
+      ctx.itemManager.awardItem(payload.lobbyId, player.id);
     }
-  }
-});
+  };
+  bus.on('estimation:discussion_ended', onDiscussionEndedItems);
 
-// Apply damage effects from abilities to boss HP
-eventBus.on('ability:effect_applied', (payload) => {
-  if (payload.effectType === 'damage') {
-    // Apply damage to boss via CombatManager
-    combatManager.applyAbilityDamageToBoss(payload.lobbyId, payload.playerId, payload.value);
-  }
-
-  if (payload.effectType === 'heal') {
-    // Apply healing through shared helper (same logic as item:effect_applied heal branch)
-    applyHealEffect(payload.lobbyId, payload.targetIds, payload.value, payload.playerId);
-  }
-
-  if (payload.effectType === 'buff') {
-    // Apply a timed buff. Reads buffType from payload (NOT hardcoded — abilities can grant
-    // different buff kinds unlike items which always grant damage_boost).
-    //
-    // damage_boost → consumer exists (getDamageMultiplier → combat:boss_damaged hook)
-    // crit_boost   → TODO: consumer in future phase (stored only)
-    // dodge        → TODO: consumer in future phase (stored only)
-    // cooldown_reduction → TODO: consumer in future phase (stored only)
-    addBuff(payload.lobbyId, payload.playerId, {
-      playerId: payload.playerId,
-      lobbyId: payload.lobbyId,
-      buffType: payload.buffType ?? 'damage_boost',
-      value: payload.value,
-      expiresAt: Date.now() + (payload.durationMs ?? 10000),
-    });
-  }
-
-  if (payload.effectType === 'shield') {
-    // Apply a timed shield (mirroring item:effect_applied shield branch).
-    // consumer exists: reduceShield → combatManager.applyDamageToPlayer monkey-patch
-    addBuff(payload.lobbyId, payload.playerId, {
-      playerId: payload.playerId,
-      lobbyId: payload.lobbyId,
-      buffType: 'shield',
-      value: payload.value,
-      expiresAt: Date.now() + (payload.durationMs ?? 15000),
-    });
-  }
-
-  if (payload.effectType === 'debuff') {
-    // Store boss-targeted debuff in a dedicated map (not activeBuffs) to avoid
-    // polluting the player-buff map with boss-scoped state.
-    // attack_slow → TODO: consumer in future phase (stored only)
-    addDebuff(
-      payload.lobbyId,
-      payload.playerId,
-      payload.debuffType ?? 'attack_slow',
-      payload.value,
-      payload.durationMs ?? 10000,
-    );
-  }
-
-  if (payload.effectType === 'taunt') {
-    // Massive threat boost (use 'damage' type for threat calculation)
-    const bossAI = combatManager.getBossAI(payload.lobbyId);
-    const combatState = combatManager.getCombatState(payload.lobbyId);
-    if (bossAI && combatState?.boss?.threatTable) {
-      bossAI.recordThreat(combatState.boss.threatTable, payload.playerId, 'damage', 500);
+  // 7. Apply item effects (mirrors ability:effect_applied pattern)
+  const onItemEffectApplied = (payload: DomainEventMap['item:effect_applied']) => {
+    if (payload.effectType === 'heal') {
+      // Heal the player who used the item — delegate to shared helper
+      applyHealEffect(payload.lobbyId, payload.targetIds, payload.value, payload.playerId);
+    } else if (payload.effectType === 'buff') {
+      // damage_boost: timed damage multiplier — items currently only grant damage_boost (correct for current item set)
+      addBuff(payload.lobbyId, payload.playerId, {
+        playerId: payload.playerId,
+        lobbyId: payload.lobbyId,
+        buffType: 'damage_boost',
+        value: payload.value, // 1.5x multiplier
+        expiresAt: Date.now() + (payload.durationMs ?? 10000),
+      });
+    } else if (payload.effectType === 'shield') {
+      // shield: timed damage absorption buffer
+      addBuff(payload.lobbyId, payload.playerId, {
+        playerId: payload.playerId,
+        lobbyId: payload.lobbyId,
+        buffType: 'shield',
+        value: payload.value, // 50 HP absorption
+        expiresAt: Date.now() + (payload.durationMs ?? 15000),
+      });
     }
-  }
-});
+  };
+  bus.on('item:effect_applied', onItemEffectApplied);
+
+  // 8. Hook damage_boost into boss damage (apply bonus damage on hit)
+  const onBossDamagedBuff = (payload: DomainEventMap['combat:boss_damaged']) => {
+    // Skip combo damage (prefixed with 'combo:')
+    if (payload.playerId.startsWith('combo:')) return;
+    const multiplier = getDamageMultiplier(payload.lobbyId, payload.playerId);
+    if (multiplier > 1.0) {
+      const bonusDamage = Math.floor(payload.damage * (multiplier - 1.0));
+      if (bonusDamage > 0) {
+        ctx.combatManager.applyAbilityDamageToBoss(payload.lobbyId, payload.playerId, bonusDamage);
+      }
+    }
+  };
+  bus.on('combat:boss_damaged', onBossDamagedBuff);
+
+  // 9. Apply damage effects from abilities to boss HP
+  const onAbilityEffectApplied = (payload: DomainEventMap['ability:effect_applied']) => {
+    if (payload.effectType === 'damage') {
+      // Apply damage to boss via CombatManager
+      ctx.combatManager.applyAbilityDamageToBoss(payload.lobbyId, payload.playerId, payload.value);
+    }
+
+    if (payload.effectType === 'heal') {
+      // Apply healing through shared helper (same logic as item:effect_applied heal branch)
+      applyHealEffect(payload.lobbyId, payload.targetIds, payload.value, payload.playerId);
+    }
+
+    if (payload.effectType === 'buff') {
+      // Apply a timed buff. Reads buffType from payload (NOT hardcoded — abilities can grant
+      // different buff kinds unlike items which always grant damage_boost).
+      //
+      // damage_boost → consumer exists (getDamageMultiplier → combat:boss_damaged hook)
+      // crit_boost   → TODO: consumer in future phase (stored only)
+      // dodge        → TODO: consumer in future phase (stored only)
+      // cooldown_reduction → TODO: consumer in future phase (stored only)
+      addBuff(payload.lobbyId, payload.playerId, {
+        playerId: payload.playerId,
+        lobbyId: payload.lobbyId,
+        buffType: payload.buffType ?? 'damage_boost',
+        value: payload.value,
+        expiresAt: Date.now() + (payload.durationMs ?? 10000),
+      });
+    }
+
+    if (payload.effectType === 'shield') {
+      // Apply a timed shield (mirroring item:effect_applied shield branch).
+      // consumer exists: reduceShield → combatManager.damageInterceptor (MAINT-02)
+      addBuff(payload.lobbyId, payload.playerId, {
+        playerId: payload.playerId,
+        lobbyId: payload.lobbyId,
+        buffType: 'shield',
+        value: payload.value,
+        expiresAt: Date.now() + (payload.durationMs ?? 15000),
+      });
+    }
+
+    if (payload.effectType === 'debuff') {
+      // Store boss-targeted debuff in a dedicated map (not activeBuffs) to avoid
+      // polluting the player-buff map with boss-scoped state.
+      // attack_slow → TODO: consumer in future phase (stored only)
+      addDebuff(
+        payload.lobbyId,
+        payload.playerId,
+        payload.debuffType ?? 'attack_slow',
+        payload.value,
+        payload.durationMs ?? 10000,
+      );
+    }
+
+    if (payload.effectType === 'taunt') {
+      // Massive threat boost (use 'damage' type for threat calculation)
+      const bossAI = ctx.combatManager.getBossAI(payload.lobbyId);
+      const combatState = ctx.combatManager.getCombatState(payload.lobbyId);
+      if (bossAI && combatState?.boss?.threatTable) {
+        bossAI.recordThreat(combatState.boss.threatTable, payload.playerId, 'damage', 500);
+      }
+    }
+  };
+  bus.on('ability:effect_applied', onAbilityEffectApplied);
+
+  return {
+    dispose() {
+      bus.off('combat:battle_initialized', onBattleInitAbility);
+      bus.off('session:lobby_destroyed', onLobbyDestroyedAbility);
+      bus.off('combat:battle_initialized', onBattleInitCombo);
+      bus.off('session:lobby_destroyed', onLobbyDestroyedCombo);
+      bus.off('session:lobby_destroyed', onLobbyDestroyedItems);
+      bus.off('estimation:discussion_ended', onDiscussionEndedItems);
+      bus.off('item:effect_applied', onItemEffectApplied);
+      bus.off('combat:boss_damaged', onBossDamagedBuff);
+      bus.off('ability:effect_applied', onAbilityEffectApplied);
+    },
+  };
+}
+
+// =============================================================================
+// Module-bottom production wiring call (return value discarded — same runtime
+// behavior as the 9 inline eventBus.on(...) calls that were here before MAINT-03).
+// =============================================================================
+wireDomains({ eventBus, abilityManager, comboManager, itemManager, combatManager, statsTracker, sessionManager });
 
 // Export instances
 export { eventBus, sessionManager, estimationManager, combatManager, progressionManager, classMasteryManager, abilityManager, comboManager, itemManager, statsTracker };
