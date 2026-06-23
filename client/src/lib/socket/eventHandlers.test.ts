@@ -516,3 +516,100 @@ describe('Recovery re-applies events, not just lastSeq (council H1)', () => {
     expect(useGameState.getState().currentLobby!.teams.developers[0].currentScore).toBe(5);
   });
 });
+
+describe('MAINT-04: withTeamsDerived integration — teams never stale after setLobby', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null, currentPlayer: null });
+  });
+
+  it('session:team_changed: teams[newTeam] player has newTeam field, not oldTeam (push-before-map regression)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    // Build a lobby with p1 on developers; teams mirror matches players
+    useGameState.setState({
+      currentLobby: {
+        id: 'lobby-1',
+        hostId: 'host',
+        players: [{ id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 }],
+        teams: { developers: [{ id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 }], qa: [], spectators: [] },
+        gamePhase: 'lobby',
+        tickets: [],
+        completedTickets: [],
+      } as any,
+    });
+
+    handlers.get('session:team_changed')!({ playerId: 'p1', oldTeam: 'developers', newTeam: 'qa', seq: 1, timestamp: Date.now() });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Regression: before fix, teams[qa] contained a player with .team === 'developers'
+    const p1InQa = lobby.teams.qa.find((p: any) => p.id === 'p1');
+    expect(p1InQa).toBeDefined();
+    expect(p1InQa!.team).toBe('qa');
+    // p1 must not appear in old team
+    const p1InDevs = lobby.teams.developers.find((p: any) => p.id === 'p1');
+    expect(p1InDevs).toBeUndefined();
+  });
+
+  it('session:avatar_selected: teams reflect updated avatar (was never mirrored to teams)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    useGameState.setState({
+      currentLobby: {
+        id: 'lobby-1',
+        hostId: 'host',
+        players: [{ id: 'p1', name: 'Alice', team: 'qa', isHost: false, avatar: 'warrior', avatarClass: 'warrior', hasSelectedAvatar: false, level: 1 }],
+        teams: { developers: [], qa: [{ id: 'p1', name: 'Alice', team: 'qa', isHost: false, avatar: 'warrior', avatarClass: 'warrior', hasSelectedAvatar: false, level: 1 }], spectators: [] },
+        gamePhase: 'lobby',
+        tickets: [],
+        completedTickets: [],
+      } as any,
+    });
+
+    handlers.get('session:avatar_selected')!({ playerId: 'p1', avatar: 'mage', seq: 1, timestamp: Date.now() });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Regression: before fix, teams[qa] still had the old avatar ('warrior')
+    const p1InQa = lobby.teams.qa.find((p: any) => p.id === 'p1');
+    expect(p1InQa).toBeDefined();
+    expect(p1InQa!.avatar).toBe('mage');
+    expect(p1InQa!.hasSelectedAvatar).toBe(true);
+  });
+
+  it('session:host_changed: teams reflect updated isHost flag (was never mirrored to teams)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    useGameState.setState({
+      currentLobby: {
+        id: 'lobby-1',
+        hostId: 'old-host',
+        players: [
+          { id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 },
+          { id: 'old-host', name: 'Bob', team: 'developers', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 },
+        ],
+        teams: {
+          developers: [
+            { id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 },
+            { id: 'old-host', name: 'Bob', team: 'developers', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 },
+          ],
+          qa: [],
+          spectators: [],
+        },
+        gamePhase: 'lobby',
+        tickets: [],
+        completedTickets: [],
+      } as any,
+    });
+
+    handlers.get('session:host_changed')!({ newHostId: 'p1', seq: 1, timestamp: Date.now() });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Regression: before fix, teams[developers] still had p1 with isHost === false
+    const p1InDevs = lobby.teams.developers.find((p: any) => p.id === 'p1');
+    expect(p1InDevs).toBeDefined();
+    expect(p1InDevs!.isHost).toBe(true);
+  });
+});
