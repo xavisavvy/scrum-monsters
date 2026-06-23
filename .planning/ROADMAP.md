@@ -267,7 +267,7 @@ Plans:
  (completed 2026-06-22)
 - [x] **Phase 48: Testability Seams** — Constructable singletons, kill the runtime monkey-patch, `wireDomains` factory, mock-socket handler tests (Theme 7; rank 14)
  (completed 2026-06-23)
-- [ ] **Phase 49: State Source-of-Truth Consolidation** — Derive `teams[]`, make CombatManager the single boss-HP truth, field-scoped Zustand selectors (Theme 1; ranks 3, 4, 8)
+- [x] **Phase 49: State Source-of-Truth Consolidation** — Derive `teams[]`, make CombatManager the single boss-HP truth, field-scoped Zustand selectors (Theme 1; ranks 3, 4, 8) (completed 2026-06-23)
 - [ ] **Phase 50: Finish the GameState → Domain-Manager Migration** — Ordered, reversible decommission of dead/duplicate GameState code; revival migration + `session:host_transferred` (Theme 2; ranks 9, 10)
 - [ ] **Phase 51: Event-Contract Hardening & Handler Boilerplate** — Typed emit, `satisfies` parity guards, `Sequenced<T>`, `registerSyncedLobbyHandler` helpers (Themes 4 & 5; ranks 12, 13)
 - [ ] **Phase 52: Client God-Component Decomposition** — Movement refs, magic-effect reducer, verified Lobby.tsx seams, PlayerController dedup + coordinate helpers (Theme 3; ranks 6, 7, 11, 15)
@@ -317,9 +317,9 @@ Plans (wave 1 = 48-01/48-02 parallel-safe; wave 2 = 48-03 after 48-01 + 48-02 be
 **Plans**: 3 plans
 
 Plans (wave 1 = 49-01/02/03 all parallel-safe; zero files_modified overlap):
-- [ ] 49-01-PLAN.md — MAINT-04: withTeamsDerived helper + single-site setLobby wrap + team_changed/avatar_selected/host_changed regression tests
-- [ ] 49-02-PLAN.md — MAINT-05: rename playerAttackBoss -> applyBasicDamageToBoss ({damage,newHp}), delegate gameState.attackBoss, remove websocket.ts double-emit, 37-call-site test sweep
-- [ ] 49-03-PLAN.md — MAINT-06: scoped Zustand selectors in PlayerCharacter + PlayerController, React.memo on PlayerController, render-count perf guardrail test
+- [x] 49-01-PLAN.md — MAINT-04: withTeamsDerived helper + single-site setLobby wrap + team_changed/avatar_selected/host_changed regression tests
+- [x] 49-02-PLAN.md — MAINT-05: rename playerAttackBoss -> applyBasicDamageToBoss ({damage,newHp}), delegate gameState.attackBoss, remove websocket.ts double-emit, 37-call-site test sweep
+- [x] 49-03-PLAN.md — MAINT-06: scoped Zustand selectors in PlayerCharacter + PlayerController, React.memo on PlayerController, render-count perf guardrail test
 
 ### Phase 50: Finish the GameState → Domain-Manager Migration
 **Goal**: The stalled monolith→domain-manager migration is completed in an ordered, reversible way; dead/duplicate GameState code and redundant background loops are removed.
@@ -376,7 +376,7 @@ Plans (wave 1 = 49-01/02/03 all parallel-safe; zero files_modified overlap):
 | 46. Music Controls & History | v5.0 | 3/3 | Complete | 2026-06-17 |
 | 47. Ability Effects & Data-Driven Registries | v6.0 | 4/4 | Complete   | 2026-06-22 |
 | 48. Testability Seams | v6.0 | 3/3 | Complete   | 2026-06-23 |
-| 49. State Source-of-Truth Consolidation | v6.0 | 0/3 | Planned | - |
+| 49. State Source-of-Truth Consolidation | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 50. Finish GameState → Domain-Manager Migration | v6.0 | 0/TBD | Planned | - |
 | 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/TBD | Planned | - |
 | 52. Client God-Component Decomposition | v6.0 | 0/TBD | Planned | - |
