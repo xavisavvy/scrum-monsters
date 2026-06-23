@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile, isValidEstimationScore } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerState, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile, isValidEstimationScore } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 import { createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
@@ -479,147 +479,11 @@ export class GameStateManager {
     }
   }
 
-  createLobby(hostName: string, lobbyName: string, initialSettings?: {
-    timerSettings?: TimerSettings;
-    jiraSettings?: JiraSettings;
-    estimationSettings?: EstimationSettings;
-    customLobbyId?: string;
-  }): Lobby {
-    const lobbyId = this.generateLobbyId(initialSettings?.customLobbyId);
-    const hostId = generateSecureId();
-    
-    const lobby: Lobby = {
-      id: lobbyId,
-      name: lobbyName,
-      hostId,
-      players: [{
-        id: hostId,
-        name: hostName,
-        team: 'spectators',
-        isHost: true,
-        avatar: 'warrior',
-        avatarClass: 'warrior',
-        hasSubmittedScore: false,
-        currentScore: undefined,
-        level: 1,
-        // avatar_selection -> lobby UX gate (see SessionManager.createLobby).
-        hasSelectedAvatar: false
-      }],
-      teams: {
-        developers: [],
-        qa: [],
-        spectators: []
-      },
-      tickets: [],
-      gamePhase: 'lobby',
-      completedTickets: [],
-      teamCompetition: {
-        developers: {
-          totalStoryPoints: 0,
-          ticketsCompleted: 0,
-          averageEstimationTime: 0,
-          consensusRate: 0,
-          accuracyScore: 0,
-          participationRate: 0,
-          achievements: [],
-          currentStreak: 0,
-          bestStreak: 0
-        },
-        qa: {
-          totalStoryPoints: 0,
-          ticketsCompleted: 0,
-          averageEstimationTime: 0,
-          consensusRate: 0,
-          accuracyScore: 0,
-          participationRate: 0,
-          achievements: [],
-          currentStreak: 0,
-          bestStreak: 0
-        },
-        currentRound: 0,
-        winnerHistory: [],
-        seasonStart: new Date().toISOString()
-      },
-      playerCombatStates: {
-        [hostId]: {
-          maxHp: 100,
-          hp: 100,
-          isDowned: false
-        }
-      },
-      playerPositions: {
-        [hostId]: {
-          x: Math.random() * 80 + 10,
-          y: 80
-        }
-      },
-      consensusSettings: {
-        countdownSeconds: 5
-      },
-      // Apply initial settings if provided
-      timerSettings: initialSettings?.timerSettings,
-      jiraSettings: initialSettings?.jiraSettings,
-      estimationSettings: initialSettings?.estimationSettings
-    };
-
-    this.updateTeamAssignments(lobby);
-    this.lobbies.set(lobbyId, lobby);
-    this.playerToLobby.set(hostId, lobbyId);
-    
-    this.syncLobbyToCache(lobby);
-    
-    return lobby;
-  }
-
-  joinLobby(lobbyId: string, playerName: string): { lobby: Lobby; player: Player } | null {
-    const lobby = this.lobbies.get(lobbyId);
-    if (!lobby) return null;
-
-    // Create or get existing player
-    let player = lobby.players.find(p => p.name === playerName);
-    if (!player) {
-      player = {
-        id: generateSecureId(),
-        name: playerName,
-        team: 'developers',
-        isHost: false,
-        avatar: 'warrior',
-        avatarClass: 'warrior',
-        hasSubmittedScore: false,
-        currentScore: undefined,
-        level: 1,
-        // Fresh joiners start with avatar gate closed (see SessionManager.joinLobby).
-        hasSelectedAvatar: false
-      };
-      lobby.players.push(player);
-    }
-
-    // Update team assignments
-    this.updateTeamAssignments(lobby);
-    this.playerToLobby.set(player.id, lobbyId);
-
-    // Initialize combat state for new player
-    if (!lobby.playerCombatStates[player.id]) {
-      lobby.playerCombatStates[player.id] = {
-        maxHp: 100,
-        hp: 100,
-        isDowned: false
-      };
-    }
-
-    // Initialize position for new player (random position along bottom)
-    if (!lobby.playerPositions[player.id]) {
-      lobby.playerPositions[player.id] = {
-        x: Math.random() * 80 + 10, // 10-90% from left
-        y: 80 // Fixed at bottom 80% from top
-      };
-    }
-
-    this.syncLobbyToCache(lobby);
-
-    return { lobby, player };
-  }
-
+  // NOTE: GameStateManager.removePlayer is INTENTIONALLY RETAINED.
+  // processDisconnectedPlayers (the 30s disconnectWatchdog at gameState.ts:193)
+  // still calls this.removePlayer(playerId) internally. Deletion is deferred to a
+  // future GameState-decommission phase that removes processDisconnectedPlayers and
+  // the disconnectWatchdog together. Do not treat its presence as an oversight.
   removePlayer(playerId: string): Lobby | null {
     const lobbyId = this.playerToLobby.get(playerId);
     if (!lobbyId) return null;
@@ -702,32 +566,6 @@ export class GameStateManager {
         this.playerToLobby.set(player.id, lobby.id);
       }
     }
-  }
-
-  updatePlayerTeam(playerId: string, team: TeamType): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const player = lobby.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    player.team = team;
-    this.updateTeamAssignments(lobby);
-
-    return lobby;
-  }
-
-  updatePlayerAvatar(playerId: string, avatar: AvatarClass): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const player = lobby.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    player.avatar = avatar;
-    player.avatarClass = avatar; // Keep both for compatibility
-
-    return lobby;
   }
 
   selectAvatar(playerId: string, avatarClass: AvatarClass): Lobby | null {
@@ -2006,40 +1844,8 @@ export class GameStateManager {
     return true;
   }
 
-  // Timer management methods
-  updateTimerSettings(playerId: string, timerSettings: TimerSettings): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    lobby.timerSettings = timerSettings;
-    return lobby;
-  }
-
-  updateJiraSettings(playerId: string, jiraSettings: JiraSettings): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    lobby.jiraSettings = jiraSettings;
-    return lobby;
-  }
-
-  updateEstimationSettings(playerId: string, estimationSettings: EstimationSettings): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    lobby.estimationSettings = estimationSettings;
-    return lobby;
-  }
-
+  // Timer management methods (updateTimerSettings/updateJiraSettings/updateEstimationSettings
+  // deleted in Phase 50-01 — now owned by SessionManager with host guard)
   startTimer(lobbyId: string): { lobby: Lobby; timerState: TimerState } | null {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || !lobby.timerSettings?.enabled) return null;
