@@ -692,12 +692,16 @@ export class GameStateManager {
    * Call this after sessionManager.joinLobby() or sessionManager.createLobby()
    */
   syncPlayerToLobby(playerId: string, lobby: Lobby): void {
-    // Store the lobby if not already present
-    if (!this.lobbies.has(lobby.id)) {
-      this.lobbies.set(lobby.id, lobby);
-    }
-    // Map player to lobby
+    // Always update reference (not conditional — covers reconnect-staleness)
+    this.lobbies.set(lobby.id, lobby);
+    // Register alias for the triggering player
     this.playerToLobby.set(playerId, lobby.id);
+    // Register aliases for ALL other players in the lobby (covers reconnect-staleness)
+    for (const player of lobby.players) {
+      if (!this.playerToLobby.has(player.id)) {
+        this.playerToLobby.set(player.id, lobby.id);
+      }
+    }
   }
 
   updatePlayerTeam(playerId: string, team: TeamType): Lobby | null {

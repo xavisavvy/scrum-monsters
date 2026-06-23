@@ -220,3 +220,74 @@ describe('GameStateManager — MAINT-01 testability seam', () => {
     expect(gs.getLobby(lobby.id)?.gamePhase).toBe('reveal');
   });
 });
+
+describe('GameStateManager.syncPlayerToLobby — alias registration', () => {
+  it('registers aliases for ALL lobby members, not just the triggering player', () => {
+    const mgr = new GameStateManager(undefined, { startWatchdogs: false });
+
+    // Build a lobby with 3 players using the constructable seam
+    const lobby = mgr.createLobby('Host', 'Alias Test Lobby');
+    const hostId = lobby.hostId;
+
+    // Manually add player2 and player3 to the lobby (simulating join)
+    const player2 = {
+      id: 'player2-id',
+      name: 'Player Two',
+      team: 'developers' as const,
+      isHost: false,
+      avatar: 'mage' as const,
+      avatarClass: 'mage' as const,
+      hasSubmittedScore: false,
+      currentScore: undefined,
+      level: 1,
+    };
+    const player3 = {
+      id: 'player3-id',
+      name: 'Player Three',
+      team: 'developers' as const,
+      isHost: false,
+      avatar: 'healer' as const,
+      avatarClass: 'healer' as const,
+      hasSubmittedScore: false,
+      currentScore: undefined,
+      level: 1,
+    };
+    lobby.players.push(player2 as any, player3 as any);
+
+    // Call syncPlayerToLobby with ONLY the host's id
+    mgr.syncPlayerToLobby(hostId, lobby);
+
+    // ALL players' aliases should resolve — this fails before the fix
+    expect(mgr.getLobbyByPlayerId(player2.id)).not.toBeNull();
+    expect(mgr.getLobbyByPlayerId(player3.id)).not.toBeNull();
+    expect(mgr.getLobbyByPlayerId(player2.id)?.id).toBe(lobby.id);
+    expect(mgr.getLobbyByPlayerId(player3.id)?.id).toBe(lobby.id);
+  });
+
+  it('is idempotent — calling syncPlayerToLobby again does not throw or overwrite', () => {
+    const mgr = new GameStateManager(undefined, { startWatchdogs: false });
+    const lobby = mgr.createLobby('Host', 'Idempotency Test');
+    const hostId = lobby.hostId;
+
+    // First call
+    mgr.syncPlayerToLobby(hostId, lobby);
+    // Second call — same player, same lobby
+    mgr.syncPlayerToLobby(hostId, lobby);
+
+    expect(mgr.getLobbyByPlayerId(hostId)?.id).toBe(lobby.id);
+  });
+
+  it('always refreshes the lobby reference unconditionally', () => {
+    const mgr = new GameStateManager(undefined, { startWatchdogs: false });
+    const lobby = mgr.createLobby('Host', 'Refresh Test');
+    const hostId = lobby.hostId;
+
+    // Mutate the lobby and re-sync — the new reference should be stored
+    const lobbyRef = mgr.getLobby(lobby.id)!;
+    lobbyRef.name = 'Updated Name';
+
+    mgr.syncPlayerToLobby(hostId, lobbyRef);
+
+    expect(mgr.getLobby(lobby.id)?.name).toBe('Updated Name');
+  });
+});
