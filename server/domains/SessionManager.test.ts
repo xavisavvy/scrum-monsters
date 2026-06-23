@@ -1094,4 +1094,73 @@ describe('SessionManager - Team Management', () => {
       }).toThrow(PlayerNotFoundError);
     });
   });
+
+  describe('updateTimerSettings', () => {
+    it('updates timerSettings on the lobby and returns it (happy path)', () => {
+      const lobby = sessionManager.createLobby('Host', 'Timer Test');
+      const hostId = lobby.players[0].id;
+      const settings = { enabled: true, durationMinutes: 5 };
+
+      const updated = sessionManager.updateTimerSettings(hostId, settings as any);
+
+      expect(updated.timerSettings).toEqual(settings);
+    });
+
+    it('throws PlayerNotHostError for non-host', () => {
+      const lobby = sessionManager.createLobby('Host', 'Timer Test');
+      const { player: p2 } = sessionManager.joinLobby(lobby.id, 'Player 2');
+
+      expect(() =>
+        sessionManager.updateTimerSettings(p2.id, { enabled: true, durationMinutes: 3 } as any)
+      ).toThrow(PlayerNotHostError);
+    });
+
+    it('throws PlayerNotFoundError for unknown player', () => {
+      expect(() =>
+        sessionManager.updateTimerSettings('no-such-player', { enabled: false } as any)
+      ).toThrow(PlayerNotFoundError);
+    });
+  });
+
+  describe('updateJiraSettings', () => {
+    it('updates jiraSettings on the lobby and returns it (happy path)', () => {
+      const lobby = sessionManager.createLobby('Host', 'Jira Test');
+      const hostId = lobby.players[0].id;
+      const settings = { enabled: true, projectKey: 'SCRUM', boardId: 42 };
+
+      const updated = sessionManager.updateJiraSettings(hostId, settings as any);
+
+      expect(updated.jiraSettings).toEqual(settings);
+    });
+
+    it('throws PlayerNotHostError for non-host', () => {
+      const lobby = sessionManager.createLobby('Host', 'Jira Test');
+      const { player: p2 } = sessionManager.joinLobby(lobby.id, 'Player 2');
+
+      expect(() =>
+        sessionManager.updateJiraSettings(p2.id, { enabled: true } as any)
+      ).toThrow(PlayerNotHostError);
+    });
+  });
+
+  describe('updateEstimationSettings', () => {
+    it('updates estimationSettings on the lobby and returns it (happy path)', () => {
+      const lobby = sessionManager.createLobby('Host', 'Estimation Test');
+      const hostId = lobby.players[0].id;
+      const settings = { scaleType: 'fibonacci' as const, autoAdvance: true };
+
+      const updated = sessionManager.updateEstimationSettings(hostId, settings as any);
+
+      expect(updated.estimationSettings).toEqual(settings);
+    });
+
+    it('throws PlayerNotHostError for non-host', () => {
+      const lobby = sessionManager.createLobby('Host', 'Estimation Test');
+      const { player: p2 } = sessionManager.joinLobby(lobby.id, 'Player 2');
+
+      expect(() =>
+        sessionManager.updateEstimationSettings(p2.id, { scaleType: 'fibonacci' as const } as any)
+      ).toThrow(PlayerNotHostError);
+    });
+  });
 });

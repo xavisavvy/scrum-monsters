@@ -1622,10 +1622,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updateTimerSettings(playerId, timerSettings);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updateTimerSettings(playerId, timerSettings);
         // Phase 42-02b row #19: lobby_updated -> session:settings_updated.
         emitFineGrained(lobby.id, 'session:settings_updated', { timerSettings: lobby.timerSettings });
+      } catch (err) {
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
@@ -1633,10 +1635,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updateJiraSettings(playerId, jiraSettings);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updateJiraSettings(playerId, jiraSettings);
         // Phase 42-02b row #20: lobby_updated -> session:settings_updated.
         emitFineGrained(lobby.id, 'session:settings_updated', { jiraSettings: lobby.jiraSettings });
+      } catch (err) {
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
@@ -1644,12 +1648,14 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updateEstimationSettings(playerId, estimationSettings);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updateEstimationSettings(playerId, estimationSettings);
         // Phase 42-02b row #21: lobby_updated -> session:settings_updated.
         // (42-02a designed this payload shape; this is its first emit site.)
         emitFineGrained(lobby.id, 'session:settings_updated', { estimationSettings: lobby.estimationSettings });
         gameLogger.info({ playerId, lobbyId: lobby.id }, 'Estimation settings updated');
+      } catch (err) {
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 

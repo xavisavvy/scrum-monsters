@@ -685,6 +685,49 @@ export class SessionManager {
   }
 
   /**
+   * Updates timer settings for a lobby (host only).
+   * Note: session:settings_updated is emitted by the websocket.ts handler (not here)
+   * to match the Phase 42-02b fine-grained-event pattern.
+   */
+  updateTimerSettings(playerId: string, timerSettings: TimerSettings): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) throw new PlayerNotFoundError(playerId);
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player?.isHost) throw new PlayerNotHostError(playerId);
+    lobby.timerSettings = timerSettings;
+    return lobby;
+  }
+
+  /**
+   * Updates Jira settings for a lobby (host only).
+   * Note: session:settings_updated is emitted by the websocket.ts handler (not here).
+   */
+  updateJiraSettings(playerId: string, jiraSettings: JiraSettings): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) throw new PlayerNotFoundError(playerId);
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player?.isHost) throw new PlayerNotHostError(playerId);
+    lobby.jiraSettings = jiraSettings;
+    return lobby;
+  }
+
+  /**
+   * Updates estimation settings for a lobby (host only).
+   * Note: session:settings_updated is emitted by the websocket.ts handler (not here).
+   */
+  updateEstimationSettings(
+    playerId: string,
+    estimationSettings: EstimationSettings
+  ): Lobby {
+    const lobby = this.getPlayerLobby(playerId);
+    if (!lobby) throw new PlayerNotFoundError(playerId);
+    const player = lobby.players.find((p) => p.id === playerId);
+    if (!player?.isHost) throw new PlayerNotHostError(playerId);
+    lobby.estimationSettings = estimationSettings;
+    return lobby;
+  }
+
+  /**
    * Updates team assignments based on current player team values
    */
   private updateTeamAssignments(lobby: Lobby): void {
