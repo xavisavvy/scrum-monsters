@@ -196,7 +196,8 @@ describe('GameStateManager — MAINT-01 testability seam', () => {
   it('no revival timer is created under startWatchdogs:true (Phase 50-02)', () => {
     // Confirms revivalWatchdog is absent — CombatManager owns revival lifecycle.
     const spy = vi.spyOn(globalThis, 'setInterval');
-    const gs = new GameStateManager(undefined, { startWatchdogs: true });
+    // Instantiate to trigger the watchdog setup — result not needed for assertions
+    new GameStateManager(undefined, { startWatchdogs: true });
     try {
       // Only one interval created: the 30s disconnectWatchdog
       expect(spy).toHaveBeenCalledTimes(1);

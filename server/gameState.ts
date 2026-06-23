@@ -10,14 +10,6 @@ import type { Server as SocketIOServer } from 'socket.io';
 // retired lobby_updated full-state push.
 import { eventBus, getClientEventEmitter, BOSS_BEHAVIORS, combatManager } from './domains/index.js';
 
-interface RevivalSession {
-  reviverId: string;
-  targetId: string;
-  lobbyId: string;
-  startedAt: number;
-  lastTick: number;
-  timeoutHandle: NodeJS.Timeout;
-}
 
 const LOBBY_CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function generateSecureLobbyCode(): string {
@@ -39,7 +31,6 @@ function generateSecureId(): string {
 export class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
   private playerToLobby: Map<string, string> = new Map();
-  private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
@@ -104,67 +95,6 @@ export class GameStateManager {
   // Phase 45-05B: promoted from private — the websocket.ts watchdog drove
   // the eventBus emit off the completion list. Phase 50-02: both external
   // watchdogs removed; this method is retained until the GameState revival
-  // methods are deleted in Task 5.
-  public processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
-    const now = Date.now();
-    const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
-    
-    for (const [sessionKey, session] of this.revivalSessions) {
-      const lobby = this.lobbies.get(session.lobbyId);
-      if (!lobby) {
-        this.cancelRevivalSession(sessionKey);
-        continue;
-      }
-
-      // Check if revive timed out (no keep-alive)
-      if (now - session.lastTick > 400) {
-        this.cancelRevivalSession(sessionKey);
-        continue;
-      }
-
-      // Check if enough time has passed for completion (3 seconds)
-      if (now - session.startedAt >= 3000) {
-        this.completeRevival(sessionKey);
-        completedRevivals.push({
-          lobbyId: session.lobbyId,
-          targetId: session.targetId,
-          reviverId: session.reviverId
-        });
-      }
-    }
-    
-    return completedRevivals;
-  }
-
-  private cancelRevivalSession(sessionKey: string): void {
-    const session = this.revivalSessions.get(sessionKey);
-    if (session) {
-      clearTimeout(session.timeoutHandle);
-      this.revivalSessions.delete(sessionKey);
-    }
-  }
-
-  private completeRevival(sessionKey: string): void {
-    const session = this.revivalSessions.get(sessionKey);
-    if (!session) return;
-
-    const lobby = this.lobbies.get(session.lobbyId);
-    if (!lobby) {
-      this.cancelRevivalSession(sessionKey);
-      return;
-    }
-
-    // Find target player and revive them
-    const targetState = lobby.playerCombatStates[session.targetId];
-    if (targetState && targetState.isDowned) {
-      targetState.isDowned = false;
-      targetState.hp = Math.min(targetState.maxHp, targetState.hp + 50); // Heal on revive
-      targetState.revivedBy = session.reviverId;
-    }
-
-    this.cancelRevivalSession(sessionKey);
-  }
-
   // Reconnection Management Methods
   private processDisconnectedPlayers(): void {
     const now = Date.now();
@@ -531,15 +461,6 @@ export class GameStateManager {
 
   getLobby(lobbyId: string): Lobby | null {
     return this.lobbies.get(lobbyId) || null;
-  }
-
-  /**
-   * Phase 45-05B: typed read-only view of in-progress revival sessions for
-   * the websocket.ts watchdog's throttled combat:revival_progress emit.
-   * Replaces a `(gameState as any).revivalSessions` cast.
-   */
-  public getActiveRevivalSessions(): Iterable<{ lobbyId: string; targetId: string; reviverId: string; startedAt: number }> {
-    return this.revivalSessions.values();
   }
 
   getLobbyByPlayerId(playerId: string): Lobby | null {
@@ -1745,101 +1666,8 @@ export class GameStateManager {
     };
   }
 
-  // Player revival system
-  startRevive(reviverId: string, targetId: string): boolean {
-    const lobby = this.getLobbyByPlayerId(reviverId);
-    if (!lobby) return false;
-
-    const reviverState = lobby.playerCombatStates[reviverId];
-    const targetState = lobby.playerCombatStates[targetId];
-    const reviverPos = lobby.playerPositions[reviverId];
-    const targetPos = lobby.playerPositions[targetId];
-
-    if (!reviverState || !targetState || !reviverPos || !targetPos) return false;
-    if (reviverState.isDowned || !targetState.isDowned) return false;
-
-    // Check distance
-    const distance = Math.sqrt(
-      Math.pow(reviverPos.x - targetPos.x, 2) + 
-      Math.pow(reviverPos.y - targetPos.y, 2)
-    );
-
-    if (distance > 10) return false; // Must be within 10% distance
-
-    const sessionKey = `${reviverId}:${targetId}`;
-    
-    // Cancel any existing session for this reviver
-    for (const [key, session] of this.revivalSessions) {
-      if (session.reviverId === reviverId) {
-        this.cancelRevivalSession(key);
-      }
-    }
-
-    const now = Date.now();
-    const timeoutHandle = setTimeout(() => {
-      // Auto-complete after 3 seconds if no cancellation
-      this.completeRevival(sessionKey);
-    }, 3000);
-
-    this.revivalSessions.set(sessionKey, {
-      reviverId,
-      targetId,
-      lobbyId: lobby.id,
-      startedAt: now,
-      lastTick: now,
-      timeoutHandle
-    });
-
-    return true;
-  }
-
-  cancelRevive(reviverId: string, targetId: string): boolean {
-    const sessionKey = `${reviverId}:${targetId}`;
-    this.cancelRevivalSession(sessionKey);
-    return true;
-  }
-
-  tickRevive(reviverId: string, targetId: string): boolean {
-    const sessionKey = `${reviverId}:${targetId}`;
-    const session = this.revivalSessions.get(sessionKey);
-    
-    if (!session) return false;
-
-    const lobby = this.lobbies.get(session.lobbyId);
-    if (!lobby) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-
-    const reviverState = lobby.playerCombatStates[reviverId];
-    const targetState = lobby.playerCombatStates[targetId];
-    const reviverPos = lobby.playerPositions[reviverId];
-    const targetPos = lobby.playerPositions[targetId];
-
-    if (!reviverState || !targetState || !reviverPos || !targetPos) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-    
-    if (reviverState.isDowned || !targetState.isDowned) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-    
-    const distance = Math.sqrt(
-      Math.pow(reviverPos.x - targetPos.x, 2) + 
-      Math.pow(reviverPos.y - targetPos.y, 2)
-    );
-    
-    if (distance > 10) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-    
-    // Update last tick
-    session.lastTick = Date.now();
-    return true;
-  }
+  // Phase 50-02: startRevive, cancelRevive, tickRevive deleted here.
+  // Revival now flows through CombatManager.startRevival/cancelRevival (Task 3).
 
   // Timer management methods (updateTimerSettings/updateJiraSettings/updateEstimationSettings
   // deleted in Phase 50-01 — now owned by SessionManager with host guard)
