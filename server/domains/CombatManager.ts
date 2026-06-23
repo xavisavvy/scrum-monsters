@@ -45,6 +45,12 @@ export interface CombatManagerDeps {
   progressionManager?: {
     getPlayerLevel: (lobbyId: string, playerId: string) => number;
   };
+  damageInterceptor?: (
+    lobbyId: string,
+    playerId: string,
+    damage: number,
+    applyFn: (lobbyId: string, playerId: string, damage: number) => void
+  ) => void;
 }
 
 // =============================================================================
@@ -192,6 +198,7 @@ export class CombatManager {
   private readonly getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
   private readonly classMasteryManager: CombatManagerDeps['classMasteryManager'];
   private readonly progressionManager: CombatManagerDeps['progressionManager'];
+  private readonly damageInterceptor: NonNullable<CombatManagerDeps['damageInterceptor']>;
 
   constructor(deps: CombatManagerDeps) {
     this.eventBus = deps.eventBus;
@@ -199,6 +206,8 @@ export class CombatManager {
     this.getPlayerClass = deps.getPlayerClass;
     this.classMasteryManager = deps.classMasteryManager;
     this.progressionManager = deps.progressionManager;
+    this.damageInterceptor = deps.damageInterceptor ??
+      ((lobbyId, playerId, damage, applyFn) => { applyFn(lobbyId, playerId, damage); });
 
     // Subscribe to cross-domain events
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
@@ -1252,9 +1261,22 @@ export class CombatManager {
   }
 
   /**
-   * Apply damage to a player and handle down state
+   * Apply damage to a player, routing through the damageInterceptor dependency.
+   * The interceptor (default: pass-through) may modify, reduce, or absorb the
+   * damage before calling applyFn, which delegates to applyDamageToPlayerRaw.
    */
   applyDamageToPlayer(lobbyId: string, playerId: string, damage: number): void {
+    this.damageInterceptor(lobbyId, playerId, damage,
+      (l, p, d) => this.applyDamageToPlayerRaw(l, p, d));
+  }
+
+  /**
+   * Apply damage to a player and handle down state (raw implementation).
+   * Called by applyDamageToPlayer via the damageInterceptor — do NOT call
+   * this directly from attack paths; always call applyDamageToPlayer so
+   * shield absorption and other interceptors are honoured.
+   */
+  private applyDamageToPlayerRaw(lobbyId: string, playerId: string, damage: number): void {
     // Get combat state
     const combatState = this.combatStates.get(lobbyId);
     if (!combatState) {

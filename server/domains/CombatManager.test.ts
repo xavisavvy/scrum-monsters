@@ -2040,3 +2040,66 @@ describe('CombatManager', () => {
     );
   });
 });
+
+describe('CombatManager — damageInterceptor seam (MAINT-02)', () => {
+  const LOBBY = 'maint02-lobby';
+
+  function setupFightingPlayer(
+    cm: CombatManager,
+    playerId: string,
+    hp: number
+  ) {
+    const players = [{ id: playerId, team: 'developers' as TeamType }];
+    cm.initializeCombat(LOBBY, players, 0);
+    // Override HP to a known value for deterministic assertions
+    const state = cm.getCombatState(LOBBY)!;
+    state.players.get(playerId)!.hp = hp;
+  }
+
+  it('default (no interceptor) applies full damage — no combat:shield_absorbed emitted', () => {
+    const bus = new ScopedEventBus();
+    const cm = new CombatManager({ eventBus: bus });
+    setupFightingPlayer(cm, 'player1', 100);
+
+    const emitted: string[] = [];
+    bus.on('combat:shield_absorbed', () => { emitted.push('shield_absorbed'); });
+
+    cm.applyDamageToPlayer(LOBBY, 'player1', 30);
+
+    expect(emitted).toHaveLength(0);
+    expect(cm.getCombatState(LOBBY)!.players.get('player1')!.hp).toBe(70);
+  });
+
+  it('injected interceptor that partially absorbs — player takes (damage - 5)', () => {
+    const bus = new ScopedEventBus();
+    const cm = new CombatManager({
+      eventBus: bus,
+      damageInterceptor: (lobbyId, playerId, damage, applyFn) => {
+        applyFn(lobbyId, playerId, damage - 5);
+      },
+    });
+    setupFightingPlayer(cm, 'player2', 100);
+
+    cm.applyDamageToPlayer(LOBBY, 'player2', 30);
+
+    // Player should take 30 - 5 = 25 damage (hp 100 → 75)
+    expect(cm.getCombatState(LOBBY)!.players.get('player2')!.hp).toBe(75);
+  });
+
+  it('injected interceptor that fully absorbs — player takes no damage when applyFn is not called', () => {
+    const bus = new ScopedEventBus();
+    const cm = new CombatManager({
+      eventBus: bus,
+      // Full absorption: do NOT call applyFn
+      damageInterceptor: (_lobbyId, _playerId, _damage, _applyFn) => {
+        // intentionally swallow all damage
+      },
+    });
+    setupFightingPlayer(cm, 'player3', 100);
+
+    cm.applyDamageToPlayer(LOBBY, 'player3', 30);
+
+    // HP should be unchanged
+    expect(cm.getCombatState(LOBBY)!.players.get('player3')!.hp).toBe(100);
+  });
+});
