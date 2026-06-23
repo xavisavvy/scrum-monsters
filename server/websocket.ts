@@ -1097,17 +1097,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             healAmount: (modifier || 0) + 1,
             bossHealth,
           });
-        } else {
-          // Phase 45-05B L4: legacy `boss_attacked` emit removed; the
-          // combat:boss_damaged event below is the canonical signal
-          // (handler now mirrors to both currentBoss and currentLobby.boss).
-          eventBus.emit('combat:boss_damaged', {
-            lobbyId: lobby.id,
-            playerId,
-            damage,
-            bossHealth,
-          });
         }
+        // MAINT-05: combat:boss_damaged is no longer emitted here.
+        // CombatManager.applyBasicDamageToBoss (called via gameState.attackBoss) is the
+        // single authoritative emitter for basic-attack boss-damaged events.
+        // Removing this manual emit eliminates the double-emit that caused double XP,
+        // double damage-boost, and duplicate client HP updates on basic attacks.
 
         // Phase 45-03: legacy `modifier_updated` emit removed (no client listener).
         // combat:modifier_updated fires from CombatManager.applyDamage on the
