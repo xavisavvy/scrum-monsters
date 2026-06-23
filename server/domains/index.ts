@@ -127,6 +127,31 @@ const combatManager = new CombatManager({
       return progressionManager.getPlayerLevel(lobbyId, playerId);
     },
   },
+  // Shield absorption interceptor (replaces the former module-scope monkey-patch).
+  // Routes all damage through reduceShield so buff-granted shields are honoured.
+  damageInterceptor: (lobbyId: string, playerId: string, damage: number, applyFn) => {
+    const remainingDamage = reduceShield(lobbyId, playerId, damage);
+    if (remainingDamage <= 0) {
+      // Shield fully absorbed the damage
+      eventBus.emit('combat:shield_absorbed', {
+        lobbyId,
+        playerId,
+        absorbed: damage,
+        shieldRemaining: getShieldAbsorption(lobbyId, playerId),
+      });
+      return;
+    }
+    if (remainingDamage < damage) {
+      // Partial absorption
+      eventBus.emit('combat:shield_absorbed', {
+        lobbyId,
+        playerId,
+        absorbed: damage - remainingDamage,
+        shieldRemaining: getShieldAbsorption(lobbyId, playerId),
+      });
+    }
+    applyFn(lobbyId, playerId, remainingDamage);
+  },
 });
 const progressionManager = new ProgressionManager({
   eventBus,
@@ -458,32 +483,6 @@ eventBus.on('combat:boss_damaged', (payload) => {
     }
   }
 });
-
-// Wrap CombatManager.applyDamageToPlayer to apply shield absorption
-const originalApplyDamage = combatManager.applyDamageToPlayer.bind(combatManager);
-combatManager.applyDamageToPlayer = (lobbyId: string, playerId: string, damage: number) => {
-  const remainingDamage = reduceShield(lobbyId, playerId, damage);
-  if (remainingDamage <= 0) {
-    // Shield fully absorbed the damage - emit event but with 0 damage
-    eventBus.emit('combat:shield_absorbed', {
-      lobbyId,
-      playerId,
-      absorbed: damage,
-      shieldRemaining: getShieldAbsorption(lobbyId, playerId),
-    });
-    return;
-  }
-  if (remainingDamage < damage) {
-    // Partial absorption
-    eventBus.emit('combat:shield_absorbed', {
-      lobbyId,
-      playerId,
-      absorbed: damage - remainingDamage,
-      shieldRemaining: getShieldAbsorption(lobbyId, playerId),
-    });
-  }
-  originalApplyDamage(lobbyId, playerId, remainingDamage);
-};
 
 // Apply damage effects from abilities to boss HP
 eventBus.on('ability:effect_applied', (payload) => {
