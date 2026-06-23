@@ -237,47 +237,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
-  // Phase 45-04: legacy `revive_complete` emit replaced by combat:player_revived
-  // via eventBus. processRevivalSessions returns the in-progress sessions too
-  // so the bridge can emit throttled combat:revival_progress per channel.
-  const lastRevivalProgressBucket = new Map<string, number>();
-  const REVIVAL_PROGRESS_EMIT_INTERVAL_MS = 500;
-  const REVIVAL_CHANNEL_DURATION_MS = 3000; // matches gameState.processRevivalSessions completion threshold
-  const revivalWatchdogInterval = setInterval(() => {
-    const result = gameState.processRevivalSessions();
-    for (const revival of result) {
-      // Completion: thread newHp from gameState's playerCombatStates so the
-      // new combat:player_revived handler writes the right hp client-side
-      // (also satisfies Phase 45-01 C5 fix for the gameState path).
-      const lobby = gameState.getLobby(revival.lobbyId);
-      const newHp = lobby?.playerCombatStates?.[revival.targetId]?.hp ?? 0;
-      eventBus.emit('combat:player_revived', {
-        lobbyId: revival.lobbyId,
-        playerId: revival.targetId,
-        reviverId: revival.reviverId,
-        newHp,
-      });
-      lastRevivalProgressBucket.delete(`${revival.lobbyId}:${revival.targetId}`);
-    }
-    // Emit throttled progress for in-flight gameState revival sessions.
-    const now = Date.now();
-    for (const session of gameState.getActiveRevivalSessions()) {
-      const elapsed = now - session.startedAt;
-      if (elapsed >= REVIVAL_CHANNEL_DURATION_MS) continue;
-      const key = `${session.lobbyId}:${session.targetId}`;
-      const bucket = Math.floor(elapsed / REVIVAL_PROGRESS_EMIT_INTERVAL_MS);
-      if ((lastRevivalProgressBucket.get(key) ?? -1) >= bucket) continue;
-      lastRevivalProgressBucket.set(key, bucket);
-      const percent = Math.min(100, Math.floor((elapsed / REVIVAL_CHANNEL_DURATION_MS) * 100));
-      eventBus.emit('combat:revival_progress', {
-        lobbyId: session.lobbyId,
-        reviverId: session.reviverId,
-        targetId: session.targetId,
-        percent,
-        remainingMs: Math.max(0, REVIVAL_CHANNEL_DURATION_MS - elapsed),
-      });
-    }
-  }, 100);
+  // Phase 50-02: The legacy revival watchdog interval was removed here.
+  // CombatManager's self-managing per-session setInterval handles revival
+  // ticks, progress, and completion (no external polling needed).
 
   // Phase 41-02: Disconnected-player sweeper for the SessionManager domain.
   // When a player's grace period expires, processDisconnectedPlayers performs
@@ -1800,7 +1762,6 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     cleanup: () => {
       clearInterval(positionBatchInterval);
       clearInterval(websocketMetricsInterval);
-      clearInterval(revivalWatchdogInterval);
       clearInterval(sessionDisconnectSweeperInterval);
       clearInterval(idleLobbyReaperInterval);
       eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);

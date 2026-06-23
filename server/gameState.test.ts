@@ -179,14 +179,35 @@ describe('GameStateManager — MAINT-01 testability seam', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
-  it('default constructor (no opts) starts exactly two watchdog intervals', () => {
+  it('default constructor (no opts) starts exactly ONE watchdog interval (disconnectWatchdog only)', () => {
+    // Phase 50-02: revivalWatchdog removed — only disconnectWatchdog starts now.
     const spy = vi.spyOn(globalThis, 'setInterval');
     const gs = new GameStateManager();
     try {
-      expect(spy).toHaveBeenCalledTimes(2);
+      expect(spy).toHaveBeenCalledTimes(1);
       expect(gs).toBeInstanceOf(GameStateManager);
     } finally {
-      // Clean up the two real intervals the production singleton started
+      // Clean up the one real interval the production singleton started
+      vi.clearAllTimers();
+      spy.mockRestore();
+    }
+  });
+
+  it('no revival timer is created under startWatchdogs:true (Phase 50-02)', () => {
+    // Confirms revivalWatchdog is absent — CombatManager owns revival lifecycle.
+    const spy = vi.spyOn(globalThis, 'setInterval');
+    const gs = new GameStateManager(undefined, { startWatchdogs: true });
+    try {
+      // Only one interval created: the 30s disconnectWatchdog
+      expect(spy).toHaveBeenCalledTimes(1);
+      const firstCall = spy.mock.calls[0] as unknown as [unknown, number];
+      expect(firstCall[1]).toBe(30000); // disconnectWatchdog
+      // revivalWatchdog (100ms) must NOT be created
+      const revival100ms = spy.mock.calls.some(
+        (call) => (call as unknown as [unknown, number])[1] === 100
+      );
+      expect(revival100ms).toBe(false);
+    } finally {
       vi.clearAllTimers();
       spy.mockRestore();
     }

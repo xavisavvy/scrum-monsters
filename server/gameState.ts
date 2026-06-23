@@ -40,7 +40,6 @@ export class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
   private playerToLobby: Map<string, string> = new Map();
   private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
-  private revivalWatchdog!: NodeJS.Timeout;
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
@@ -60,12 +59,9 @@ export class GameStateManager {
     this.io = io;
     const startWatchdogs = opts?.startWatchdogs ?? true;
     if (startWatchdogs) {
-      // Start revival watchdog timer
-      this.revivalWatchdog = setInterval(() => {
-        this.processRevivalSessions();
-      }, 100); // Check every 100ms
-
-      // Start disconnect watchdog timer
+      // Phase 50-02: The revival watchdog was removed from here.
+      // CombatManager owns the revival lifecycle via self-managed per-session intervals.
+      // Start disconnect watchdog timer (RETAINED — drives processDisconnectedPlayers/removePlayer)
       this.disconnectWatchdog = setInterval(() => {
         this.processDisconnectedPlayers();
       }, 30000); // Check every 30 seconds
@@ -105,9 +101,10 @@ export class GameStateManager {
     return generateSecureLobbyCode();
   }
 
-  // Phase 45-05B: promoted from private — the websocket.ts watchdog drives
-  // the eventBus emit off the completion list, so it needs to call this. The
-  // internal 100ms revivalWatchdog (constructor) still discards the result.
+  // Phase 45-05B: promoted from private — the websocket.ts watchdog drove
+  // the eventBus emit off the completion list. Phase 50-02: both external
+  // watchdogs removed; this method is retained until the GameState revival
+  // methods are deleted in Task 5.
   public processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
     const now = Date.now();
     const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
