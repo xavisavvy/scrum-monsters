@@ -168,7 +168,7 @@ describe('CombatManager', () => {
     });
   });
 
-  describe('playerAttackBoss', () => {
+  describe('applyBasicDamageToBoss', () => {
     beforeEach(() => {
       const players = [
         { id: 'warrior1', team: 'developers' as TeamType },
@@ -183,7 +183,7 @@ describe('CombatManager', () => {
       const stateBefore = combatManager.getCombatState('lobby1');
       const bossHpBefore = stateBefore!.boss!.hp;
 
-      const damage = combatManager.playerAttackBoss('lobby1', 'warrior1');
+      const { damage } = combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
       expect(damage).toBe(15); // Warrior base damage
 
@@ -195,7 +195,7 @@ describe('CombatManager', () => {
       const stateBefore = combatManager.getCombatState('lobby1');
       const bossHpBefore = stateBefore!.boss!.hp;
 
-      const damage = combatManager.playerAttackBoss('lobby1', 'ranger1');
+      const { damage } = combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
 
       expect(damage).toBe(20); // Ranger base damage
 
@@ -207,7 +207,7 @@ describe('CombatManager', () => {
       const stateBefore = combatManager.getCombatState('lobby1');
       const bossHpBefore = stateBefore!.boss!.hp;
 
-      const damage = combatManager.playerAttackBoss('lobby1', 'wizard1');
+      const { damage } = combatManager.applyBasicDamageToBoss('lobby1', 'wizard1');
 
       expect(damage).toBe(25); // Wizard base damage
 
@@ -219,7 +219,7 @@ describe('CombatManager', () => {
       const stateBefore = combatManager.getCombatState('lobby1');
       const bossHpBefore = stateBefore!.boss!.hp;
 
-      const damage = combatManager.playerAttackBoss('lobby1', 'cleric1');
+      const { damage } = combatManager.applyBasicDamageToBoss('lobby1', 'cleric1');
 
       expect(damage).toBe(12); // Cleric base damage
 
@@ -232,15 +232,15 @@ describe('CombatManager', () => {
       // Manually set battleModifier to 1.5 for testing
       state!.battleModifier = 1.5;
 
-      const damage = combatManager.playerAttackBoss('lobby1', 'ranger1');
+      const { damage } = combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
 
       expect(damage).toBe(30); // 20 base * 1.5 modifier
     });
 
     it('should update threat table with cumulative damage', () => {
-      combatManager.playerAttackBoss('lobby1', 'ranger1');
-      combatManager.playerAttackBoss('lobby1', 'ranger1');
-      combatManager.playerAttackBoss('lobby1', 'wizard1');
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
+      combatManager.applyBasicDamageToBoss('lobby1', 'wizard1');
 
       const state = combatManager.getCombatState('lobby1');
       const threatTable = state!.boss!.threatTable;
@@ -253,7 +253,7 @@ describe('CombatManager', () => {
       const bossDamagedListener = vi.fn();
       eventBus.on('combat:boss_damaged', bossDamagedListener);
 
-      combatManager.playerAttackBoss('lobby1', 'ranger1');
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
 
       const state = combatManager.getCombatState('lobby1');
 
@@ -267,7 +267,7 @@ describe('CombatManager', () => {
 
     it('should throw CombatNotActiveError when no combat active', () => {
       expect(() => {
-        combatManager.playerAttackBoss('nonexistent', 'player1');
+        combatManager.applyBasicDamageToBoss('nonexistent', 'player1');
       }).toThrow(CombatNotActiveError);
     });
 
@@ -277,7 +277,7 @@ describe('CombatManager', () => {
       playerState!.combatState = 'downed';
 
       expect(() => {
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
       }).toThrow(PlayerNotInCombatError);
     });
 
@@ -287,7 +287,7 @@ describe('CombatManager', () => {
       playerState!.combatState = 'ghost';
 
       expect(() => {
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
       }).toThrow(PlayerNotInCombatError);
     });
 
@@ -303,7 +303,7 @@ describe('CombatManager', () => {
       state!.boss!.maxHp = 4000;
 
       // Attack to stay above 66%
-      combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage -> 2675 (66.875% still phase 1)
+      combatManager.applyBasicDamageToBoss('lobby1', 'wizard1'); // 25 damage -> 2675 (66.875% still phase 1)
 
       expect(enrageListener).not.toHaveBeenCalled();
       expect(phaseTransitionListener).not.toHaveBeenCalled();
@@ -312,7 +312,7 @@ describe('CombatManager', () => {
 
       // Attack again to cross 66% threshold
       state!.boss!.hp = 2650; // Just above 66%
-      combatManager.playerAttackBoss('lobby1', 'wizard1'); // -> 2625 (65.625% below 66%)
+      combatManager.applyBasicDamageToBoss('lobby1', 'wizard1'); // -> 2625 (65.625% below 66%)
 
       // Should emit phase transition to phase 2
       expect(phaseTransitionListener).toHaveBeenCalledWith({
@@ -338,11 +338,11 @@ describe('CombatManager', () => {
       state!.boss!.maxHp = 4000;
 
       // First attack below 50%
-      combatManager.playerAttackBoss('lobby1', 'ranger1');
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
       expect(enrageListener).toHaveBeenCalledTimes(1);
 
       // Second attack - should not trigger again
-      combatManager.playerAttackBoss('lobby1', 'ranger1');
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
       expect(enrageListener).toHaveBeenCalledTimes(1);
     });
 
@@ -353,7 +353,7 @@ describe('CombatManager', () => {
       const state = combatManager.getCombatState('lobby1');
       state!.boss!.hp = 15; // Just enough for warrior to kill
 
-      combatManager.playerAttackBoss('lobby1', 'warrior1'); // 15 damage -> 0 HP
+      combatManager.applyBasicDamageToBoss('lobby1', 'warrior1'); // 15 damage -> 0 HP
 
       expect(defeatedListener).toHaveBeenCalledWith({
         lobbyId: 'lobby1',
@@ -365,9 +365,44 @@ describe('CombatManager', () => {
       const state = combatManager.getCombatState('lobby1');
       state!.boss!.hp = 5;
 
-      combatManager.playerAttackBoss('lobby1', 'ranger1'); // 20 damage on 5 HP
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1'); // 20 damage on 5 HP
 
       expect(state!.boss!.hp).toBe(0); // Should stop at 0, not go negative
+    });
+
+    it('MAINT-05a regression: combat:boss_damaged fires EXACTLY once per basic attack (no double-emit)', () => {
+      // This test fails on the old code where websocket.ts also emitted combat:boss_damaged manually.
+      // After MAINT-05, applyBasicDamageToBoss is the single canonical emitter.
+      const bossDamagedSpy = vi.fn();
+      eventBus.on('combat:boss_damaged', bossDamagedSpy);
+
+      combatManager.applyBasicDamageToBoss('lobby1', 'ranger1');
+
+      expect(bossDamagedSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('MAINT-05b regression: basic attack triggers checkPhaseTransition when HP crosses 67% threshold', () => {
+      // This test fails on the old gameState.attackBoss path which never called checkPhaseTransition.
+      // After MAINT-05, applyBasicDamageToBoss delegates checkPhaseTransition correctly.
+      const phaseTransitionSpy = vi.fn();
+      eventBus.on('combat:boss_phase_transition', phaseTransitionSpy);
+
+      const state = combatManager.getCombatState('lobby1');
+      // Set boss HP just above 66% threshold so next attack crosses it
+      // 4 players → maxHp = 4000; 66% = 2640; set hp to 2650 (just above)
+      state!.boss!.hp = 2650;
+      state!.boss!.maxHp = 4000;
+
+      // wizard does 25 damage: 2650 - 25 = 2625 (65.625% — crosses 66% threshold → phase 2)
+      const { damage, newHp } = combatManager.applyBasicDamageToBoss('lobby1', 'wizard1');
+
+      expect(damage).toBe(25);
+      expect(newHp).toBe(2625);
+      expect(phaseTransitionSpy).toHaveBeenCalledTimes(1);
+      expect(phaseTransitionSpy).toHaveBeenCalledWith(expect.objectContaining({
+        lobbyId: 'lobby1',
+        newPhase: 2,
+      }));
     });
   });
 
@@ -453,7 +488,7 @@ describe('CombatManager', () => {
         vi.advanceTimersByTime(3000);
 
         // Build threat by having players attack
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         // Normal boss (not enraged): 5000ms * (1 - 0.3) = 3500ms minimum
         vi.advanceTimersByTime(3500);
@@ -467,7 +502,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         const state = combatManager.getCombatState('lobby1');
         // Manually enrage boss
@@ -538,7 +573,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         combatManager.startBossAttackLoop('lobby1');
 
@@ -581,12 +616,12 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Wizard attacks multiple times (highest threat)
-        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage
-        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage (50 total)
-        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage (75 total)
+        combatManager.applyBasicDamageToBoss('lobby1', 'wizard1'); // 25 damage
+        combatManager.applyBasicDamageToBoss('lobby1', 'wizard1'); // 25 damage (50 total)
+        combatManager.applyBasicDamageToBoss('lobby1', 'wizard1'); // 25 damage (75 total)
 
         // Warrior attacks once (lower threat)
-        combatManager.playerAttackBoss('lobby1', 'warrior1'); // 15 damage
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1'); // 15 damage
 
         // Mock random to ensure highest threat targeting (70% chance)
         vi.spyOn(Math, 'random').mockReturnValue(0.5); // Within 70% range
@@ -605,9 +640,9 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat table
-        combatManager.playerAttackBoss('lobby1', 'wizard1'); // 25 damage (highest)
-        combatManager.playerAttackBoss('lobby1', 'ranger1'); // 20 damage (second)
-        combatManager.playerAttackBoss('lobby1', 'warrior1'); // 15 damage (third)
+        combatManager.applyBasicDamageToBoss('lobby1', 'wizard1'); // 25 damage (highest)
+        combatManager.applyBasicDamageToBoss('lobby1', 'ranger1'); // 20 damage (second)
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1'); // 15 damage (third)
 
         // BossAI patterns use different targeting modes
         combatManager.startBossAttackLoop('lobby1');
@@ -632,7 +667,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat table
-        combatManager.playerAttackBoss('lobby1', 'wizard1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'wizard1');
 
         // Mock random to 95% (10% chance for random)
         const randomMock = vi.spyOn(Math, 'random');
@@ -658,7 +693,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         // BossAI will select patterns based on boss behavior
         // Run boss attack loop and let BossAI select patterns
@@ -683,7 +718,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         // Down the wizard
         const state = combatManager.getCombatState('lobby1');
@@ -709,7 +744,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         // Make ranger a ghost
         const state = combatManager.getCombatState('lobby1');
@@ -739,7 +774,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         // BossAI will select patterns - run multiple attack cycles
         combatManager.startBossAttackLoop('lobby1');
@@ -841,7 +876,7 @@ describe('CombatManager', () => {
         eventBus.on('combat:player_damaged', playerDamagedListener);
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
 
         combatManager.startBossAttackLoop('lobby1');
 
@@ -1765,7 +1800,7 @@ describe('CombatManager', () => {
         const state = combatManager.getCombatState('lobby1');
 
         // Build threat
-        combatManager.playerAttackBoss('lobby1', 'warrior1');
+        combatManager.applyBasicDamageToBoss('lobby1', 'warrior1');
         expect(state!.boss!.threatTable.has('warrior1')).toBe(true);
 
         // Player leaves
@@ -1976,7 +2011,7 @@ describe('CombatManager', () => {
         ];
         combatManager.initializeCombat('parityLobby', players, 0);
 
-        const damage = combatManager.playerAttackBoss('parityLobby', 'testPlayer');
+        const { damage } = combatManager.applyBasicDamageToBoss('parityLobby', 'testPlayer');
         // masteryMultiplier is 1.0 by default → damage should equal baseDamage exactly
         expect(damage).toBe(expectedDamage);
       }

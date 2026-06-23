@@ -8,7 +8,7 @@ import type { Server as SocketIOServer } from 'socket.io';
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
 // when the voting timeout safety net auto-advances battle->reveal. Avoids the
 // retired lobby_updated full-state push.
-import { eventBus, getClientEventEmitter, BOSS_BEHAVIORS } from './domains/index.js';
+import { eventBus, getClientEventEmitter, BOSS_BEHAVIORS, combatManager } from './domains/index.js';
 
 interface RevivalSession {
   reviverId: string;
@@ -1818,19 +1818,27 @@ export class GameStateManager {
 
     if (player.team === 'spectators') {
       // Spectators heal the boss for 1 + modifier
+      // TODO MAINT-05+: spectator-heal should also delegate to CombatManager
       const healAmount = 1 + modifier;
       lobby.boss.currentHealth = Math.min(lobby.boss.maxHealth, lobby.boss.currentHealth + healAmount);
       healedBoss = true;
       gameLogger.debug({ playerName: player.name, healAmount, modifier }, 'Spectator healed boss');
     } else if (player.team === 'developers' || player.team === 'qa') {
-      // Developers and QA deal 15 - modifier damage (minimum 1)
-      actualDamage = Math.max(1, 15 - modifier);
-      lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - actualDamage);
+      // Delegate to CombatManager — single boss-HP truth (MAINT-05).
+      // CombatManager.applyBasicDamageToBoss owns the HP drain, the combat:boss_damaged emit,
+      // and the checkPhaseTransition call. lobby.boss.currentHealth is a projection only.
+      const { damage: actualDmg, newHp } = combatManager.applyBasicDamageToBoss(lobby.id, playerId);
+      actualDamage = actualDmg;
+      lobby.boss.currentHealth = newHp;  // projection only — CombatManager owns HP
+      if (newHp <= 0) {
+        lobby.boss.defeated = true;
+      }
       gameLogger.debug({ team: player.team, playerName: player.name, damage: actualDamage, modifier }, 'Player dealt damage to boss');
     }
 
-    // Check if boss is defeated when health reaches 0
-    if (lobby.boss.currentHealth <= 0) {
+    // Note: boss defeat for dev/qa path is now handled above (newHp <= 0 guard).
+    // Spectator path still uses currentHealth guard below for its (un-delegated) heal+defeat edge case.
+    if (player.team === 'spectators' && lobby.boss.currentHealth <= 0) {
       lobby.boss.defeated = true;
     }
 
