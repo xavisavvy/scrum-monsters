@@ -299,7 +299,7 @@ Plans (wave 1 = 47-01/04 parallel-safe; wave 2 = 47-02/03 after 47-01 — 47-03 
 **Plans**: 3 plans
 
 Plans (wave 1 = 48-01/48-02 parallel-safe; wave 2 = 48-03 after 48-01 + 48-02 because it edits server/domains/index.ts shared with 48-02 and its handler tests rely on 48-01 exported GameStateManager):
-- [ ] 48-01-PLAN.md: MAINT-01 export GameStateManager + startWatchdogs opt + public handleVotingTimeout + seam tests
+- [x] 48-01-PLAN.md: MAINT-01 export GameStateManager + startWatchdogs opt + public handleVotingTimeout + seam tests
 - [ ] 48-02-PLAN.md: MAINT-02 first-class damageInterceptor dep, route all 7 call sites, delete monkey-patch, wire shield at construction, interceptor test
 - [ ] 48-03-PLAN.md: MAINT-03 wireDomains factory (9 named listeners + dispose), server-side makeMockSocket, extract + test create_lobby / disconnect-host-transfer / reconnect_with_token
 
@@ -368,7 +368,7 @@ Plans (wave 1 = 48-01/48-02 parallel-safe; wave 2 = 48-03 after 48-01 + 48-02 be
 | 45. Socket Schema Drift Reconciliation | v5.0 | 5/5 | Complete | 2026-05-18 |
 | 46. Music Controls & History | v5.0 | 3/3 | Complete | 2026-06-17 |
 | 47. Ability Effects & Data-Driven Registries | v6.0 | 4/4 | Complete   | 2026-06-22 |
-| 48. Testability Seams | v6.0 | 0/TBD | Planned | - |
+| 48. Testability Seams | v6.0 | 1/3 | In Progress|  |
 | 49. State Source-of-Truth Consolidation | v6.0 | 0/TBD | Planned | - |
 | 50. Finish GameState → Domain-Manager Migration | v6.0 | 0/TBD | Planned | - |
 | 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/TBD | Planned | - |
