@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, memo } from 'react';
 import { AvatarClass, AVATAR_CLASSES } from '@/lib/gameTypes';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useShallow } from 'zustand/react/shallow';
 import { SpriteRenderer } from './SpriteRenderer';
 import { SpriteAnimation, SpriteDirection } from '@/hooks/useSpriteAnimation';
 
@@ -56,15 +57,15 @@ export const PlayerCharacter = memo(function PlayerCharacter({
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastProcessedAttackId = useRef<string | null>(null);
   
-  const { currentLobby, attackAnimations } = useGameState();
+  // Scalar selectors — re-render ONLY when this player's HP/maxHp changes (MAINT-06)
+  const currentHp = useGameState(s => s.currentLobby?.playerCombatStates?.[playerId ?? '']?.hp ?? 100);
+  const maxHp = useGameState(s => s.currentLobby?.playerCombatStates?.[playerId ?? '']?.maxHp ?? 100);
+  // useShallow for array identity — prevents re-render when unrelated lobby fields change
+  const { attackAnimations } = useGameState(useShallow(s => ({ attackAnimations: s.attackAnimations })));
 
   const character = AVATAR_CLASSES[avatarClass];
   const characterSize = 60; // Size of character sprite (24px * 2.5 scale)
-  
-  // Get current player's combat state
-  const combatState = currentLobby && playerId ? currentLobby.playerCombatStates?.[playerId] : null;
-  const currentHp = combatState?.hp || 100;
-  const maxHp = combatState?.maxHp || 100;
+
   const healthPercentage = (currentHp / maxHp) * 100;
 
   // Determine sprite animation based on character state
