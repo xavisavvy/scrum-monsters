@@ -286,23 +286,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // We emit `host_transferred` here so other clients update their UI.
   const sessionDisconnectSweeperInterval = setInterval(() => {
     try {
-      const hostTransfers = sessionManager.processDisconnectedPlayers();
-      for (const transfer of hostTransfers) {
-        io.to(transfer.lobbyId).emit('host_transferred', {
-          oldHostId: transfer.oldHostId,
-          newHostId: transfer.newHostId,
-          newHostName: transfer.newHostName,
-          reason: 'Host disconnected (grace period expired)',
-        });
-        // Phase 42-02b row #2: lobby_updated removed; host_transferred
-        // (emitted just above) is the canonical signal for this transition.
-        socketLogger.info({
-          oldHostId: transfer.oldHostId,
-          newHostId: transfer.newHostId,
-          newHostName: transfer.newHostName,
-          lobbyId: transfer.lobbyId,
-        }, 'Deferred host transfer broadcast (Phase 41-02)');
-      }
+      // Phase 50-02: host_transferred fires via eventBus → ClientEventEmitter bridge.
+      // session:host_transferred is emitted by SessionManager.processDisconnectedPlayers;
+      // ClientEventEmitter delivers it as the wire event 'host_transferred' to the lobby.
+      sessionManager.processDisconnectedPlayers();
     } catch (err) {
       socketLogger.error({ err }, 'sessionDisconnectSweeper failed');
     }
