@@ -1,5 +1,7 @@
 import { describe, it, expect, afterEach, beforeEach, vi } from 'vitest';
 import { gameState, GameStateManager } from './gameState';
+import { SessionManager } from './domains/SessionManager';
+import { ScopedEventBus } from './events';
 import type { Lobby } from '@shared/gameEvents';
 
 /**
@@ -193,8 +195,13 @@ describe('GameStateManager — MAINT-01 testability seam', () => {
   it('handleVotingTimeout is callable as a public method without as any', () => {
     const gs = new GameStateManager(undefined, { startWatchdogs: false });
 
-    // Use only the public createLobby API to build a fixture lobby
-    const lobby = gs.createLobby('Host', 'Test Lobby');
+    // Phase 50-01: fixture migrated from gs.createLobby to sessionManager.createLobby
+    // + gs.syncPlayerToLobby (production pattern). gs.createLobby deleted in Task 4.
+    const eventBus = new ScopedEventBus();
+    const sessionManager = new SessionManager({ eventBus });
+    const lobby = sessionManager.createLobby('Host', 'Test Lobby');
+    // Sync the lobby into gs so getLobby/handleVotingTimeout can find it
+    gs.syncPlayerToLobby(lobby.hostId, lobby);
 
     // Advance to battle phase and add a player with a submitted vote via the
     // mutable lobby reference returned by getLobby (no `as any` on gs needed).
