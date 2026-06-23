@@ -269,7 +269,7 @@ Plans:
  (completed 2026-06-23)
 - [x] **Phase 49: State Source-of-Truth Consolidation** — Derive `teams[]`, make CombatManager the single boss-HP truth, field-scoped Zustand selectors (Theme 1; ranks 3, 4, 8)
  (completed 2026-06-23)
-- [ ] **Phase 50: Finish the GameState → Domain-Manager Migration** — Ordered, reversible decommission of dead/duplicate GameState code; revival migration + `session:host_transferred` (Theme 2; ranks 9, 10)
+- [x] **Phase 50: Finish the GameState → Domain-Manager Migration** — Ordered, reversible decommission of dead/duplicate GameState code; revival migration + `session:host_transferred` (Theme 2; ranks 9, 10) (completed 2026-06-23)
 - [ ] **Phase 51: Event-Contract Hardening & Handler Boilerplate** — Typed emit, `satisfies` parity guards, `Sequenced<T>`, `registerSyncedLobbyHandler` helpers (Themes 4 & 5; ranks 12, 13)
 - [ ] **Phase 52: Client God-Component Decomposition** — Movement refs, magic-effect reducer, verified Lobby.tsx seams, PlayerController dedup + coordinate helpers (Theme 3; ranks 6, 7, 11, 15)
 
@@ -335,7 +335,7 @@ Plans (wave 1 = 49-01/02/03 all parallel-safe; zero files_modified overlap):
 
 Plans:
 - [x] 50-01-PLAN.md — MAINT-07: syncPlayerToLobby alias fix (first), settings -> SessionManager, delete 4 safe dead methods (removePlayer DEFERRED, battle methods NOT migrated)
-- [ ] 50-02-PLAN.md — MAINT-08: revival -> CombatManager, remove both 100ms watchdogs, session:host_transferred event + bridge
+- [x] 50-02-PLAN.md — MAINT-08: revival -> CombatManager, remove both 100ms watchdogs, session:host_transferred event + bridge
 
 ### Phase 51: Event-Contract Hardening & Handler Boilerplate
 **Goal**: Adding or changing a fine-grained socket event produces a `tsc` error on mismatch instead of a silent production drift (the C1/C2/C3/C5 bug class); the ~50 copy-pasted client handler envelopes collapse into tested helpers.
@@ -382,7 +382,7 @@ Plans:
 | 47. Ability Effects & Data-Driven Registries | v6.0 | 4/4 | Complete   | 2026-06-22 |
 | 48. Testability Seams | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 49. State Source-of-Truth Consolidation | v6.0 | 3/3 | Complete   | 2026-06-23 |
-| 50. Finish GameState → Domain-Manager Migration | v6.0 | 1/2 | In Progress|  |
+| 50. Finish GameState → Domain-Manager Migration | v6.0 | 2/2 | Complete   | 2026-06-23 |
 | 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 0/TBD | Planned | - |
 | 52. Client God-Component Decomposition | v6.0 | 0/TBD | Planned | - |
 
