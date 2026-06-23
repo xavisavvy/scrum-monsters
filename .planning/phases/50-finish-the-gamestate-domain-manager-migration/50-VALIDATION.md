@@ -1,10 +1,11 @@
 ---
 phase: 50
 slug: finish-the-gamestate-domain-manager-migration
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-23
+completed: 2026-06-23
 ---
 
 # Phase 50 — Validation Strategy
@@ -76,12 +77,12 @@ created: 2026-06-23
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] Every DELETION task is preceded by a green characterization/regression test
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] Every DELETION task is preceded by a green characterization/regression test
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** COMPLETE — 2026-06-23. 938/938 tests pass, tsc clean, lint clean. Alias fix landed first; all deletions gated on green tests + zero-caller greps; removePlayer correctly deferred (live caller); both revival watchdogs removed; host_transferred event-bridged; no reconnection/revival/host-transfer regression.
