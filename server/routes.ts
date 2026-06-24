@@ -8,6 +8,13 @@ import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js'
 import { storage, PgStorage } from './storage.js';
 import { getMetrics, getMetricsContentType, metricsMiddleware, webglContextLossTotal } from "./metrics.js";
 import { httpLogger } from "./logger.js";
+import { createRequire } from "node:module";
+
+// The server runs as ESM ("type": "module"), so the bare `require` global is
+// not defined. Recreate it for the two CommonJS-style lazy loads below
+// (package.json version read + the gameState singleton in /api/ws-health) —
+// without createRequire these throw "require is not defined" at runtime (#ws-health 500).
+const require = createRequire(import.meta.url);
 
 // Import session middleware from index (circular import avoided by lazy loading)
 let sessionMiddlewareRef: RequestHandler | null = null;
