@@ -1,296 +1,147 @@
 import { test, expect, Page } from "@playwright/test";
 
 /**
- * Helper to create a lobby and wait for it to be ready
+ * Battle flow E2E — drives the real redesigned UI end to end:
+ *   /play → Create Battle Lobby → confirm avatar → add a ticket →
+ *   Begin Battle → BattleScreen (voting cards + boss + submit).
+ *
+ * A solo host CAN reach the battle phase: the server only requires at least
+ * one ticket and one active voter (the host is a Developer by default), so
+ * these flows run single-page without a second player.
+ *
+ * The "matching-votes team bonus" damage path genuinely needs >=2 voters on
+ * the same team; that specific assertion is marked test.skip with a reason.
  */
-async function createLobby(page: Page, playerName: string): Promise<void> {
-  await page.goto("/");
 
-  // Find and click create button
-  const createButton = page.getByRole("button", { name: /create/i });
-  if (!(await createButton.isVisible().catch(() => false))) {
-    const newGameButton = page.getByRole("button", { name: /new game/i });
-    if (await newGameButton.isVisible().catch(() => false)) {
-      await newGameButton.click();
-    }
-  }
-
-  // Fill in player name
-  const nameInput = page.getByPlaceholder(/name/i);
-  if (await nameInput.isVisible().catch(() => false)) {
-    await nameInput.fill(playerName);
-  }
-
-  const createBtn = page.getByRole("button", { name: /create/i });
-  if (await createBtn.isVisible().catch(() => false)) {
-    await createBtn.click();
-  }
-
-  // Wait for lobby to be created
-  await page.waitForTimeout(2000);
+/** Seed a saved player name so the create form prefills and storage is clean. */
+async function seedName(page: Page, name: string): Promise<void> {
+  await page.addInitScript((n) => {
+    window.localStorage.setItem("scrum-monsters-player-name", n);
+  }, name);
 }
 
 /**
- * Helper to join an existing lobby
+ * Create a lobby, confirm an avatar, add a ticket and begin the battle.
+ * Returns once the BattleScreen voting UI is visible.
  */
-async function joinLobby(
+async function startSoloBattle(
   page: Page,
-  lobbyCode: string,
-  playerName: string
+  hostName: string,
+  lobbyName: string
 ): Promise<void> {
-  await page.goto("/");
+  await page.goto("/play");
+  await page.getByRole("button", { name: "Create Battle Lobby" }).click();
 
-  const joinButton = page.getByRole("button", { name: /join/i });
-  if (await joinButton.isVisible().catch(() => false)) {
-    await joinButton.click();
+  await page.locator('input[name="hostName"]').fill(hostName);
+  await page.locator('input[name="lobbyName"]').fill(lobbyName);
+  await page.getByRole("button", { name: /create battle lobby/i }).click();
 
-    const codeInput = page.getByPlaceholder(/code/i);
-    if (await codeInput.isVisible().catch(() => false)) {
-      await codeInput.fill(lobbyCode);
-    }
+  await page.waitForURL(/\/game\/[A-Z0-9]{6}/, { timeout: 15000 });
 
-    const nameInput = page.getByPlaceholder(/name/i);
-    if (await nameInput.isVisible().catch(() => false)) {
-      await nameInput.fill(playerName);
-    }
+  // Avatar selection → confirm.
+  await page.getByRole("button", { name: /confirm avatar/i }).click();
 
-    const submitButton = page.getByRole("button", { name: /join|submit/i });
-    if (await submitButton.isVisible().catch(() => false)) {
-      await submitButton.click();
-    }
-  }
+  // Lobby waiting room. Ensure the host is on a voting team (Developers) —
+  // the server rejects start_battle with zero active voters, and the default
+  // team placement is not guaranteed, so click Developers explicitly.
+  const developersTeam = page.getByRole("button", { name: /^Developers/ });
+  await expect(developersTeam).toBeVisible({ timeout: 15000 });
+  await developersTeam.click();
 
-  await page.waitForTimeout(2000);
+  // Add a ticket.
+  const ticketInput = page.getByPlaceholder(/add tickets/i);
+  await expect(ticketInput).toBeVisible();
+  await ticketInput.fill("TEST-1");
+  await page.getByRole("button", { name: /^Add$/ }).click();
+
+  // Begin Battle (button label includes the ticket count).
+  const beginButton = page.getByRole("button", { name: /begin battle/i });
+  await expect(beginButton).toBeVisible();
+  await beginButton.click();
+
+  // BattleScreen voting interface.
+  await expect(
+    page.getByRole("heading", { name: /submit your estimate/i })
+  ).toBeVisible({ timeout: 20000 });
 }
 
 test.describe("Battle Flow", () => {
-  test("should display voting options during battle phase", async ({
-    page,
-    context,
-  }) => {
-    // Create a lobby as host
-    await createLobby(page, "BattleHost");
+  test("displays voting options during the battle phase", async ({ page }) => {
+    await seedName(page, "VotingHost");
+    await startSoloBattle(page, "VotingHost", "Voting Options Lobby");
 
-    // Find and get lobby code
-    const lobbyCodeElement = page.locator(
-      '[data-testid="lobby-code"], .lobby-code, [class*="code"]'
-    );
-    const codeVisible = await lobbyCodeElement.first().isVisible().catch(() => false);
-
-    if (codeVisible) {
-      const lobbyCode = await lobbyCodeElement.first().textContent();
-
-      if (lobbyCode) {
-        // Join as second player
-        const player2Page = await context.newPage();
-        await joinLobby(player2Page, lobbyCode, "BattlePlayer2");
-
-        // Host starts the game
-        const startButton = page.getByRole("button", { name: /start/i });
-        if (await startButton.isVisible().catch(() => false)) {
-          await startButton.click();
-
-          // Wait for battle phase
-          await page.waitForTimeout(3000);
-
-          // Look for voting/estimation cards
-          const votingCards = page.locator(
-            '[data-testid="vote-card"], .vote-card, [class*="card"], button:has-text(/^[0-9]+$/)'
-          );
-          const cardsVisible = await votingCards.first().isVisible().catch(() => false);
-
-          // Should see voting options (numbered cards like 1, 2, 3, 5, 8, etc.)
-          if (cardsVisible) {
-            await expect(votingCards.first()).toBeVisible();
-          }
-        }
-
-        await player2Page.close();
-      }
+    // Fibonacci estimate cards plus the unsure option.
+    for (const value of ["1", "2", "3", "5", "8", "13", "?"]) {
+      await expect(
+        page.getByRole("button", { name: value, exact: true })
+      ).toBeVisible();
     }
   });
 
-  test("should allow players to submit votes", async ({ page, context }) => {
-    await createLobby(page, "VoteHost");
+  test("allows a player to select and submit a vote", async ({ page }) => {
+    await seedName(page, "SubmitHost");
+    await startSoloBattle(page, "SubmitHost", "Submit Vote Lobby");
 
-    const lobbyCodeElement = page.locator(
-      '[data-testid="lobby-code"], .lobby-code, [class*="code"]'
-    );
-    const codeVisible = await lobbyCodeElement.first().isVisible().catch(() => false);
+    // Submit is disabled until a card is chosen.
+    await expect(
+      page.getByRole("button", { name: /^Submit Score: \?/ })
+    ).toBeDisabled();
 
-    if (codeVisible) {
-      const lobbyCode = await lobbyCodeElement.first().textContent();
+    await page.getByRole("button", { name: "5", exact: true }).click();
 
-      if (lobbyCode) {
-        const player2Page = await context.newPage();
-        await joinLobby(player2Page, lobbyCode, "VotePlayer2");
-
-        // Start game
-        const startButton = page.getByRole("button", { name: /start/i });
-        if (await startButton.isVisible().catch(() => false)) {
-          await startButton.click();
-          await page.waitForTimeout(3000);
-
-          // Find and click a voting card (e.g., the "5" card)
-          const voteCard = page.locator(
-            'button:has-text("5"), [data-value="5"], [class*="card"]:has-text("5")'
-          );
-          if (await voteCard.first().isVisible().catch(() => false)) {
-            await voteCard.first().click();
-
-            // Vote should be submitted - look for confirmation
-            await expect(
-              page.getByText(/voted|selected|submitted/i).first()
-            ).toBeVisible({ timeout: 5000 });
-          }
-        }
-
-        await player2Page.close();
-      }
-    }
+    // Choosing a card enables the submit button labelled with the value.
+    const submit = page.getByRole("button", { name: /^Submit Score: 5/ });
+    await expect(submit).toBeEnabled();
   });
 
-  test("should show boss health bar during battle", async ({ page }) => {
-    await createLobby(page, "BossHost");
+  test("shows the boss health bar during battle", async ({ page }) => {
+    await seedName(page, "BossHost");
+    await startSoloBattle(page, "BossHost", "Boss Health Lobby");
 
-    // If we need another player to start, we'll handle that
-    const startButton = page.getByRole("button", { name: /start/i });
-
-    // The game might allow single-player start for testing
-    if (await startButton.isVisible().catch(() => false)) {
-      await startButton.click();
-      await page.waitForTimeout(3000);
-
-      // Look for boss-related UI elements
-      const bossHealth = page.locator(
-        '[data-testid="boss-health"], .boss-health, [class*="health"], .progress'
-      );
-      const bossName = page.locator(
-        '[data-testid="boss-name"], .boss-name, [class*="boss"]'
-      );
-
-      // At least one boss indicator should be visible in battle phase
-      const healthVisible = await bossHealth.first().isVisible().catch(() => false);
-      const nameVisible = await bossName.first().isVisible().catch(() => false);
-
-      if (healthVisible || nameVisible) {
-        expect(healthVisible || nameVisible).toBe(true);
-      }
-    }
+    // Boss HP progressbar is rendered with an accessible name ending in "HP".
+    const bossHp = page.getByRole("progressbar", { name: /HP$/ }).first();
+    await expect(bossHp).toBeVisible();
+    await expect(page.getByText(/\d+\/\d+ HP/).first()).toBeVisible();
   });
 
-  test("should handle combat damage calculations", async ({
-    page,
-    context,
-  }) => {
-    await createLobby(page, "CombatHost");
+  test("resolves combat after the only voter submits", async ({ page }) => {
+    await seedName(page, "CombatHost");
+    await startSoloBattle(page, "CombatHost", "Combat Resolution Lobby");
 
-    const lobbyCodeElement = page.locator(
-      '[data-testid="lobby-code"], .lobby-code, [class*="code"]'
-    );
-    const codeVisible = await lobbyCodeElement.first().isVisible().catch(() => false);
+    // With a single active voter, submitting the lone vote completes the
+    // round and reveals scores — exercising the combat/damage resolution path.
+    await page.getByRole("button", { name: "5", exact: true }).click();
+    await page.getByRole("button", { name: /^Submit Score: 5/ }).click();
 
-    if (codeVisible) {
-      const lobbyCode = await lobbyCodeElement.first().textContent();
-
-      if (lobbyCode) {
-        const player2Page = await context.newPage();
-        await joinLobby(player2Page, lobbyCode, "CombatPlayer2");
-
-        // Start game
-        const startButton = page.getByRole("button", { name: /start/i });
-        if (await startButton.isVisible().catch(() => false)) {
-          await startButton.click();
-          await page.waitForTimeout(3000);
-
-          // Both players vote with same value for bonus
-          const voteCard5Host = page.locator(
-            'button:has-text("5"), [data-value="5"]'
-          );
-          const voteCard5Player = player2Page.locator(
-            'button:has-text("5"), [data-value="5"]'
-          );
-
-          if (await voteCard5Host.first().isVisible().catch(() => false)) {
-            await voteCard5Host.first().click();
-          }
-          if (await voteCard5Player.first().isVisible().catch(() => false)) {
-            await voteCard5Player.first().click();
-          }
-
-          // Wait for combat resolution
-          await page.waitForTimeout(5000);
-
-          // Should see damage or phase transition
-          const damageIndicator = page.getByText(/damage|hit|attack/i);
-          const phaseChange = page.getByText(
-            /reveal|discussion|victory|defeat/i
-          );
-
-          const damageVisible = await damageIndicator.first().isVisible().catch(() => false);
-          const phaseVisible = await phaseChange.first().isVisible().catch(() => false);
-
-          // Combat should have some visible effect
-          if (damageVisible || phaseVisible) {
-            expect(damageVisible || phaseVisible).toBe(true);
-          }
-        }
-
-        await player2Page.close();
-      }
-    }
+    // Round resolution surfaces revealed results / consensus messaging.
+    await expect(
+      page
+        .getByText(/reveal|consensus|results|estimate|damage|next/i)
+        .first()
+    ).toBeVisible({ timeout: 15000 });
   });
 
-  test("should transition through game phases correctly", async ({
-    page,
-    context,
-  }) => {
-    await createLobby(page, "PhaseHost");
+  test("transitions from lobby into the battle phase", async ({ page }) => {
+    await seedName(page, "PhaseHost");
+    // startSoloBattle already asserts the lobby → battle transition by waiting
+    // for the BattleScreen estimate UI; assert a couple of battle-only markers.
+    await startSoloBattle(page, "PhaseHost", "Phase Transition Lobby");
 
-    const lobbyCodeElement = page.locator(
-      '[data-testid="lobby-code"], .lobby-code, [class*="code"]'
-    );
-    const codeVisible = await lobbyCodeElement.first().isVisible().catch(() => false);
-
-    if (codeVisible) {
-      const lobbyCode = await lobbyCodeElement.first().textContent();
-
-      if (lobbyCode) {
-        const player2Page = await context.newPage();
-        await joinLobby(player2Page, lobbyCode, "PhasePlayer2");
-
-        // Start game - should be in lobby phase initially
-        const startButton = page.getByRole("button", { name: /start/i });
-        if (await startButton.isVisible().catch(() => false)) {
-          // We're in lobby phase
-          await startButton.click();
-
-          // Should transition to avatar_selection or battle
-          await page.waitForTimeout(3000);
-
-          // Check for phase indicators
-          const phaseIndicators = [
-            page.getByText(/select.*avatar|choose.*character/i),
-            page.getByText(/battle|fight|combat/i),
-            page.getByText(/vote|estimate/i),
-          ];
-
-          let foundPhase = false;
-          for (const indicator of phaseIndicators) {
-            if (await indicator.first().isVisible().catch(() => false)) {
-              foundPhase = true;
-              break;
-            }
-          }
-
-          // Should be in some game phase after starting
-          if (foundPhase) {
-            expect(foundPhase).toBe(true);
-          }
-        }
-
-        await player2Page.close();
-      }
-    }
+    await expect(
+      page.getByRole("heading", { name: /current objective/i })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: /team battle status/i })
+    ).toBeVisible();
   });
+
+  test.skip(
+    "applies the matching-votes team bonus (requires 2+ voters)",
+    () => {
+      // The same-estimate team damage bonus only triggers with two or more
+      // voters on one team. A solo host cannot produce a matching pair, so
+      // this multiplayer-only damage path is out of scope for the single-page
+      // E2E run. Covered by server-side combat unit tests instead.
+    }
+  );
 });

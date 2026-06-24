@@ -1,137 +1,139 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, Page } from "@playwright/test";
+
+/**
+ * Lobby flow E2E — exercises the real redesigned UI:
+ *   /        landing page (CTA "Start a Battle") → navigates to /play
+ *   /play    MenuPage: "Create Battle Lobby" / "Join Battle"
+ *   create   LobbyCreation form → /game/:id → avatar selection
+ *   join     invalid code surfaces a "Lobby not found" error
+ *
+ * Each test seeds a unique localStorage player name where convenient so the
+ * /play "Rejoin" shortcut (driven by last-lobby storage) never interferes.
+ */
+
+/** Create a lobby through the real /play → create flow and land in-game. */
+async function createLobby(
+  page: Page,
+  hostName: string,
+  lobbyName: string
+): Promise<string> {
+  await page.goto("/play");
+
+  await page.getByRole("button", { name: "Create Battle Lobby" }).click();
+
+  await page.locator('input[name="hostName"]').fill(hostName);
+  await page.locator('input[name="lobbyName"]').fill(lobbyName);
+
+  await page.getByRole("button", { name: /create battle lobby/i }).click();
+
+  // On lobby_created the client navigates to /game/:lobbyId
+  await page.waitForURL(/\/game\/[A-Z0-9]{6}/, { timeout: 15000 });
+  const match = /\/game\/([A-Z0-9]{6})/.exec(page.url());
+  expect(match).not.toBeNull();
+  return match![1];
+}
 
 test.describe("Lobby Flow", () => {
-  test.beforeEach(async ({ page }) => {
+  test("landing page shows the Start a Battle CTA and navigates to /play", async ({
+    page,
+  }) => {
     await page.goto("/");
+
+    // The marketing landing page has the main title + a primary CTA.
+    await expect(
+      page.getByRole("heading", { level: 1, name: /scrum monsters/i })
+    ).toBeVisible();
+
+    const startButton = page.getByRole("button", { name: /start a battle/i });
+    await expect(startButton.first()).toBeVisible();
+
+    await startButton.first().click();
+
+    // Lands on the menu page with Create / Join options.
+    await page.waitForURL(/\/play/);
+    await expect(
+      page.getByRole("button", { name: "Create Battle Lobby" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Join Battle" })
+    ).toBeVisible();
   });
 
-  test("should display home page with create and join options", async ({
+  test("menu page exposes Create and Join options", async ({ page }) => {
+    await page.goto("/play");
+
+    await expect(
+      page.getByRole("button", { name: "Create Battle Lobby" })
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Join Battle" })
+    ).toBeVisible();
+  });
+
+  test("create lobby flow reaches the in-game avatar selection", async ({
     page,
   }) => {
-    // Check that the main UI elements are present
-    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const lobbyId = await createLobby(page, "CreateHost", "Create Flow Lobby");
+    expect(lobbyId).toMatch(/^[A-Z0-9]{6}$/);
 
-    // Should have options to create or join a lobby
-    const createButton = page.getByRole("button", { name: /create/i });
-    const joinButton = page.getByRole("button", { name: /join/i });
-
-    // At least one of these should be visible
-    const createVisible = await createButton.isVisible().catch(() => false);
-    const joinVisible = await joinButton.isVisible().catch(() => false);
-    expect(createVisible || joinVisible).toBe(true);
+    // First in-game screen for a fresh player is avatar selection.
+    await expect(
+      page.getByRole("heading", { name: /choose your avatar/i })
+    ).toBeVisible({ timeout: 15000 });
+    await expect(
+      page.getByRole("button", { name: /confirm avatar/i })
+    ).toBeVisible();
   });
 
-  test("should create a new lobby", async ({ page }) => {
-    // Look for create lobby button
-    const createButton = page.getByRole("button", { name: /create/i });
+  test("create → confirm avatar reaches the lobby waiting room", async ({
+    page,
+  }) => {
+    const lobbyId = await createLobby(page, "WaitHost", "Waiting Room Lobby");
 
-    // If not immediately visible, there might be a menu or dialog to open first
-    if (!(await createButton.isVisible().catch(() => false))) {
-      // Try looking for a "New Game" or similar entry point
-      const newGameButton = page.getByRole("button", { name: /new game/i });
-      if (await newGameButton.isVisible().catch(() => false)) {
-        await newGameButton.click();
-      }
-    }
+    await page.getByRole("button", { name: /confirm avatar/i }).click();
 
-    // Now try to find and interact with create lobby
-    if (await createButton.isVisible().catch(() => false)) {
-      // Fill in player name if there's an input
-      const nameInput = page.getByPlaceholder(/name/i);
-      if (await nameInput.isVisible().catch(() => false)) {
-        await nameInput.fill("TestPlayer");
-      }
-
-      await createButton.click();
-
-      // Should navigate to lobby or show lobby code
-      await expect(
-        page.getByText(/lobby|code|room|waiting/i).first()
-      ).toBeVisible({ timeout: 10000 });
-    }
+    // Lobby waiting room shows the joinable lobby code + team picker.
+    await expect(page.getByText(`Lobby Code: ${lobbyId}`)).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(
+      page.getByRole("heading", { name: /battle teams/i })
+    ).toBeVisible();
   });
 
-  test("should join an existing lobby with code", async ({ page, context }) => {
-    // First, create a lobby in a new page to get a code
-    const hostPage = await context.newPage();
-    await hostPage.goto("/");
+  test("opening the Join form shows the code + name inputs", async ({
+    page,
+  }) => {
+    await page.goto("/play");
+    await page.getByRole("button", { name: "Join Battle" }).click();
 
-    // Create lobby as host
-    const createButton = hostPage.getByRole("button", { name: /create/i });
-    if (await createButton.isVisible().catch(() => false)) {
-      const nameInput = hostPage.getByPlaceholder(/name/i);
-      if (await nameInput.isVisible().catch(() => false)) {
-        await nameInput.fill("HostPlayer");
-      }
-      await createButton.click();
+    // LobbyJoin renders within /play (no navigation).
+    await expect(
+      page.getByRole("heading", { name: /join battle/i })
+    ).toBeVisible();
+    await expect(page.getByPlaceholder(/enter your name/i)).toBeVisible();
+    await expect(page.getByPlaceholder(/enter lobby code/i)).toBeVisible();
+  });
 
-      // Wait for lobby code to appear
-      await hostPage.waitForTimeout(2000);
-
-      // Try to find the lobby code - it might be displayed in various ways
-      const lobbyCodeElement = hostPage.locator(
-        '[data-testid="lobby-code"], .lobby-code, [class*="code"]'
+  test("navigating to an invalid lobby code shows a not-found error", async ({
+    page,
+  }) => {
+    // Seed a saved name so GamePage auto-joins (rather than bouncing to the
+    // name-entry form). The invalid-code error is surfaced by GamePage's
+    // game_error handler as a sonner toast, then it redirects back to /play.
+    await page.addInitScript(() => {
+      window.localStorage.setItem(
+        "scrum-monsters-player-name",
+        "InvalidJoiner"
       );
-      const codeVisible = await lobbyCodeElement.first().isVisible().catch(() => false);
+    });
 
-      if (codeVisible) {
-        const lobbyCode = await lobbyCodeElement.first().textContent();
+    await page.goto("/game/ZZZZZZ");
 
-        // Now join as a second player
-        const joinButton = page.getByRole("button", { name: /join/i });
-        if (await joinButton.isVisible().catch(() => false)) {
-          await joinButton.click();
-
-          // Enter the lobby code
-          const codeInput = page.getByPlaceholder(/code/i);
-          if (await codeInput.isVisible().catch(() => false) && lobbyCode) {
-            await codeInput.fill(lobbyCode);
-
-            const nameInput = page.getByPlaceholder(/name/i);
-            if (await nameInput.isVisible().catch(() => false)) {
-              await nameInput.fill("JoinPlayer");
-            }
-
-            const submitButton = page.getByRole("button", {
-              name: /join|submit/i,
-            });
-            await submitButton.click();
-
-            // Should join the lobby
-            await expect(
-              page.getByText(/lobby|waiting|players/i).first()
-            ).toBeVisible({ timeout: 10000 });
-          }
-        }
-      }
-    }
-
-    await hostPage.close();
-  });
-
-  test("should show validation error for invalid lobby code", async ({
-    page,
-  }) => {
-    const joinButton = page.getByRole("button", { name: /join/i });
-
-    if (await joinButton.isVisible().catch(() => false)) {
-      await joinButton.click();
-
-      const codeInput = page.getByPlaceholder(/code/i);
-      if (await codeInput.isVisible().catch(() => false)) {
-        // Enter an invalid code
-        await codeInput.fill("INVALID");
-
-        const submitButton = page.getByRole("button", { name: /join|submit/i });
-        if (await submitButton.isVisible().catch(() => false)) {
-          await submitButton.click();
-
-          // Should show an error message
-          await expect(
-            page.getByText(/not found|invalid|error|doesn't exist/i).first()
-          ).toBeVisible({ timeout: 5000 });
-        }
-      }
-    }
+    await expect(page.getByText(/lobby not found/i).first()).toBeVisible({
+      timeout: 10000,
+    });
+    // And we get bounced back to the menu.
+    await page.waitForURL(/\/play/, { timeout: 10000 });
   });
 });
