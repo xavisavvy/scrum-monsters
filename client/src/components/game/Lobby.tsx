@@ -3,9 +3,8 @@ import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
 import { SpriteRenderer } from './SpriteRenderer';
-import { SpeechBubble } from './SpeechBubble';
 import { EmoteModal } from './EmoteModal';
-import { MagicEffect } from './MagicEffect';
+import { LobbyAvatar } from './LobbyAvatar';
 import { LobbyReadyButton } from './LobbyReadyButton';
 import { LobbySettingsDialog } from './LobbySettingsDialog';
 import { MusicControls } from '@/components/ui/MusicControls';
@@ -22,7 +21,6 @@ import { detectMagicWords, MagicEffectType } from '@/lib/utils/magicWords';
 import { buffReducer, initialBuffState } from '@/lib/reducers/buffReducer';
 import { applySpellEffects } from '@/lib/utils/applySpellEffects';
 import { useIsMobile } from '@/hooks/use-is-mobile';
-import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PlayerListSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -1643,159 +1641,57 @@ export function Lobby() {
 
           {/* My Player Character */}
           {currentPlayer && (() => {
-            // Calculate fly rotation based on movement direction
             const isFlying = flyingPlayers.has(currentPlayer.id);
+            const isInvisible = invisiblePlayers.has(currentPlayer.id);
+            const isDead = deadPlayers.has(currentPlayer.id);
             let flyRotation = 0;
             if (isFlying && !frozenPlayers.has(currentPlayer.id)) {
-              // Vertical tilt: up = tilt back (-15deg), down = tilt forward (15deg)
               if (keys.has('ArrowUp') || keys.has('KeyW')) flyRotation -= 15;
               if (keys.has('ArrowDown') || keys.has('KeyS')) flyRotation += 15;
-              // Horizontal tilt: add slight banking
               if (keys.has('ArrowLeft') || keys.has('KeyA')) flyRotation -= 8;
               if (keys.has('ArrowRight') || keys.has('KeyD')) flyRotation += 8;
             }
-
-            const isInvisible = invisiblePlayers.has(currentPlayer.id);
-
-            // Calculate size scale based on size buffs
-            // Enlarge: 1.5x, 2x, 2.5x | Reduce: 0.7x, 0.5x, 0.35x
-            const sizeBuff = sizeBuffs[currentPlayer.id];
-            let sizeScale = 1;
-            if (sizeBuff?.type === 'enlarge') {
-              sizeScale = 1 + (sizeBuff.stacks * 0.5); // 1.5x, 2x, 2.5x
-            } else if (sizeBuff?.type === 'reduce') {
-              const reduceScales = [0.7, 0.5, 0.35];
-              sizeScale = reduceScales[sizeBuff.stacks - 1] || 0.35;
-            }
-            const baseScale = jumpState.isJumping ? 1.05 : 1;
-            const totalScale = baseScale * sizeScale;
-
             return (
-            <div
-              className="absolute transition-transform duration-100 ease-linear cursor-pointer select-none"
-              style={{
-                left: `${myPosition.x}px`,
-                bottom: `${deadPlayers.has(currentPlayer.id) ? -20 : (isFlying ? flyHeight : jumpState.jumpHeight)}px`,
-                zIndex: 10,
-                transform: `scale(${totalScale}) ${deadPlayers.has(currentPlayer.id) ? 'rotate(90deg)' : (isFlying ? `rotate(${flyRotation}deg)` : '')}`,
-                transformOrigin: 'bottom center',
-                transition: deadPlayers.has(currentPlayer.id) ? 'transform 0.5s ease-out, bottom 0.5s ease-out' : (jumpState.isJumping || isFlying ? 'none' : 'transform 0.2s ease-out'),
-                opacity: isInvisible ? 0.5 : 1
-              }}
-              onClick={handleAvatarTap}
-              onTouchStart={(e) => {
-                e.preventDefault(); // Prevent default touch behaviors
-                handleAvatarTap();
-              }}
-              title={isFlying ? "Use W/S or Up/Down to fly!" : (isInvisible ? "You are invisible!" : "Tap to jump!")}
-            >
-              {/* Player name above character */}
-              <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
-                {currentPlayer.name}
-                {deadPlayers.has(currentPlayer.id) && ' 💀'}
-                {frozenPlayers.has(currentPlayer.id) && ' 🧊'}
-                {petrifiedPlayers.has(currentPlayer.id) && ' 🗿'}
-                {flyingPlayers.has(currentPlayer.id) && ' 🪶'}
-                {isInvisible && ' 👻'}
-                {sizeBuff?.type === 'enlarge' && (
-                  <span className="text-orange-400">
-                    {' '}{'🔺'.repeat(sizeBuff.stacks)}
-                  </span>
-                )}
-                {sizeBuff?.type === 'reduce' && (
-                  <span className="text-blue-400">
-                    {' '}{'🔻'.repeat(sizeBuff.stacks)}
-                  </span>
-                )}
-                {speedBuffs[currentPlayer.id]?.type === 'haste' && (
-                  <span className="text-lime-400">
-                    {' '}{'⚡'.repeat(speedBuffs[currentPlayer.id].stacks)}
-                  </span>
-                )}
-                {speedBuffs[currentPlayer.id]?.type === 'slow' && ' 🐌'}
-              </div>
-
-              <div
-                className={currentPlayer.team === 'spectators' ? 'spectator-character' : ''}
-                style={{
-                  filter: deadPlayers.has(currentPlayer.id)
-                    ? 'grayscale(100%) brightness(0.7)'
-                    : petrifiedPlayers.has(currentPlayer.id)
-                    ? 'sepia(100%) saturate(50%) brightness(0.8) contrast(1.1)'
-                    : frozenPlayers.has(currentPlayer.id)
-                    ? 'hue-rotate(180deg) saturate(1.5) brightness(1.2)'
-                    : (currentPlayer.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none'),
-                  animation: (frozenPlayers.has(currentPlayer.id) || petrifiedPlayers.has(currentPlayer.id))
-                    ? 'none' // Frozen/Petrified = no animation
-                    : (currentPlayer.team === 'spectators' && !deadPlayers.has(currentPlayer.id)
-                      ? 'spectatorPulse 2s ease-in-out infinite'
-                      : 'none')
+              <LobbyAvatar
+                key={currentPlayer.id}
+                player={currentPlayer}
+                avatarClass={getAvatarClass(currentPlayer)}
+                position={{ x: myPosition.x, direction: myPosition.direction }}
+                jumpHeight={isFlying ? flyHeight : jumpState.jumpHeight}
+                isMoving={keys.size > 0}
+                isJumping={jumpState.isJumping}
+                isDead={isDead}
+                isFrozen={frozenPlayers.has(currentPlayer.id)}
+                isPetrified={petrifiedPlayers.has(currentPlayer.id)}
+                isFlying={isFlying}
+                isInvisible={isInvisible}
+                showInvisibleBadge={true}
+                showReadyBadge={false}
+                sizeBuff={sizeBuffs[currentPlayer.id]}
+                speedBuff={speedBuffs[currentPlayer.id]}
+                emote={emotes[currentPlayer.id]}
+                magicEffects={magicEffects[currentPlayer.id]?.effects}
+                characterSize={characterSize}
+                interactive={true}
+                opacity={isInvisible ? 0.5 : 1}
+                flyRotation={flyRotation}
+                onTap={handleAvatarTap}
+                onEmoteComplete={() => {
+                  setEmotes(prev => {
+                    const newEmotes = { ...prev };
+                    delete newEmotes[currentPlayer.id];
+                    return newEmotes;
+                  });
                 }}
-              >
-                {keys.size === 0 && !deadPlayers.has(currentPlayer.id) && !jumpState.isJumping ? (
-                  <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{
-                      duration: 2.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                      repeatType: 'loop',
-                    }}
-                  >
-                    <SpriteRenderer
-                      avatarClass={getAvatarClass(currentPlayer)}
-                      animation="idle"
-                      direction={myPosition.direction}
-                      isMoving={false}
-                      size={characterSize}
-                    />
-                  </motion.div>
-                ) : (
-                  <SpriteRenderer
-                    avatarClass={getAvatarClass(currentPlayer)}
-                    animation={deadPlayers.has(currentPlayer.id) ? 'death' : (jumpState.isJumping ? 'victory' : 'walk')}
-                    direction={myPosition.direction}
-                    isMoving={keys.size > 0}
-                    size={characterSize}
-                  />
-                )}
-              </div>
-              
-              
-              {/* Current Player's Speech Bubble */}
-              {emotes[currentPlayer.id] && (
-                <SpeechBubble
-                  message={emotes[currentPlayer.id].message}
-                  x={0} // Relative to character position
-                  y={0} // Relative to character position
-                  onComplete={() => {
-                    setEmotes(prev => {
-                      const newEmotes = { ...prev };
-                      delete newEmotes[currentPlayer.id];
-                      return newEmotes;
-                    });
-                  }}
-                />
-              )}
-
-              {/* Current Player's Magic Effects */}
-              {magicEffects[currentPlayer.id] && magicEffects[currentPlayer.id].effects.map((effect, index) => (
-                <MagicEffect
-                  key={`${currentPlayer.id}-${effect}-${index}`}
-                  type={effect}
-                  x={characterSize / 2} // Center on character
-                  y={0}
-                  onComplete={() => {
-                    setMagicEffects(prev => {
-                      const newEffects = { ...prev };
-                      delete newEffects[currentPlayer.id];
-                      return newEffects;
-                    });
-                  }}
-                />
-              ))}
-            </div>
-          );
+                onMagicEffectComplete={() => {
+                  setMagicEffects(prev => {
+                    const newEffects = { ...prev };
+                    delete newEffects[currentPlayer.id];
+                    return newEffects;
+                  });
+                }}
+              />
+            );
           })()}
 
           {/* Other Players */}
@@ -1808,144 +1704,47 @@ export function Lobby() {
               const isDead = deadPlayers.has(player.id);
               const isInvisible = invisiblePlayers.has(player.id);
               const isFlickering = invisibleFlicker[player.id];
-              // Invisible players: normally hidden (0), flicker at 20%
               const playerOpacity = isInvisible ? (isFlickering ? 0.2 : 0) : 1;
 
-              // Calculate size scale for other players
-              const otherSizeBuff = sizeBuffs[player.id];
-              let otherSizeScale = 1;
-              if (otherSizeBuff?.type === 'enlarge') {
-                otherSizeScale = 1 + (otherSizeBuff.stacks * 0.5); // 1.5x, 2x, 2.5x
-              } else if (otherSizeBuff?.type === 'reduce') {
-                const reduceScales = [0.7, 0.5, 0.35];
-                otherSizeScale = reduceScales[otherSizeBuff.stacks - 1] || 0.35;
-              }
-
               return (
-                <div
+                <LobbyAvatar
                   key={player.id}
-                  className="absolute transition-transform duration-200 ease-out"
-                  style={{
-                    left: `${position.x}px`,
-                    bottom: `${isDead ? -20 : (position.jumpHeight || 0)}px`,
-                    zIndex: 9,
-                    transform: `scale(${otherSizeScale}) ${isDead ? 'rotate(90deg)' : ''}`,
-                    transformOrigin: 'bottom center',
-                    transition: isDead ? 'transform 0.5s ease-out, bottom 0.5s ease-out' : 'transform 0.2s ease-out, opacity 0.3s ease-in-out',
-                    opacity: playerOpacity,
-                    pointerEvents: isInvisible && !isFlickering ? 'none' : 'auto'
+                  player={player}
+                  avatarClass={getAvatarClass(player)}
+                  position={{ x: position.x, direction: position.direction }}
+                  jumpHeight={position.jumpHeight || 0}
+                  isMoving={position.isMoving}
+                  isJumping={position.isJumping || false}
+                  isDead={isDead}
+                  isFrozen={frozenPlayers.has(player.id)}
+                  isPetrified={petrifiedPlayers.has(player.id)}
+                  isFlying={flyingPlayers.has(player.id)}
+                  isInvisible={isInvisible}
+                  showInvisibleBadge={false}
+                  showReadyBadge={true}
+                  sizeBuff={sizeBuffs[player.id]}
+                  speedBuff={speedBuffs[player.id]}
+                  emote={emotes[player.id]}
+                  magicEffects={magicEffects[player.id]?.effects}
+                  characterSize={characterSize}
+                  interactive={false}
+                  opacity={playerOpacity}
+                  pointerEventsDisabled={isInvisible && !isFlickering}
+                  onEmoteComplete={() => {
+                    setEmotes(prev => {
+                      const newEmotes = { ...prev };
+                      delete newEmotes[player.id];
+                      return newEmotes;
+                    });
                   }}
-                >
-                  {/* Player name above character */}
-                  <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
-                    {player.name}
-                    {player.isReady && (
-                      <span className="text-green-400 ml-1" aria-label="Ready">
-                        ✓
-                      </span>
-                    )}
-                    {isDead && ' 💀'}
-                    {frozenPlayers.has(player.id) && ' 🧊'}
-                    {petrifiedPlayers.has(player.id) && ' 🗿'}
-                    {flyingPlayers.has(player.id) && ' 🪶'}
-                    {otherSizeBuff?.type === 'enlarge' && (
-                      <span className="text-orange-400">
-                        {' '}{'🔺'.repeat(otherSizeBuff.stacks)}
-                      </span>
-                    )}
-                    {otherSizeBuff?.type === 'reduce' && (
-                      <span className="text-blue-400">
-                        {' '}{'🔻'.repeat(otherSizeBuff.stacks)}
-                      </span>
-                    )}
-                    {speedBuffs[player.id]?.type === 'haste' && (
-                      <span className="text-lime-400">
-                        {' '}{'⚡'.repeat(speedBuffs[player.id].stacks)}
-                      </span>
-                    )}
-                    {speedBuffs[player.id]?.type === 'slow' && ' 🐌'}
-                  </div>
-
-                  <div
-                    className={player.team === 'spectators' ? 'spectator-character' : ''}
-                    style={{
-                      filter: isDead
-                        ? 'grayscale(100%) brightness(0.7)'
-                        : petrifiedPlayers.has(player.id)
-                        ? 'sepia(100%) saturate(50%) brightness(0.8) contrast(1.1)'
-                        : frozenPlayers.has(player.id)
-                        ? 'hue-rotate(180deg) saturate(1.5) brightness(1.2)'
-                        : (player.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none'),
-                      animation: (frozenPlayers.has(player.id) || petrifiedPlayers.has(player.id))
-                        ? 'none' // Frozen/Petrified = no animation
-                        : (player.team === 'spectators' && !isDead
-                          ? 'spectatorPulse 2s ease-in-out infinite'
-                          : 'none')
-                    }}
-                  >
-                    {!position.isMoving && !isDead && !position.isJumping ? (
-                      <motion.div
-                        animate={{ y: [0, -3, 0] }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                          repeatType: 'loop',
-                        }}
-                      >
-                        <SpriteRenderer
-                          avatarClass={getAvatarClass(player)}
-                          animation="idle"
-                          direction={position.direction}
-                          isMoving={false}
-                          size={characterSize}
-                        />
-                      </motion.div>
-                    ) : (
-                      <SpriteRenderer
-                        avatarClass={getAvatarClass(player)}
-                        animation={isDead ? 'death' : (position.isJumping ? 'victory' : 'walk')}
-                        direction={position.direction}
-                        isMoving={position.isMoving}
-                        size={characterSize}
-                      />
-                    )}
-                  </div>
-                  
-                  
-                  {/* Other Player's Speech Bubble */}
-                  {emotes[player.id] && (
-                    <SpeechBubble
-                      message={emotes[player.id].message}
-                      x={0} // Relative to character position
-                      y={0} // Relative to character position
-                      onComplete={() => {
-                        setEmotes(prev => {
-                          const newEmotes = { ...prev };
-                          delete newEmotes[player.id];
-                          return newEmotes;
-                        });
-                      }}
-                    />
-                  )}
-
-                  {/* Other Player's Magic Effects */}
-                  {magicEffects[player.id] && magicEffects[player.id].effects.map((effect, index) => (
-                    <MagicEffect
-                      key={`${player.id}-${effect}-${index}`}
-                      type={effect}
-                      x={characterSize / 2} // Center on character
-                      y={0}
-                      onComplete={() => {
-                        setMagicEffects(prev => {
-                          const newEffects = { ...prev };
-                          delete newEffects[player.id];
-                          return newEffects;
-                        });
-                      }}
-                    />
-                  ))}
-                </div>
+                  onMagicEffectComplete={() => {
+                    setMagicEffects(prev => {
+                      const newEffects = { ...prev };
+                      delete newEffects[player.id];
+                      return newEffects;
+                    });
+                  }}
+                />
               );
             })}
           
