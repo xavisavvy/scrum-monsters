@@ -20,6 +20,7 @@ import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
 import { detectMagicWords, MagicEffectType } from '@/lib/utils/magicWords';
 import { buffReducer, initialBuffState } from '@/lib/reducers/buffReducer';
 import { applySpellEffects } from '@/lib/utils/applySpellEffects';
+import { useLobbyMovement } from '@/lib/hooks/useLobbyMovement';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/ui/EmptyState';
@@ -406,187 +407,32 @@ export function Lobby() {
     });
   }, []);
 
-  // Handle movement based on pressed keys
-  useEffect(() => {
-    if (currentLobby?.gamePhase !== 'lobby' || keys.size === 0) {
-      return;
-    }
-
-    const movePlayer = () => {
-      // Check if player is frozen or petrified - no movement allowed
-      // MAINT-11: Read from refs (not state) to avoid stale closure without dep-array churn
-      const playerId = currentPlayer?.id;
-      if (playerId && (frozenPlayersRef.current.has(playerId) || petrifiedPlayersRef.current.has(playerId))) {
-        return; // Can't move while frozen or petrified
-      }
-
-      setMyPosition(prev => {
-        let newX = prev.x;
-        let direction: SpriteDirection = prev.direction;
-        let moving = false;
-
-        // Get movement area width with proper fallback and safety checks
-        const movementArea = movementAreaRef.current;
-        if (!movementArea) return prev; // Don't move if area not available yet
-
-        const movementAreaWidth = movementArea.clientWidth;
-        if (movementAreaWidth <= characterSize) return prev; // Safety check
-
-        const maxX = movementAreaWidth - characterSize;
-
-        // Calculate speed multiplier based on buffs
-        // MAINT-11: Read from refs to avoid dep-array churn on each buff Set mutation
-        const isDead = playerId ? deadPlayersRef.current.has(playerId) : false;
-        const speedBuff = playerId ? speedBuffsRef.current[playerId] : undefined;
-
-        let speedMultiplier = 1;
-        if (isDead) {
-          speedMultiplier = 0.25; // Dead = 1/4 speed
-        } else if (speedBuff?.type === 'haste') {
-          // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x
-          speedMultiplier = 1 + (speedBuff.stacks * 0.5);
-        } else if (speedBuff?.type === 'slow') {
-          speedMultiplier = 0.5; // Slow = 1/2 speed
-        }
-
-        const effectiveSpeed = moveSpeed * speedMultiplier;
-
-        // Use percent-based movement for consistency across screen sizes
-        const movePercentage = (effectiveSpeed / maxX) * 100;
-        const currentPercent = (prev.x / maxX) * 100;
-
-        // Horizontal movement (left/right)
-        if (keys.has('ArrowLeft') || keys.has('KeyA')) {
-          const newPercent = Math.max(0, currentPercent - movePercentage);
-          newX = (newPercent / 100) * maxX;
-          direction = 'left';
-          moving = true;
-        }
-        if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          const newPercent = Math.min(100, currentPercent + movePercentage);
-          newX = (newPercent / 100) * maxX;
-          direction = 'right';
-          moving = true;
-        }
-
-        // Vertical movement (only when flying)
-        // MAINT-11: Read from flyingPlayersRef (already a ref) to avoid dep churn
-        const isFlying = playerId ? flyingPlayersRef.current.has(playerId) : false;
-        if (isFlying) {
-          const maxFlyHeight = 150; // Max height in pixels
-          if (keys.has('ArrowUp') || keys.has('KeyW')) {
-            setFlyHeight(prev => Math.min(prev + effectiveSpeed * 2, maxFlyHeight));
-            moving = true;
-          }
-          if (keys.has('ArrowDown') || keys.has('KeyS')) {
-            setFlyHeight(prev => Math.max(prev - effectiveSpeed * 2, 0));
-            moving = true;
-          }
-        }
-
-        // Emit position to server for other players to see
-        if (moving) {
-          const percentX = (newX / maxX) * 100;
-          emit('lobby_player_pos', { x: percentX, y: 85, direction });
-
-          // Generate afterimages for haste/slow effects
-          // MAINT-11: jumpHeightRef.current replaces jumpState.jumpHeight (L564 per plan)
-          //   jumpState.jumpHeight changed ~60x per jump via rAF — reading the ref here
-          //   avoids dep-array churn without any behavior change in afterimage y-position.
-          //   Note: the jump-arc afterimage at L621 (DEBUNKED seam) uses a rAF-local
-          //   `height` variable and is intentionally left unchanged.
-          if (speedBuff && playerId) {
-            const currentJumpHeight = jumpHeightRef.current;
-            setAfterimages(prevImages => [
-              ...prevImages.slice(-10), // Keep only last 10 afterimages
-              {
-                id: `${playerId}-${Date.now()}`,
-                playerId,
-                x: prev.x,
-                y: currentJumpHeight,
-                timestamp: Date.now(),
-                type: speedBuff.type
-              }
-            ]);
-          }
-
-          // Trigger screen shake for enlarged players
-          // MAINT-11: Read from sizeBuffsRef to avoid dep churn on size buff Set mutation
-          const sizeBuff = playerId ? sizeBuffsRef.current[playerId] : undefined;
-          if (sizeBuff?.type === 'enlarge') {
-            setScreenShake(sizeBuff.stacks);
-            // Reset shake after short duration
-            setTimeout(() => setScreenShake(0), 100);
-          }
-        }
-
-        return { x: newX, direction };
-      });
-    };
-
-    const interval = setInterval(movePlayer, 16); // ~60 FPS for smooth movement
-    return () => clearInterval(interval);
-  // MAINT-11: Collapsed dep array — buff Sets and jumpHeight promoted to refs above.
-  // keys: guards movement logic (keys.size === 0 is the early return; keys.has(...) used in body)
-  // currentLobby?.gamePhase: early-return guard (gamePhase !== 'lobby')
-  // emit: stable from useWebSocket; included per exhaustive-deps rules
-  // currentPlayer?.id: used in freeze/dead/speed/size checks inside movePlayer
-  }, [keys, currentLobby?.gamePhase, emit, currentPlayer?.id]);
-
-  // Simple jump animation
-  useEffect(() => {
-    if (!jumpState.isJumping) return;
-
-    const jumpDuration = 600; // 600ms total jump time
-    const maxHeight = 50; // 50px max jump height
-    const startTime = Date.now();
-    let lastAfterimageTime = 0;
-
-    const animateJump = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / jumpDuration, 1);
-
-      // Sine wave for smooth up/down motion
-      const height = Math.sin(progress * Math.PI) * maxHeight;
-
-      setJumpState(prev => ({
-        ...prev,
-        jumpHeight: height
-      }));
-
-      // Generate afterimages during jump if player has speed buff
-      const playerId = currentPlayer?.id;
-      const speedBuff = playerId ? speedBuffs[playerId] : undefined;
-      if (speedBuff && playerId && elapsed - lastAfterimageTime > 50) {
-        lastAfterimageTime = elapsed;
-        setAfterimages(prevImages => [
-          ...prevImages.slice(-10),
-          {
-            id: `${playerId}-jump-${Date.now()}`,
-            playerId,
-            x: myPosition.x,
-            y: height, // Capture current jump height
-            timestamp: Date.now(),
-            type: speedBuff.type
-          }
-        ]);
-      }
-
-      if (progress < 1) {
-        requestAnimationFrame(animateJump);
-      } else {
-        // Jump complete
-        setJumpState({
-          isJumping: false,
-          jumpHeight: 0
-        });
-        // Emit landing event to other players
-        emit('lobby_player_jump', { isJumping: false });
-      }
-    };
-
-    requestAnimationFrame(animateJump);
-  }, [jumpState.isJumping, emit, currentPlayer?.id, speedBuffs, myPosition.x]);
+  // MAINT-13 seam 5 (LAST): movement interval + jump animation extracted to useLobbyMovement.
+  // The collapsed dep array from MAINT-11 travels into the hook; refs are stable props, not deps.
+  useLobbyMovement({
+    keys,
+    gamePhase: currentLobby?.gamePhase,
+    emit,
+    currentPlayerId: currentPlayer?.id,
+    characterSize,
+    moveSpeed,
+    movementAreaRef,
+    jumpHeightRef,
+    frozenPlayersRef,
+    petrifiedPlayersRef,
+    flyingPlayersRef,
+    speedBuffsRef,
+    sizeBuffsRef,
+    deadPlayersRef,
+    setMyPosition,
+    setFlyHeight,
+    setAfterimages,
+    setScreenShake,
+    jumpState,
+    setJumpState,
+    speedBuffs,
+    myPositionX: myPosition.x,
+  });
 
   // Mobile touch jump handler
   const handleAvatarTap = () => {
