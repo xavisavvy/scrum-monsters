@@ -386,7 +386,6 @@ describe('MAINT-11 perf guardrail: render-count not increased by unsubscribed (b
     let renderCount = 0;
 
     // Import useShallow synchronously (it's a stable utility, always available)
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { useShallow } = require('zustand/react/shallow') as typeof import('zustand/react/shallow');
 
     function TrackingWrapper() {
