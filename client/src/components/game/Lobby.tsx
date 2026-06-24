@@ -1,12 +1,12 @@
-import React, { useState, useEffect, useCallback, useReducer, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
   DialogTrigger,
   DialogDescription
 } from '@/components/ui/dialog';
@@ -17,6 +17,7 @@ import { MagicEffect } from './MagicEffect';
 import { LobbyReadyButton } from './LobbyReadyButton';
 import { MusicControls } from '@/components/ui/MusicControls';
 import { MobileControls } from './MobileControls';
+import { TavernScene } from './TavernScene';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -27,10 +28,6 @@ import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
 import { detectMagicWords, MagicEffectType } from '@/lib/utils/magicWords';
 import { buffReducer, initialBuffState } from '@/lib/reducers/buffReducer';
 import { applySpellEffects } from '@/lib/utils/applySpellEffects';
-import { Canvas } from '@react-three/fiber';
-import { attachWebglResilience } from '@/lib/utils/webglResilience';
-import { PerformanceMonitor } from '@react-three/drei';
-import * as THREE from 'three';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
@@ -117,64 +114,8 @@ const spectatorStyles = `
   }
 `;
 
-// Particle Lighting Effects Component
-function TavernLighting() {
-  const particlesRef = React.useRef<THREE.Points>(null);
-  
-  const particles = React.useMemo(() => {
-    const particleCount = 50;
-    const positions = new Float32Array(particleCount * 3);
-    
-    for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 20; // X
-      positions[i * 3 + 1] = Math.random() * 8; // Y
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 10; // Z
-    }
-    
-    return positions;
-  }, []);
-  
-  React.useEffect(() => {
-    const animateParticles = () => {
-      if (particlesRef.current) {
-        const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-        
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] += Math.sin(Date.now() * 0.001 + positions[i]) * 0.01;
-        }
-        
-        particlesRef.current.geometry.attributes.position.needsUpdate = true;
-      }
-      requestAnimationFrame(animateParticles);
-    };
-    
-    animateParticles();
-  }, []);
-  
-  return (
-    <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particles.length / 3}
-          array={particles}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        color="#ffaa44"
-        size={0.1}
-        transparent
-        opacity={0.6}
-        alphaTest={0.1}
-      />
-    </points>
-  );
-}
-
 export function Lobby() {
   const isMobile = useIsMobile();
-  const [dpr, setDpr] = useState<number>(Math.min(window.devicePixelRatio, 2));
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
@@ -1795,22 +1736,7 @@ export function Lobby() {
           
           {/* Layer 2: Particle Lighting Effects */}
           <div className="absolute inset-0" style={{ zIndex: 8, pointerEvents: 'none' }}>
-            <Canvas
-              camera={{ position: [0, 2, 8], fov: 120 }}
-              style={{ width: '100%', height: '100%', touchAction: 'none' }}
-              dpr={dpr}
-              gl={{ antialias: !isMobile, alpha: true }}
-              onCreated={attachWebglResilience}
-            >
-              <PerformanceMonitor
-                onDecline={() => setDpr((d) => Math.max(d - 0.5, 1))}
-                onIncline={() => setDpr((d) => Math.min(d + 0.5, 2))}
-              >
-                <Suspense fallback={null}>
-                  <TavernLighting />
-                </Suspense>
-              </PerformanceMonitor>
-            </Canvas>
+            <TavernScene isMobile={isMobile} />
           </div>
           
           {/* Layer 3: Player Movement Area */}
