@@ -126,7 +126,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
    * canonical {seq, timestamp} envelope. Phase 45-05B: delegates to
    * ClientEventEmitter.emitFineGrained so the sequencer stays encapsulated.
    */
-  const emitFineGrained = (lobbyId: string, event: string, data: Record<string, unknown>): void => {
+  const emitFineGrained = (lobbyId: string, event: keyof ServerToClientEvents, data: Record<string, unknown>): void => {
     getClientEventEmitter()?.emitFineGrained(lobbyId, event, data);
   };
 
