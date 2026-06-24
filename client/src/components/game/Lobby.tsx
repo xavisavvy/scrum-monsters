@@ -266,14 +266,36 @@ export function Lobby() {
   React.useEffect(() => { myPositionRef.current = myPosition; }, [myPosition]);
   React.useEffect(() => { invisiblePlayersRef.current = invisiblePlayers; }, [invisiblePlayers]);
 
+  // MAINT-11: Promote buff/jump values to refs to prevent the 16ms movement interval
+  // from being recreated on every frame tick (jumpState.jumpHeight changes ~60x/jump via rAF).
+  // Pattern mirrors the existing flyingPlayersRef/invisiblePlayersRef block above (L258-267).
+  // Note: speedBuffsRef and sizeBuffsRef are declared after the corresponding useState below.
+  const jumpHeightRef = React.useRef(0);
+  React.useEffect(() => { jumpHeightRef.current = jumpState.jumpHeight; }, [jumpState.jumpHeight]);
+
+  const frozenPlayersRef = React.useRef(frozenPlayers);
+  React.useEffect(() => { frozenPlayersRef.current = frozenPlayers; }, [frozenPlayers]);
+
+  const petrifiedPlayersRef = React.useRef(petrifiedPlayers);
+  React.useEffect(() => { petrifiedPlayersRef.current = petrifiedPlayers; }, [petrifiedPlayers]);
+
+  const deadPlayersRef = React.useRef(deadPlayers);
+  React.useEffect(() => { deadPlayersRef.current = deadPlayers; }, [deadPlayers]);
+
   // Speed buff state - tracks haste stacks (1-3) or slow per player
   // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x speed
   const [speedBuffs, setSpeedBuffs] = useState<Record<string, { type: 'haste' | 'slow'; stacks: number }>>({});
+  // MAINT-11: speedBuffsRef declared here (after useState) — must follow declaration order
+  const speedBuffsRef = React.useRef(speedBuffs);
+  React.useEffect(() => { speedBuffsRef.current = speedBuffs; }, [speedBuffs]);
 
   // Size buff state - tracks enlarge/reduce stacks (1-3) per player
   // Enlarge stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x size
   // Reduce stacks: 1 = 0.7x, 2 = 0.5x, 3 = 0.35x size (minimum to stay visible)
   const [sizeBuffs, setSizeBuffs] = useState<Record<string, { type: 'enlarge' | 'reduce'; stacks: number }>>({});
+  // MAINT-11: sizeBuffsRef declared here (after useState) — must follow declaration order
+  const sizeBuffsRef = React.useRef(sizeBuffs);
+  React.useEffect(() => { sizeBuffsRef.current = sizeBuffs; }, [sizeBuffs]);
 
   // Screen shake state - intensity 0-3 based on enlarged player movement
   const [screenShake, setScreenShake] = useState(0);
@@ -487,8 +509,9 @@ export function Lobby() {
 
     const movePlayer = () => {
       // Check if player is frozen or petrified - no movement allowed
+      // MAINT-11: Read from refs (not state) to avoid stale closure without dep-array churn
       const playerId = currentPlayer?.id;
-      if (playerId && (frozenPlayers.has(playerId) || petrifiedPlayers.has(playerId))) {
+      if (playerId && (frozenPlayersRef.current.has(playerId) || petrifiedPlayersRef.current.has(playerId))) {
         return; // Can't move while frozen or petrified
       }
 
@@ -507,8 +530,9 @@ export function Lobby() {
         const maxX = movementAreaWidth - characterSize;
 
         // Calculate speed multiplier based on buffs
-        const isDead = playerId ? deadPlayers.has(playerId) : false;
-        const speedBuff = playerId ? speedBuffs[playerId] : undefined;
+        // MAINT-11: Read from refs to avoid dep-array churn on each buff Set mutation
+        const isDead = playerId ? deadPlayersRef.current.has(playerId) : false;
+        const speedBuff = playerId ? speedBuffsRef.current[playerId] : undefined;
 
         let speedMultiplier = 1;
         if (isDead) {
@@ -541,7 +565,8 @@ export function Lobby() {
         }
 
         // Vertical movement (only when flying)
-        const isFlying = playerId ? flyingPlayers.has(playerId) : false;
+        // MAINT-11: Read from flyingPlayersRef (already a ref) to avoid dep churn
+        const isFlying = playerId ? flyingPlayersRef.current.has(playerId) : false;
         if (isFlying) {
           const maxFlyHeight = 150; // Max height in pixels
           if (keys.has('ArrowUp') || keys.has('KeyW')) {
@@ -560,8 +585,13 @@ export function Lobby() {
           emit('lobby_player_pos', { x: percentX, y: 85, direction });
 
           // Generate afterimages for haste/slow effects
+          // MAINT-11: jumpHeightRef.current replaces jumpState.jumpHeight (L564 per plan)
+          //   jumpState.jumpHeight changed ~60x per jump via rAF — reading the ref here
+          //   avoids dep-array churn without any behavior change in afterimage y-position.
+          //   Note: the jump-arc afterimage at L621 (DEBUNKED seam) uses a rAF-local
+          //   `height` variable and is intentionally left unchanged.
           if (speedBuff && playerId) {
-            const currentJumpHeight = jumpState.jumpHeight;
+            const currentJumpHeight = jumpHeightRef.current;
             setAfterimages(prevImages => [
               ...prevImages.slice(-10), // Keep only last 10 afterimages
               {
@@ -576,7 +606,8 @@ export function Lobby() {
           }
 
           // Trigger screen shake for enlarged players
-          const sizeBuff = playerId ? sizeBuffs[playerId] : undefined;
+          // MAINT-11: Read from sizeBuffsRef to avoid dep churn on size buff Set mutation
+          const sizeBuff = playerId ? sizeBuffsRef.current[playerId] : undefined;
           if (sizeBuff?.type === 'enlarge') {
             setScreenShake(sizeBuff.stacks);
             // Reset shake after short duration
@@ -590,7 +621,12 @@ export function Lobby() {
 
     const interval = setInterval(movePlayer, 16); // ~60 FPS for smooth movement
     return () => clearInterval(interval);
-  }, [keys, currentLobby?.gamePhase, emit, deadPlayers, speedBuffs, sizeBuffs, currentPlayer?.id, jumpState.jumpHeight, flyingPlayers, frozenPlayers, petrifiedPlayers]);
+  // MAINT-11: Collapsed dep array — buff Sets and jumpHeight promoted to refs above.
+  // keys: guards movement logic (keys.size === 0 is the early return; keys.has(...) used in body)
+  // currentLobby?.gamePhase: early-return guard (gamePhase !== 'lobby')
+  // emit: stable from useWebSocket; included per exhaustive-deps rules
+  // currentPlayer?.id: used in freeze/dead/speed/size checks inside movePlayer
+  }, [keys, currentLobby?.gamePhase, emit, currentPlayer?.id]);
 
   // Simple jump animation
   useEffect(() => {
