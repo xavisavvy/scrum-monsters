@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Maintainability & Extensibility
 status: executing
-stopped_at: Completed 48-03-PLAN.md
-last_updated: "2026-06-24T07:38:09.415Z"
-last_activity: 2026-06-24 -- Phase 52 execution started
+stopped_at: Completed 52-03-PLAN.md
+last_updated: "2026-06-24T08:19:35.951Z"
+last_activity: 2026-06-24
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 20
-  completed_plans: 15
-  percent: 75
+  completed_plans: 18
+  percent: 83
 ---
 
 # Project State
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 Milestone: v6.0 Maintainability & Extensibility — PLANNING
 Phase: 52 (client-god-component-decomposition) — EXECUTING
-Plan: 1 of 5
-Status: Executing Phase 52
-Last activity: 2026-06-24 -- Phase 52 execution started
+Plan: 3 of 5
+Status: Ready to execute
+Last activity: 2026-06-24
 
-Progress: [██████████] 100%
+Progress: [█████████░] 90%
 
 ## Performance Metrics
 
@@ -123,6 +123,11 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [50-02] session:host_transferred bridges to WIRE name 'host_transferred' (GamePage.tsx:232); distinct from session:host_changed (immediate path); ClientEventEmitter bridge pattern
 - [50-02] Both 100ms revival watchdogs removed (gameState ctor + websocket.ts); CombatManager owns revival via self-managed per-session setInterval
 - [50-02] disconnectWatchdog + processDisconnectedPlayers + removePlayer retained (Phase 50 out of scope)
+- [52-03] buffReducer is first useReducer in codebase — pure module, no React import, testable in isolation
+- [52-03] DISPEL_ALL one dispatch closes 7-setter async batching gap in socket handlers (React 18 does not batch async context state updates)
+- [52-03] isLocalCast=true calls setFlyHeight(0) on earthbind/dispel-self; isLocalCast=false never calls setFlyHeight — original dual-path divergence preserved exactly
+- [52-03] Dragon block kept in caller (handleLobbyEmote/handleEmoteSubmit) — random victim + external setTimeout incompatible with pure reducer
+- [52-03] applySpellEffects skips dragon, dispatches HOLD+5s-UNHOLD, MASSACRE+15s-TAVERN_DARK_END, CHAOS+5s-CHAOS_END inline
 
 ### Pending Todos
 
@@ -138,10 +143,10 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-06-23T08:25:55.442Z
-Stopped at: Completed 48-03-PLAN.md
+Last session: 2026-06-24T08:00:00Z
+Stopped at: Completed 52-03-PLAN.md
 Resume file: None
-Next action: /gsd:verify-work phase 48 (testability-seams) — Phase 48 all 3 plans complete
+Next action: Execute 52-04-PLAN.md (next plan in phase 52)
 
 ---
 *State initialized: 2026-02-11*
