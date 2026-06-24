@@ -272,7 +272,7 @@ Plans:
 - [x] **Phase 50: Finish the GameState → Domain-Manager Migration** — Ordered, reversible decommission of dead/duplicate GameState code; revival migration + `session:host_transferred` (Theme 2; ranks 9, 10) (completed 2026-06-23)
 - [x] **Phase 51: Event-Contract Hardening & Handler Boilerplate** — Typed emit, `satisfies` parity guards, `Sequenced<T>`, `registerSyncedLobbyHandler` helpers (Themes 4 & 5; ranks 12, 13)
  (completed 2026-06-24)
-- [ ] **Phase 52: Client God-Component Decomposition** — Movement refs, magic-effect reducer, verified Lobby.tsx seams, PlayerController dedup + coordinate helpers (Theme 3; ranks 6, 7, 11, 15)
+- [x] **Phase 52: Client God-Component Decomposition** — Movement refs, magic-effect reducer, verified Lobby.tsx seams, PlayerController dedup + coordinate helpers (Theme 3; ranks 6, 7, 11, 15) (completed 2026-06-24)
 
 ### Phase 47: Ability Effects & Data-Driven Registries
 **Goal**: Every ability `effectType` is honored (no silently-dropped buff/shield/debuff), and per-class/per-boss data lives in one `Record<Union,...>`-typed registry so adding a class/boss/effect is a compile-checked single-file change.
@@ -371,7 +371,7 @@ Plans (wave 1 = 52-01/52-02 parallel-safe — PlayerController.tsx vs Lobby.tsx,
 - [x] 52-02-PLAN.md — MAINT-11 (Lobby): 6 buff/jump values → refs (mirror flyingPlayersRef L258-267), collapse movement dep array, fake-timers one-interval test
 - [x] 52-03-PLAN.md — MAINT-12: pure buffReducer.ts (10 slots, DISPEL_ALL) + pure applySpellEffects.ts/resolveTargets (isLocalCast threaded), wire useReducer into Lobby, migrate both cascades; flyHeight/invisibleFlicker/screenShake stay separate
 - [x] 52-04-PLAN.md — MAINT-13 seams 1-3: TavernScene (dpr inside, render-count guardrail), LobbySettingsDialog (host+phase guard exact), LobbyAvatar (explicit props, computeSizeScale)
-- [ ] 52-05-PLAN.md — MAINT-13 seams 4-5: applySpellEffects/resolveTargets dedup confirmed, useLobbyMovement extracted LAST; phase-final suite + perf + debunked-seams audit
+- [x] 52-05-PLAN.md — MAINT-13 seams 4-5: applySpellEffects/resolveTargets dedup confirmed, useLobbyMovement extracted LAST; phase-final suite + perf + debunked-seams audit
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -397,7 +397,7 @@ Plans (wave 1 = 52-01/52-02 parallel-safe — PlayerController.tsx vs Lobby.tsx,
 | 49. State Source-of-Truth Consolidation | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 50. Finish GameState → Domain-Manager Migration | v6.0 | 2/2 | Complete   | 2026-06-23 |
 | 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 3/3 | Complete   | 2026-06-24 |
-| 52. Client God-Component Decomposition | v6.0 | 4/5 | In Progress|  |
+| 52. Client God-Component Decomposition | v6.0 | 5/5 | Complete   | 2026-06-24 |
 
 **Total: 9 milestones shipped, 46 phases complete, 155 plans (1 deferred) | v5.0 shipped 2026-06-17; v6.0 (Phases 47-52) in planning**
 
