@@ -367,8 +367,8 @@ Plans (wave 1 = 51-01/02/03 all parallel-safe; zero files_modified overlap — r
 **Plans**: 5 plans
 
 Plans (wave 1 = 52-01/52-02 parallel-safe — PlayerController.tsx vs Lobby.tsx, no file overlap; Lobby.tsx forms a strict chain 02 → 03 → 04 → 05 with useLobbyMovement extracted LAST):
-- [ ] 52-01-PLAN.md — MAINT-11 (PlayerController currentDirection ref + dep-array collapse) + MAINT-14 (handleShootAtTarget dedup of 3 Ctrl-shoot sites, startCooldown dedup of 2 tickers); file-independent of Lobby
-- [ ] 52-02-PLAN.md — MAINT-11 (Lobby): 6 buff/jump values → refs (mirror flyingPlayersRef L258-267), collapse movement dep array, fake-timers one-interval test
+- [x] 52-01-PLAN.md — MAINT-11 (PlayerController currentDirection ref + dep-array collapse) + MAINT-14 (handleShootAtTarget dedup of 3 Ctrl-shoot sites, startCooldown dedup of 2 tickers); file-independent of Lobby
+- [x] 52-02-PLAN.md — MAINT-11 (Lobby): 6 buff/jump values → refs (mirror flyingPlayersRef L258-267), collapse movement dep array, fake-timers one-interval test
 - [ ] 52-03-PLAN.md — MAINT-12: pure buffReducer.ts (10 slots, DISPEL_ALL) + pure applySpellEffects.ts/resolveTargets (isLocalCast threaded), wire useReducer into Lobby, migrate both cascades; flyHeight/invisibleFlicker/screenShake stay separate
 - [ ] 52-04-PLAN.md — MAINT-13 seams 1-3: TavernScene (dpr inside, render-count guardrail), LobbySettingsDialog (host+phase guard exact), LobbyAvatar (explicit props, computeSizeScale)
 - [ ] 52-05-PLAN.md — MAINT-13 seams 4-5: applySpellEffects/resolveTargets dedup confirmed, useLobbyMovement extracted LAST; phase-final suite + perf + debunked-seams audit
@@ -397,7 +397,7 @@ Plans (wave 1 = 52-01/52-02 parallel-safe — PlayerController.tsx vs Lobby.tsx,
 | 49. State Source-of-Truth Consolidation | v6.0 | 3/3 | Complete   | 2026-06-23 |
 | 50. Finish GameState → Domain-Manager Migration | v6.0 | 2/2 | Complete   | 2026-06-23 |
 | 51. Event-Contract Hardening & Handler Boilerplate | v6.0 | 3/3 | Complete   | 2026-06-24 |
-| 52. Client God-Component Decomposition | v6.0 | 0/5 | Planned | - |
+| 52. Client God-Component Decomposition | v6.0 | 2/5 | In Progress|  |
 
 **Total: 9 milestones shipped, 46 phases complete, 155 plans (1 deferred) | v5.0 shipped 2026-06-17; v6.0 (Phases 47-52) in planning**
 
