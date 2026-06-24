@@ -1,10 +1,11 @@
 ---
 phase: 52
 slug: client-god-component-decomposition
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete-pending-manual-profiler
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-06-24
+completed: 2026-06-24
 ---
 
 # Phase 52 — Validation Strategy
@@ -74,15 +75,16 @@ created: 2026-06-24
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] Movement one-interval-per-session proven (fake timers)
-- [ ] Reducer behavior-equivalence proven (incl. isLocalCast divergence)
-- [ ] Perf guardrail: render-count spy green + profiler confirmation recorded; Canvas not a controlled prop-receiver
-- [ ] Debunked seams confirmed untouched
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] Movement one-interval-per-session proven (fake timers, both Lobby + PlayerController)
+- [x] Reducer behavior-equivalence proven (incl. isLocalCast divergence, tested both ways)
+- [x] Perf guardrail (automated): render-count spy green on TavernScene + LobbyAvatar; dpr inside scene (Canvas not a controlled prop-receiver)
+- [ ] **Perf guardrail (MANUAL — user action required):** React DevTools Profiler 60fps lobby session (movement + jump + spell cast) confirming render counts did not increase under real WebGL+rAF. Automated proxies all pass; this live-profiler step cannot be automated.
+- [x] Debunked seams confirmed untouched (both emote fns distinct, afterimage dual-trigger, descriptor form inline)
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** COMPLETE (code) — 2026-06-24. 1036/1036 tests pass, tsc clean, lint clean. All 5 criteria ACHIEVED in code; Lobby.tsx 2862→1750 lines. ONE manual gate outstanding: the React DevTools Profiler 60fps confirmation (user-run — see VERIFICATION.md human_verification).
