@@ -9,7 +9,7 @@ import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
 import type { RingAttack, RingAttackProjectile } from '@shared/gameEvents';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { useViewport } from '@/lib/hooks/useViewport';
+import { useViewport, worldToPercent, percentToWorld } from '@/lib/hooks/useViewport';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 
 interface PlayerControllerProps {
@@ -71,8 +71,7 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
       // Clamp server positions to valid range and convert to screen coordinates
       const clampedX = Math.max(0, Math.min(100, serverPos.x));
       const clampedY = Math.max(0, Math.min(100, serverPos.y));
-      const worldX = (clampedX / 100) * viewport.worldWidth;
-      const worldY = (clampedY / 100) * viewport.worldHeight;
+      const { x: worldX, y: worldY } = percentToWorld(clampedX, clampedY, viewport.worldWidth, viewport.worldHeight);
       const screenPos = viewport.worldToScreen(worldX, worldY);
       
       const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
@@ -177,13 +176,12 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
         setProjectiles(prev => [...prev, newProjectile]);
         
         // Convert screen coordinates to world coordinates, then to percentages
+        // Site 2: worldToPercent now clamps to [0,100] — intentional canonicalization (MAINT-10)
         const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
         const targetWorld = viewport.screenToWorld(targetX, targetY);
-        const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-        const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-        const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-        const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
-        
+        const { x: percentStartX, y: percentStartY } = worldToPercent(startWorld.x, startWorld.y, viewport.worldWidth, viewport.worldHeight);
+        const { x: percentTargetX, y: percentTargetY } = worldToPercent(targetWorld.x, targetWorld.y, viewport.worldWidth, viewport.worldHeight);
+
         // Emit projectile event for multiplayer visibility with percentage coordinates
         emit('player_projectile', {
           startX: percentStartX,
@@ -475,8 +473,7 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
         if (positionChanged && timeDelta >= networkUpdateThrottle) {
           // Convert screen coordinates to world coordinates, then to percentage for server
           const worldPos = viewport.screenToWorld(newX, newY);
-          const percentX = Math.max(0, Math.min(100, (worldPos.x / viewport.worldWidth) * 100));
-          const percentY = Math.max(0, Math.min(100, (worldPos.y / viewport.worldHeight) * 100));
+          const { x: percentX, y: percentY } = worldToPercent(worldPos.x, worldPos.y, viewport.worldWidth, viewport.worldHeight);
           
           emit('player_pos', { x: percentX, y: percentY });
           
@@ -550,13 +547,12 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
     handleShoot(projectileData);
     
     // Convert screen coordinates to world coordinates, then to percentages before emitting
+    // Site 4: worldToPercent now clamps to [0,100] — intentional canonicalization (MAINT-10)
     const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
     const targetWorld = viewport.screenToWorld(targetX, targetY);
-    const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-    const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-    const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-    const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
-    
+    const { x: percentStartX, y: percentStartY } = worldToPercent(startWorld.x, startWorld.y, viewport.worldWidth, viewport.worldHeight);
+    const { x: percentTargetX, y: percentTargetY } = worldToPercent(targetWorld.x, targetWorld.y, viewport.worldWidth, viewport.worldHeight);
+
     // Emit projectile event for multiplayer visibility with percentage coordinates
     emit('player_projectile', {
       startX: percentStartX,
@@ -770,10 +766,9 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
 
       const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
       const targetWorld = viewport.screenToWorld(targetX!, targetY!);
-      const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-      const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-      const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-      const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
+      // Site 2b (D-pad shoot): worldToPercent clamps to [0,100] — intentional canonicalization (MAINT-10)
+      const { x: percentStartX, y: percentStartY } = worldToPercent(startWorld.x, startWorld.y, viewport.worldWidth, viewport.worldHeight);
+      const { x: percentTargetX, y: percentTargetY } = worldToPercent(targetWorld.x, targetWorld.y, viewport.worldWidth, viewport.worldHeight);
 
       emit('player_projectile', {
         startX: percentStartX,
