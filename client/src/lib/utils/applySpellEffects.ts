@@ -131,9 +131,14 @@ export function buildAction(
  * Side effects that cannot be in the reducer (timeouts, random victim selection)
  * are handled here alongside dispatch calls.
  *
- * setMagicEffects / setEmotes are kept here (not in reducer) because they are
- * transient UI state — not spell-target state — and the 2.5s auto-remove
- * setTimeout must be co-located with the trigger.
+ * dragon is NOT handled here — it requires random victim selection + external
+ * setTimeout that depends on playerPositions state. The caller (handleLobbyEmote /
+ * handleEmoteSubmit) keeps its own dragon block unchanged.
+ *
+ * setMagicEffects / setEmotes signatures are kept for future use; the actual
+ * setMagicEffects call and setEmotes auto-remove remain in the caller because
+ * the X-position source differs between local (myPosition.x) and remote
+ * (playerPositionsRef.current[playerId]?.x).
  */
 export function applySpellEffects(
   detectedEffects: MagicEffectType[],
@@ -145,42 +150,56 @@ export function applySpellEffects(
   isLocalCast: boolean,
   dispatch: (action: BuffAction) => void,
   setFlyHeight: (v: number) => void,
-  setMagicEffects: (updater: (prev: Record<string, { effects: MagicEffectType[]; x: number; timestamp: number }>) => Record<string, { effects: MagicEffectType[]; x: number; timestamp: number }>) => void,
-  setEmotes: (updater: (prev: Record<string, { message: string; timestamp: number; x: number; y: number }>) => Record<string, { message: string; timestamp: number; x: number; y: number }>) => void,
+  // Kept in signature for API compatibility; callers manage these directly
+  _setMagicEffects: unknown,
+  _setEmotes: unknown,
 ): void {
+  // Visual-only effects — no buff state change
+  const visualOnlyEffects: MagicEffectType[] = [
+    'fire', 'ice', 'heal', 'lightning', 'magic', 'love',
+    'confetti', 'rage', 'sleep', 'sparkle',
+  ];
+
   detectedEffects.forEach(effect => {
+    // Dragon: fully handled by caller (random victim + external setTimeout)
+    if (effect === 'dragon') return;
+
+    // Visual-only: no buff dispatch
+    if (visualOnlyEffects.includes(effect)) return;
+
     const targets = resolveTargets(effect, message, casterPlayerId, lobbyPlayers);
-
-    // Dragon is handled separately (random victim + setTimeout) — dispatch deferred
-    // to caller; applySpellEffects does not dispatch dragon directly.
-
-    if (effect === 'dragon') {
-      // Dragon is fully handled by the caller (handleLobbyEmote / handleEmoteSubmit)
-      // because it requires random victim selection + external setTimeout.
-      // We skip it here and let the caller continue handling the dragon block.
-      return;
-    }
-
-    // For visual-only effects, skip dispatch (no buff state to change)
-    const visualOnlyEffects: MagicEffectType[] = [
-      'fire', 'ice', 'heal', 'lightning', 'magic', 'love',
-      'confetti', 'rage', 'sleep', 'sparkle',
-    ];
-    if (visualOnlyEffects.includes(effect)) {
-      return; // No buff dispatch needed for pure visual effects
-    }
-
     const action = buildAction(effect, targets, casterPlayerId, isLocalCast, invisiblePlayersRef, lobbyPlayers);
     dispatch(action);
+
+    // HOLD: schedule UNHOLD after 5s (auto-unfreeze) — mirrors original cascade logic
+    if (effect === 'hold') {
+      targets.forEach(targetId => {
+        setTimeout(() => {
+          dispatch({ type: 'UNHOLD', targets: [targetId] });
+        }, 5000);
+      });
+    }
+
+    // MASSACRE: schedule TAVERN_DARK_END after 15s
+    if (effect === 'massacre') {
+      setTimeout(() => {
+        dispatch({ type: 'TAVERN_DARK_END' });
+      }, 15000);
+    }
+
+    // CHAOS: schedule CHAOS_END after 5s
+    if (effect === 'chaos') {
+      setTimeout(() => {
+        dispatch({ type: 'CHAOS_END' });
+      }, 5000);
+    }
 
     // isLocalCast divergence: local earthbind/dispel resets self fly height.
     // Remote path (isLocalCast=false) does NOT call setFlyHeight.
     if (isLocalCast && (effect === 'earthbind' || effect === 'dispel')) {
-      // earthbind: reset if caster is flying
       if (effect === 'earthbind' && flyingPlayersRef.has(casterPlayerId)) {
         setFlyHeight(0);
       }
-      // dispel: reset fly height if dispelling self and caster is flying
       if (effect === 'dispel' && targets.includes(casterPlayerId) && flyingPlayersRef.has(casterPlayerId)) {
         setFlyHeight(0);
       }

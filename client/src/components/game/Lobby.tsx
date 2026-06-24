@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useReducer, Suspense } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
@@ -24,7 +24,9 @@ import { SpriteDirection } from '@/hooks/useSpriteAnimation';
 import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings, Player, AvatarClass } from '@/lib/gameTypes';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
-import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
+import { detectMagicWords, MagicEffectType } from '@/lib/utils/magicWords';
+import { buffReducer, initialBuffState } from '@/lib/reducers/buffReducer';
+import { applySpellEffects } from '@/lib/utils/applySpellEffects';
 import { Canvas } from '@react-three/fiber';
 import { attachWebglResilience } from '@/lib/utils/webglResilience';
 import { PerformanceMonitor } from '@react-three/drei';
@@ -222,36 +224,20 @@ export function Lobby() {
     timestamp: number;
   }>>({});
 
-  // Dead players state - tracks players who used "die" magic word
-  const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
+  // MAINT-12: 10 magic-effect useState slots consolidated into one useReducer.
+  // flyHeight, invisibleFlicker, screenShake stay as separate useState (continuous/timer-driven).
+  const [buffState, dispatch] = useReducer(buffReducer, initialBuffState);
+  const {
+    deadPlayers, flyingPlayers, frozenPlayers, petrifiedPlayers,
+    tavernDarkMode, chaosMode, invisiblePlayers, dragonAttack, speedBuffs, sizeBuffs,
+  } = buffState;
 
-  // Flying players state - tracks players who used "fly" magic word
-  const [flyingPlayers, setFlyingPlayers] = useState<Set<string>>(new Set());
+  // flyHeight stays as separate useState — updated every 16ms by movement loop
   const [flyHeight, setFlyHeight] = useState(0); // Current fly height for local player
 
-  // Frozen players state - tracks players affected by "hold person" spell
-  const [frozenPlayers, setFrozenPlayers] = useState<Set<string>>(new Set());
-
-  // Petrified players state - tracks players turned to stone
-  const [petrifiedPlayers, setPetrifiedPlayers] = useState<Set<string>>(new Set());
-
-  // Dark tavern state - triggered by massacre spell
-  const [tavernDarkMode, setTavernDarkMode] = useState(false);
-
-  // Chaos/disco mode state - triggered by chaos mode spell
-  const [chaosMode, setChaosMode] = useState(false);
-
-  // Invisible players state - half opacity for self, invisible to others
-  const [invisiblePlayers, setInvisiblePlayers] = useState<Set<string>>(new Set());
   // Flicker state - controls random brief visibility of invisible players for others
+  // (2s setInterval timer — not driven by spell dispatch)
   const [invisibleFlicker, setInvisibleFlicker] = useState<Record<string, boolean>>({});
-
-  // Dragon attack state - triggered by "clever girl" spell
-  const [dragonAttack, setDragonAttack] = useState<{
-    active: boolean;
-    targetX: number;
-    targetPlayerId: string | null;
-  }>({ active: false, targetX: 0, targetPlayerId: null });
 
   // Refs to track current state for socket event handlers (avoids stale closures)
   // Note: currentLobbyRef is declared after useGameState hook below
@@ -282,18 +268,12 @@ export function Lobby() {
   const deadPlayersRef = React.useRef(deadPlayers);
   React.useEffect(() => { deadPlayersRef.current = deadPlayers; }, [deadPlayers]);
 
-  // Speed buff state - tracks haste stacks (1-3) or slow per player
-  // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x speed
-  const [speedBuffs, setSpeedBuffs] = useState<Record<string, { type: 'haste' | 'slow'; stacks: number }>>({});
-  // MAINT-11: speedBuffsRef declared here (after useState) — must follow declaration order
+  // MAINT-12: speedBuffs and sizeBuffs are now in buffState (useReducer).
+  // Refs maintained for movement loop — declared here to satisfy TDZ ordering
+  // (speedBuffs/sizeBuffs destructured from buffState above, available at this point).
   const speedBuffsRef = React.useRef(speedBuffs);
   React.useEffect(() => { speedBuffsRef.current = speedBuffs; }, [speedBuffs]);
 
-  // Size buff state - tracks enlarge/reduce stacks (1-3) per player
-  // Enlarge stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x size
-  // Reduce stacks: 1 = 0.7x, 2 = 0.5x, 3 = 0.35x size (minimum to stay visible)
-  const [sizeBuffs, setSizeBuffs] = useState<Record<string, { type: 'enlarge' | 'reduce'; stacks: number }>>({});
-  // MAINT-11: sizeBuffsRef declared here (after useState) — must follow declaration order
   const sizeBuffsRef = React.useRef(sizeBuffs);
   React.useEffect(() => { sizeBuffsRef.current = sizeBuffs; }, [sizeBuffs]);
 
@@ -353,20 +333,13 @@ export function Lobby() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLobby?.id]);
 
-  // Reset dead players, speed buffs, flying, frozen, and invisible when battle starts (phase changes from lobby)
+  // MAINT-12: Reset all buff state when leaving lobby phase (one dispatch replaces 7 setters).
   useEffect(() => {
     if (currentLobby?.gamePhase && currentLobby.gamePhase !== 'lobby') {
-      // Clear all states when leaving lobby
-      setDeadPlayers(new Set());
-      setSpeedBuffs({});
+      dispatch({ type: 'PHASE_RESET' });
       setAfterimages([]);
-      setFlyingPlayers(new Set());
       setFlyHeight(0);
-      setFrozenPlayers(new Set());
-      setPetrifiedPlayers(new Set());
-      setInvisiblePlayers(new Set());
       setInvisibleFlicker({});
-      setSizeBuffs({});
     }
   }, [currentLobby?.gamePhase]);
 
@@ -848,281 +821,38 @@ export function Lobby() {
       if (detectedEffects.length > 0) {
         const lobby = currentLobbyRef.current;
 
-        // Helper to resolve target IDs for a spell
-        // Returns array of player IDs - either targets from message or just the caster
-        const resolveTargets = (effectType: MagicEffectType): string[] => {
-          const spellWords = getSpellWords(effectType);
-          const targetNames = extractSpellTargets(message, spellWords);
+        // MAINT-12: Remote cascade replaced by applySpellEffects (isLocalCast=false).
+        // Dragon handled separately below (requires random victim + external setTimeout).
+        applySpellEffects(
+          detectedEffects,
+          message,
+          playerId,
+          lobby?.players ?? [],
+          flyingPlayersRef.current,
+          invisiblePlayersRef.current,
+          false, // isLocalCast — remote path does NOT call setFlyHeight
+          dispatch,
+          setFlyHeight,
+          null,
+          null,
+        );
 
-          if (!targetNames || !lobby) {
-            return [playerId]; // Self-cast
-          }
-
-          // Find matching players by name
-          const targetIds: string[] = [];
-          for (const name of targetNames) {
-            const player = lobby.players.find(
-              p => p.name.toLowerCase() === name.toLowerCase()
-            );
-            if (player) {
-              targetIds.push(player.id);
-            }
-          }
-
-          return targetIds.length > 0 ? targetIds : [playerId]; // Fall back to self if no valid targets
-        };
-
-        // Handle die - targetable
-        if (detectedEffects.includes('die')) {
-          const targets = resolveTargets('die');
-          targets.forEach(targetId => {
-            setDeadPlayers(prev => new Set([...prev, targetId]));
-          });
-        }
-
-        // Handle revive - targetable
-        if (detectedEffects.includes('revive')) {
-          const targets = resolveTargets('revive');
-          targets.forEach(targetId => {
-            setDeadPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          });
-        }
-
-        // Handle haste - targetable, stacks up to 3
-        if (detectedEffects.includes('haste')) {
-          const targets = resolveTargets('haste');
-          targets.forEach(targetId => {
-            setSpeedBuffs(prev => {
-              const current = prev[targetId];
-              if (current?.type === 'haste') {
-                return { ...prev, [targetId]: { type: 'haste', stacks: Math.min(current.stacks + 1, 3) } };
-              }
-              return { ...prev, [targetId]: { type: 'haste', stacks: 1 } };
-            });
-          });
-        }
-
-        // Handle slow - targetable
-        if (detectedEffects.includes('slow')) {
-          const targets = resolveTargets('slow');
-          targets.forEach(targetId => {
-            setSpeedBuffs(prev => ({ ...prev, [targetId]: { type: 'slow', stacks: 1 } }));
-          });
-        }
-
-        // Handle enlarge - targetable, stacks up to 3
-        if (detectedEffects.includes('enlarge')) {
-          const targets = resolveTargets('enlarge');
-          targets.forEach(targetId => {
-            setSizeBuffs(prev => {
-              const current = prev[targetId];
-              if (current?.type === 'enlarge') {
-                return { ...prev, [targetId]: { type: 'enlarge', stacks: Math.min(current.stacks + 1, 3) } };
-              }
-              return { ...prev, [targetId]: { type: 'enlarge', stacks: 1 } };
-            });
-          });
-        }
-
-        // Handle reduce - targetable, stacks up to 3
-        if (detectedEffects.includes('reduce')) {
-          const targets = resolveTargets('reduce');
-          targets.forEach(targetId => {
-            setSizeBuffs(prev => {
-              const current = prev[targetId];
-              if (current?.type === 'reduce') {
-                return { ...prev, [targetId]: { type: 'reduce', stacks: Math.min(current.stacks + 1, 3) } };
-              }
-              return { ...prev, [targetId]: { type: 'reduce', stacks: 1 } };
-            });
-          });
-        }
-
-        // Handle fly - targetable
-        if (detectedEffects.includes('fly')) {
-          const targets = resolveTargets('fly');
-          targets.forEach(targetId => {
-            setFlyingPlayers(prev => new Set([...prev, targetId]));
-          });
-        }
-
-        // Handle hold (freeze) - targetable, 5 second duration
-        if (detectedEffects.includes('hold')) {
-          const targets = resolveTargets('hold');
-          targets.forEach(targetId => {
-            setFrozenPlayers(prev => new Set([...prev, targetId]));
-            // Auto-unfreeze after 5 seconds
-            setTimeout(() => {
-              setFrozenPlayers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(targetId);
-                return newSet;
-              });
-            }, 5000);
-          });
-        }
-
-        // Handle petrify - targetable
-        if (detectedEffects.includes('petrify')) {
-          const targets = resolveTargets('petrify');
-          targets.forEach(targetId => {
-            setPetrifiedPlayers(prev => new Set([...prev, targetId]));
-            // Show effect on target
-            const targetPos = playerPositionsRef.current[targetId]?.x ?? 0;
-            setMagicEffects(prev => ({
-              ...prev,
-              [targetId]: { effects: ['petrify'], x: targetPos, timestamp: Date.now() }
-            }));
-          });
-        }
-
-        // Handle invisibility - targetable
-        if (detectedEffects.includes('invisibility')) {
-          const targets = resolveTargets('invisibility');
-          targets.forEach(targetId => {
-            setInvisiblePlayers(prev => new Set([...prev, targetId]));
-          });
-          // Note: Breaking invisibility on spell cast is handled separately below
-        }
-
-        // Handle dispel - targetable, removes all effects
-        if (detectedEffects.includes('dispel')) {
-          const targets = resolveTargets('dispel');
-          targets.forEach(targetId => {
-            setSpeedBuffs(prev => {
-              const newBuffs = { ...prev };
-              delete newBuffs[targetId];
-              return newBuffs;
-            });
-            setFlyingPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setFrozenPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setDeadPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setInvisiblePlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setSizeBuffs(prev => {
-              const newBuffs = { ...prev };
-              delete newBuffs[targetId];
-              return newBuffs;
-            });
-            setPetrifiedPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          });
-        }
-
-        // === LOBBY-WIDE SPELLS (no targeting) ===
-
-        // Handle earthbind spell - all flying players crash and die
-        if (detectedEffects.includes('earthbind')) {
-          // Get all currently flying players from ref
-          const flyersToKill = Array.from(flyingPlayersRef.current);
-          if (flyersToKill.length > 0) {
-            // Remove all flyers from flying state
-            setFlyingPlayers(new Set());
-            // Kill all flyers
-            setDeadPlayers(prev => new Set([...prev, ...flyersToKill]));
-            // Show earthbind effect on each falling player
-            flyersToKill.forEach(flyerId => {
-              const flyerPos = playerPositionsRef.current[flyerId]?.x ?? 0;
-              setMagicEffects(prev => ({
-                ...prev,
-                [flyerId]: { effects: ['earthbind'], x: flyerPos, timestamp: Date.now() }
-              }));
-            });
-          }
-        }
-
-        // Handle massacre spell (avada kedavra) - kills all OTHER players, darkens tavern
-        if (detectedEffects.includes('massacre')) {
-          const lobby = currentLobbyRef.current;
-          if (lobby) {
-            // Kill all players except the caster
-            const playersToKill = lobby.players
-              .filter(p => p.id !== playerId)
-              .map(p => p.id);
-            setDeadPlayers(prev => new Set([...prev, ...playersToKill]));
-            // Remove flying state from killed players
-            setFlyingPlayers(prev => {
-              const newSet = new Set(prev);
-              playersToKill.forEach(id => newSet.delete(id));
-              return newSet;
-            });
-            // Darken the tavern for 15 seconds
-            setTavernDarkMode(true);
-            setTimeout(() => setTavernDarkMode(false), 15000);
-          }
-        }
-
-        // Handle mass revive spell - revives entire lobby
-        if (detectedEffects.includes('massrevive')) {
-          // Clear all dead players
-          setDeadPlayers(new Set());
-          // Also clear frozen state
-          setFrozenPlayers(new Set());
-        }
-
-        // Handle dragon attack spell - dragon eats a random player
+        // Dragon attack (not handled by applySpellEffects — random victim + setTimeout)
         if (detectedEffects.includes('dragon')) {
-          const lobby = currentLobbyRef.current;
           if (lobby && lobby.players.length > 1) {
-            // Pick a random player (excluding the caster)
             const eligiblePlayers = lobby.players.filter(p => p.id !== playerId);
             if (eligiblePlayers.length > 0) {
               const victim = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
               const victimPos = playerPositionsRef.current[victim.id]?.x ?? 200;
-              // Start dragon animation
-              setDragonAttack({ active: true, targetX: victimPos, targetPlayerId: victim.id });
-              // Kill the victim after dragon reaches them (at ~50% of animation)
+              dispatch({ type: 'DRAGON', victim: victim.id, victimPos });
               setTimeout(() => {
-                setDeadPlayers(prev => new Set([...prev, victim.id]));
-                setFlyingPlayers(prev => {
-                  const newSet = new Set(prev);
-                  newSet.delete(victim.id);
-                  return newSet;
-                });
+                dispatch({ type: 'DIE', targets: [victim.id] });
               }, 1500);
-              // End dragon animation
               setTimeout(() => {
-                setDragonAttack({ active: false, targetX: 0, targetPlayerId: null });
+                dispatch({ type: 'DRAGON_END' });
               }, 3500);
             }
           }
-        }
-
-        // Handle chaos mode - rainbow disco effect for 5 seconds (lobby-wide)
-        if (detectedEffects.includes('chaos')) {
-          setChaosMode(true);
-          setTimeout(() => setChaosMode(false), 5000);
-        }
-
-        // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
-        if (!detectedEffects.includes('invisibility') && invisiblePlayersRef.current.has(playerId)) {
-          setInvisiblePlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(playerId);
-            return newSet;
-          });
         }
 
         // Get player's X position from playerPositions ref
@@ -1341,319 +1071,43 @@ export function Lobby() {
     // Detect magic words and trigger effects for local player
     const detectedEffects = detectMagicWords(message);
     if (detectedEffects.length > 0) {
-      // Helper to resolve target IDs for a spell
-      // Returns array of player IDs - either targets from message or just the caster
-      const resolveTargets = (effectType: MagicEffectType): string[] => {
-        const spellWords = getSpellWords(effectType);
-        const targetNames = extractSpellTargets(message, spellWords);
+      // MAINT-12: Local cascade replaced by applySpellEffects (isLocalCast=true).
+      // Dragon handled separately below (requires random victim + external setTimeout).
+      applySpellEffects(
+        detectedEffects,
+        message,
+        currentPlayer.id,
+        currentLobby?.players ?? [],
+        flyingPlayersRef.current,
+        invisiblePlayersRef.current,
+        true, // isLocalCast — local path calls setFlyHeight(0) on earthbind/dispel-self
+        dispatch,
+        setFlyHeight,
+        null,
+        null,
+      );
 
-        if (!targetNames || !currentLobby) {
-          return [currentPlayer.id]; // Self-cast
-        }
-
-        // Find matching players by name
-        const targetIds: string[] = [];
-        for (const name of targetNames) {
-          const player = currentLobby.players.find(
-            p => p.name.toLowerCase() === name.toLowerCase()
-          );
-          if (player) {
-            targetIds.push(player.id);
-          }
-        }
-
-        return targetIds.length > 0 ? targetIds : [currentPlayer.id]; // Fall back to self if no valid targets
-      };
-
-      // Handle die - targetable
-      if (detectedEffects.includes('die')) {
-        const targets = resolveTargets('die');
-        targets.forEach(targetId => {
-          setDeadPlayers(prev => new Set([...prev, targetId]));
-          // Break invisibility when dying
-          if (invisiblePlayersRef.current.has(targetId)) {
-            setInvisiblePlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          }
-        });
-      }
-
-      // Handle revive - targetable
-      if (detectedEffects.includes('revive')) {
-        const targets = resolveTargets('revive');
-        targets.forEach(targetId => {
-          setDeadPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-        });
-      }
-
-      // Handle haste - targetable, stacks up to 3
-      if (detectedEffects.includes('haste')) {
-        const targets = resolveTargets('haste');
-        targets.forEach(targetId => {
-          setSpeedBuffs(prev => {
-            const current = prev[targetId];
-            if (current?.type === 'haste') {
-              return { ...prev, [targetId]: { type: 'haste', stacks: Math.min(current.stacks + 1, 3) } };
-            }
-            return { ...prev, [targetId]: { type: 'haste', stacks: 1 } };
-          });
-        });
-      }
-
-      // Handle slow - targetable
-      if (detectedEffects.includes('slow')) {
-        const targets = resolveTargets('slow');
-        targets.forEach(targetId => {
-          setSpeedBuffs(prev => ({ ...prev, [targetId]: { type: 'slow', stacks: 1 } }));
-        });
-      }
-
-      // Handle enlarge - targetable, stacks up to 3
-      if (detectedEffects.includes('enlarge')) {
-        const targets = resolveTargets('enlarge');
-        targets.forEach(targetId => {
-          setSizeBuffs(prev => {
-            const current = prev[targetId];
-            if (current?.type === 'enlarge') {
-              return { ...prev, [targetId]: { type: 'enlarge', stacks: Math.min(current.stacks + 1, 3) } };
-            }
-            return { ...prev, [targetId]: { type: 'enlarge', stacks: 1 } };
-          });
-        });
-      }
-
-      // Handle reduce - targetable, stacks up to 3
-      if (detectedEffects.includes('reduce')) {
-        const targets = resolveTargets('reduce');
-        targets.forEach(targetId => {
-          setSizeBuffs(prev => {
-            const current = prev[targetId];
-            if (current?.type === 'reduce') {
-              return { ...prev, [targetId]: { type: 'reduce', stacks: Math.min(current.stacks + 1, 3) } };
-            }
-            return { ...prev, [targetId]: { type: 'reduce', stacks: 1 } };
-          });
-        });
-      }
-
-      // Handle fly - targetable
-      if (detectedEffects.includes('fly')) {
-        const targets = resolveTargets('fly');
-        targets.forEach(targetId => {
-          setFlyingPlayers(prev => new Set([...prev, targetId]));
-        });
-      }
-
-      // Handle hold (freeze) - targetable, 5 second duration
-      if (detectedEffects.includes('hold')) {
-        const targets = resolveTargets('hold');
-        targets.forEach(targetId => {
-          setFrozenPlayers(prev => new Set([...prev, targetId]));
-          // Show magic effect on the target
-          const targetPos = targetId === currentPlayer.id
-            ? myPosition.x
-            : (playerPositions[targetId]?.x ?? 0);
-          setMagicEffects(prev => ({
-            ...prev,
-            [targetId]: { effects: ['hold'], x: targetPos, timestamp: Date.now() }
-          }));
-          // Auto-unfreeze after 5 seconds
-          setTimeout(() => {
-            setFrozenPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          }, 5000);
-        });
-      }
-
-      // Handle petrify - targetable
-      if (detectedEffects.includes('petrify')) {
-        const targets = resolveTargets('petrify');
-        targets.forEach(targetId => {
-          setPetrifiedPlayers(prev => new Set([...prev, targetId]));
-          // Show effect on target
-          const targetPos = targetId === currentPlayer.id
-            ? myPosition.x
-            : (playerPositions[targetId]?.x ?? 0);
-          setMagicEffects(prev => ({
-            ...prev,
-            [targetId]: { effects: ['petrify'], x: targetPos, timestamp: Date.now() }
-          }));
-        });
-      }
-
-      // Handle invisibility - targetable
-      if (detectedEffects.includes('invisibility')) {
-        const targets = resolveTargets('invisibility');
-        targets.forEach(targetId => {
-          setInvisiblePlayers(prev => new Set([...prev, targetId]));
-        });
-      }
-
-      // Handle dispel - targetable, removes all effects
-      if (detectedEffects.includes('dispel')) {
-        const targets = resolveTargets('dispel');
-        targets.forEach(targetId => {
-          setSpeedBuffs(prev => {
-            const newBuffs = { ...prev };
-            delete newBuffs[targetId];
-            return newBuffs;
-          });
-          // Reset fly height if dispelling self
-          if (targetId === currentPlayer.id && flyingPlayersRef.current.has(targetId)) {
-            setFlyHeight(0);
-          }
-          setFlyingPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setFrozenPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setDeadPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setInvisiblePlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setSizeBuffs(prev => {
-            const newBuffs = { ...prev };
-            delete newBuffs[targetId];
-            return newBuffs;
-          });
-          setPetrifiedPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-        });
-      }
-
-      // === LOBBY-WIDE SPELLS (no targeting) ===
-
-      // Handle earthbind spell - all flying players crash and die
-      if (detectedEffects.includes('earthbind')) {
-        // Get all currently flying players from ref
-        const flyersToKill = Array.from(flyingPlayersRef.current);
-        if (flyersToKill.length > 0) {
-          // Reset local fly height if we're flying
-          if (flyingPlayersRef.current.has(currentPlayer.id)) {
-            setFlyHeight(0);
-          }
-          // Remove all flyers from flying state
-          setFlyingPlayers(new Set());
-          // Kill all flyers
-          setDeadPlayers(prev => new Set([...prev, ...flyersToKill]));
-          // Show earthbind effect on each falling player
-          flyersToKill.forEach(flyerId => {
-            const flyerPos = flyerId === currentPlayer.id
-              ? myPosition.x
-              : (playerPositions[flyerId]?.x ?? 0);
-            setMagicEffects(prev => ({
-              ...prev,
-              [flyerId]: { effects: ['earthbind'], x: flyerPos, timestamp: Date.now() }
-            }));
-          });
-        }
-      }
-
-      // Handle massacre spell (avada kedavra) - kills all OTHER players, darkens tavern
-      if (detectedEffects.includes('massacre')) {
-        if (currentLobby) {
-          // Kill all players except the caster
-          const playersToKill = currentLobby.players
-            .filter(p => p.id !== currentPlayer.id)
-            .map(p => p.id);
-          setDeadPlayers(prev => new Set([...prev, ...playersToKill]));
-          // Remove flying state from killed players
-          setFlyingPlayers(prev => {
-            const newSet = new Set(prev);
-            playersToKill.forEach(id => newSet.delete(id));
-            return newSet;
-          });
-          // Show massacre effect on each killed player
-          playersToKill.forEach(targetId => {
-            const targetPos = playerPositions[targetId]?.x ?? 0;
-            setMagicEffects(prev => ({
-              ...prev,
-              [targetId]: { effects: ['massacre'], x: targetPos, timestamp: Date.now() }
-            }));
-          });
-          // Darken the tavern for 15 seconds
-          setTavernDarkMode(true);
-          setTimeout(() => setTavernDarkMode(false), 15000);
-        }
-      }
-
-      // Handle mass revive spell - revives entire lobby
-      if (detectedEffects.includes('massrevive')) {
-        // Clear all dead players
-        setDeadPlayers(new Set());
-        // Also clear frozen state
-        setFrozenPlayers(new Set());
-      }
-
-      // Handle dragon attack spell - dragon eats a random player
+      // Dragon attack (not handled by applySpellEffects — random victim + setTimeout)
       if (detectedEffects.includes('dragon')) {
         if (currentLobby && currentLobby.players.length > 1) {
-          // Pick a random player (excluding the caster)
           const eligiblePlayers = currentLobby.players.filter(p => p.id !== currentPlayer.id);
           if (eligiblePlayers.length > 0) {
             const victim = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
             const victimPos = playerPositions[victim.id]?.x ?? 200;
-            // Start dragon animation
-            setDragonAttack({ active: true, targetX: victimPos, targetPlayerId: victim.id });
-            // Kill the victim after dragon reaches them
+            dispatch({ type: 'DRAGON', victim: victim.id, victimPos });
             setTimeout(() => {
-              setDeadPlayers(prev => new Set([...prev, victim.id]));
-              setFlyingPlayers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(victim.id);
-                return newSet;
-              });
+              dispatch({ type: 'DIE', targets: [victim.id] });
               // Show fire effect on victim
               setMagicEffects(prev => ({
                 ...prev,
                 [victim.id]: { effects: ['dragon', 'fire'], x: victimPos, timestamp: Date.now() }
               }));
             }, 1500);
-            // End dragon animation
             setTimeout(() => {
-              setDragonAttack({ active: false, targetX: 0, targetPlayerId: null });
+              dispatch({ type: 'DRAGON_END' });
             }, 3500);
           }
         }
-      }
-
-      // Handle chaos mode - rainbow disco effect for 5 seconds (lobby-wide)
-      if (detectedEffects.includes('chaos')) {
-        setChaosMode(true);
-        setTimeout(() => setChaosMode(false), 5000);
-      }
-
-      // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
-      if (!detectedEffects.includes('invisibility') && invisiblePlayersRef.current.has(currentPlayer.id)) {
-        setInvisiblePlayers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(currentPlayer.id);
-          return newSet;
-        });
       }
 
       setMagicEffects(prev => ({
