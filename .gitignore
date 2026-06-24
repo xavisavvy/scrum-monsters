@@ -51,6 +51,14 @@ coverage
 # Playwright
 playwright-report/
 test-results/
+.playwright-mcp/
+
+# Local debug/verification artifacts (ad-hoc screenshots, crash dumps)
+*.stackdump
+verify-*.png
+repro-*.jpeg
+repro-*.png
+avatar-test-*.png
 
 # Database
 *.sqlite
