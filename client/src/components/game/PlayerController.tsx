@@ -55,6 +55,11 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
   const [qPressed, setQPressed] = useState(false);
   const [specialAttackCooldown, setSpecialAttackCooldown] = useState(0);
   const [currentDirection, setCurrentDirection] = useState<SpriteDirection>('down');
+  // MAINT-11: ref-mirror so movePlayer closure reads the latest direction
+  // without adding currentDirection to the movement dep array (which caused
+  // the 16ms interval to be recreated on every turn).
+  const currentDirectionRef = useRef<SpriteDirection>('down');
+  useEffect(() => { currentDirectionRef.current = currentDirection; }, [currentDirection]);
   const [isMoving, setIsMoving] = useState(false);
 
   const isMobile = useIsMobile();
@@ -416,7 +421,8 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
         // after deltaX/deltaY normalization), so the prev.x/prev.y seed
         // values were dead. CodeQL js/useless-assignment-to-local.
         let moving = false;
-        let direction: SpriteDirection = currentDirection;
+        // MAINT-11: read from ref — keeps currentDirection out of the movement dep array
+        let direction: SpriteDirection = currentDirectionRef.current;
 
         // Calculate movement vector for smooth diagonal movement
         let deltaX = 0;
@@ -487,7 +493,11 @@ export const PlayerController = React.memo(function PlayerController({ onPlayerP
 
     const interval = setInterval(movePlayer, 16); // ~60 FPS for immediate response
     return () => clearInterval(interval);
-  }, [keys, viewport, characterSize, moveSpeed, emit, currentDirection]);
+    // MAINT-11: currentDirection removed — promoted to currentDirectionRef so turning
+    // no longer recreates the 16ms interval. keys/viewport/characterSize/moveSpeed/emit
+    // are the only true deps of the effect closure.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [keys, viewport, characterSize, moveSpeed, emit]);
 
   const handleShoot = useCallback((projectileData: Omit<Projectile, 'id' | 'progress'>) => {
     const newProjectile: Projectile = {
