@@ -142,10 +142,9 @@ export function useViewport(): ViewportState {
     if (currentPlayer && currentLobby?.playerPositions) {
       const playerPos = currentLobby.playerPositions[currentPlayer.id];
       if (playerPos) {
-        // Convert player position from percentage to world coordinates
-        const worldX = (playerPos.x / 100) * WORLD_WIDTH;
-        const worldY = (playerPos.y / 100) * WORLD_HEIGHT;
-        
+        // Convert player position from percentage to world coordinates (Site 5 — percentToWorld, no clamp)
+        const { x: worldX, y: worldY } = percentToWorld(playerPos.x, playerPos.y, WORLD_WIDTH, WORLD_HEIGHT);
+
         setCameraTarget(worldX, worldY);
       }
     }
@@ -162,5 +161,49 @@ export function useViewport(): ViewportState {
     worldToScreen,
     screenToWorld,
     setCameraTarget,
+  };
+}
+
+/**
+ * Convert world coordinates to percent wire format.
+ * Always clamps result to [0, 100] — use this for ALL socket emits.
+ *
+ * BEHAVIOR CHANGE (MAINT-10): Sites 2 (PlayerController:180-185) and 4
+ * (PlayerController:553-558) previously did NOT clamp before emitting
+ * projectile coordinates. Adopting this helper canonicalizes them — out-of-
+ * bounds coordinates are clamped to [0,100] before wire emission.
+ * This is intentional: out-of-bounds coords are physically impossible in
+ * normal gameplay, and the old unclamped behavior was inconsistent with
+ * Site 3 (movement loop), which already clamped.
+ */
+export function worldToPercent(
+  worldX: number,
+  worldY: number,
+  worldWidth: number,
+  worldHeight: number,
+): { x: number; y: number } {
+  return {
+    x: Math.max(0, Math.min(100, (worldX / worldWidth) * 100)),
+    y: Math.max(0, Math.min(100, (worldY / worldHeight) * 100)),
+  };
+}
+
+/**
+ * Convert percent wire coordinates to world coordinates.
+ * Does NOT clamp — trusts server-provided values.
+ *
+ * Site 1 (PlayerController:71-76) pre-clamps inputs to [0,100] at the call
+ * site as a defensive guard; that pre-clamp may be retained there — this
+ * helper intentionally omits it.
+ */
+export function percentToWorld(
+  percentX: number,
+  percentY: number,
+  worldWidth: number,
+  worldHeight: number,
+): { x: number; y: number } {
+  return {
+    x: (percentX / 100) * worldWidth,
+    y: (percentY / 100) * worldHeight,
   };
 }
