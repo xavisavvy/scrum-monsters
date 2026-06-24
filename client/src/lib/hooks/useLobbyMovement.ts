@@ -18,7 +18,6 @@
 
 import React, { useEffect } from 'react';
 import type { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import type { MagicEffectType } from '@/lib/utils/magicWords';
 
 // ─── Props interface ────────────────────────────────────────────────────────
 
@@ -215,8 +214,8 @@ export function useLobbyMovement({
   // gamePhase: early-return guard (gamePhase !== 'lobby')
   // emit: stable from useWebSocket; included per exhaustive-deps rules
   // currentPlayerId: used in freeze/dead/speed/size checks inside movePlayer
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [keys, gamePhase, emit, currentPlayerId]);
+  // Refs (jumpHeightRef, frozenPlayersRef, etc.) are stable props — intentionally omitted.
+  }, [keys, gamePhase, emit, currentPlayerId]); // intentional collapsed dep array (MAINT-11)
 
   // ── 2. Jump animation (rAF-based parabolic arc) ──────────────────────────
   //
