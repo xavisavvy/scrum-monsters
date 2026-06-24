@@ -1,8 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { resolveTargets, buildAction, applySpellEffects } from './applySpellEffects';
-import type { BuffAction } from '@/lib/reducers/buffReducer';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AnyFn = (...args: any[]) => any;
 
 // Minimal Player shape for testing
@@ -159,7 +157,6 @@ describe('applySpellEffects — isLocalCast setFlyHeight divergence', () => {
   });
 
   // Cast helpers to satisfy strict function signatures while keeping vi.fn() mocks
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const cast = <T>(fn: AnyFn): T => fn as unknown as T;
 
   it('isLocalCast=true + earthbind + caster is flying → calls setFlyHeight(0)', () => {
