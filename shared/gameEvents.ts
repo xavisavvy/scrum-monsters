@@ -1,5 +1,16 @@
 // Shared types and events for the multiplayer scrum poker game
 
+import type { ItemType } from './itemTypes';
+
+/**
+ * Envelope added by ClientEventEmitter.emitToLobby to every fine-grained event.
+ * All session:*, estimation:*, combat:*, progression:*, class_mastery:*,
+ * ability:*, combo:*, item:*, stats:*, and system:full_state events carry this.
+ * Excluded: system:missed_events, server_shutdown, connection_lost,
+ * reconnect_attempt (these 4 have no seq/timestamp in their payload).
+ */
+export type Sequenced<T> = T & { seq: number; timestamp: number };
+
 export interface Position {
   x: number;
   y: number;
@@ -332,7 +343,7 @@ export interface ClientToServerEvents {
   // Class abilities
   use_ability: (data: { abilityId: string }) => void;
   // Items
-  use_item: (data: { itemType: string }) => void;
+  use_item: (data: { itemType: ItemType }) => void;
 }
 
 export interface TeamScores {
@@ -417,137 +428,121 @@ export interface ServerToClientEvents {
   reconnect_attempt: (data: { attempt: number; maxAttempts: number; nextRetryIn: number }) => void;
 
   // Fine-grained session events
-  'session:player_joined': (data: { playerId: string; playerName: string; team: TeamType; avatar?: AvatarClass; seq: number; timestamp: number }) => void;
-  'session:player_left': (data: { playerId: string; seq: number; timestamp: number }) => void;
-  'session:host_changed': (data: { oldHostId: string; newHostId: string; newHostName: string; seq: number; timestamp: number }) => void;
-  'session:phase_changed': (data: { oldPhase: GamePhase; newPhase: GamePhase; completedTickets?: CompletedTicket[]; seq: number; timestamp: number }) => void;
-  'session:team_changed': (data: { playerId: string; oldTeam: TeamType; newTeam: TeamType; seq: number; timestamp: number }) => void;
-  'session:avatar_selected': (data: { playerId: string; avatar: AvatarClass; seq: number; timestamp: number }) => void;
+  'session:player_joined': (data: Sequenced<{ playerId: string; playerName: string; team: TeamType; avatar?: AvatarClass }>) => void;
+  'session:player_left': (data: Sequenced<{ playerId: string }>) => void;
+  'session:host_changed': (data: Sequenced<{ oldHostId: string; newHostId: string; newHostName: string }>) => void;
+  'session:phase_changed': (data: Sequenced<{ oldPhase: GamePhase; newPhase: GamePhase; completedTickets?: CompletedTicket[] }>) => void;
+  'session:team_changed': (data: Sequenced<{ playerId: string; oldTeam: TeamType; newTeam: TeamType }>) => void;
+  'session:avatar_selected': (data: Sequenced<{ playerId: string; avatar: AvatarClass }>) => void;
   // Note: payload intentionally does not include hasSelectedAvatar — clients
   // infer the flipped-true transition from receipt of this event itself.
 
   // Phase 42-02b: New fine-grained events to absorb the retiring `lobby_updated` full-state push.
-  'session:tickets_updated': (data: { tickets: JiraTicket[]; seq: number; timestamp: number }) => void;
-  'session:player_ready_changed': (data: { playerId: string; isReady: boolean; seq: number; timestamp: number }) => void;
-  'session:lobby_renamed': (data: { name: string; seq: number; timestamp: number }) => void;
-  'session:settings_updated': (data: { timerSettings?: TimerSettings; jiraSettings?: JiraSettings; estimationSettings?: EstimationSettings; seq: number; timestamp: number }) => void;
-  'session:game_reset': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
-  'session:ticket_advanced': (data: { currentTicket: JiraTicket; seq: number; timestamp: number }) => void;
+  'session:tickets_updated': (data: Sequenced<{ tickets: JiraTicket[] }>) => void;
+  'session:player_ready_changed': (data: Sequenced<{ playerId: string; isReady: boolean }>) => void;
+  'session:lobby_renamed': (data: Sequenced<{ name: string }>) => void;
+  'session:settings_updated': (data: Sequenced<{ timerSettings?: TimerSettings; jiraSettings?: JiraSettings; estimationSettings?: EstimationSettings }>) => void;
+  'session:game_reset': (data: Sequenced<{ lobby: Lobby }>) => void;
+  'session:ticket_advanced': (data: Sequenced<{ currentTicket: JiraTicket }>) => void;
 
   // Fine-grained estimation events
-  'estimation:vote_cast': (data: { playerId: string; team: TeamType; hasVoted: boolean; seq: number; timestamp: number }) => void;
-  'estimation:votes_revealed': (data: { votes: Record<string, number | '?'>; team: TeamType; seq: number; timestamp: number }) => void;
-  'estimation:consensus_reached': (data: { team: TeamType; consensusValue: number; seq: number; timestamp: number }) => void;
-  'estimation:timer_started': (data: { team: TeamType; endsAt: number; durationMs: number; seq: number; timestamp: number }) => void;
-  'estimation:timer_paused': (data: { team: TeamType; remainingMs: number; seq: number; timestamp: number }) => void;
-  'estimation:timer_resumed': (data: { team: TeamType; endsAt: number; seq: number; timestamp: number }) => void;
-  'estimation:timer_expired': (data: { team: TeamType; votedCount: number; eligibleCount: number; seq: number; timestamp: number }) => void;
-  'estimation:estimate_forced': (data: { team: TeamType; consensusValue: number; seq: number; timestamp: number }) => void;
-  'estimation:discussion_timer_started': (data: { durationMs: number; endsAt: number; seq: number; timestamp: number }) => void;
-  'estimation:discussion_ended': (data: { reason: string; finalEstimate: number; seq: number; timestamp: number }) => void;
+  'estimation:vote_cast': (data: Sequenced<{ playerId: string; team: TeamType; hasVoted: boolean }>) => void;
+  'estimation:votes_revealed': (data: Sequenced<{ votes: Record<string, number | '?'>; team: TeamType }>) => void;
+  'estimation:consensus_reached': (data: Sequenced<{ team: TeamType; consensusValue: number }>) => void;
+  'estimation:timer_started': (data: Sequenced<{ team: TeamType; endsAt: number; durationMs: number }>) => void;
+  'estimation:timer_paused': (data: Sequenced<{ team: TeamType; remainingMs: number }>) => void;
+  'estimation:timer_resumed': (data: Sequenced<{ team: TeamType; endsAt: number }>) => void;
+  'estimation:timer_expired': (data: Sequenced<{ team: TeamType; votedCount: number; eligibleCount: number }>) => void;
+  'estimation:estimate_forced': (data: Sequenced<{ team: TeamType; consensusValue: number }>) => void;
+  'estimation:discussion_timer_started': (data: Sequenced<{ durationMs: number; endsAt: number }>) => void;
+  'estimation:discussion_ended': (data: Sequenced<{ reason: string; finalEstimate: number }>) => void;
   // Phase 42-02b: Per-vote update during discussion phase (replaces lobby_updated for site websocket.ts:959).
-  'estimation:discussion_vote_updated': (data: { playerId: string; score: number | string; seq: number; timestamp: number }) => void;
+  'estimation:discussion_vote_updated': (data: Sequenced<{ playerId: string; score: number | string }>) => void;
 
   // Fine-grained combat events
-  'combat:boss_damaged': (data: { playerId: string; damage: number; newHp: number; seq: number; timestamp: number }) => void;
-  'combat:boss_healed': (data: { healAmount: number; newHp: number; seq: number; timestamp: number }) => void;
-  'combat:boss_enraged': (data: { message: string; seq: number; timestamp: number }) => void;
-  'combat:boss_telegraph': (data: { targetId?: string; attackType?: string; message: string; delayMs: number; visualEffect?: string; bossType?: string; seq: number; timestamp: number }) => void;
-  'combat:boss_phase_transition': (data: { newPhase: number; previousPhase: number; message: string; bossType: string; seq: number; timestamp: number }) => void;
-  'combat:boss_defeated': (data: { seq: number; timestamp: number }) => void;
-  'combat:player_damaged': (data: { playerId: string; damage: number; newHp: number; source: 'boss' | 'player'; seq: number; timestamp: number }) => void;
-  'combat:player_downed': (data: { playerId: string; countdownSeconds: number; seq: number; timestamp: number }) => void;
-  'combat:player_revived': (data: { playerId: string; reviverId: string; newHp: number; seq: number; timestamp: number }) => void;
-  'combat:revival_started': (data: { reviverId: string; targetId: string; durationMs: number; seq: number; timestamp: number }) => void;
-  'combat:revival_progress': (data: { reviverId: string; targetId: string; percent: number; remainingMs: number; seq: number; timestamp: number }) => void;
-  'combat:revival_cancelled': (data: { reviverId: string; targetId: string; reason: string; seq: number; timestamp: number }) => void;
-  'combat:player_healed': (data: { playerId: string; healerId: string; healAmount: number; newHp: number; seq: number; timestamp: number }) => void;
-  'combat:player_entered_battle': (data: { playerId: string; seq: number; timestamp: number }) => void;
-  'combat:modifier_updated': (data: { modifier: number; seq: number; timestamp: number }) => void;
-  'combat:countdown_started': (data: { durationSeconds: number; startedAt: number; seq: number; timestamp: number }) => void;
-  'combat:countdown_tick': (data: { remainingSeconds: number; multiplier: number; seq: number; timestamp: number }) => void;
-  'combat:countdown_complete': (data: { finalMultiplier: number; seq: number; timestamp: number }) => void;
-  'combat:team_attack': (data: { damage: number; multiplier: number; newBossHp: number; seq: number; timestamp: number }) => void;
-  'combat:minion_spawned': (data: { playerId: string; avatar: string; hp: number; maxHp: number; seq: number; timestamp: number }) => void;
-  'combat:minion_attack': (data: { minionPlayerId: string; targetId: string; damage: number; attackType: string; seq: number; timestamp: number }) => void;
-  'combat:minion_heal_boss': (data: { minionPlayerId: string; healAmount: number; newBossHp: number; seq: number; timestamp: number }) => void;
-  'combat:minion_damaged': (data: { playerId: string; damage: number; newHp: number; attackerId: string; seq: number; timestamp: number }) => void;
-  'combat:minion_killed': (data: { playerId: string; killerId: string; respawnInSeconds: number; seq: number; timestamp: number }) => void;
+  'combat:boss_damaged': (data: Sequenced<{ playerId: string; damage: number; newHp: number }>) => void;
+  'combat:boss_healed': (data: Sequenced<{ healAmount: number; newHp: number }>) => void;
+  'combat:boss_enraged': (data: Sequenced<{ message: string }>) => void;
+  'combat:boss_telegraph': (data: Sequenced<{ targetId?: string; attackType?: string; message: string; delayMs: number; visualEffect?: string; bossType?: string }>) => void;
+  'combat:boss_phase_transition': (data: Sequenced<{ newPhase: number; previousPhase: number; message: string; bossType: string }>) => void;
+  'combat:boss_defeated': (data: Sequenced<Record<never, never>>) => void;
+  'combat:player_damaged': (data: Sequenced<{ playerId: string; damage: number; newHp: number; source: 'boss' | 'player' }>) => void;
+  'combat:player_downed': (data: Sequenced<{ playerId: string; countdownSeconds: number }>) => void;
+  'combat:player_revived': (data: Sequenced<{ playerId: string; reviverId: string; newHp: number }>) => void;
+  'combat:revival_started': (data: Sequenced<{ reviverId: string; targetId: string; durationMs: number }>) => void;
+  'combat:revival_progress': (data: Sequenced<{ reviverId: string; targetId: string; percent: number; remainingMs: number }>) => void;
+  'combat:revival_cancelled': (data: Sequenced<{ reviverId: string; targetId: string; reason: string }>) => void;
+  'combat:player_healed': (data: Sequenced<{ playerId: string; healerId: string; healAmount: number; newHp: number }>) => void;
+  'combat:player_entered_battle': (data: Sequenced<{ playerId: string }>) => void;
+  'combat:modifier_updated': (data: Sequenced<{ modifier: number }>) => void;
+  'combat:countdown_started': (data: Sequenced<{ durationSeconds: number; startedAt: number }>) => void;
+  'combat:countdown_tick': (data: Sequenced<{ remainingSeconds: number; multiplier: number }>) => void;
+  'combat:countdown_complete': (data: Sequenced<{ finalMultiplier: number }>) => void;
+  'combat:team_attack': (data: Sequenced<{ damage: number; multiplier: number; newBossHp: number }>) => void;
+  'combat:minion_spawned': (data: Sequenced<{ playerId: string; avatar: AvatarClass; hp: number; maxHp: number }>) => void;
+  'combat:minion_attack': (data: Sequenced<{ minionPlayerId: string; targetId: string; damage: number; attackType: string }>) => void;
+  'combat:minion_heal_boss': (data: Sequenced<{ minionPlayerId: string; healAmount: number; newBossHp: number }>) => void;
+  'combat:minion_damaged': (data: Sequenced<{ playerId: string; damage: number; newHp: number; attackerId: string }>) => void;
+  'combat:minion_killed': (data: Sequenced<{ playerId: string; killerId: string; respawnInSeconds: number }>) => void;
 
   // Fine-grained progression events
-  'progression:xp_awarded': (data: {
+  'progression:xp_awarded': (data: Sequenced<{
     playerId: string;
     amount: number;
     source: 'vote' | 'boss_damage' | 'consensus' | 'revival';
     newTotal: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'progression:level_up': (data: {
+  'progression:level_up': (data: Sequenced<{
     playerId: string;
     oldLevel: number;
     newLevel: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'progression:sync': (data: {
+  'progression:sync': (data: Sequenced<{
     playerId: string;
     totalXP: number;
     currentLevel: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
   // Class mastery events
-  'class_mastery:xp_awarded': (data: {
+  'class_mastery:xp_awarded': (data: Sequenced<{
     playerId: string;
-    avatarClass: string;
+    avatarClass: AvatarClass;
     amount: number;
     source: string;
     newTotal: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'class_mastery:tier_up': (data: {
+  'class_mastery:tier_up': (data: Sequenced<{
     playerId: string;
-    avatarClass: string;
+    avatarClass: AvatarClass;
     oldTier: string;
     newTier: string;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'class_mastery:sync': (data: {
+  'class_mastery:sync': (data: Sequenced<{
     playerId: string;
     masteryData: Record<string, { classXP: number; currentTier: string }>;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
   // Ability events
-  'ability:used': (data: {
+  'ability:used': (data: Sequenced<{
     playerId: string;
     abilityId: string;
     abilityName: string;
     effectType: string;
     targetType: string;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'ability:cooldown_started': (data: {
+  'ability:cooldown_started': (data: Sequenced<{
     playerId: string;
     abilityId: string;
     durationMs: number;
     expiresAt: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'ability:effect_applied': (data: {
+  'ability:effect_applied': (data: Sequenced<{
     playerId: string;
     abilityId: string;
     effectType: string;
@@ -556,12 +551,10 @@ export interface ServerToClientEvents {
     buffType?: import('./abilityTypes').BuffType;
     debuffType?: import('./abilityTypes').DebuffType;
     durationMs?: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
   // Combo events
-  'combo:triggered': (data: {
+  'combo:triggered': (data: Sequenced<{
     comboId: string;
     comboName: string;
     triggeringPlayerId: string;
@@ -569,48 +562,38 @@ export interface ServerToClientEvents {
     damage: number;
     damageMultiplier: number;
     visualEffect: string;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'combo:consensus_ultimate': (data: {
+  'combo:consensus_ultimate': (data: Sequenced<{
     damage: number;
     damageMultiplier: number;
     votingDurationMs: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
   // Item events
-  'item:awarded': (data: {
+  'item:awarded': (data: Sequenced<{
     playerId: string;
-    itemType: string;
+    itemType: ItemType;
     newCount: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'item:used': (data: {
+  'item:used': (data: Sequenced<{
     playerId: string;
-    itemType: string;
+    itemType: ItemType;
     remainingCount: number;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
-  'item:effect_applied': (data: {
+  'item:effect_applied': (data: Sequenced<{
     playerId: string;
-    itemType: string;
+    itemType: ItemType;
     effectType: string;
     value: number;
     durationMs: number | null;
     targetIds: string[];
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
   // Stats events
-  'stats:session_summary': (data: {
+  'stats:session_summary': (data: Sequenced<{
     summaries: Record<string, {
       totalVotes: number;
       consensusCount: number;
@@ -621,12 +604,10 @@ export interface ServerToClientEvents {
       deaths: number;
       itemsUsed: number;
     }>;
-    seq: number;
-    timestamp: number;
-  }) => void;
+  }>) => void;
 
   // System events
-  'system:full_state': (data: { lobby: Lobby; seq: number; timestamp: number }) => void;
+  'system:full_state': (data: Sequenced<{ lobby: Lobby }>) => void;
   'system:missed_events': (data: { events: Array<{ event: string; data: unknown }> }) => void;
 
   // Server lifecycle events

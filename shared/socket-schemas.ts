@@ -22,6 +22,7 @@
  */
 
 import { z } from 'zod';
+import type { ClientToServerEvents } from './gameEvents';
 
 // ============================================
 // Core Type Schemas (matching gameEvents.ts)
@@ -734,7 +735,7 @@ export const ClientEventSchemas = {
   use_ability: UseAbilityPayloadSchema,
   use_item: UseItemPayloadSchema,
   client_heartbeat: EmptyPayloadSchema,
-} as const;
+} satisfies Record<keyof ClientToServerEvents, z.ZodTypeAny>;
 
 /**
  * Type-safe event name for client events with schemas
