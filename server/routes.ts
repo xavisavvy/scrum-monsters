@@ -8,12 +8,15 @@ import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js'
 import { storage, PgStorage } from './storage.js';
 import { getMetrics, getMetricsContentType, metricsMiddleware, webglContextLossTotal } from "./metrics.js";
 import { httpLogger } from "./logger.js";
+import { gameState } from "./gameState.js";
 import { createRequire } from "node:module";
 
-// The server runs as ESM ("type": "module"), so the bare `require` global is
-// not defined. Recreate it for the two CommonJS-style lazy loads below
-// (package.json version read + the gameState singleton in /api/ws-health) —
-// without createRequire these throw "require is not defined" at runtime (#ws-health 500).
+// The server runs as ESM ("type": "module"), so the bare `require` global is not
+// defined. createRequire repairs the package.json version read below (../package.json
+// is a real file in both dev and the container, so it resolves fine). NOTE: gameState
+// is imported STATICALLY above — a runtime require('./gameState.js') breaks in the
+// esbuild production bundle (everything is bundled into dist/index.js, so the relative
+// path has no file to resolve → "Cannot find module './gameState.js'" → ws-health 500).
 const require = createRequire(import.meta.url);
 
 // Import session middleware from index (circular import avoided by lazy loading)
@@ -172,8 +175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const sockets = Array.from(io.sockets.sockets.values());
     const connectedCount = sockets.length;
 
-    // Import gameState to check lobby status
-    const { gameState } = require('./gameState.js');
+    // gameState is statically imported at module top (bundle-safe).
     const lobbies = (gameState as { lobbies?: Map<string, unknown> }).lobbies;
     const lobbyCount = lobbies ? lobbies.size : 0;
 
