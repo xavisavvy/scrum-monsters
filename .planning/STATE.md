@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v6.0
 milestone_name: Maintainability & Extensibility
 status: executing
-stopped_at: Completed 52-03-PLAN.md
-last_updated: "2026-06-24T08:19:35.951Z"
+stopped_at: Completed 52-04-PLAN.md
+last_updated: "2026-06-24T08:49:35.115Z"
 last_activity: 2026-06-24
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 20
-  completed_plans: 18
+  completed_plans: 19
   percent: 83
 ---
 
@@ -27,11 +27,11 @@ See: .planning/PROJECT.md (updated 2026-03-11)
 
 Milestone: v6.0 Maintainability & Extensibility — PLANNING
 Phase: 52 (client-god-component-decomposition) — EXECUTING
-Plan: 3 of 5
+Plan: 4 of 5
 Status: Ready to execute
 Last activity: 2026-06-24
 
-Progress: [█████████░] 90%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [█████████░] 90%
 | Phase 48 P03 | 15min | 2 tasks | 7 files |
 | Phase 50-finish-the-gamestate-domain-manager-migration P01 | 811s | 4 tasks | 7 files |
 | Phase 50 P02 | 1620 | 5 tasks | 8 files |
+| Phase 52 P04 | 45m | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -128,6 +129,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [52-03] isLocalCast=true calls setFlyHeight(0) on earthbind/dispel-self; isLocalCast=false never calls setFlyHeight — original dual-path divergence preserved exactly
 - [52-03] Dragon block kept in caller (handleLobbyEmote/handleEmoteSubmit) — random victim + external setTimeout incompatible with pure reducer
 - [52-03] applySpellEffects skips dragon, dispatches HOLD+5s-UNHOLD, MASSACRE+15s-TAVERN_DARK_END, CHAOS+5s-CHAOS_END inline
+- [Phase ?]: dpr owned inside TavernScene: Canvas never a controlled prop-receiver
+- [Phase ?]: LobbyAvatar uses explicit showInvisibleBadge/showReadyBadge props, NOT isLocal flag
 
 ### Pending Todos
 
@@ -143,8 +146,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-06-24T08:00:00Z
-Stopped at: Completed 52-03-PLAN.md
+Last session: 2026-06-24T08:49:35.103Z
+Stopped at: Completed 52-04-PLAN.md
 Resume file: None
 Next action: Execute 52-04-PLAN.md (next plan in phase 52)
 
