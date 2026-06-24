@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Boss, Lobby } from '@shared/gameEvents';
-import { setupEventHandlers } from './eventHandlers';
+import { setupEventHandlers, teardownEventHandlers } from './eventHandlers';
+import { teardownSyncedHandlers } from './eventHandlerUtils';
 import { useEventSync } from '../stores/useEventSync';
 import { useGameState } from '../stores/useGameState';
 
@@ -611,5 +612,110 @@ describe('MAINT-04: withTeamsDerived integration — teams never stale after set
     const p1InDevs = lobby.teams.developers.find((p: any) => p.id === 'p1');
     expect(p1InDevs).toBeDefined();
     expect(p1InDevs!.isHost).toBe(true);
+  });
+});
+
+// ============================================================================
+// MAINT-09: Teardown-parity + helper-equivalence tests (Phase 51-02)
+// ============================================================================
+
+describe('MAINT-09: teardownEventHandlers parity — every on() has a matching off()', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null });
+    // Clear any helper-registered events from prior tests
+    teardownSyncedHandlers({ off: () => {} } as any);
+  });
+
+  it('calls off() for every event that was registered by setupEventHandlers', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    // Collect all events registered via socket.on (from both helpers and explicit calls)
+    const registeredEvents = new Set(handlers.keys());
+
+    // Now tear down using a fresh spy socket to capture offs
+    const offCalls = new Set<string>();
+    const teardownSocket = {
+      off: vi.fn((event: string) => { offCalls.add(event); }),
+    } as any;
+
+    teardownEventHandlers(teardownSocket);
+
+    // Every event that was registered must have been torn down
+    for (const event of registeredEvents) {
+      expect(offCalls.has(event), `event '${event}' registered by setupEventHandlers but NOT torn down`).toBe(true);
+    }
+  });
+});
+
+describe('MAINT-09: helper-equivalence — refactored handlers produce identical store state', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null, pendingDamageEvents: [] });
+    teardownSyncedHandlers({ off: () => {} } as any);
+  });
+
+  it('session:player_left (registerSyncedLobbyHandler): removes player from players[] and all teams[]', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    const lobby = {
+      id: 'l1',
+      hostId: 'host',
+      players: [
+        { id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 },
+        { id: 'p2', name: 'Bob', team: 'qa', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 },
+      ],
+      teams: {
+        developers: [{ id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 }],
+        qa: [{ id: 'p2', name: 'Bob', team: 'qa', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 }],
+        spectators: [],
+      },
+      gamePhase: 'lobby',
+      tickets: [],
+      completedTickets: [],
+    } as any;
+    useGameState.setState({ currentLobby: lobby });
+
+    handlers.get('session:player_left')!({ playerId: 'p1', seq: 1, timestamp: 0 });
+
+    const state = useGameState.getState().currentLobby!;
+    expect(state.players.find((p: any) => p.id === 'p1')).toBeUndefined();
+    expect(state.teams.developers.find((p: any) => p.id === 'p1')).toBeUndefined();
+    expect(state.players).toHaveLength(1);
+  });
+
+  it('combat:player_damaged (registerSyncedHandler): updates hp AND fires addPendingDamage', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    const lobby = {
+      id: 'l1',
+      hostId: 'host',
+      players: [],
+      teams: { developers: [], qa: [], spectators: [] },
+      gamePhase: 'battle',
+      tickets: [],
+      completedTickets: [],
+      playerCombatStates: { 'warrior-1': { hp: 100, maxHp: 100, isDowned: false } },
+    } as any;
+    useGameState.setState({ currentLobby: lobby });
+
+    handlers.get('combat:player_damaged')!({
+      playerId: 'warrior-1',
+      damage: 30,
+      newHp: 70,
+      seq: 1,
+      timestamp: 0,
+    });
+
+    const state = useGameState.getState();
+    // setLobby: hp updated
+    expect(state.currentLobby!.playerCombatStates['warrior-1'].hp).toBe(70);
+    // addPendingDamage: still fires (critical — not dropped by refactor)
+    expect(state.pendingDamageEvents).toHaveLength(1);
+    expect(state.pendingDamageEvents[0].playerId).toBe('warrior-1');
+    expect(state.pendingDamageEvents[0].amount).toBe(30);
   });
 });
