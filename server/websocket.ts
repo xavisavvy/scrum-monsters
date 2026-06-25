@@ -923,6 +923,16 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           gameLogger.info({ lobbyId: updatedLobby.id }, 'Battle started successfully');
           // Removed lobby_updated: battle_started event contains lobby
 
+          // Initialize live combat for the FIRST ticket — mirrors the next_level
+          // transition (~L1195 below). Without this, CombatManager has no combat
+          // state for ticket 1, so the boss never attacks and attack_boss throws
+          // CombatNotActiveError (boss inert, players un-downable). CombatManager is
+          // the single boss-HP truth (see gameState.attackBoss); lobby.boss is a
+          // projection of it. ticketIndex 0 = first ticket.
+          combatManager.cleanupLobby(updatedLobby.id);
+          const combatPlayers = updatedLobby.players.map(p => ({ id: p.id, team: p.team }));
+          combatManager.initializeCombat(updatedLobby.id, combatPlayers, 0, boss?.sprite);
+
           // Start the battle (synchronous - relies on socket.io event ordering)
           io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
         }
