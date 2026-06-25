@@ -176,8 +176,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const connectedCount = sockets.length;
 
     // gameState is statically imported at module top (bundle-safe).
-    const lobbies = (gameState as { lobbies?: Map<string, unknown> }).lobbies;
-    const lobbyCount = lobbies ? lobbies.size : 0;
+    const lobbyCount = gameState.getLobbyCount();
 
     res.json({
       status: 'ok',

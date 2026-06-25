@@ -1543,9 +1543,22 @@ export function Lobby() {
           {/* Other Players */}
           {currentLobby.players
             .filter(player => player.id !== currentPlayer?.id)
-            .map(player => {
-              const position = playerPositions[player.id];
-              if (!position) return null;
+            .map((player, index) => {
+              // BUGFIX: render remote players even before their first movement.
+              // Previously `if (!position) return null` hid any player without a
+              // playerPositions entry — which only gets populated by a movement
+              // broadcast — so a freshly joined/avatar-selected player was invisible
+              // to everyone until they moved. Fall back to a staggered default spawn
+              // (local player spawns at x:200) so connected players show immediately;
+              // the stagger avoids stacking, and resolves to the real position on
+              // their first move.
+              const position = playerPositions[player.id] ?? {
+                x: 200 + ((index % 5) + 1) * 120,
+                direction: 'right' as SpriteDirection,
+                isMoving: false,
+                isJumping: false,
+                jumpHeight: 0,
+              };
 
               const isDead = deadPlayers.has(player.id);
               const isInvisible = invisiblePlayers.has(player.id);
