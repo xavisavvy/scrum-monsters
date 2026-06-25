@@ -463,6 +463,15 @@ export class GameStateManager {
     return this.lobbies.get(lobbyId) || null;
   }
 
+  /**
+   * Number of active lobbies. Public accessor so callers (e.g. the /api/ws-health
+   * endpoint) don't have to reach into the private `lobbies` map via an unsafe cast.
+   * Mirrors SessionManager.getLobbyCount().
+   */
+  getLobbyCount(): number {
+    return this.lobbies.size;
+  }
+
   getLobbyByPlayerId(playerId: string): Lobby | null {
     const lobbyId = this.playerToLobby.get(playerId);
     if (!lobbyId) return null;
