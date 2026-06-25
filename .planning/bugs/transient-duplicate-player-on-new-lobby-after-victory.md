@@ -2,7 +2,7 @@
 title: Player appears twice in roster when creating a new lobby right after a victory (same session)
 discovered: 2026-06-24 (Phase 47–52 UAT, during fix verification)
 severity: low (transient; self-heals on reload) — but matches user's "watch for duplication" concern
-status: observed, NOT root-caused, not fixed
+status: observed (reliably reproduces on same-session lobby-hop), NOT root-caused, not fixed
 area: client lobby state / session reconnect on lobby transition
 reporter: UAT (automated P1 "Preston")
 ---
@@ -25,9 +25,11 @@ with 0 errors.
   new create populates the list), rather than persistent server-side duplication.
 - NOT caused by the Phase-52 work or the remote-avatar fix (the duplicate is in the roster
   component, a different render path).
-- Reproduced only via the rapid automated lobby-hop in one session; unclear how often a real
-  user hits it (would require creating a new lobby immediately after a victory without a
-  refresh).
+- Reproduced reliably TWICE via same-session lobby-hop (victory → /play → create new lobby,
+  and lobby → /play → create new lobby) — each time the host appeared twice with a React
+  duplicate-key warning until a reload. So it's not a one-off; any "leave lobby → create/join
+  another" path in the same session is suspect. A real user hits it whenever they start a
+  fresh game without refreshing.
 - Relevant to the user's standing note to watch for name/player duplication.
 
 ## Suggested investigation

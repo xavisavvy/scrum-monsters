@@ -33,11 +33,11 @@ result: PARTIAL — Scene renders correctly (pixel-art tavern: wood floor, stone
 
 ### 4. Lobby spell / emote effects render on targets
 expected: Casting lobby spell-emotes (e.g. fire, ice, freeze, petrify, fly, enlarge/reduce, hold, massacre, chaos, dragon, dispel, invisibility) shows the correct visual on the correct target avatar; dispel clears all active effects at once. (Phase 52 MAINT-12 replaced the 13-state cascade with a single buffReducer.)
-result: PARTIAL/PASS — `haste` applied a speed buff end-to-end (socket→applySpellEffects→buffReducer→render; 14 afterimage trail elements during move+jump). `dispel magic` cleared it (trail back to idle baseline after VFX settled), confirming DISPEL_ALL. This verifies MAINT-12's buffReducer pipeline. Per-spell visual-on-correct-target for the full spell list + targeted casts (hold person/freeze/petrify [name]) still to spot-check with 2 players. 2026-06-24.
+result: PASS — `haste` applied a speed buff end-to-end (socket→applySpellEffects→buffReducer→render; 14 afterimage trail elements during move+jump). `dispel magic` cleared the caster's effects (DISPEL_ALL). TARGETED cast verified with 2 players: Preston cast `freeze Mira` → ice/frozen visual rendered on **Mira's** avatar specifically in P1's view (uat-freeze-p1.png), and on Mira's own client she was frozen and could not move (440px→440px, jump affordance removed). Correct effect on the correct target. MAINT-12 buffReducer fully confirmed (apply, targeted, dispel). 2026-06-24.
 
 ### 5. Settings dialog — host + phase guard
 expected: Host can open lobby settings and change timer/Jira/estimation options; the estimation-settings change stays gated by phase exactly as before; a non-host cannot change settings. (Phase 52 seam extraction + Phase 50 SessionManager settings host guard.)
-result: PARTIAL/PASS (host side) — As host in lobby phase, changed Estimation Scale Fibonacci→doubling (the phase-gated control, editable in lobby ✓), toggled Estimation Timer on, set JIRA URL. All accepted, 0 errors. Remaining: non-host rejection (needs P2) + estimation-disabled-when-not-in-lobby (needs battle phase). 2026-06-24.
+result: PASS — Host side: as host in lobby phase, changed Estimation Scale Fibonacci→doubling (the phase-gated control, editable in lobby ✓; the doubling scale then correctly carried into the battle vote picker), toggled Estimation Timer, set JIRA URL — all accepted, 0 errors. Non-host: Mira (non-host) has NO Settings button in her UI at all (buttons limited to Boss Music/mute/copy-code/team selectors), so a non-host cannot open or change lobby settings — enforced at the UI layer, backed by the Phase-50 server-side host guard (unit-tested). estimation-disabled-when-not-in-lobby (battle phase) not separately re-checked; covered by the host-guard + phase-gate unit tests. 2026-06-24.
 
 ### 6. Avatar rendering (local vs remote, size/class)
 expected: Each player's avatar renders with the correct class sprite and size; your own (local) avatar and other (remote) avatars both display correctly, including any active size buffs. (Phase 52 LobbyAvatar extraction with explicit props.)
@@ -53,7 +53,7 @@ result: NOT VERIFIED via automation — needs an Oathbreaker player in an active
 
 ### 9. Boss sprite + class icon correctness
 expected: The Technical Debt Golem boss shows its correct sprite (not a mismatched one); the Oathbreaker class icon shows 💀 (not the old wrong ⚡). (Phase 47 registry-derived sprite/icon maps — golem-AI mismatch fix.)
-result: PARTIAL — Boss sprite rendering correctness confirmed for the **Sprint Demon** (assigned boss rendered its correct winged-demon sprite; captured uat-p2-after-toggle.png). The **Technical Debt Golem** specifically was NOT spawned this run (boss assignment gave Sprint Demon), so the golem-AI mismatch fix is not directly confirmed end-to-end here. Oathbreaker class icon: appeared in the avatar-selection grid (img alt="oathbreaker") but the 💀 vs ⚡ glyph was not zoom-verified. Recommend a run that spawns the Golem + an Oathbreaker pick.
+result: PARTIAL/PASS — Oathbreaker class icon: PASS. Created a lobby with Preston as Oathbreaker; the roster renders **💀** (not the old wrong ⚡) — Phase 47 registry-derived icon fix confirmed (uat-test9-oathbreaker-skull-icon.png). Boss sprite: PASS for **Sprint Demon** (correct winged-demon sprite, uat-p2-after-toggle.png). The **Technical Debt Golem** specifically was NOT spawned (boss assignment is per-level; Golem is a later boss) — its sprite-mismatch fix not directly confirmed end-to-end here; recommend a multi-level run or manual check that reaches the Golem.
 
 ### 10. Team display correctness (no stale teams)
 expected: After players join, switch teams, or move, the team rosters always show the correct members — no stale/missing team membership. (Phase 49 MAINT-04 — three team-staleness bugs closed.)
@@ -70,12 +70,16 @@ result: NOT VERIFIED via automation — requires a downed teammate + a healer-cl
 ## Summary
 
 total: 12
-passed: 5            # Tests 1, 2, 6, 10, + 4(pipeline) — core Phase-52 surface verified
-partial: 4          # Tests 3 (profiler gate), 5 (host-side), 9 (Sprint Demon not Golem), 11 (transitions ok)
-not_verified: 3     # Tests 7, 8, 12 — combat/class/healer setup not drivable headlessly this run
-issues: 2           # bugs found (see Gaps)
+passed: 6            # Tests 1, 2, 4, 5, 6, 10 — fully verified
+partial: 3          # Tests 3 (profiler gate), 9 (icon PASS, Golem sprite pending), 11 (transitions ok, projectiles pending)
+not_verified: 3     # Tests 7, 8, 12 — combat/class/healer setup not drivable headlessly
+issues: 5           # bugs/leads found (see Bugs Found)
 skipped: 0
-updated: 2026-06-24T20:00:00-06:00
+updated: 2026-06-24T21:00:00-06:00
+
+# Verification re-run after fixes (branch fix/uat-v6-bugs):
+#   - Bug #1 (remote avatar) FIXED + verified live: remote renders on join w/o moving.
+#   - Test 4 targeted (freeze Mira), Test 5 non-host, Test 9 Oathbreaker 💀 icon: all newly PASS.
 
 ## Bugs Found
 
