@@ -2,7 +2,7 @@
 title: Mobile D-pad shows in portrait but disappears in landscape
 discovered: 2026-06-24 (Phase 47–52 UAT)
 severity: high (controls unusable — phone-in-landscape players can't move)
-status: root-caused, fix proposed, not applied
+status: FIXED (branch fix/uat-v6-bugs) — combined media query (narrow width OR coarse-pointer+short-height) in use-is-mobile.tsx; needs manual on-device landscape spot-check
 area: client / mobile detection (useIsMobile) gating MobileControls
 reporter: Preston
 ---

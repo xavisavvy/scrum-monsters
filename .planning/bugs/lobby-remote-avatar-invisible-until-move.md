@@ -2,7 +2,7 @@
 title: Remote players invisible in lobby tavern until they move
 discovered: 2026-06-24 (during Phase 47–52 UAT, Test 6)
 severity: medium (cosmetic/UX — no data loss, but players appear "missing")
-status: root-caused, fix proposed (not yet applied)
+status: FIXED + verified live (branch fix/uat-v6-bugs) — staggered default spawn at Lobby.tsx render; confirmed remote avatar renders on join without moving (uat-fix1-remote-avatar-no-move.png)
 area: client / Lobby tavern rendering
 reporter: UAT walkthrough (Preston + automated P2 "Mira")
 ---

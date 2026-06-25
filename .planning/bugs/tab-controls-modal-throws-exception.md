@@ -2,7 +2,7 @@
 title: "Hit Tab for controls" throws an exception (long-standing)
 discovered: long-standing; re-flagged 2026-06-24 during Phase 47–52 UAT
 severity: medium (functional — the debug/controls overlay is the intended Tab action)
-status: code-analyzed, NOT yet reproduced in automation, fix not applied
+status: PARTIAL fix applied (branch fix/uat-v6-bugs) — gated BattleScreen Tab handler on teamCompetition existing, stopping the double-modal/empty-scoreboard path. The exact throw was NOT reproduced (BattleScreen's ErrorBoundary swallows render throws — explains the "Battle System Recovered" fallback). NEEDS user's manual repro (phase + teamCompetition state + error text) to confirm the throw is eliminated.
 area: client / battle-phase Tab key handling
 reporter: Preston (observed manually); confirmed code paths during UAT
 ---

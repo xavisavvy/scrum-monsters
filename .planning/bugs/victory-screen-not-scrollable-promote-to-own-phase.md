@@ -3,7 +3,7 @@ title: Victory screen not scrollable — promote it out of battle phase into its
 discovered: 2026-06-24 (Phase 47–52 UAT)
 type: feature / refactor (UX)
 severity: medium (content/buttons can be unreachable on shorter viewports)
-status: proposed by user, root-caused, not yet implemented
+status: PARTIALLY FIXED (branch fix/uat-v6-bugs) — made victory content a viewport-tall scroll container (real cause was .battle-screen height:100vh;overflow:hidden, NOT VictoryPhase.tsx which is dead/unrendered code). Full "promote to own phase" refactor + deleting orphan VictoryPhase.tsx deferred as follow-up. Needs manual scroll spot-check on a short viewport with many tickets.
 area: client / VictoryPhase + BattleScreen phase structure
 reporter: Preston
 ---
