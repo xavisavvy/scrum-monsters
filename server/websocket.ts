@@ -36,6 +36,7 @@ import {
 import { redactLobbyForWire } from './events/ClientEventEmitter.js';
 import { SocketRateLimiter, type RateLimitConfig } from './middleware/socketRateLimiter.js';
 import { handleCreateLobby, handleReconnectWithToken, handleDisconnect, type HandlerDeps } from './websocket.handlers.js';
+import { CombatError } from './errors/CombatErrors.js';
 
 // Per-event WebSocket rate limits (Security: H-6). ONLY expensive / abusable
 // events are listed — high-frequency gameplay events (movement, charge, jump,
@@ -353,7 +354,28 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (socket.data.lobbyId) {
           sessionManager.recordLobbyActivity(socket.data.lobbyId);
         }
-        handler(result.data as z.infer<(typeof ClientEventSchemas)[E]>);
+        // Crash guard: a throw inside any handler must never become an uncaught
+        // exception that takes down the whole server. CombatError (and subclasses)
+        // are expected domain rejections — e.g. attack_boss arriving during the
+        // voting window before combat is active (CombatNotActiveError) — so log
+        // them at debug and move on. Anything else is a real bug: log it and tell
+        // the client, but keep the process alive.
+        try {
+          handler(result.data as z.infer<(typeof ClientEventSchemas)[E]>);
+        } catch (err) {
+          if (err instanceof CombatError) {
+            socketLogger.debug(
+              { event, socketId: socket.id, code: err.code, message: err.message },
+              'Combat action rejected (expected domain error)',
+            );
+          } else {
+            socketLogger.error(
+              { event, socketId: socket.id, err },
+              'Unhandled error in socket handler',
+            );
+            socket.emit('game_error', { message: 'An unexpected error occurred.' });
+          }
+        }
       }) as never);
     };
 
