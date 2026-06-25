@@ -2,7 +2,7 @@
 title: First ticket of a battle has no live combat — initializeCombat only runs on next_level
 discovered: 2026-06-24 (Phase 47-52 UAT, while setting up the revival test)
 severity: high (breaks all live-combat features on the first ticket: boss attacks, player downing, revival, real boss damage — and was the trigger for the server-crash bug)
-status: ROOT-CAUSED, NOT fixed — fix recommended below, needs validation vs estimation-driven boss defeat
+status: FIXED — start_battle now calls cleanupLobby + initializeCombat(ticketIndex 0), mirroring next_level. Validated: gameState.attackBoss already treats CombatManager as the single boss-HP truth (lobby.boss = projection), and handleVoteCast starts the boss loop once combat exists — so the fix slots into the intended design. +2 integration tests (gameFlow.test.ts). Needs server restart + live re-verify (boss attacks on ticket 1).
 area: server / combat lifecycle (CombatManager init) + battle phase wiring
 reporter: Penelope (host) + investigation during UAT
 ---
