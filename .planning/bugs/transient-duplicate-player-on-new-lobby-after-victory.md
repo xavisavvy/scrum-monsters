@@ -2,7 +2,7 @@
 title: Player appears twice in roster when creating a new lobby right after a victory (same session)
 discovered: 2026-06-24 (Phase 47–52 UAT, during fix verification)
 severity: low (transient; self-heals on reload) — but matches user's "watch for duplication" concern
-status: observed (reliably reproduces on same-session lobby-hop), NOT root-caused, not fixed
+status: ROOT-CAUSED + FIXED (eventHandlers.ts session:player_joined now dedups players by id, mirroring the existing teams guard) + regression test added. Reproduced live in the host's own browser (saw self twice) after a refresh/reconnect.
 area: client lobby state / session reconnect on lobby transition
 reporter: UAT (automated P1 "Preston")
 ---

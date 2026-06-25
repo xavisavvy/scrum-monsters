@@ -58,7 +58,12 @@ export function setupEventHandlers(socket: TypedClientSocket): void {
           : currentLobby.teams;
         const updatedLobby = {
           ...currentLobby,
-          players: [...currentLobby.players, newPlayer],
+          // Dedup by id — mirror the teams guard above. session:player_joined can
+          // replay (reconnect/refresh re-sends presence), and without this guard the
+          // player list grows a duplicate (e.g. the host seeing themselves twice).
+          players: currentLobby.players.some(p => p.id === newPlayer.id)
+            ? currentLobby.players
+            : [...currentLobby.players, newPlayer],
           teams: updatedTeams,
         };
         setLobby(updatedLobby);

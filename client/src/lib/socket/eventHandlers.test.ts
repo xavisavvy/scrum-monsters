@@ -719,3 +719,37 @@ describe('MAINT-09: helper-equivalence — refactored handlers produce identical
     expect(state.pendingDamageEvents[0].amount).toBe(30);
   });
 });
+
+describe('session:player_joined dedup (duplicate-player regression)', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null });
+  });
+
+  it('does not duplicate a player when session:player_joined replays for the same id', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    const lobby = seedLobby(seedBoss());
+    useGameState.setState({ currentLobby: lobby });
+
+    const handler = handlers.get('session:player_joined');
+    expect(handler).toBeDefined();
+
+    const payload = (seq: number) => ({
+      playerId: 'p-1',
+      playerName: 'Penelope',
+      team: 'developers',
+      avatar: 'cleric',
+      seq,
+      timestamp: seq,
+    });
+
+    handler!(payload(1)); // first join
+    handler!(payload(2)); // replay (reconnect/refresh re-sends presence)
+
+    const players = useGameState.getState().currentLobby!.players;
+    expect(players.filter(p => p.id === 'p-1')).toHaveLength(1);
+    expect(useGameState.getState().currentLobby!.teams.developers.filter(p => p.id === 'p-1')).toHaveLength(1);
+  });
+});
