@@ -271,4 +271,51 @@ describe('Game Flow Integration', () => {
       expect(combatManager.getCombatState(lobbyId)).toBeUndefined();
     });
   });
+
+  // Regression for: "Cleric heal_party did nothing — it read the stale
+  // lobby.playerCombatStates instead of the CombatManager combat state where
+  // damage/downs are actually recorded." healParty now operates on the combat state.
+  describe('Cleric healParty heals + revives downed teammates', () => {
+    it('revives a downed player and heals the party from the combat-state source of truth', () => {
+      const lobbyId = 'heal-lobby';
+      const players = [
+        { id: 'cleric1', team: 'developers' as const },
+        { id: 'warrior1', team: 'developers' as const },
+      ];
+      combatManager.initializeCombat(lobbyId, players, 0);
+
+      // Drive warrior1 to 0 HP and down it (as a boss attack would).
+      const cs = combatManager.getCombatState(lobbyId)!;
+      cs.players.get('warrior1')!.hp = 0;
+      combatManager.downPlayer(lobbyId, 'warrior1');
+      expect(cs.players.get('warrior1')!.combatState).toBe('downed');
+
+      const revived: unknown[] = [];
+      const healed: unknown[] = [];
+      eventBus.on('combat:player_revived', (d) => { revived.push(d); });
+      eventBus.on('combat:player_healed', (d) => { healed.push(d); });
+
+      combatManager.healParty(lobbyId, 'cleric1');
+
+      const w = cs.players.get('warrior1')!;
+      expect(w.combatState).toBe('fighting');   // revived
+      expect(w.isDowned).toBe(false);
+      expect(w.hp).toBeGreaterThan(0);
+      expect(revived).toHaveLength(1);
+      // both players got a heal event (cleric was full, so only the revived one nets HP)
+      expect(healed.length).toBeGreaterThanOrEqual(1);
+    });
+
+    it('does NOT revive a ghost (permanently downed) player', () => {
+      const lobbyId = 'ghost-lobby';
+      combatManager.initializeCombat(lobbyId, [{ id: 'cleric1', team: 'developers' as const }, { id: 'w1', team: 'developers' as const }], 0);
+      const cs = combatManager.getCombatState(lobbyId)!;
+      cs.players.get('w1')!.hp = 0;
+      cs.players.get('w1')!.combatState = 'ghost';
+
+      combatManager.healParty(lobbyId, 'cleric1');
+
+      expect(cs.players.get('w1')!.combatState).toBe('ghost'); // untouched
+    });
+  });
 });

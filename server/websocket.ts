@@ -1515,16 +1515,17 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     // Party healing (priest special ability)
     on('heal_party', () => {
       const playerId = socket.data.playerId;
-      if (!playerId) return;
+      const lobbyId = socket.data.lobbyId;
+      if (!playerId || !lobbyId) return;
 
-      const result = gameState.healParty(playerId);
-      if (result) {
-        // Phase 45-04: legacy party_healed socket emit removed.
-        // gameState.healParty now emits combat:player_healed per healed
-        // player via eventBus; bridge forwards each to clients which
-        // render +N floating popups.
-        gameLogger.info({ playerId }, 'Priest healed party');
-      }
+      // Route through CombatManager — the single source of truth for combat HP /
+      // downed state. The old gameState.healParty read lobby.playerCombatStates,
+      // which combat damage never updates, so it never healed or revived anyone.
+      // healParty emits combat:player_healed / combat:player_revived per player via
+      // eventBus; the bridge forwards each to clients (floating +N popups / revive).
+      // CombatError throws (not-in-combat / not-cleric) are caught by the on() guard.
+      combatManager.healParty(lobbyId, playerId);
+      gameLogger.info({ playerId, lobbyId }, 'Cleric healed/revived party');
     });
 
     // Revival system

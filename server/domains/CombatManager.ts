@@ -1454,6 +1454,78 @@ export class CombatManager {
   }
 
   /**
+   * Cleric party heal + revive (the cleric's Q / `heal_party`). Heals every
+   * in-combat player (non-spectators) for 50% of max HP and revives any DOWNED
+   * (not ghost) teammate, operating on the authoritative CombatManager player
+   * state.
+   *
+   * BUGFIX: the previous path (gameState.healParty) read `lobby.playerCombatStates`,
+   * which combat damage NEVER updates (CombatManager owns combat HP/downed state and
+   * doesn't sync back). So a cleric's heal saw everyone at full HP and never revived
+   * a downed teammate — "Q did nothing". Routing through CombatManager fixes that.
+   */
+  healParty(lobbyId: string, healerId: string): void {
+    const combatState = this.combatStates.get(lobbyId);
+    if (!combatState) {
+      throw new CombatNotActiveError(lobbyId);
+    }
+
+    const healerState = combatState.players.get(healerId);
+    if (!healerState || healerState.combatState !== 'fighting') {
+      throw new PlayerNotInCombatError(healerId);
+    }
+
+    // heal_party is the cleric's ability — validate the caller is a cleric.
+    if (this.getPlayerClass) {
+      const healerClass = this.getPlayerClass(lobbyId, healerId);
+      if (healerClass !== 'cleric') {
+        throw new NotHealerClassError(healerId, healerClass ?? 'unknown');
+      }
+    }
+
+    for (const [pid, ps] of combatState.players) {
+      // Ghosts are permanently down — a party heal doesn't touch them.
+      if (ps.combatState === 'ghost') continue;
+
+      const wasDowned = ps.combatState === 'downed';
+      const oldHp = ps.hp;
+      ps.hp = Math.min(ps.maxHp, ps.hp + Math.floor(ps.maxHp * 0.5));
+
+      if (wasDowned && ps.hp > 0) {
+        // Revive: cancel the down→ghost timer and restore to fighting.
+        if (ps.downTimerHandle) {
+          clearTimeout(ps.downTimerHandle);
+          ps.downTimerHandle = undefined;
+        }
+        ps.combatState = 'fighting';
+        ps.isDowned = false;
+        ps.hasBeenRevived = true;
+        this.eventBus.emit('combat:player_revived', {
+          lobbyId,
+          playerId: pid,
+          reviverId: healerId,
+          newHp: ps.hp,
+        });
+      }
+
+      if (ps.hp > oldHp) {
+        this.eventBus.emit('combat:player_healed', {
+          lobbyId,
+          playerId: pid,
+          healerId,
+          healAmount: ps.hp - oldHp,
+          newHealth: ps.hp,
+        });
+      }
+    }
+
+    const bossAI = this.bossAIs.get(lobbyId);
+    if (bossAI && combatState.boss) {
+      bossAI.recordThreat(combatState.boss.threatTable, healerId, 'healing', 1);
+    }
+  }
+
+  /**
    * Start revival channel for downed player
    */
   startRevival(lobbyId: string, reviverId: string, targetId: string): boolean {
