@@ -84,7 +84,7 @@ jobs:
           cache: 'npm'
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           # Self-hosted runners (Ubuntu noble) ship python3.12 system-wide and
           # don't populate the hosted-tool-cache that setup-python expects for
