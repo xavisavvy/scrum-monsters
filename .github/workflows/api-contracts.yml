@@ -26,10 +26,10 @@ jobs:
     name: Validate API Specs
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -47,10 +47,10 @@ jobs:
     name: Check Type Generation Drift
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
@@ -75,16 +75,16 @@ jobs:
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: validate-specs
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
           cache: 'npm'
 
       - name: Setup Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           # Self-hosted runners (Ubuntu noble) ship python3.12 system-wide and
           # don't populate the hosted-tool-cache that setup-python expects for
