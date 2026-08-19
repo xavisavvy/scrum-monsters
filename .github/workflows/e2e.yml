@@ -60,7 +60,7 @@ jobs:
     # DSM (no apt, no passwordless sudo). Pin the image tag to match the
     # @playwright/test version in package.json; bump both together.
     container:
-      image: mcr.microsoft.com/playwright:v1.60.0-jammy
+      image: mcr.microsoft.com/playwright:v1.62.1-jammy
       # No --user pin: container runs as root. We chown the workspace +
       # cache dirs back to RUNNER_UID:RUNNER_GID in a final 'always()'
       # step. Makes this workflow agnostic to which self-hosted runner
