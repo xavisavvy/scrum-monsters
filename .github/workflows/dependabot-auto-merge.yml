@@ -14,7 +14,11 @@ env:
 jobs:
   auto-merge:
     name: Auto-Merge Dependabot PRs
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    # Lightweight `gh pr` calls only — always ubuntu-latest, never the
+    # self-hosted runner. This job is already gated to dependabot[bot]
+    # below, so routing it to self-hosted just queues it behind (or after)
+    # the self-hosted runner's availability for no reason.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     # Only run for Dependabot PRs
@@ -34,8 +38,8 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Enable auto-merge for patch updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
+      - name: Enable auto-merge for patch and minor updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: gh pr merge --auto --squash "$PR_URL"
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
