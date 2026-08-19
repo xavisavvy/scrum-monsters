@@ -21,7 +21,7 @@ import type {
   EstimationFullConsensusReachedPayload,
   MinionState,
 } from '../events';
-import { TeamType, AvatarClass } from '../../shared/gameEvents';
+import { TeamType, AvatarClass, AVATAR_CLASSES } from '../../shared/gameEvents';
 import {
   CombatNotActiveError,
   PlayerNotInCombatError,
@@ -45,6 +45,12 @@ export interface CombatManagerDeps {
   progressionManager?: {
     getPlayerLevel: (lobbyId: string, playerId: string) => number;
   };
+  damageInterceptor?: (
+    lobbyId: string,
+    playerId: string,
+    damage: number,
+    applyFn: (lobbyId: string, playerId: string, damage: number) => void
+  ) => void;
 }
 
 // =============================================================================
@@ -167,8 +173,10 @@ export class CombatManager {
   private readonly LEVEL_DAMAGE_SCALING = 0.05;   // +5% damage per average level
   private readonly PHASE_3_ATTACK_INTERVAL_MS = 2000; // Faster attacks in phase 3 (enrage)
 
-  // Healer classes that can revive
-  private readonly HEALER_CLASSES: AvatarClass[] = ['cleric', 'paladin', 'bard'];
+  // Healer classes that can revive — derived from AVATAR_CLASSES registry (role === 'healer')
+  private readonly HEALER_CLASSES: AvatarClass[] = (
+    Object.entries(AVATAR_CLASSES) as [AvatarClass, typeof AVATAR_CLASSES[AvatarClass]][]
+  ).filter(([, def]) => def.role === 'healer').map(([cls]) => cls);
 
   // Countdown constants
   private readonly COUNTDOWN_DURATION_SECONDS = 10;
@@ -190,6 +198,7 @@ export class CombatManager {
   private readonly getPlayerClass?: (lobbyId: string, playerId: string) => AvatarClass | null;
   private readonly classMasteryManager: CombatManagerDeps['classMasteryManager'];
   private readonly progressionManager: CombatManagerDeps['progressionManager'];
+  private readonly damageInterceptor: NonNullable<CombatManagerDeps['damageInterceptor']>;
 
   constructor(deps: CombatManagerDeps) {
     this.eventBus = deps.eventBus;
@@ -197,6 +206,8 @@ export class CombatManager {
     this.getPlayerClass = deps.getPlayerClass;
     this.classMasteryManager = deps.classMasteryManager;
     this.progressionManager = deps.progressionManager;
+    this.damageInterceptor = deps.damageInterceptor ??
+      ((lobbyId, playerId, damage, applyFn) => { applyFn(lobbyId, playerId, damage); });
 
     // Subscribe to cross-domain events
     this.eventBus.on('estimation:vote_cast', this.handleVoteCast.bind(this));
@@ -515,9 +526,14 @@ export class CombatManager {
   }
 
   /**
-   * Player attacks boss (click-to-attack)
+   * Basic attack on boss (from attack_boss socket event via gameState.attackBoss delegate).
+   * Single authoritative HP drain for basic attacks — replaces gameState.attackBoss HP write.
+   * The combat:boss_damaged emit below is the ONLY combat:boss_damaged for basic attacks;
+   * do NOT duplicate it elsewhere (the websocket.ts manual emit was removed — MAINT-05).
+   * Also calls checkPhaseTransition so phase-2/enrage triggers correctly on basic attacks.
+   * Previously named playerAttackBoss (MAINT-05).
    */
-  playerAttackBoss(lobbyId: string, playerId: string): number {
+  applyBasicDamageToBoss(lobbyId: string, playerId: string): { damage: number; newHp: number } {
     // Get combat state
     const combatState = this.combatStates.get(lobbyId);
     if (!combatState || !combatState.boss) {
@@ -540,7 +556,7 @@ export class CombatManager {
     const boss = combatState.boss;
     boss.hp = Math.max(0, boss.hp - damage);
 
-    // Emit boss damaged event
+    // Emit boss damaged event — canonical single emit for basic attacks (MAINT-05)
     this.eventBus.emit('combat:boss_damaged', {
       lobbyId,
       playerId,
@@ -596,7 +612,7 @@ export class CombatManager {
       });
     }
 
-    return damage;
+    return { damage, newHp: boss.hp };
   }
 
   /**
@@ -605,39 +621,9 @@ export class CombatManager {
    * @param masteryMultiplier Mastery damage multiplier (1.0 Novice, 1.1 Expert, 1.2 Master)
    */
   private getClassBaseDamage(avatarClass: AvatarClass | null | undefined, masteryMultiplier: number = 1.0): number {
-    let baseDamage: number;
-
-    switch (avatarClass) {
-      // Tank classes - lower damage
-      case 'warrior':
-      case 'paladin':
-      case 'oathbreaker':
-        baseDamage = 15;
-        break;
-
-      // DPS classes - standard damage
-      case 'ranger':
-      case 'rogue':
-      case 'monk':
-        baseDamage = 20;
-        break;
-
-      // Glass cannon - high damage
-      case 'sorcerer':
-      case 'wizard':
-        baseDamage = 25;
-        break;
-
-      // Healer classes - lowest damage
-      case 'cleric':
-      case 'bard':
-        baseDamage = 12;
-        break;
-
-      default:
-        baseDamage = 20; // Default to standard DPS damage
-    }
-
+    // Registry-driven lookup — single source of truth in AVATAR_CLASSES.
+    // Falls back to 20 (standard DPS) for null/undefined/unknown class, matching the old switch default.
+    const baseDamage = avatarClass != null ? (AVATAR_CLASSES[avatarClass]?.baseDamage ?? 20) : 20;
     return Math.floor(baseDamage * masteryMultiplier);
   }
 
@@ -1280,9 +1266,22 @@ export class CombatManager {
   }
 
   /**
-   * Apply damage to a player and handle down state
+   * Apply damage to a player, routing through the damageInterceptor dependency.
+   * The interceptor (default: pass-through) may modify, reduce, or absorb the
+   * damage before calling applyFn, which delegates to applyDamageToPlayerRaw.
    */
   applyDamageToPlayer(lobbyId: string, playerId: string, damage: number): void {
+    this.damageInterceptor(lobbyId, playerId, damage,
+      (l, p, d) => this.applyDamageToPlayerRaw(l, p, d));
+  }
+
+  /**
+   * Apply damage to a player and handle down state (raw implementation).
+   * Called by applyDamageToPlayer via the damageInterceptor — do NOT call
+   * this directly from attack paths; always call applyDamageToPlayer so
+   * shield absorption and other interceptors are honoured.
+   */
+  private applyDamageToPlayerRaw(lobbyId: string, playerId: string, damage: number): void {
     // Get combat state
     const combatState = this.combatStates.get(lobbyId);
     if (!combatState) {

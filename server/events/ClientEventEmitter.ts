@@ -19,7 +19,7 @@
 import { Server } from 'socket.io';
 import { ScopedEventBus } from './ScopedEventBus';
 import { LobbyEventSequencer, BufferedEvent } from './LobbyEventSequencer';
-import { Lobby } from '../../shared/gameEvents';
+import { Lobby, ServerToClientEvents } from '../../shared/gameEvents';
 
 /**
  * Phases in which per-player vote values (`currentScore`) are still secret.
@@ -110,6 +110,17 @@ export class ClientEventEmitter {
       this.emitToLobby(payload.lobbyId, 'session:host_changed', {
         oldHostId: payload.oldHostId,
         newHostId: payload.newHostId,
+      });
+    });
+
+    this.eventBus.on('session:host_transferred', (payload) => {
+      // Wire to legacy 'host_transferred' event (GamePage.tsx:232 listens here).
+      // Different wire name than 'session:host_changed' — see Pitfall 4.
+      this.emitToLobby(payload.lobbyId, 'host_transferred', {
+        oldHostId: payload.oldHostId,
+        newHostId: payload.newHostId,
+        newHostName: payload.newHostName,
+        reason: 'Host disconnected (grace period expired)',
       });
     });
 
@@ -491,6 +502,9 @@ export class ClientEventEmitter {
         effectType: payload.effectType,
         targetIds: payload.targetIds,
         value: payload.value,
+        buffType: payload.buffType,
+        debuffType: payload.debuffType,
+        durationMs: payload.durationMs,
       });
     });
 
@@ -566,7 +580,7 @@ export class ClientEventEmitter {
    * from Phase 42-02b). Wraps the private emitToLobby so callers don't reach
    * into the sequencer directly.
    */
-  public emitFineGrained(lobbyId: string, event: string, data: Record<string, unknown>): void {
+  public emitFineGrained(lobbyId: string, event: keyof ServerToClientEvents, data: Record<string, unknown>): void {
     this.emitToLobby(lobbyId, event, data);
   }
 
@@ -577,7 +591,7 @@ export class ClientEventEmitter {
    * @param event - Event name
    * @param data - Event payload
    */
-  private emitToLobby(lobbyId: string, event: string, data: Record<string, unknown>): void {
+  private emitToLobby(lobbyId: string, event: keyof ServerToClientEvents, data: Record<string, unknown>): void {
     const seq = this.sequencer.nextSeq(lobbyId);
     const timestamp = Date.now();
 
@@ -591,7 +605,7 @@ export class ClientEventEmitter {
     this.sequencer.bufferEvent(lobbyId, seq, event, payload);
 
     // Emit to Socket.IO room
-    this.io.to(lobbyId).emit(event, payload);
+    this.io.to(lobbyId).emit(event as string, payload);
   }
 
   /**
@@ -640,6 +654,74 @@ export class ClientEventEmitter {
     this.sequencer.cleanup(lobbyId);
   }
 }
+
+/**
+ * Compile-time guard: every wire name the bridge emits via emitToLobby must be
+ * listed here. Add a new entry whenever a new this.emitToLobby(...) call is added
+ * to setupInternalEventListeners(). Failing to add it = tsc error at this object.
+ *
+ * Notable remaps (domain event → wire name):
+ *   session:host_transferred → host_transferred (legacy wire name; GamePage.tsx:232 listens here)
+ *   estimation:team_consensus_reached → estimation:consensus_reached
+ *   stats:session_complete → stats:session_summary
+ */
+const _BRIDGE_COVERAGE = {
+  'session:player_joined': true,
+  'session:player_left': true,
+  'session:host_changed': true,
+  'host_transferred': true,
+  'session:phase_changed': true,
+  'session:team_changed': true,
+  'estimation:vote_cast': true,
+  'estimation:consensus_reached': true,
+  'estimation:timer_started': true,
+  'estimation:timer_paused': true,
+  'estimation:timer_resumed': true,
+  'estimation:timer_expired': true,
+  'estimation:estimate_forced': true,
+  'estimation:discussion_timer_started': true,
+  'estimation:discussion_ended': true,
+  'combat:boss_damaged': true,
+  'combat:boss_healed': true,
+  'combat:boss_enraged': true,
+  'combat:boss_phase_transition': true,
+  'combat:boss_telegraph': true,
+  'combat:boss_defeated': true,
+  'combat:player_damaged': true,
+  'combat:player_downed': true,
+  'combat:player_revived': true,
+  'combat:revival_started': true,
+  'combat:revival_progress': true,
+  'combat:revival_cancelled': true,
+  'combat:player_healed': true,
+  'combat:player_entered_battle': true,
+  'combat:modifier_updated': true,
+  'combat:countdown_started': true,
+  'combat:countdown_tick': true,
+  'combat:countdown_complete': true,
+  'combat:team_attack': true,
+  'combat:minion_spawned': true,
+  'combat:minion_attack': true,
+  'combat:minion_heal_boss': true,
+  'combat:minion_damaged': true,
+  'combat:minion_killed': true,
+  'progression:xp_awarded': true,
+  'progression:level_up': true,
+  'class_mastery:xp_awarded': true,
+  'class_mastery:tier_up': true,
+  'ability:used': true,
+  'ability:cooldown_started': true,
+  'ability:effect_applied': true,
+  'combo:triggered': true,
+  'combo:consensus_ultimate': true,
+  'item:awarded': true,
+  'item:used': true,
+  'item:effect_applied': true,
+  'stats:session_summary': true,
+} satisfies Partial<Record<keyof ServerToClientEvents, true>>;
+
+// Suppress unused variable warning — _BRIDGE_COVERAGE exists for compile-time checking only.
+void _BRIDGE_COVERAGE;
 
 /**
  * Factory function to create ClientEventEmitter

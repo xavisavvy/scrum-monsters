@@ -157,11 +157,23 @@ export function BattleScreen() {
     };
   }, [currentLobby?.gamePhase]);
 
-  // Handle Tab key for Team Competition Modal
+  // Handle Tab key for Team Competition Modal.
+  // Gate on team-competition presence (not the object) so the listener only
+  // re-registers when presence flips — not on every live score update.
+  const hasTeamCompetition = Boolean(currentLobby?.teamCompetition);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      // Only trigger during battle phase and when no other modals are open
-      if (event.key === 'Tab' && currentLobby?.gamePhase === 'battle' && !showEmoteModal) {
+      // Only open Team Stats on Tab when team-competition data actually exists
+      // (matches the TAB hint, which is gated on teamCompetition). Previously this
+      // fired in ANY battle, opening an empty scoreboard and double-handling Tab
+      // alongside PlayerController's debug/controls modal — pressing Tab in a solo
+      // battle opened two overlays at once.
+      if (
+        event.key === 'Tab' &&
+        currentLobby?.gamePhase === 'battle' &&
+        hasTeamCompetition &&
+        !showEmoteModal
+      ) {
         event.preventDefault();
         setShowTeamCompetitionModal(prev => !prev);
       }
@@ -171,7 +183,7 @@ export function BattleScreen() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [currentLobby?.gamePhase, showEmoteModal]);
+  }, [currentLobby?.gamePhase, hasTeamCompetition, showEmoteModal]);
 
   // Handle battle emotes from other players
   useEffect(() => {
@@ -425,7 +437,11 @@ export function BattleScreen() {
             {/* Cinematic Background - same as start screen */}
             <CinematicBackground />
             
-            <div className="relative z-20 p-6">
+            {/* BUGFIX: .battle-screen is height:100vh; overflow:hidden, so tall
+                victory content (long Battle Summary) was clipped with no scroll.
+                Make this a viewport-tall scroll container; pb-32 clears the
+                fixed .player-hud (Return Home stays reachable at the bottom). */}
+            <div className="relative z-20 h-screen overflow-y-auto p-6 pb-32">
             <div className="text-center mb-6">
               <RetroCard title="Victory!">
                 <div className="space-y-4">

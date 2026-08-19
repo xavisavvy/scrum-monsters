@@ -228,4 +228,47 @@ describe('Game Flow Integration', () => {
       expect(combatManager.getCombatState(lobbyId)).toBeUndefined();
     });
   });
+
+  // Regression for: "first ticket has no live combat — initializeCombat missing
+  // from start_battle". start_battle now calls initializeCombat (ticketIndex 0),
+  // mirroring the next_level path. These tests pin the contract that makes that
+  // necessary: a vote only starts the boss attack loop when combat is initialized.
+  describe('First-ticket combat activation (start_battle initializeCombat)', () => {
+    it('initialized combat (ticketIndex 0): first vote starts the boss attack loop', () => {
+      const lobbyId = 'first-ticket-lobby';
+      const players = [
+        { id: 'p1', team: 'developers' as const },
+        { id: 'p2', team: 'qa' as const },
+      ];
+      // What start_battle now does for the FIRST ticket.
+      combatManager.initializeCombat(lobbyId, players, 0);
+      estimationManager.startEstimation(lobbyId, 'ticket-1');
+      players.forEach(p => estimationManager.addEligibleVoter(lobbyId, p.id, p.team));
+
+      const battleStarted: unknown[] = [];
+      eventBus.on('combat:battle_started', (d) => { battleStarted.push(d); });
+
+      // First player entry (a vote) starts the boss attack loop.
+      estimationManager.castVote(lobbyId, 'p1', 'developers', 5);
+
+      expect(battleStarted).toHaveLength(1);
+      expect(combatManager.getCombatState(lobbyId)).toBeDefined();
+    });
+
+    it('the bug: WITHOUT initializeCombat, a vote never starts combat (boss stays inert)', () => {
+      const lobbyId = 'no-combat-lobby';
+      // Deliberately skip initializeCombat — the pre-fix state of the first ticket.
+      estimationManager.startEstimation(lobbyId, 'ticket-1');
+      estimationManager.addEligibleVoter(lobbyId, 'p1', 'developers');
+
+      const battleStarted: unknown[] = [];
+      eventBus.on('combat:battle_started', (d) => { battleStarted.push(d); });
+
+      estimationManager.castVote(lobbyId, 'p1', 'developers', 5);
+
+      // handleVoteCast returns early (no combat state) — the boss loop never starts.
+      expect(battleStarted).toHaveLength(0);
+      expect(combatManager.getCombatState(lobbyId)).toBeUndefined();
+    });
+  });
 });

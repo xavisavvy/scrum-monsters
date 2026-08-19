@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import { gameState } from './gameState';
+import { GameStateManager } from './gameState';
+import { SessionManager } from './domains/SessionManager';
+import { ScopedEventBus } from './events';
 
 /**
  * Phase 42-02a / FIX-05 reconnect regression test.
@@ -12,42 +14,59 @@ import { gameState } from './gameState';
  *
  * Pitfall 5 in 42-RESEARCH.md: if `getLobbySnapshot` ever shifts to manual
  * field copying, autoAdvance could be skipped silently.
+ *
+ * Phase 50-01 migration: migrated from gameState singleton to constructed
+ * SessionManager instances (production pattern: sessionManager.createLobby +
+ * gameStateMgr.syncPlayerToLobby). Reconnect calls routed through
+ * sessionManager.handlePlayerDisconnect / sessionManager.attemptPlayerReconnect.
  */
 describe('autoAdvance reconnect round-trip (Phase 41 regression)', () => {
-  function setupHostWithAutoAdvance(autoAdvance: boolean): { lobbyId: string; hostId: string } {
-    const lobby = gameState.createLobby('TestHost', 'Reconnect Test Lobby', {
+  function setupHostWithAutoAdvance(autoAdvance: boolean): {
+    lobbyId: string;
+    hostId: string;
+    sessionManager: SessionManager;
+    gameStateMgr: GameStateManager;
+  } {
+    const eventBus = new ScopedEventBus();
+    const sessionManager = new SessionManager({ eventBus });
+    const gameStateMgr = new GameStateManager(undefined, { startWatchdogs: false });
+
+    const lobby = sessionManager.createLobby('TestHost', 'Reconnect Test Lobby', {
       estimationSettings: { scaleType: 'fibonacci', autoAdvance },
     });
-    return { lobbyId: lobby.id, hostId: lobby.hostId };
+    // Sync alias so gameStateMgr.getLobbyByPlayerId works (production pattern)
+    gameStateMgr.syncPlayerToLobby(lobby.hostId, lobby);
+
+    return { lobbyId: lobby.id, hostId: lobby.hostId, sessionManager, gameStateMgr };
   }
 
   it('preserves autoAdvance: true through disconnect → reconnect', () => {
-    const { lobbyId, hostId } = setupHostWithAutoAdvance(true);
+    const { lobbyId, hostId, sessionManager } = setupHostWithAutoAdvance(true);
 
     // Sanity: the lobby was created with the toggle ON
-    expect(gameState.getLobby(lobbyId)?.estimationSettings?.autoAdvance).toBe(true);
+    expect(sessionManager.getLobby(lobbyId)?.estimationSettings?.autoAdvance).toBe(true);
 
     // Disconnect → token issued
-    const dc = gameState.handlePlayerDisconnect(hostId);
+    const dc = sessionManager.handlePlayerDisconnect(hostId);
     expect(dc).not.toBeNull();
     expect(dc!.reconnectToken).toBeTruthy();
 
     // Reconnect via the token
-    const result = gameState.attemptPlayerReconnect(dc!.reconnectToken);
+    const result = sessionManager.attemptPlayerReconnect(dc!.reconnectToken);
     expect(result.result).toBe('success');
     expect(result.lobbySync).toBeTruthy();
     expect(result.lobbySync!.lobby.estimationSettings?.autoAdvance).toBe(true);
   });
 
   it('preserves autoAdvance: false (default) through disconnect → reconnect', () => {
-    const { lobbyId, hostId } = setupHostWithAutoAdvance(false);
+    const { lobbyId, hostId, sessionManager } = setupHostWithAutoAdvance(false);
 
-    expect(gameState.getLobby(lobbyId)?.estimationSettings?.autoAdvance).toBe(false);
+    expect(sessionManager.getLobby(lobbyId)?.estimationSettings?.autoAdvance).toBe(false);
 
-    const dc = gameState.handlePlayerDisconnect(hostId);
+    const dc = sessionManager.handlePlayerDisconnect(hostId);
     expect(dc).not.toBeNull();
 
-    const result = gameState.attemptPlayerReconnect(dc!.reconnectToken);
+    const result = sessionManager.attemptPlayerReconnect(dc!.reconnectToken);
     expect(result.result).toBe('success');
     expect(result.lobbySync!.lobby.estimationSettings?.autoAdvance).toBe(false);
   });

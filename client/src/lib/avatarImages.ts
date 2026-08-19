@@ -1,7 +1,8 @@
 import { AvatarClass } from './gameTypes';
 
 // Map of available avatar images (organized in public/images/avatars/)
-const AVATAR_IMAGES: Record<string, string> = {
+// Typed as Record<AvatarClass, string> so a missing class entry is a tsc error.
+const AVATAR_IMAGES: Record<AvatarClass, string> = {
   bard: '/images/avatars/bard.png',
   cleric: '/images/avatars/cleric.png', 
   monk: '/images/avatars/monk.png',

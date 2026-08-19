@@ -35,6 +35,8 @@ import {
 } from '../shared/socket-schemas.js';
 import { redactLobbyForWire } from './events/ClientEventEmitter.js';
 import { SocketRateLimiter, type RateLimitConfig } from './middleware/socketRateLimiter.js';
+import { handleCreateLobby, handleReconnectWithToken, handleDisconnect, type HandlerDeps } from './websocket.handlers.js';
+import { CombatError } from './errors/CombatErrors.js';
 
 // Per-event WebSocket rate limits (Security: H-6). ONLY expensive / abusable
 // events are listed — high-frequency gameplay events (movement, charge, jump,
@@ -125,7 +127,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
    * canonical {seq, timestamp} envelope. Phase 45-05B: delegates to
    * ClientEventEmitter.emitFineGrained so the sequencer stays encapsulated.
    */
-  const emitFineGrained = (lobbyId: string, event: string, data: Record<string, unknown>): void => {
+  const emitFineGrained = (lobbyId: string, event: keyof ServerToClientEvents, data: Record<string, unknown>): void => {
     getClientEventEmitter()?.emitFineGrained(lobbyId, event, data);
   };
 
@@ -187,7 +189,8 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   // Connection monitoring for Replit
   let totalConnections = 0;
-  let activeConnections = 0;
+  // Mutable ref so handleDisconnect (extracted for testability) can decrement it.
+  const activeConnections = { value: 0 };
   const disconnectReasons = new Map<string, number>();
 
   // Position batching for performance - aggregate updates and broadcast every 100ms
@@ -227,7 +230,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
     socketLogger.info({
       totalConnections,
-      activeConnections,
+      activeConnections: activeConnections.value,
       hostConnections: hostConnections.length,
       activeLobbies: sessionManager.getLobbyCount(),
       disconnectReasons: disconnectReasonsObj
@@ -235,47 +238,9 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   }, 5 * 60 * 1000).unref();
 
   // Set up revival completion watchdog
-  // Phase 45-04: legacy `revive_complete` emit replaced by combat:player_revived
-  // via eventBus. processRevivalSessions returns the in-progress sessions too
-  // so the bridge can emit throttled combat:revival_progress per channel.
-  const lastRevivalProgressBucket = new Map<string, number>();
-  const REVIVAL_PROGRESS_EMIT_INTERVAL_MS = 500;
-  const REVIVAL_CHANNEL_DURATION_MS = 3000; // matches gameState.processRevivalSessions completion threshold
-  const revivalWatchdogInterval = setInterval(() => {
-    const result = gameState.processRevivalSessions();
-    for (const revival of result) {
-      // Completion: thread newHp from gameState's playerCombatStates so the
-      // new combat:player_revived handler writes the right hp client-side
-      // (also satisfies Phase 45-01 C5 fix for the gameState path).
-      const lobby = gameState.getLobby(revival.lobbyId);
-      const newHp = lobby?.playerCombatStates?.[revival.targetId]?.hp ?? 0;
-      eventBus.emit('combat:player_revived', {
-        lobbyId: revival.lobbyId,
-        playerId: revival.targetId,
-        reviverId: revival.reviverId,
-        newHp,
-      });
-      lastRevivalProgressBucket.delete(`${revival.lobbyId}:${revival.targetId}`);
-    }
-    // Emit throttled progress for in-flight gameState revival sessions.
-    const now = Date.now();
-    for (const session of gameState.getActiveRevivalSessions()) {
-      const elapsed = now - session.startedAt;
-      if (elapsed >= REVIVAL_CHANNEL_DURATION_MS) continue;
-      const key = `${session.lobbyId}:${session.targetId}`;
-      const bucket = Math.floor(elapsed / REVIVAL_PROGRESS_EMIT_INTERVAL_MS);
-      if ((lastRevivalProgressBucket.get(key) ?? -1) >= bucket) continue;
-      lastRevivalProgressBucket.set(key, bucket);
-      const percent = Math.min(100, Math.floor((elapsed / REVIVAL_CHANNEL_DURATION_MS) * 100));
-      eventBus.emit('combat:revival_progress', {
-        lobbyId: session.lobbyId,
-        reviverId: session.reviverId,
-        targetId: session.targetId,
-        percent,
-        remainingMs: Math.max(0, REVIVAL_CHANNEL_DURATION_MS - elapsed),
-      });
-    }
-  }, 100);
+  // Phase 50-02: The legacy revival watchdog interval was removed here.
+  // CombatManager's self-managing per-session setInterval handles revival
+  // ticks, progress, and completion (no external polling needed).
 
   // Phase 41-02: Disconnected-player sweeper for the SessionManager domain.
   // When a player's grace period expires, processDisconnectedPlayers performs
@@ -284,23 +249,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
   // We emit `host_transferred` here so other clients update their UI.
   const sessionDisconnectSweeperInterval = setInterval(() => {
     try {
-      const hostTransfers = sessionManager.processDisconnectedPlayers();
-      for (const transfer of hostTransfers) {
-        io.to(transfer.lobbyId).emit('host_transferred', {
-          oldHostId: transfer.oldHostId,
-          newHostId: transfer.newHostId,
-          newHostName: transfer.newHostName,
-          reason: 'Host disconnected (grace period expired)',
-        });
-        // Phase 42-02b row #2: lobby_updated removed; host_transferred
-        // (emitted just above) is the canonical signal for this transition.
-        socketLogger.info({
-          oldHostId: transfer.oldHostId,
-          newHostId: transfer.newHostId,
-          newHostName: transfer.newHostName,
-          lobbyId: transfer.lobbyId,
-        }, 'Deferred host transfer broadcast (Phase 41-02)');
-      }
+      // Phase 50-02: host_transferred fires via eventBus → ClientEventEmitter bridge.
+      // session:host_transferred is emitted by SessionManager.processDisconnectedPlayers;
+      // ClientEventEmitter delivers it as the wire event 'host_transferred' to the lobby.
+      sessionManager.processDisconnectedPlayers();
     } catch (err) {
       socketLogger.error({ err }, 'sessionDisconnectSweeper failed');
     }
@@ -336,7 +288,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
 
   io.on('connection', (socket: Socket<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>) => {
     totalConnections++;
-    activeConnections++;
+    activeConnections.value++;
 
     // Log connection details
     const transport = socket.conn.transport.name;
@@ -359,7 +311,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       transport,
       ip: forwardedFor,
       userAgent: userAgent.substring(0, 100),
-      activeConnections,
+      activeConnections: activeConnections.value,
       authenticated: !!socket.data.userId,
       userId: socket.data.userId
     }, 'Player connected');
@@ -402,92 +354,46 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
         if (socket.data.lobbyId) {
           sessionManager.recordLobbyActivity(socket.data.lobbyId);
         }
-        handler(result.data as z.infer<(typeof ClientEventSchemas)[E]>);
+        // Crash guard: a throw inside any handler must never become an uncaught
+        // exception that takes down the whole server. CombatError (and subclasses)
+        // are expected domain rejections — e.g. attack_boss arriving during the
+        // voting window before combat is active (CombatNotActiveError) — so log
+        // them at debug and move on. Anything else is a real bug: log it and tell
+        // the client, but keep the process alive.
+        try {
+          handler(result.data as z.infer<(typeof ClientEventSchemas)[E]>);
+        } catch (err) {
+          if (err instanceof CombatError) {
+            socketLogger.debug(
+              { event, socketId: socket.id, code: err.code, message: err.message },
+              'Combat action rejected (expected domain error)',
+            );
+          } else {
+            socketLogger.error(
+              { event, socketId: socket.id, err },
+              'Unhandled error in socket handler',
+            );
+            socket.emit('game_error', { message: 'An unexpected error occurred.' });
+          }
+        }
       }) as never);
     };
 
-    on('create_lobby', ({ lobbyName, hostName, initialSettings }) => {
-      try {
-        const lobby = sessionManager.createLobby(hostName, lobbyName, initialSettings);
+    // Assemble deps for the three extracted handlers (MAINT-03).
+    // These are the same singletons and closure-local values the handlers
+    // previously closed over — no behavior change.
+    const handlerDeps: HandlerDeps = {
+      gameState,
+      io,
+      sessionManager,
+      progressionManager,
+      classMasteryManager,
+      registerPlayerUserId,
+      activeConnections,
+      disconnectReasons,
+    };
 
-        // Sync player-lobby mapping to gameState for battle functions
-        gameState.syncPlayerToLobby(lobby.hostId, lobby);
-
-        // Get the correct host based on environment
-        const host = process.env.NODE_ENV === 'production'
-          ? 'https://scrummonsters.com'
-          : `http://localhost:${process.env.PORT || '5001'}`;
-        const inviteLink = `${host}/join/${lobby.id}`;
-
-        // Store player-socket mapping
-        socket.data.playerId = lobby.hostId;
-        socket.data.lobbyId = lobby.id;
-
-        // Join socket room
-        socket.join(lobby.id);
-
-        // Generate reconnect token for the host
-        const reconnectToken = sessionManager.generateReconnectToken(lobby.hostId, lobby.id, hostName);
-
-        socket.emit('lobby_created', { lobby, inviteLink });
-        socket.emit('lobby_sync', {
-          lobby,
-          yourPlayer: lobby.players[0],
-          reconnectToken,
-          pendingActions: {},
-          stateChanges: {}
-        });
-
-        // Register player-user mapping and emit progression sync for authenticated users
-        if (socket.data.userId) {
-          registerPlayerUserId(lobby.hostId, socket.data.userId);
-          (async () => {
-            try {
-              await progressionManager.loadPlayerXP(lobby.id, lobby.hostId, socket.data.userId!);
-              const totalXP = progressionManager.getPlayerXP(lobby.id, lobby.hostId);
-              const currentLevel = progressionManager.getPlayerLevel(lobby.id, lobby.hostId);
-              socket.emit('progression:sync', {
-                playerId: lobby.hostId,
-                totalXP,
-                currentLevel,
-                seq: 0,
-                timestamp: Date.now(),
-              });
-            } catch (err) {
-              socketLogger.error({ err }, 'Failed to sync progression for host');
-            }
-          })();
-
-          // Load class mastery (fire-and-forget, non-blocking)
-          (async () => {
-            try {
-              await classMasteryManager.loadAllClassMastery(lobby.id, lobby.hostId, socket.data.userId!);
-              // Build mastery data from loaded state
-              const masteryData = classMasteryManager.getAllMasteryData(lobby.id, lobby.hostId);
-              if (Object.keys(masteryData).length > 0) {
-                socket.emit('class_mastery:sync', {
-                  playerId: lobby.hostId,
-                  masteryData,
-                  seq: 0,
-                  timestamp: Date.now(),
-                });
-              }
-            } catch (err) {
-              socketLogger.error({ err }, 'Failed to sync class mastery');
-            }
-          })();
-        }
-
-        socketLogger.info({ lobbyId: lobby.id, hostName }, 'Lobby created');
-      } catch (error) {
-        socketLogger.error({ err: error }, 'Error creating lobby');
-        if (error instanceof SessionError) {
-          socket.emit('game_error', { message: error.message });
-        } else {
-          socket.emit('game_error', { message: 'Failed to create lobby' });
-        }
-      }
-    });
+    on('create_lobby', (data) => { handleCreateLobby(socket, data, handlerDeps); });
 
     on('join_lobby', ({ lobbyId, playerName }) => {
       try {
@@ -1017,6 +923,16 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           gameLogger.info({ lobbyId: updatedLobby.id }, 'Battle started successfully');
           // Removed lobby_updated: battle_started event contains lobby
 
+          // Initialize live combat for the FIRST ticket — mirrors the next_level
+          // transition (~L1195 below). Without this, CombatManager has no combat
+          // state for ticket 1, so the boss never attacks and attack_boss throws
+          // CombatNotActiveError (boss inert, players un-downable). CombatManager is
+          // the single boss-HP truth (see gameState.attackBoss); lobby.boss is a
+          // projection of it. ticketIndex 0 = first ticket.
+          combatManager.cleanupLobby(updatedLobby.id);
+          const combatPlayers = updatedLobby.players.map(p => ({ id: p.id, team: p.team }));
+          combatManager.initializeCombat(updatedLobby.id, combatPlayers, 0, boss?.sprite);
+
           // Start the battle (synchronous - relies on socket.io event ordering)
           io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
         }
@@ -1162,17 +1078,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
             healAmount: (modifier || 0) + 1,
             bossHealth,
           });
-        } else {
-          // Phase 45-05B L4: legacy `boss_attacked` emit removed; the
-          // combat:boss_damaged event below is the canonical signal
-          // (handler now mirrors to both currentBoss and currentLobby.boss).
-          eventBus.emit('combat:boss_damaged', {
-            lobbyId: lobby.id,
-            playerId,
-            damage,
-            bossHealth,
-          });
         }
+        // MAINT-05: combat:boss_damaged is no longer emitted here.
+        // CombatManager.applyBasicDamageToBoss (called via gameState.attackBoss) is the
+        // single authoritative emitter for basic-attack boss-damaged events.
+        // Removing this manual emit eliminates the double-emit that caused double XP,
+        // double damage-boost, and duplicate client HP updates on basic attacks.
 
         // Phase 45-03: legacy `modifier_updated` emit removed (no client listener).
         // combat:modifier_updated fires from CombatManager.applyDamage on the
@@ -1623,58 +1534,30 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     on('revive_start', ({ targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
-
-      const success = gameState.startRevive(playerId, targetId);
-      if (success) {
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          eventBus.emit('combat:revival_started', {
-            lobbyId: lobby.id,
-            reviverId: playerId,
-            targetId,
-            durationMs: 3000,
-          });
+      // Phase 50-02: route through CombatManager (self-manages 100ms interval +
+      // combat:revival_started emit internally — do NOT duplicate eventBus.emit here).
+      const lobby = sessionManager.getPlayerLobby(playerId);
+      if (!lobby) return;
+      try {
+        const success = combatManager.startRevival(lobby.id, playerId, targetId);
+        if (!success) {
+          socket.emit('game_error', { message: 'Cannot start revival' });
         }
+      } catch (err) {
+        // RevivalNotAllowedError for non-healer classes
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
-    on('revive_cancel', ({ targetId }: { targetId: string }) => {
+    on('revive_cancel', ({ targetId: _targetId }: { targetId: string }) => {
       const playerId = socket.data.playerId;
       if (!playerId) return;
-
-      const success = gameState.cancelRevive(playerId, targetId);
-      if (success) {
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          eventBus.emit('combat:revival_cancelled', {
-            lobbyId: lobby.id,
-            reviverId: playerId,
-            targetId,
-            reason: 'cancelled_by_reviver',
-          });
-        }
-      }
+      // Phase 50-02: CombatManager.cancelRevival emits combat:revival_cancelled internally
+      combatManager.cancelRevival(playerId, 'cancelled_by_reviver');
     });
 
-    on('revive_tick', ({ targetId }: { targetId: string }) => {
-      const playerId = socket.data.playerId;
-      if (!playerId) return;
-
-      // Update keep-alive and validate revival conditions
-      const isValid = gameState.tickRevive(playerId, targetId);
-      if (!isValid) {
-        // Revival was cancelled due to distance or state changes
-        const lobby = gameState.getLobbyByPlayerId(playerId);
-        if (lobby) {
-          eventBus.emit('combat:revival_cancelled', {
-            lobbyId: lobby.id,
-            reviverId: playerId,
-            targetId,
-            reason: 'invalid_state',
-          });
-        }
-      }
-    });
+    // revive_tick removed in Phase 50-02: CombatManager's internal setInterval
+    // per-session replaces the external keep-alive pattern (Pitfall 6 — no ack contract).
 
     // Jumping state sync
     on('player_jump', ({ isJumping }: { isJumping: boolean }) => {
@@ -1692,10 +1575,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updateTimerSettings(playerId, timerSettings);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updateTimerSettings(playerId, timerSettings);
         // Phase 42-02b row #19: lobby_updated -> session:settings_updated.
         emitFineGrained(lobby.id, 'session:settings_updated', { timerSettings: lobby.timerSettings });
+      } catch (err) {
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
@@ -1703,10 +1588,12 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updateJiraSettings(playerId, jiraSettings);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updateJiraSettings(playerId, jiraSettings);
         // Phase 42-02b row #20: lobby_updated -> session:settings_updated.
         emitFineGrained(lobby.id, 'session:settings_updated', { jiraSettings: lobby.jiraSettings });
+      } catch (err) {
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
@@ -1714,107 +1601,19 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       const playerId = socket.data.playerId;
       if (!playerId) return;
 
-      const lobby = gameState.updateEstimationSettings(playerId, estimationSettings);
-      if (lobby) {
+      try {
+        const lobby = sessionManager.updateEstimationSettings(playerId, estimationSettings);
         // Phase 42-02b row #21: lobby_updated -> session:settings_updated.
         // (42-02a designed this payload shape; this is its first emit site.)
         emitFineGrained(lobby.id, 'session:settings_updated', { estimationSettings: lobby.estimationSettings });
         gameLogger.info({ playerId, lobbyId: lobby.id }, 'Estimation settings updated');
+      } catch (err) {
+        socket.emit('game_error', { message: (err as Error).message });
       }
     });
 
     // Reconnection handler
-    on('reconnect_with_token', ({ reconnectToken }) => {
-      try {
-        const response = sessionManager.attemptPlayerReconnect(reconnectToken);
-
-        if (response.result === 'success' && response.lobbySync) {
-          const { lobbySync } = response;
-          const playerId = lobbySync.yourPlayer.id;
-          const lobbyId = lobbySync.lobby.id;
-
-          // Sync player-lobby mapping to gameState for battle functions
-          gameState.syncPlayerToLobby(playerId, lobbySync.lobby);
-
-          // Update socket data
-          socket.data.playerId = playerId;
-          socket.data.lobbyId = lobbyId;
-
-          // Join socket room
-          socket.join(lobbyId);
-
-          // Send successful reconnection response. Redact secret vote values
-          // from the synced lobby during pre-reveal phases — both `lobby_sync`
-          // and the `lobbySync` nested in `reconnect_response` carry the full
-          // lobby on the wire, so both must be redacted (Security fix H-3).
-          const wireSync = { ...lobbySync, lobby: redactLobbyForWire(lobbySync.lobby) };
-          socket.emit('lobby_sync', wireSync);
-          socket.emit('reconnect_response', { ...response, lobbySync: wireSync });
-
-          // Reinitialize fine-grained event sequence for reconnected player
-          const emitter = getClientEventEmitter();
-          emitter.sendFullState(lobbyId, lobbySync.lobby, socket.id);
-
-          // Register player-user mapping and emit progression sync for authenticated users
-          if (socket.data.userId) {
-            registerPlayerUserId(playerId, socket.data.userId);
-            (async () => {
-              try {
-                await progressionManager.loadPlayerXP(lobbyId, playerId, socket.data.userId!);
-                const totalXP = progressionManager.getPlayerXP(lobbyId, playerId);
-                const currentLevel = progressionManager.getPlayerLevel(lobbyId, playerId);
-                socket.emit('progression:sync', {
-                  playerId,
-                  totalXP,
-                  currentLevel,
-                  seq: 0,
-                  timestamp: Date.now(),
-                });
-              } catch (err) {
-                socketLogger.error({ err }, 'Failed to sync progression on reconnect');
-              }
-            })();
-
-            // Load class mastery (fire-and-forget, non-blocking)
-            (async () => {
-              try {
-                await classMasteryManager.loadAllClassMastery(lobbyId, playerId, socket.data.userId!);
-                // Build mastery data from loaded state
-                const masteryData = classMasteryManager.getAllMasteryData(lobbyId, playerId);
-                if (Object.keys(masteryData).length > 0) {
-                  socket.emit('class_mastery:sync', {
-                    playerId,
-                    masteryData,
-                    seq: 0,
-                    timestamp: Date.now(),
-                  });
-                }
-              } catch (err) {
-                socketLogger.error({ err }, 'Failed to sync class mastery');
-              }
-            })();
-          }
-
-          // Phase 45-03: legacy `player_reconnected` emit removed (no client listener).
-          // Reconnecting client receives lobby_sync above; other clients aren't
-          // notified at the socket layer today (no toast UX consumed this).
-          // Reconnecting client receives the full
-          // lobby state above via lobby_sync + sendFullState.
-
-          socketLogger.info({ playerId, playerName: lobbySync.yourPlayer.name }, 'Player reconnected successfully');
-        } else {
-          // Send failed reconnection response
-          socket.emit('reconnect_response', response);
-          socketLogger.warn({ message: response.message }, 'Reconnection failed');
-        }
-      } catch (error) {
-        socketLogger.error({ err: error }, 'Error handling reconnect');
-        socket.emit('reconnect_response', {
-          result: 'server_error',
-          message: 'Server error during reconnection'
-        });
-      }
-    });
+    on('reconnect_with_token', (data) => { handleReconnectWithToken(socket, data, handlerDeps); });
 
     // Client heartbeat to prevent infrastructure timeouts (Cloudflare/Replit ~2min idle limit)
     on('client_heartbeat', () => {
@@ -1986,85 +1785,7 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
       }
     });
 
-    socket.on('disconnect', (reason) => {
-      activeConnections--;
-      const playerId = socket.data.playerId;
-      const lobbyId = socket.data.lobbyId;
-
-      // Update Prometheus WebSocket connection gauge
-      updateWebsocketMetrics(io);
-
-      // Track disconnect reasons for monitoring
-      disconnectReasons.set(reason, (disconnectReasons.get(reason) || 0) + 1);
-
-      // Enhanced logging for host disconnects
-      const lobby = lobbyId ? sessionManager.getLobby(lobbyId) : null;
-      const lobbyHostId = lobby?.hostId;
-      const isHost = lobby && lobbyHostId === playerId;
-
-      // Phase 41-02: include playerId and lobbyHostId so future host/player-id
-      // asymmetries (e.g. socket.data.playerId being overwritten by a phantom
-      // join) are observable directly from disconnect logs.
-      socketLogger.info({
-        socketId: socket.id,
-        reason,
-        isHost,
-        playerId,
-        lobbyHostId,
-        lobbyId,
-        activeConnections,
-      }, 'Player disconnected');
-
-      if (playerId) {
-        // Use SessionManager reconnection system
-        const disconnectResult = sessionManager.handlePlayerDisconnect(playerId);
-        if (disconnectResult && lobbyId) {
-          const { disconnectedPlayer, hostTransfer } = disconnectResult;
-
-          // Phase 45-03: legacy `player_disconnected` emit removed (no client listener).
-          // Player remains in lobby during grace; the players[].isConnected
-          // flag (set elsewhere) drives any visual dim.
-
-          const graceMinutes = Math.floor((disconnectedPlayer.graceExpiresAt - Date.now()) / 60000);
-          socketLogger.info({
-            playerId,
-            playerName: disconnectedPlayer.playerName,
-            graceMinutes
-          }, 'Player can reconnect during grace period');
-
-          // Phase 41-02: host transfer is now deferred until grace expiry
-          // (see SessionManager.processDisconnectedPlayers + the
-          // sessionDisconnectSweeper interval above). hostTransfer is always
-          // undefined on the disconnect path post-Phase-41-02; this branch is
-          // retained as a no-op safety net for any future code path that
-          // re-introduces immediate transfer.
-          if (hostTransfer) {
-            io.to(lobbyId).emit('host_transferred', {
-              oldHostId: hostTransfer.oldHostId,
-              newHostId: hostTransfer.newHostId,
-              newHostName: hostTransfer.newHostName,
-              reason: 'Host disconnected'
-            });
-
-            // Phase 42-02b row #23: lobby_updated removed;
-            // host_transferred above is the canonical signal.
-            socketLogger.info({
-              oldHostId: hostTransfer.oldHostId,
-              newHostId: hostTransfer.newHostId,
-              newHostName: hostTransfer.newHostName
-            }, 'Host transferred due to disconnect');
-          }
-        } else {
-          // Fallback to old behavior if reconnection setup fails
-          const updatedLobby = sessionManager.removePlayer(playerId);
-          if (updatedLobby && lobbyId) {
-            // Phase 45-03: legacy `player_disconnected` emit removed (no client listener).
-            // session:player_left fires from sessionManager.removePlayer above.
-          }
-          socketLogger.warn({ playerId }, 'Player removed immediately (reconnection unavailable)');
-        }
-      }
-    });
+    socket.on('disconnect', (reason) => { handleDisconnect(socket, reason, handlerDeps); });
   });
 
   // Return both io and a cleanup function for graceful shutdown
@@ -2073,7 +1794,6 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
     cleanup: () => {
       clearInterval(positionBatchInterval);
       clearInterval(websocketMetricsInterval);
-      clearInterval(revivalWatchdogInterval);
       clearInterval(sessionDisconnectSweeperInterval);
       clearInterval(idleLobbyReaperInterval);
       eventBus.off('session:lobby_destroyed', lobbyDestroyedHandler);

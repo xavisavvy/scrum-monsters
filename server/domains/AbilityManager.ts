@@ -250,6 +250,9 @@ export class AbilityManager {
       effectType: abilityDef.effectType,
       targetIds,
       value: abilityDef.power,
+      buffType: abilityDef.buffType,
+      debuffType: abilityDef.debuffType,
+      durationMs: abilityDef.durationMs,
     });
   }
 

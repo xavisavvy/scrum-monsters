@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import { Lobby, Player, Boss, AttackAnimation } from '../gameTypes';
+import { withTeamsDerived } from '../withTeamsDerived';
 
 interface CountdownState {
   active: boolean;
@@ -125,7 +126,7 @@ export const useGameState = create<GameState>()(
     battleRemountKey: 0,
     isBattleUnmounting: false,
 
-    setLobby: (lobby) => set({ currentLobby: lobby }),
+    setLobby: (lobby) => set({ currentLobby: withTeamsDerived(lobby) }),
     
     setPlayer: (player) => set({ currentPlayer: player }),
     

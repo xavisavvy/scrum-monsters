@@ -128,6 +128,8 @@ const patterns: AttackPattern[] = [
 export const SPRINT_DEMON_BEHAVIOR: BossBehavior = {
   bossType: 'sprint-demon',
   name: 'Sprint Demon',
+  sprite: 'sprint-demon.png',
+  description: 'Infernal Master of Rushed Deadlines',
   patterns,
   phaseTransitionMessages: {
     1: '',

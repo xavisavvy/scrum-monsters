@@ -130,6 +130,8 @@ const patterns: AttackPattern[] = [
 export const BUG_HYDRA_BEHAVIOR: BossBehavior = {
   bossType: 'bug-hydra',
   name: 'Bug Hydra',
+  sprite: 'bug-hydra.png',
+  description: 'Legendary Beast of Endless Bugs',
   patterns,
   phaseTransitionMessages: {
     1: '',

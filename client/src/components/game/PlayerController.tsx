@@ -3,21 +3,42 @@ import { PlayerCharacter, PlayerPosition, Projectile } from './PlayerCharacter';
 import { ProjectileSystem } from './ProjectileSystem';
 import { MobileControls } from './MobileControls';
 import { useGameState } from '@/lib/stores/useGameState';
+import { useShallow } from 'zustand/react/shallow';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useAudio } from '@/lib/stores/useAudio';
 import { AvatarClass } from '@/lib/gameTypes';
 import type { RingAttack, RingAttackProjectile } from '@shared/gameEvents';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { useViewport } from '@/lib/hooks/useViewport';
+import { useViewport, worldToPercent, percentToWorld } from '@/lib/hooks/useViewport';
 import { useIsMobile } from '@/hooks/use-is-mobile';
 
 interface PlayerControllerProps {
   // Remove containerWidth/Height - viewport system handles this
+  /**
+   * Callback invoked with all player positions (current + others) whenever positions change.
+   * @important Callers must wrap this in `useCallback` for React.memo to bail out on parent
+   * re-renders. An inline function here creates a new reference every render, defeating memo.
+   */
   onPlayerPositionsUpdate?: (positions: Record<string, { x: number, y: number }>) => void;
 }
 
-export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerProps) {
-  const { currentPlayer, currentLobby, addAttackAnimation } = useGameState();
+export const PlayerController = React.memo(function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerProps) {
+  // Field-scoped selectors — re-render only when these specific fields change (MAINT-06)
+  // boss is intentionally excluded so boss-HP updates do not re-render this component
+  const currentPlayer = useGameState(useShallow(s => s.currentPlayer ? {
+    id: s.currentPlayer.id,
+    team: s.currentPlayer.team,
+    avatar: s.currentPlayer.avatar,
+    name: s.currentPlayer.name,
+  } : null));
+  const currentLobby = useGameState(useShallow(s => s.currentLobby ? {
+    id: s.currentLobby.id,
+    gamePhase: s.currentLobby.gamePhase,
+    players: s.currentLobby.players,
+    playerPositions: s.currentLobby.playerPositions,
+    playerCombatStates: s.currentLobby.playerCombatStates,
+  } : null));
+  const addAttackAnimation = useGameState(s => s.addAttackAnimation);
   const { emit, socket } = useWebSocket();
   const { playHit } = useAudio();
   const viewport = useViewport();
@@ -34,6 +55,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
   const [qPressed, setQPressed] = useState(false);
   const [specialAttackCooldown, setSpecialAttackCooldown] = useState(0);
   const [currentDirection, setCurrentDirection] = useState<SpriteDirection>('down');
+  // MAINT-11: ref-mirror so movePlayer closure reads the latest direction
+  // without adding currentDirection to the movement dep array (which caused
+  // the 16ms interval to be recreated on every turn).
+  const currentDirectionRef = useRef<SpriteDirection>('down');
+  useEffect(() => { currentDirectionRef.current = currentDirection; }, [currentDirection]);
   const [isMoving, setIsMoving] = useState(false);
 
   const isMobile = useIsMobile();
@@ -50,8 +76,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       // Clamp server positions to valid range and convert to screen coordinates
       const clampedX = Math.max(0, Math.min(100, serverPos.x));
       const clampedY = Math.max(0, Math.min(100, serverPos.y));
-      const worldX = (clampedX / 100) * viewport.worldWidth;
-      const worldY = (clampedY / 100) * viewport.worldHeight;
+      const { x: worldX, y: worldY } = percentToWorld(clampedX, clampedY, viewport.worldWidth, viewport.worldHeight);
       const screenPos = viewport.worldToScreen(worldX, worldY);
       
       const isInitialSync = playerPosition.x === 100 && playerPosition.y === 100; // Default values
@@ -106,12 +131,13 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       }
       
       // Handle shooting with Ctrl keys (single shot per keydown, not continuous)
+      // MAINT-14 Site 1: target resolution preserved; shoot body replaced by handleShootAtTarget
       if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer && !ctrlPressed) {
         setCtrlPressed(true); // Prevent multiple shots while held
         event.preventDefault();
-        
-        let targetX, targetY, targetPlayerId = null;
-        
+
+        let targetX: number, targetY: number, targetPlayerId: string | null = null;
+
         if (currentPlayer.team === 'spectators') {
           // Spectators target nearest dev/qa player
           const nearestPlayer = findNearestTargetPlayer();
@@ -131,70 +157,20 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
           targetX = bossWorld.x;
           targetY = bossWorld.y;
         }
-        
-        // Calculate character center position (corrected for top-based positioning)
-        const characterCenterX = playerPosition.x + characterSize / 2;
-        const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
-        
-        // Create projectile from character to target
-        const projectileData = {
-          startX: characterCenterX,
-          startY: characterCenterY,
-          targetX,
-          targetY,
-          emoji: getProjectileEmoji(currentPlayer.avatar),
-          targetPlayerId: targetPlayerId || undefined // For spectator attacks
-        };
-        
-        // Create projectile directly
-        const newProjectile = {
-          ...projectileData,
-          id: Math.random().toString(36).substring(2, 15),
-          progress: 0
-        };
-        
-        setProjectiles(prev => [...prev, newProjectile]);
-        
-        // Convert screen coordinates to world coordinates, then to percentages
-        const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
-        const targetWorld = viewport.screenToWorld(targetX, targetY);
-        const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-        const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-        const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-        const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
-        
-        // Emit projectile event for multiplayer visibility with percentage coordinates
-        emit('player_projectile', {
-          startX: percentStartX,
-          startY: percentStartY,
-          targetX: percentTargetX,
-          targetY: percentTargetY,
-          emoji: getProjectileEmoji(currentPlayer.avatar),
-          targetPlayerId: targetPlayerId || undefined
-        });
+
+        handleShootAtTarget(targetX!, targetY!, targetPlayerId, 'projectile');
       }
-      
+
       // Handle special attack with Q key (single attack per keydown, with cooldown)
       if (event.code === 'KeyQ' && currentPlayer && !qPressed && specialAttackCooldown <= 0) {
         setQPressed(true); // Prevent multiple attacks while held
         event.preventDefault();
-        
+
         // Trigger special attack based on character class
         handleSpecialAttack(currentPlayer.avatar);
-        
-        // Set cooldown (5 seconds)
-        setSpecialAttackCooldown(5000);
-        
-        // Start cooldown countdown
-        const cooldownInterval = setInterval(() => {
-          setSpecialAttackCooldown(prev => {
-            if (prev <= 100) {
-              clearInterval(cooldownInterval);
-              return 0;
-            }
-            return prev - 100;
-          });
-        }, 100);
+
+        // MAINT-14: startCooldown replaces inline 5000ms ticker (Site 1 of 2)
+        startCooldown();
       }
     };
 
@@ -397,7 +373,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         // after deltaX/deltaY normalization), so the prev.x/prev.y seed
         // values were dead. CodeQL js/useless-assignment-to-local.
         let moving = false;
-        let direction: SpriteDirection = currentDirection;
+        // MAINT-11: read from ref — keeps currentDirection out of the movement dep array
+        let direction: SpriteDirection = currentDirectionRef.current;
 
         // Calculate movement vector for smooth diagonal movement
         let deltaX = 0;
@@ -454,8 +431,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         if (positionChanged && timeDelta >= networkUpdateThrottle) {
           // Convert screen coordinates to world coordinates, then to percentage for server
           const worldPos = viewport.screenToWorld(newX, newY);
-          const percentX = Math.max(0, Math.min(100, (worldPos.x / viewport.worldWidth) * 100));
-          const percentY = Math.max(0, Math.min(100, (worldPos.y / viewport.worldHeight) * 100));
+          const { x: percentX, y: percentY } = worldToPercent(worldPos.x, worldPos.y, viewport.worldWidth, viewport.worldHeight);
           
           emit('player_pos', { x: percentX, y: percentY });
           
@@ -469,7 +445,10 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
 
     const interval = setInterval(movePlayer, 16); // ~60 FPS for immediate response
     return () => clearInterval(interval);
-  }, [keys, viewport, characterSize, moveSpeed, emit, currentDirection]);
+    // MAINT-11: currentDirection removed — promoted to currentDirectionRef so turning
+    // no longer recreates the 16ms interval. keys/viewport/characterSize/moveSpeed/emit
+    // are the only true deps of the effect closure.
+  }, [keys, viewport, characterSize, moveSpeed, emit]);
 
   const handleShoot = useCallback((projectileData: Omit<Projectile, 'id' | 'progress'>) => {
     const newProjectile: Projectile = {
@@ -529,13 +508,12 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     handleShoot(projectileData);
     
     // Convert screen coordinates to world coordinates, then to percentages before emitting
+    // Site 4: worldToPercent now clamps to [0,100] — intentional canonicalization (MAINT-10)
     const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
     const targetWorld = viewport.screenToWorld(targetX, targetY);
-    const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-    const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-    const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-    const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
-    
+    const { x: percentStartX, y: percentStartY } = worldToPercent(startWorld.x, startWorld.y, viewport.worldWidth, viewport.worldHeight);
+    const { x: percentTargetX, y: percentTargetY } = worldToPercent(targetWorld.x, targetWorld.y, viewport.worldWidth, viewport.worldHeight);
+
     // Emit projectile event for multiplayer visibility with percentage coordinates
     emit('player_projectile', {
       startX: percentStartX,
@@ -676,6 +654,73 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     return nearestPlayer;
   }, [currentLobby, currentPlayer, playerPosition]);
 
+  // MAINT-14: unified Ctrl-shoot helper — replaces three verbatim blocks (Sites 1/2/3).
+  // mode='projectile': creates a client projectile + emits player_projectile (Sites 1 & 2)
+  // mode='direct':     creates a client projectile + emits attack_player/attack_boss (Site 3)
+  // worldToPercent is already imported at L12 — do NOT re-implement the math (Pitfall 6).
+  const handleShootAtTarget = useCallback((
+    targetX: number,
+    targetY: number,
+    targetPlayerId: string | null,
+    mode: 'projectile' | 'direct'
+  ) => {
+    if (!currentPlayer) return;
+
+    const characterCenterX = playerPosition.x + characterSize / 2;
+    const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
+
+    const newProjectile: Projectile = {
+      id: Math.random().toString(36).substring(2, 15),
+      startX: characterCenterX,
+      startY: characterCenterY,
+      targetX,
+      targetY,
+      emoji: getProjectileEmoji(currentPlayer.avatar),
+      progress: 0
+    };
+
+    setProjectiles(prev => [...prev, newProjectile]);
+
+    if (mode === 'projectile') {
+      // Sites 1 & 2: emit player_projectile with worldToPercent-converted coordinates
+      const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
+      const targetWorld = viewport.screenToWorld(targetX, targetY);
+      const { x: psx, y: psy } = worldToPercent(startWorld.x, startWorld.y, viewport.worldWidth, viewport.worldHeight);
+      const { x: ptx, y: pty } = worldToPercent(targetWorld.x, targetWorld.y, viewport.worldWidth, viewport.worldHeight);
+      emit('player_projectile', {
+        startX: psx,
+        startY: psy,
+        targetX: ptx,
+        targetY: pty,
+        emoji: getProjectileEmoji(currentPlayer.avatar),
+        targetPlayerId: targetPlayerId || undefined
+      });
+    } else {
+      // Site 3: battle-phase keyboard shortcut — different event path, NOT player_projectile
+      if (currentPlayer.team === 'spectators' && targetPlayerId) {
+        emit('attack_player', { targetId: targetPlayerId, damage: 0 });
+      } else {
+        emit('attack_boss', { damage: Math.floor(Math.random() * 3) + 1 });
+      }
+    }
+  }, [playerPosition, characterSize, viewport, currentPlayer, emit]);
+
+  // MAINT-14: unified cooldown ticker — replaces two identical inline blocks (Sites 1 & 2).
+  // Sets specialAttackCooldown to 5000 and decrements by 100 every 100ms until 0.
+  // setSpecialAttackCooldown is guaranteed stable by React (no dep needed).
+  const startCooldown = useCallback(() => {
+    setSpecialAttackCooldown(5000);
+    const cooldownInterval = setInterval(() => {
+      setSpecialAttackCooldown(prev => {
+        if (prev <= 100) {
+          clearInterval(cooldownInterval);
+          return 0;
+        }
+        return prev - 100;
+      });
+    }, 100);
+  }, []); // setSpecialAttackCooldown is stable (React guarantees setState identity)
+
   // Mobile touch input handlers — update the same keys Set as keyboard input
   const handleMobileKeyDown = useCallback((code: string) => {
     setKeys(prev => new Set(prev).add(code));
@@ -692,28 +737,21 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
     }
 
     // Handle special attack (same logic as keyboard Q handler)
+    // MAINT-14: startCooldown replaces inline 5000ms ticker (Site 2 of 2)
     if (code === 'KeyQ' && !qPressed && specialAttackCooldown <= 0) {
       setQPressed(true);
       if (currentPlayer) {
         handleSpecialAttack(currentPlayer.avatar);
-        setSpecialAttackCooldown(5000);
-        const cooldownInterval = setInterval(() => {
-          setSpecialAttackCooldown(prev => {
-            if (prev <= 100) {
-              clearInterval(cooldownInterval);
-              return 0;
-            }
-            return prev - 100;
-          });
-        }, 100);
+        startCooldown();
       }
     }
 
     // Handle shoot (same logic as keyboard Ctrl handler)
+    // MAINT-14 Site 2: target resolution preserved; shoot body replaced by handleShootAtTarget
     if (code === 'ControlLeft' && currentPlayer && !ctrlPressed) {
       setCtrlPressed(true);
 
-      let targetX, targetY, targetPlayerId: string | null = null;
+      let targetX: number, targetY: number, targetPlayerId: string | null = null;
 
       if (currentPlayer.team === 'spectators') {
         const nearestPlayer = findNearestTargetPlayer();
@@ -732,39 +770,11 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         targetY = bossWorld.y;
       }
 
-      const characterCenterX = playerPosition.x + characterSize / 2;
-      const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
-
-      const newProjectile: Projectile = {
-        id: Math.random().toString(36).substring(2, 15),
-        startX: characterCenterX,
-        startY: characterCenterY,
-        targetX: targetX!,
-        targetY: targetY!,
-        emoji: getProjectileEmoji(currentPlayer.avatar),
-        progress: 0
-      };
-
-      setProjectiles(prev => [...prev, newProjectile]);
-
-      const startWorld = viewport.screenToWorld(characterCenterX, characterCenterY);
-      const targetWorld = viewport.screenToWorld(targetX!, targetY!);
-      const percentStartX = (startWorld.x / viewport.worldWidth) * 100;
-      const percentStartY = (startWorld.y / viewport.worldHeight) * 100;
-      const percentTargetX = (targetWorld.x / viewport.worldWidth) * 100;
-      const percentTargetY = (targetWorld.y / viewport.worldHeight) * 100;
-
-      emit('player_projectile', {
-        startX: percentStartX,
-        startY: percentStartY,
-        targetX: percentTargetX,
-        targetY: percentTargetY,
-        emoji: getProjectileEmoji(currentPlayer.avatar),
-        targetPlayerId: targetPlayerId || undefined
-      });
+      handleShootAtTarget(targetX!, targetY!, targetPlayerId, 'projectile');
     }
   }, [isJumping, jumpDuration, emit, qPressed, specialAttackCooldown, currentPlayer, ctrlPressed,
-      playerPosition, characterSize, viewport, findNearestTargetPlayer, handleSpecialAttack]);
+      viewport, findNearestTargetPlayer, handleSpecialAttack,
+      handleShootAtTarget, startCooldown]);
 
   const handleMobileKeyUp = useCallback((code: string) => {
     setKeys(prev => {
@@ -857,7 +867,7 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
                      projectile.targetY >= bossAreaY && 
                      projectile.targetY <= bossAreaY + bossAreaHeight;
       
-      if (hitBoss && currentLobby?.boss) {
+      if (hitBoss && currentLobby?.gamePhase === 'battle') {
         // Calculate damage (story points scale)
         const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
         
@@ -922,12 +932,14 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
         }
         
         // Handle shooting with Ctrl keys
+        // MAINT-14 Site 3: target resolution preserved; shoot body replaced by handleShootAtTarget
+        // mode='direct' — battle-phase shortcut emits attack_player / attack_boss (NOT player_projectile)
         if ((event.code === 'ControlLeft' || event.code === 'ControlRight') && currentPlayer && !ctrlPressed) {
           setCtrlPressed(true);
           e.preventDefault();
-          
-          let targetX, targetY, targetPlayerId = null;
-          
+
+          let targetX: number, targetY: number, targetPlayerId: string | null = null;
+
           if (currentPlayer.team === 'spectators') {
             const nearestPlayer = findNearestTargetPlayer();
             if (nearestPlayer) {
@@ -944,37 +956,8 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
             targetX = bossWorld.x;
             targetY = bossWorld.y;
           }
-          
-          const characterCenterX = playerPosition.x + characterSize / 2;
-          const characterCenterY = viewport.viewportHeight - playerPosition.y - characterSize / 2;
-          
-          const emoji = getProjectileEmoji(currentPlayer.avatar);
-          const newProjectile: Projectile = {
-            id: Math.random().toString(36).substring(2, 15),
-            startX: characterCenterX,
-            startY: characterCenterY,
-            targetX,
-            targetY,
-            emoji,
-            progress: 0
-          };
-          
-          setProjectiles(prev => [...prev, newProjectile]);
-          
-          if (currentPlayer.team === 'spectators' && targetPlayerId) {
-            const damage = 0; // Damage calculated on server based on modifier
-            emit('attack_player', {
-              targetId: targetPlayerId,
-              damage
-            });
-          } else {
-            // Calculate damage for boss attack (same as click attacks)
-            const damage = Math.floor(Math.random() * 3) + 1; // 1-3 damage
-            
-            emit('attack_boss', {
-              damage
-            });
-          }
+
+          handleShootAtTarget(targetX!, targetY!, targetPlayerId, 'direct');
         }
       } : undefined}
       onKeyUp={isActive ? (e) => {
@@ -1172,4 +1155,4 @@ export function PlayerController({ onPlayerPositionsUpdate }: PlayerControllerPr
       )}
     </div>
   );
-}
+});

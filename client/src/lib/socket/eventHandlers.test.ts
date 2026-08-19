@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import type { Boss, Lobby } from '@shared/gameEvents';
-import { setupEventHandlers } from './eventHandlers';
+import { setupEventHandlers, teardownEventHandlers } from './eventHandlers';
+import { teardownSyncedHandlers } from './eventHandlerUtils';
 import { useEventSync } from '../stores/useEventSync';
 import { useGameState } from '../stores/useGameState';
 
@@ -514,5 +515,241 @@ describe('Recovery re-applies events, not just lastSeq (council H1)', () => {
 
     // Pre-H1-fix this stayed undefined — handleMissedEventsReplay discarded payloads.
     expect(useGameState.getState().currentLobby!.teams.developers[0].currentScore).toBe(5);
+  });
+});
+
+describe('MAINT-04: withTeamsDerived integration — teams never stale after setLobby', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null, currentPlayer: null });
+  });
+
+  it('session:team_changed: teams[newTeam] player has newTeam field, not oldTeam (push-before-map regression)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    // Build a lobby with p1 on developers; teams mirror matches players
+    useGameState.setState({
+      currentLobby: {
+        id: 'lobby-1',
+        hostId: 'host',
+        players: [{ id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 }],
+        teams: { developers: [{ id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 }], qa: [], spectators: [] },
+        gamePhase: 'lobby',
+        tickets: [],
+        completedTickets: [],
+      } as any,
+    });
+
+    handlers.get('session:team_changed')!({ playerId: 'p1', oldTeam: 'developers', newTeam: 'qa', seq: 1, timestamp: Date.now() });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Regression: before fix, teams[qa] contained a player with .team === 'developers'
+    const p1InQa = lobby.teams.qa.find((p: any) => p.id === 'p1');
+    expect(p1InQa).toBeDefined();
+    expect(p1InQa!.team).toBe('qa');
+    // p1 must not appear in old team
+    const p1InDevs = lobby.teams.developers.find((p: any) => p.id === 'p1');
+    expect(p1InDevs).toBeUndefined();
+  });
+
+  it('session:avatar_selected: teams reflect updated avatar (was never mirrored to teams)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    useGameState.setState({
+      currentLobby: {
+        id: 'lobby-1',
+        hostId: 'host',
+        players: [{ id: 'p1', name: 'Alice', team: 'qa', isHost: false, avatar: 'warrior', avatarClass: 'warrior', hasSelectedAvatar: false, level: 1 }],
+        teams: { developers: [], qa: [{ id: 'p1', name: 'Alice', team: 'qa', isHost: false, avatar: 'warrior', avatarClass: 'warrior', hasSelectedAvatar: false, level: 1 }], spectators: [] },
+        gamePhase: 'lobby',
+        tickets: [],
+        completedTickets: [],
+      } as any,
+    });
+
+    handlers.get('session:avatar_selected')!({ playerId: 'p1', avatar: 'mage', seq: 1, timestamp: Date.now() });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Regression: before fix, teams[qa] still had the old avatar ('warrior')
+    const p1InQa = lobby.teams.qa.find((p: any) => p.id === 'p1');
+    expect(p1InQa).toBeDefined();
+    expect(p1InQa!.avatar).toBe('mage');
+    expect(p1InQa!.hasSelectedAvatar).toBe(true);
+  });
+
+  it('session:host_changed: teams reflect updated isHost flag (was never mirrored to teams)', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    useGameState.setState({
+      currentLobby: {
+        id: 'lobby-1',
+        hostId: 'old-host',
+        players: [
+          { id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 },
+          { id: 'old-host', name: 'Bob', team: 'developers', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 },
+        ],
+        teams: {
+          developers: [
+            { id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 },
+            { id: 'old-host', name: 'Bob', team: 'developers', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 },
+          ],
+          qa: [],
+          spectators: [],
+        },
+        gamePhase: 'lobby',
+        tickets: [],
+        completedTickets: [],
+      } as any,
+    });
+
+    handlers.get('session:host_changed')!({ newHostId: 'p1', seq: 1, timestamp: Date.now() });
+
+    const lobby = useGameState.getState().currentLobby!;
+    // Regression: before fix, teams[developers] still had p1 with isHost === false
+    const p1InDevs = lobby.teams.developers.find((p: any) => p.id === 'p1');
+    expect(p1InDevs).toBeDefined();
+    expect(p1InDevs!.isHost).toBe(true);
+  });
+});
+
+// ============================================================================
+// MAINT-09: Teardown-parity + helper-equivalence tests (Phase 51-02)
+// ============================================================================
+
+describe('MAINT-09: teardownEventHandlers parity — every on() has a matching off()', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null });
+    // Clear any helper-registered events from prior tests
+    teardownSyncedHandlers({ off: () => {} } as any);
+  });
+
+  it('calls off() for every event that was registered by setupEventHandlers', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    // Collect all events registered via socket.on (from both helpers and explicit calls)
+    const registeredEvents = new Set(handlers.keys());
+
+    // Now tear down using a fresh spy socket to capture offs
+    const offCalls = new Set<string>();
+    const teardownSocket = {
+      off: vi.fn((event: string) => { offCalls.add(event); }),
+    } as any;
+
+    teardownEventHandlers(teardownSocket);
+
+    // Every event that was registered must have been torn down
+    for (const event of registeredEvents) {
+      expect(offCalls.has(event), `event '${event}' registered by setupEventHandlers but NOT torn down`).toBe(true);
+    }
+  });
+});
+
+describe('MAINT-09: helper-equivalence — refactored handlers produce identical store state', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null, pendingDamageEvents: [] });
+    teardownSyncedHandlers({ off: () => {} } as any);
+  });
+
+  it('session:player_left (registerSyncedLobbyHandler): removes player from players[] and all teams[]', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    const lobby = {
+      id: 'l1',
+      hostId: 'host',
+      players: [
+        { id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 },
+        { id: 'p2', name: 'Bob', team: 'qa', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 },
+      ],
+      teams: {
+        developers: [{ id: 'p1', name: 'Alice', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 }],
+        qa: [{ id: 'p2', name: 'Bob', team: 'qa', isHost: true, avatar: 'mage', avatarClass: 'mage', level: 1 }],
+        spectators: [],
+      },
+      gamePhase: 'lobby',
+      tickets: [],
+      completedTickets: [],
+    } as any;
+    useGameState.setState({ currentLobby: lobby });
+
+    handlers.get('session:player_left')!({ playerId: 'p1', seq: 1, timestamp: 0 });
+
+    const state = useGameState.getState().currentLobby!;
+    expect(state.players.find((p: any) => p.id === 'p1')).toBeUndefined();
+    expect(state.teams.developers.find((p: any) => p.id === 'p1')).toBeUndefined();
+    expect(state.players).toHaveLength(1);
+  });
+
+  it('combat:player_damaged (registerSyncedHandler): updates hp AND fires addPendingDamage', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    const lobby = {
+      id: 'l1',
+      hostId: 'host',
+      players: [],
+      teams: { developers: [], qa: [], spectators: [] },
+      gamePhase: 'battle',
+      tickets: [],
+      completedTickets: [],
+      playerCombatStates: { 'warrior-1': { hp: 100, maxHp: 100, isDowned: false } },
+    } as any;
+    useGameState.setState({ currentLobby: lobby });
+
+    handlers.get('combat:player_damaged')!({
+      playerId: 'warrior-1',
+      damage: 30,
+      newHp: 70,
+      seq: 1,
+      timestamp: 0,
+    });
+
+    const state = useGameState.getState();
+    // setLobby: hp updated
+    expect(state.currentLobby!.playerCombatStates['warrior-1'].hp).toBe(70);
+    // addPendingDamage: still fires (critical — not dropped by refactor)
+    expect(state.pendingDamageEvents).toHaveLength(1);
+    expect(state.pendingDamageEvents[0].playerId).toBe('warrior-1');
+    expect(state.pendingDamageEvents[0].amount).toBe(30);
+  });
+});
+
+describe('session:player_joined dedup (duplicate-player regression)', () => {
+  beforeEach(() => {
+    useEventSync.getState().reset();
+    useGameState.setState({ currentLobby: null, currentBoss: null });
+  });
+
+  it('does not duplicate a player when session:player_joined replays for the same id', () => {
+    const { socket, handlers } = makeMockSocket();
+    setupEventHandlers(socket);
+
+    const lobby = seedLobby(seedBoss());
+    useGameState.setState({ currentLobby: lobby });
+
+    const handler = handlers.get('session:player_joined');
+    expect(handler).toBeDefined();
+
+    const payload = (seq: number) => ({
+      playerId: 'p-1',
+      playerName: 'Penelope',
+      team: 'developers',
+      avatar: 'cleric',
+      seq,
+      timestamp: seq,
+    });
+
+    handler!(payload(1)); // first join
+    handler!(payload(2)); // replay (reconnect/refresh re-sends presence)
+
+    const players = useGameState.getState().currentLobby!.players;
+    expect(players.filter(p => p.id === 'p-1')).toHaveLength(1);
+    expect(useGameState.getState().currentLobby!.teams.developers.filter(p => p.id === 'p-1')).toHaveLength(1);
   });
 });

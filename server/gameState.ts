@@ -1,4 +1,4 @@
-import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerSettings, JiraSettings, TimerState, EstimationSettings, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile, isValidEstimationScore } from '../shared/gameEvents.js';
+import { Lobby, Player, Boss, JiraTicket, CompletedTicket, TeamType, AvatarClass, TeamScores, TeamConsensus, TimerState, ReconnectToken, DisconnectedPlayer, LobbySync, ReconnectResponse, RingAttack, RingAttackProjectile, isValidEstimationScore } from '../shared/gameEvents.js';
 import { TeamStatsManager } from './teamStatsManager.js';
 import { createHmac, randomBytes, randomInt } from 'crypto';
 import { cacheLobby, deleteCachedLobby, deletePlayerSession, isRedisConnected } from './redis.js';
@@ -8,16 +8,8 @@ import type { Server as SocketIOServer } from 'socket.io';
 // Phase 42-02b: emit fine-grained session:phase_changed via the shared eventBus
 // when the voting timeout safety net auto-advances battle->reveal. Avoids the
 // retired lobby_updated full-state push.
-import { eventBus, getClientEventEmitter } from './domains/index.js';
+import { eventBus, getClientEventEmitter, BOSS_BEHAVIORS, combatManager } from './domains/index.js';
 
-interface RevivalSession {
-  reviverId: string;
-  targetId: string;
-  lobbyId: string;
-  startedAt: number;
-  lastTick: number;
-  timeoutHandle: NodeJS.Timeout;
-}
 
 const LOBBY_CODE_CHARSET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
 function generateSecureLobbyCode(): string {
@@ -36,11 +28,9 @@ function generateSecureId(): string {
   return randomBytes(8).toString('hex').substring(0, 13);
 }
 
-class GameStateManager {
+export class GameStateManager {
   private lobbies: Map<string, Lobby> = new Map();
   private playerToLobby: Map<string, string> = new Map();
-  private revivalSessions: Map<string, RevivalSession> = new Map(); // key: `${reviverId}:${targetId}`
-  private revivalWatchdog: NodeJS.Timeout;
   private playerPerformanceMap: Map<string, Map<string, { estimationTime: number; score: number | '?'; team: TeamType }>> = new Map();
   private timerIntervals = new Map<string, NodeJS.Timeout>();
   private consensusCountdownIntervals = new Map<string, NodeJS.Timeout>();
@@ -51,22 +41,22 @@ class GameStateManager {
   // Reconnection system
   private disconnectedPlayers: Map<string, DisconnectedPlayer> = new Map(); // key: playerId
   private reconnectTokens: Map<string, ReconnectToken> = new Map(); // key: token string
-  private disconnectWatchdog: NodeJS.Timeout;
+  private disconnectWatchdog!: NodeJS.Timeout;
   private readonly DISCONNECT_GRACE_PERIOD = 10 * 60 * 1000; // 10 minutes
   private readonly TOKEN_EXPIRY_TIME = 15 * 60 * 1000; // 15 minutes
   private readonly TOKEN_SECRET = process.env.RECONNECT_TOKEN_SECRET || 'scrum-monsters-secret-' + randomBytes(16).toString('hex');
 
-  constructor(io?: SocketIOServer) {
+  constructor(io?: SocketIOServer, opts?: { startWatchdogs?: boolean }) {
     this.io = io;
-    // Start revival watchdog timer
-    this.revivalWatchdog = setInterval(() => {
-      this.processRevivalSessions();
-    }, 100); // Check every 100ms
-    
-    // Start disconnect watchdog timer
-    this.disconnectWatchdog = setInterval(() => {
-      this.processDisconnectedPlayers();
-    }, 30000); // Check every 30 seconds
+    const startWatchdogs = opts?.startWatchdogs ?? true;
+    if (startWatchdogs) {
+      // Phase 50-02: The revival watchdog was removed from here.
+      // CombatManager owns the revival lifecycle via self-managed per-session intervals.
+      // Start disconnect watchdog timer (RETAINED — drives processDisconnectedPlayers/removePlayer)
+      this.disconnectWatchdog = setInterval(() => {
+        this.processDisconnectedPlayers();
+      }, 30000); // Check every 30 seconds
+    }
   }
 
   private syncLobbyToCache(lobby: Lobby): void {
@@ -102,69 +92,9 @@ class GameStateManager {
     return generateSecureLobbyCode();
   }
 
-  // Phase 45-05B: promoted from private — the websocket.ts watchdog drives
-  // the eventBus emit off the completion list, so it needs to call this. The
-  // internal 100ms revivalWatchdog (constructor) still discards the result.
-  public processRevivalSessions(): { lobbyId: string; targetId: string; reviverId: string }[] {
-    const now = Date.now();
-    const completedRevivals: { lobbyId: string; targetId: string; reviverId: string }[] = [];
-    
-    for (const [sessionKey, session] of this.revivalSessions) {
-      const lobby = this.lobbies.get(session.lobbyId);
-      if (!lobby) {
-        this.cancelRevivalSession(sessionKey);
-        continue;
-      }
-
-      // Check if revive timed out (no keep-alive)
-      if (now - session.lastTick > 400) {
-        this.cancelRevivalSession(sessionKey);
-        continue;
-      }
-
-      // Check if enough time has passed for completion (3 seconds)
-      if (now - session.startedAt >= 3000) {
-        this.completeRevival(sessionKey);
-        completedRevivals.push({
-          lobbyId: session.lobbyId,
-          targetId: session.targetId,
-          reviverId: session.reviverId
-        });
-      }
-    }
-    
-    return completedRevivals;
-  }
-
-  private cancelRevivalSession(sessionKey: string): void {
-    const session = this.revivalSessions.get(sessionKey);
-    if (session) {
-      clearTimeout(session.timeoutHandle);
-      this.revivalSessions.delete(sessionKey);
-    }
-  }
-
-  private completeRevival(sessionKey: string): void {
-    const session = this.revivalSessions.get(sessionKey);
-    if (!session) return;
-
-    const lobby = this.lobbies.get(session.lobbyId);
-    if (!lobby) {
-      this.cancelRevivalSession(sessionKey);
-      return;
-    }
-
-    // Find target player and revive them
-    const targetState = lobby.playerCombatStates[session.targetId];
-    if (targetState && targetState.isDowned) {
-      targetState.isDowned = false;
-      targetState.hp = Math.min(targetState.maxHp, targetState.hp + 50); // Heal on revive
-      targetState.revivedBy = session.reviverId;
-    }
-
-    this.cancelRevivalSession(sessionKey);
-  }
-
+  // Phase 45-05B: promoted from private — the websocket.ts watchdog drove
+  // the eventBus emit off the completion list. Phase 50-02: both external
+  // watchdogs removed; this method is retained until the GameState revival
   // Reconnection Management Methods
   private processDisconnectedPlayers(): void {
     const now = Date.now();
@@ -476,147 +406,11 @@ class GameStateManager {
     }
   }
 
-  createLobby(hostName: string, lobbyName: string, initialSettings?: {
-    timerSettings?: TimerSettings;
-    jiraSettings?: JiraSettings;
-    estimationSettings?: EstimationSettings;
-    customLobbyId?: string;
-  }): Lobby {
-    const lobbyId = this.generateLobbyId(initialSettings?.customLobbyId);
-    const hostId = generateSecureId();
-    
-    const lobby: Lobby = {
-      id: lobbyId,
-      name: lobbyName,
-      hostId,
-      players: [{
-        id: hostId,
-        name: hostName,
-        team: 'spectators',
-        isHost: true,
-        avatar: 'warrior',
-        avatarClass: 'warrior',
-        hasSubmittedScore: false,
-        currentScore: undefined,
-        level: 1,
-        // avatar_selection -> lobby UX gate (see SessionManager.createLobby).
-        hasSelectedAvatar: false
-      }],
-      teams: {
-        developers: [],
-        qa: [],
-        spectators: []
-      },
-      tickets: [],
-      gamePhase: 'lobby',
-      completedTickets: [],
-      teamCompetition: {
-        developers: {
-          totalStoryPoints: 0,
-          ticketsCompleted: 0,
-          averageEstimationTime: 0,
-          consensusRate: 0,
-          accuracyScore: 0,
-          participationRate: 0,
-          achievements: [],
-          currentStreak: 0,
-          bestStreak: 0
-        },
-        qa: {
-          totalStoryPoints: 0,
-          ticketsCompleted: 0,
-          averageEstimationTime: 0,
-          consensusRate: 0,
-          accuracyScore: 0,
-          participationRate: 0,
-          achievements: [],
-          currentStreak: 0,
-          bestStreak: 0
-        },
-        currentRound: 0,
-        winnerHistory: [],
-        seasonStart: new Date().toISOString()
-      },
-      playerCombatStates: {
-        [hostId]: {
-          maxHp: 100,
-          hp: 100,
-          isDowned: false
-        }
-      },
-      playerPositions: {
-        [hostId]: {
-          x: Math.random() * 80 + 10,
-          y: 80
-        }
-      },
-      consensusSettings: {
-        countdownSeconds: 5
-      },
-      // Apply initial settings if provided
-      timerSettings: initialSettings?.timerSettings,
-      jiraSettings: initialSettings?.jiraSettings,
-      estimationSettings: initialSettings?.estimationSettings
-    };
-
-    this.updateTeamAssignments(lobby);
-    this.lobbies.set(lobbyId, lobby);
-    this.playerToLobby.set(hostId, lobbyId);
-    
-    this.syncLobbyToCache(lobby);
-    
-    return lobby;
-  }
-
-  joinLobby(lobbyId: string, playerName: string): { lobby: Lobby; player: Player } | null {
-    const lobby = this.lobbies.get(lobbyId);
-    if (!lobby) return null;
-
-    // Create or get existing player
-    let player = lobby.players.find(p => p.name === playerName);
-    if (!player) {
-      player = {
-        id: generateSecureId(),
-        name: playerName,
-        team: 'developers',
-        isHost: false,
-        avatar: 'warrior',
-        avatarClass: 'warrior',
-        hasSubmittedScore: false,
-        currentScore: undefined,
-        level: 1,
-        // Fresh joiners start with avatar gate closed (see SessionManager.joinLobby).
-        hasSelectedAvatar: false
-      };
-      lobby.players.push(player);
-    }
-
-    // Update team assignments
-    this.updateTeamAssignments(lobby);
-    this.playerToLobby.set(player.id, lobbyId);
-
-    // Initialize combat state for new player
-    if (!lobby.playerCombatStates[player.id]) {
-      lobby.playerCombatStates[player.id] = {
-        maxHp: 100,
-        hp: 100,
-        isDowned: false
-      };
-    }
-
-    // Initialize position for new player (random position along bottom)
-    if (!lobby.playerPositions[player.id]) {
-      lobby.playerPositions[player.id] = {
-        x: Math.random() * 80 + 10, // 10-90% from left
-        y: 80 // Fixed at bottom 80% from top
-      };
-    }
-
-    this.syncLobbyToCache(lobby);
-
-    return { lobby, player };
-  }
-
+  // NOTE: GameStateManager.removePlayer is INTENTIONALLY RETAINED.
+  // processDisconnectedPlayers (the 30s disconnectWatchdog at gameState.ts:193)
+  // still calls this.removePlayer(playerId) internally. Deletion is deferred to a
+  // future GameState-decommission phase that removes processDisconnectedPlayers and
+  // the disconnectWatchdog together. Do not treat its presence as an oversight.
   removePlayer(playerId: string): Lobby | null {
     const lobbyId = this.playerToLobby.get(playerId);
     if (!lobbyId) return null;
@@ -670,12 +464,12 @@ class GameStateManager {
   }
 
   /**
-   * Phase 45-05B: typed read-only view of in-progress revival sessions for
-   * the websocket.ts watchdog's throttled combat:revival_progress emit.
-   * Replaces a `(gameState as any).revivalSessions` cast.
+   * Number of active lobbies. Public accessor so callers (e.g. the /api/ws-health
+   * endpoint) don't have to reach into the private `lobbies` map via an unsafe cast.
+   * Mirrors SessionManager.getLobbyCount().
    */
-  public getActiveRevivalSessions(): Iterable<{ lobbyId: string; targetId: string; reviverId: string; startedAt: number }> {
-    return this.revivalSessions.values();
+  getLobbyCount(): number {
+    return this.lobbies.size;
   }
 
   getLobbyByPlayerId(playerId: string): Lobby | null {
@@ -689,38 +483,16 @@ class GameStateManager {
    * Call this after sessionManager.joinLobby() or sessionManager.createLobby()
    */
   syncPlayerToLobby(playerId: string, lobby: Lobby): void {
-    // Store the lobby if not already present
-    if (!this.lobbies.has(lobby.id)) {
-      this.lobbies.set(lobby.id, lobby);
-    }
-    // Map player to lobby
+    // Always update reference (not conditional — covers reconnect-staleness)
+    this.lobbies.set(lobby.id, lobby);
+    // Register alias for the triggering player
     this.playerToLobby.set(playerId, lobby.id);
-  }
-
-  updatePlayerTeam(playerId: string, team: TeamType): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const player = lobby.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    player.team = team;
-    this.updateTeamAssignments(lobby);
-
-    return lobby;
-  }
-
-  updatePlayerAvatar(playerId: string, avatar: AvatarClass): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const player = lobby.players.find(p => p.id === playerId);
-    if (!player) return null;
-
-    player.avatar = avatar;
-    player.avatarClass = avatar; // Keep both for compatibility
-
-    return lobby;
+    // Register aliases for ALL other players in the lobby (covers reconnect-staleness)
+    for (const player of lobby.players) {
+      if (!this.playerToLobby.has(player.id)) {
+        this.playerToLobby.set(player.id, lobby.id);
+      }
+    }
   }
 
   selectAvatar(playerId: string, avatarClass: AvatarClass): Lobby | null {
@@ -1250,34 +1022,9 @@ class GameStateManager {
     
     gameLogger.debug({ activeParticipants, participantScaling, scaledHealth }, 'Boss health scaling calculated');
     
-    // Available boss types with simplified sprite names
-    const availableBosses = [
-      { 
-        sprite: 'bug-hydra.png', 
-        name: 'Bug Hydra', 
-        description: 'Legendary Beast of Endless Bugs' 
-      },
-      { 
-        sprite: 'sprint-demon.png', 
-        name: 'Sprint Demon', 
-        description: 'Infernal Master of Rushed Deadlines' 
-      },
-      { 
-        sprite: 'deadline-dragon.png', 
-        name: 'Deadline Dragon', 
-        description: 'Ancient Terror of Time Constraints' 
-      },
-      { 
-        sprite: 'technical-debt-golem.png', 
-        name: 'Technical Debt Golem', 
-        description: 'Crushing Burden of Legacy Code' 
-      },
-      { 
-        sprite: 'scope-creep-beast.png', 
-        name: 'Scope Creep Beast', 
-        description: 'Ever-Expanding Horror of Feature Bloat' 
-      }
-    ];
+    // Available boss types derived from the single behavior registry —
+    // sprite, name, and description are now authoritative on each BossBehavior.
+    const availableBosses = Object.values(BOSS_BEHAVIORS);
     
     // Randomly select a boss type
     const selectedBoss = availableBosses[Math.floor(Math.random() * availableBosses.length)];
@@ -1457,7 +1204,7 @@ class GameStateManager {
   }
 
   // Handle voting timeout - force progression with available votes
-  private handleVotingTimeout(lobbyId: string): void {
+  public handleVotingTimeout(lobbyId: string): void {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || lobby.gamePhase !== 'battle') return;
 
@@ -1840,19 +1587,27 @@ class GameStateManager {
 
     if (player.team === 'spectators') {
       // Spectators heal the boss for 1 + modifier
+      // TODO MAINT-05+: spectator-heal should also delegate to CombatManager
       const healAmount = 1 + modifier;
       lobby.boss.currentHealth = Math.min(lobby.boss.maxHealth, lobby.boss.currentHealth + healAmount);
       healedBoss = true;
       gameLogger.debug({ playerName: player.name, healAmount, modifier }, 'Spectator healed boss');
     } else if (player.team === 'developers' || player.team === 'qa') {
-      // Developers and QA deal 15 - modifier damage (minimum 1)
-      actualDamage = Math.max(1, 15 - modifier);
-      lobby.boss.currentHealth = Math.max(0, lobby.boss.currentHealth - actualDamage);
+      // Delegate to CombatManager — single boss-HP truth (MAINT-05).
+      // CombatManager.applyBasicDamageToBoss owns the HP drain, the combat:boss_damaged emit,
+      // and the checkPhaseTransition call. lobby.boss.currentHealth is a projection only.
+      const { damage: actualDmg, newHp } = combatManager.applyBasicDamageToBoss(lobby.id, playerId);
+      actualDamage = actualDmg;
+      lobby.boss.currentHealth = newHp;  // projection only — CombatManager owns HP
+      if (newHp <= 0) {
+        lobby.boss.defeated = true;
+      }
       gameLogger.debug({ team: player.team, playerName: player.name, damage: actualDamage, modifier }, 'Player dealt damage to boss');
     }
 
-    // Check if boss is defeated when health reaches 0
-    if (lobby.boss.currentHealth <= 0) {
+    // Note: boss defeat for dev/qa path is now handled above (newHp <= 0 guard).
+    // Spectator path still uses currentHealth guard below for its (un-delegated) heal+defeat edge case.
+    if (player.team === 'spectators' && lobby.boss.currentHealth <= 0) {
       lobby.boss.defeated = true;
     }
 
@@ -1920,136 +1675,11 @@ class GameStateManager {
     };
   }
 
-  // Player revival system
-  startRevive(reviverId: string, targetId: string): boolean {
-    const lobby = this.getLobbyByPlayerId(reviverId);
-    if (!lobby) return false;
+  // Phase 50-02: startRevive, cancelRevive, tickRevive deleted here.
+  // Revival now flows through CombatManager.startRevival/cancelRevival (Task 3).
 
-    const reviverState = lobby.playerCombatStates[reviverId];
-    const targetState = lobby.playerCombatStates[targetId];
-    const reviverPos = lobby.playerPositions[reviverId];
-    const targetPos = lobby.playerPositions[targetId];
-
-    if (!reviverState || !targetState || !reviverPos || !targetPos) return false;
-    if (reviverState.isDowned || !targetState.isDowned) return false;
-
-    // Check distance
-    const distance = Math.sqrt(
-      Math.pow(reviverPos.x - targetPos.x, 2) + 
-      Math.pow(reviverPos.y - targetPos.y, 2)
-    );
-
-    if (distance > 10) return false; // Must be within 10% distance
-
-    const sessionKey = `${reviverId}:${targetId}`;
-    
-    // Cancel any existing session for this reviver
-    for (const [key, session] of this.revivalSessions) {
-      if (session.reviverId === reviverId) {
-        this.cancelRevivalSession(key);
-      }
-    }
-
-    const now = Date.now();
-    const timeoutHandle = setTimeout(() => {
-      // Auto-complete after 3 seconds if no cancellation
-      this.completeRevival(sessionKey);
-    }, 3000);
-
-    this.revivalSessions.set(sessionKey, {
-      reviverId,
-      targetId,
-      lobbyId: lobby.id,
-      startedAt: now,
-      lastTick: now,
-      timeoutHandle
-    });
-
-    return true;
-  }
-
-  cancelRevive(reviverId: string, targetId: string): boolean {
-    const sessionKey = `${reviverId}:${targetId}`;
-    this.cancelRevivalSession(sessionKey);
-    return true;
-  }
-
-  tickRevive(reviverId: string, targetId: string): boolean {
-    const sessionKey = `${reviverId}:${targetId}`;
-    const session = this.revivalSessions.get(sessionKey);
-    
-    if (!session) return false;
-
-    const lobby = this.lobbies.get(session.lobbyId);
-    if (!lobby) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-
-    const reviverState = lobby.playerCombatStates[reviverId];
-    const targetState = lobby.playerCombatStates[targetId];
-    const reviverPos = lobby.playerPositions[reviverId];
-    const targetPos = lobby.playerPositions[targetId];
-
-    if (!reviverState || !targetState || !reviverPos || !targetPos) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-    
-    if (reviverState.isDowned || !targetState.isDowned) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-    
-    const distance = Math.sqrt(
-      Math.pow(reviverPos.x - targetPos.x, 2) + 
-      Math.pow(reviverPos.y - targetPos.y, 2)
-    );
-    
-    if (distance > 10) {
-      this.cancelRevivalSession(sessionKey);
-      return false;
-    }
-    
-    // Update last tick
-    session.lastTick = Date.now();
-    return true;
-  }
-
-  // Timer management methods
-  updateTimerSettings(playerId: string, timerSettings: TimerSettings): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    lobby.timerSettings = timerSettings;
-    return lobby;
-  }
-
-  updateJiraSettings(playerId: string, jiraSettings: JiraSettings): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    lobby.jiraSettings = jiraSettings;
-    return lobby;
-  }
-
-  updateEstimationSettings(playerId: string, estimationSettings: EstimationSettings): Lobby | null {
-    const lobby = this.getLobbyByPlayerId(playerId);
-    if (!lobby) return null;
-
-    const requester = lobby.players.find(p => p.id === playerId);
-    if (!requester?.isHost) return null;
-
-    lobby.estimationSettings = estimationSettings;
-    return lobby;
-  }
-
+  // Timer management methods (updateTimerSettings/updateJiraSettings/updateEstimationSettings
+  // deleted in Phase 50-01 — now owned by SessionManager with host guard)
   startTimer(lobbyId: string): { lobby: Lobby; timerState: TimerState } | null {
     const lobby = this.lobbies.get(lobbyId);
     if (!lobby || !lobby.timerSettings?.enabled) return null;

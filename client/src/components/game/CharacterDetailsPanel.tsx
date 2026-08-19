@@ -89,20 +89,9 @@ export function CharacterDetailsPanel({ selectedClass }: CharacterDetailsPanelPr
     );
   };
 
+  // Delegates to AVATAR_CLASSES registry — single source of truth for all icons
   const getClassIcon = (avatarClass: AvatarClass): string => {
-    const icons: Record<AvatarClass, string> = {
-      ranger: '🏹',
-      rogue: '🗡️',
-      bard: '🎵',
-      sorcerer: '🔥',
-      wizard: '🧙',
-      warrior: '⚔️',
-      paladin: '🛡️',
-      cleric: '✨',
-      oathbreaker: '💀',
-      monk: '🥋'
-    };
-    return icons[avatarClass];
+    return AVATAR_CLASSES[avatarClass]?.icon ?? '⚔️';
   };
 
   const getTotalStats = (stats: CharacterStats) => {

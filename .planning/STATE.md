@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v5.0
-milestone_name: UX & Onboarding
-status: completed
-stopped_at: Completed Phase 46 — Music Controls & History (3/3 plans)
-last_updated: "2026-06-17T22:35:00.000Z"
-last_activity: 2026-06-17
+milestone: v6.0
+milestone_name: Maintainability & Extensibility
+status: executing
+stopped_at: Completed 52-04-PLAN.md
+last_updated: "2026-06-24T09:02:21.909Z"
+last_activity: 2026-06-24
 progress:
-  total_phases: 8
-  completed_phases: 8
+  total_phases: 6
+  completed_phases: 6
   total_plans: 20
   completed_plans: 20
   percent: 100
@@ -21,14 +21,15 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-11)
 
 **Core value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun
-**Current focus:** Phase 43 — auth-user-account-validation
+**Current focus:** Phase 52 — client-god-component-decomposition
 
 ## Current Position
 
-Phase: 46 — COMPLETE
-Plan: 3 of 3 (all complete)
-Status: Phase 46 complete
-Last activity: 2026-06-17
+Milestone: v6.0 Maintainability & Extensibility — PLANNING
+Phase: 52 (client-god-component-decomposition) — EXECUTING
+Plan: 5 of 5
+Status: Ready to execute
+Last activity: 2026-06-24
 
 Progress: [██████████] 100%
 
@@ -51,6 +52,15 @@ Progress: [██████████] 100%
 | v3.1 Tech Debt Cleanup | 30-31 | 3/4 (1 deferred) | Complete | 2026-02-24 |
 | v4.0 Hosting & Deployment | 32-36 | 14 | Complete | 2026-03-11 |
 | v5.0 UX & Onboarding | 37-41 | 11/11 | In progress | - |
+| Phase 47-ability-effects-data-driven-registries P01 | 10min | 2 tasks | 5 files |
+| Phase 47 P04 | 4 minutes | 3 tasks | 10 files |
+| Phase 47 P03 | 7 | 3 tasks | 7 files |
+| Phase 48-testability-seams P01 | 15min | 2 tasks | 2 files |
+| Phase 48-testability-seams P02 | 8min | 2 tasks | 3 files |
+| Phase 48 P03 | 15min | 2 tasks | 7 files |
+| Phase 50-finish-the-gamestate-domain-manager-migration P01 | 811s | 4 tasks | 7 files |
+| Phase 50 P02 | 1620 | 5 tasks | 8 files |
+| Phase 52 P04 | 45m | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -99,6 +109,28 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [44-02] Bash deploy helpers split into source-able modules (npm-api.sh, health-poll.sh) under scripts/deploy/lib/; PATH-shim mocking via mktemp tmp dirs is the bats convention for this repo
 - [44-02] npm_login fails loudly on requires_2fa response (extra 8th bats test added — Rule 2 critical security functionality per executor brief; total 13 bats tests > plan-stated 12)
 - [44-02] CI deploy-scripts job uses apt-get install shellcheck bats jq on ubuntu-latest; ci-success needs[] gates branch protection on the new job
+- [Phase ?]: [47-01] BuffType union = 'damage_boost' | 'crit_boost' | 'dodge' | 'cooldown_reduction' derived from CLASS_ABILITY_CONFIGS values
+- [Phase ?]: [47-01] durationMs populated at 10000ms for buff abilities and 8000ms for oathbreaker_aura_of_dread; paladin shield abilities deliberately omitted (handler supplies default)
+- [Phase ?]: [47-01] gameEvents.ts wire type uses inline import('./abilityTypes').BuffType to avoid circular imports
+- [Phase ?]: [47-04] SPRITE_TO_BOSS_TYPE derived via Object.fromEntries(Object.values(BOSS_BEHAVIORS)) — drift impossible by construction
+- [Phase ?]: [47-04] availableBosses = Object.values(BOSS_BEHAVIORS) — inline array deleted from gameState.ts
+- [Phase ?]: [47-04] TECH_DEBT_GOLEM_BEHAVIOR.sprite = 'technical-debt-golem.png' — live golem-AI mismatch fixed at source
+- [Phase ?]: [47-03] ClassDef interface added to shared/gameEvents.ts; AVATAR_CLASSES annotated Record<AvatarClass, ClassDef> — missing class is a tsc error
+- [Phase ?]: [47-03] HEALER_CLASSES derived via Object.entries(AVATAR_CLASSES).filter(role==='healer') — drift impossible by construction
+- [Phase ?]: [47-03] getClassBaseDamage switch replaced by AVATAR_CLASSES[class].baseDamage registry lookup with fallback 20
+- [Phase ?]: [48-01] GameStateManager exported with startWatchdogs opt; handleVotingTimeout promoted to public; definite-assignment on watchdog fields for tsc
+- [Phase ?]: [48-02] damageInterceptor stored as private readonly field with pass-through lambda default; applyDamageToPlayerRaw is private so call sites cannot bypass shield logic
+- [Phase ?]: [48-03] wireDomains factory defined inside domains/index.ts (closes over module-private helpers); activeConnections changed to mutable {value:number} ref for handler extraction; getClientEventEmitter not in HandlerDeps (vi.mock'd in tests)
+- [50-02] session:host_transferred bridges to WIRE name 'host_transferred' (GamePage.tsx:232); distinct from session:host_changed (immediate path); ClientEventEmitter bridge pattern
+- [50-02] Both 100ms revival watchdogs removed (gameState ctor + websocket.ts); CombatManager owns revival via self-managed per-session setInterval
+- [50-02] disconnectWatchdog + processDisconnectedPlayers + removePlayer retained (Phase 50 out of scope)
+- [52-03] buffReducer is first useReducer in codebase — pure module, no React import, testable in isolation
+- [52-03] DISPEL_ALL one dispatch closes 7-setter async batching gap in socket handlers (React 18 does not batch async context state updates)
+- [52-03] isLocalCast=true calls setFlyHeight(0) on earthbind/dispel-self; isLocalCast=false never calls setFlyHeight — original dual-path divergence preserved exactly
+- [52-03] Dragon block kept in caller (handleLobbyEmote/handleEmoteSubmit) — random victim + external setTimeout incompatible with pure reducer
+- [52-03] applySpellEffects skips dragon, dispatches HOLD+5s-UNHOLD, MASSACRE+15s-TAVERN_DARK_END, CHAOS+5s-CHAOS_END inline
+- [Phase ?]: dpr owned inside TavernScene: Canvas never a controlled prop-receiver
+- [Phase ?]: LobbyAvatar uses explicit showInvisibleBadge/showReadyBadge props, NOT isLocal flag
 
 ### Pending Todos
 
@@ -114,11 +146,11 @@ All decisions logged in PROJECT.md Key Decisions table.
 
 ## Session Continuity
 
-Last session: 2026-06-17
-Stopped at: Completed Phase 46 — Music Controls & History (musicHistory utils, youtubeTitle utils, MusicControls component, GamePage hoist + wiring)
+Last session: 2026-06-24T09:02:21.896Z
+Stopped at: Completed 52-04-PLAN.md
 Resume file: None
-Next action: Phase 47 or next milestone planning
+Next action: Execute 52-04-PLAN.md (next plan in phase 52)
 
 ---
 *State initialized: 2026-02-11*
-*Last updated: 2026-05-08 — Completed 44-02 (scripts/deploy/lib/npm-api.sh + health-poll.sh, 13 bats tests, CI deploy-scripts job); commits 47cc14a + 8546614*
+*Last updated: 2026-06-21 — v5.0 shipped; v6.0 Maintainability & Extensibility milestone drafted from review council (Phases 47-52); PR #167 ships the 2 live bugs*

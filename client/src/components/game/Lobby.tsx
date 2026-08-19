@@ -1,36 +1,27 @@
-import React, { useState, useEffect, useCallback, Suspense } from 'react';
+import React, { useState, useEffect, useCallback, useReducer } from 'react';
 import QRCode from 'react-qr-code';
 import { RetroButton } from '@/components/ui/retro-button';
 import { RetroCard } from '@/components/ui/retro-card';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger,
-  DialogDescription
-} from '@/components/ui/dialog';
 import { SpriteRenderer } from './SpriteRenderer';
-import { SpeechBubble } from './SpeechBubble';
 import { EmoteModal } from './EmoteModal';
-import { MagicEffect } from './MagicEffect';
+import { LobbyAvatar } from './LobbyAvatar';
 import { LobbyReadyButton } from './LobbyReadyButton';
+import { LobbySettingsDialog } from './LobbySettingsDialog';
 import { MusicControls } from '@/components/ui/MusicControls';
 import { MobileControls } from './MobileControls';
+import { TavernScene } from './TavernScene';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
 import { SpriteDirection } from '@/hooks/useSpriteAnimation';
-import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationScaleType, ESTIMATION_SCALES, EstimationSettings, Player, AvatarClass } from '@/lib/gameTypes';
+import { TEAM_NAMES, AVATAR_CLASSES, TeamType, JiraTicket, TimerSettings, JiraSettings, EstimationSettings, Player, AvatarClass } from '@/lib/gameTypes';
 import { LobbySettingsStorage } from '@/lib/utils/lobbySettingsStorage';
 import { TeamPreferenceStorage } from '@/lib/utils/teamPreferenceStorage';
-import { detectMagicWords, extractSpellTargets, getSpellWords, MagicEffectType } from '@/lib/utils/magicWords';
-import { Canvas } from '@react-three/fiber';
-import { attachWebglResilience } from '@/lib/utils/webglResilience';
-import { PerformanceMonitor } from '@react-three/drei';
-import * as THREE from 'three';
+import { detectMagicWords, MagicEffectType } from '@/lib/utils/magicWords';
+import { buffReducer, initialBuffState } from '@/lib/reducers/buffReducer';
+import { applySpellEffects } from '@/lib/utils/applySpellEffects';
+import { useLobbyMovement } from '@/lib/hooks/useLobbyMovement';
 import { useIsMobile } from '@/hooks/use-is-mobile';
-import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { PlayerListSkeleton } from '@/components/ui/LoadingSkeleton';
@@ -115,64 +106,8 @@ const spectatorStyles = `
   }
 `;
 
-// Particle Lighting Effects Component
-function TavernLighting() {
-  const particlesRef = React.useRef<THREE.Points>(null);
-  
-  const particles = React.useMemo(() => {
-    const particleCount = 50;
-    const positions = new Float32Array(particleCount * 3);
-    
-    for (let i = 0; i < particleCount; i++) {
-      positions[i * 3] = (Math.random() - 0.5) * 20; // X
-      positions[i * 3 + 1] = Math.random() * 8; // Y
-      positions[i * 3 + 2] = (Math.random() - 0.5) * 10; // Z
-    }
-    
-    return positions;
-  }, []);
-  
-  React.useEffect(() => {
-    const animateParticles = () => {
-      if (particlesRef.current) {
-        const positions = particlesRef.current.geometry.attributes.position.array as Float32Array;
-        
-        for (let i = 0; i < positions.length; i += 3) {
-          positions[i + 1] += Math.sin(Date.now() * 0.001 + positions[i]) * 0.01;
-        }
-        
-        particlesRef.current.geometry.attributes.position.needsUpdate = true;
-      }
-      requestAnimationFrame(animateParticles);
-    };
-    
-    animateParticles();
-  }, []);
-  
-  return (
-    <points ref={particlesRef}>
-      <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particles.length / 3}
-          array={particles}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <pointsMaterial
-        color="#ffaa44"
-        size={0.1}
-        transparent
-        opacity={0.6}
-        alphaTest={0.1}
-      />
-    </points>
-  );
-}
-
 export function Lobby() {
   const isMobile = useIsMobile();
-  const [dpr, setDpr] = useState<number>(Math.min(window.devicePixelRatio, 2));
   const [newTicketTitle, setNewTicketTitle] = useState('');
   const [showQRCode, setShowQRCode] = useState(false);
   const [showCopiedNotification, setShowCopiedNotification] = useState(false);
@@ -222,36 +157,20 @@ export function Lobby() {
     timestamp: number;
   }>>({});
 
-  // Dead players state - tracks players who used "die" magic word
-  const [deadPlayers, setDeadPlayers] = useState<Set<string>>(new Set());
+  // MAINT-12: 10 magic-effect useState slots consolidated into one useReducer.
+  // flyHeight, invisibleFlicker, screenShake stay as separate useState (continuous/timer-driven).
+  const [buffState, dispatch] = useReducer(buffReducer, initialBuffState);
+  const {
+    deadPlayers, flyingPlayers, frozenPlayers, petrifiedPlayers,
+    tavernDarkMode, chaosMode, invisiblePlayers, dragonAttack, speedBuffs, sizeBuffs,
+  } = buffState;
 
-  // Flying players state - tracks players who used "fly" magic word
-  const [flyingPlayers, setFlyingPlayers] = useState<Set<string>>(new Set());
+  // flyHeight stays as separate useState — updated every 16ms by movement loop
   const [flyHeight, setFlyHeight] = useState(0); // Current fly height for local player
 
-  // Frozen players state - tracks players affected by "hold person" spell
-  const [frozenPlayers, setFrozenPlayers] = useState<Set<string>>(new Set());
-
-  // Petrified players state - tracks players turned to stone
-  const [petrifiedPlayers, setPetrifiedPlayers] = useState<Set<string>>(new Set());
-
-  // Dark tavern state - triggered by massacre spell
-  const [tavernDarkMode, setTavernDarkMode] = useState(false);
-
-  // Chaos/disco mode state - triggered by chaos mode spell
-  const [chaosMode, setChaosMode] = useState(false);
-
-  // Invisible players state - half opacity for self, invisible to others
-  const [invisiblePlayers, setInvisiblePlayers] = useState<Set<string>>(new Set());
   // Flicker state - controls random brief visibility of invisible players for others
+  // (2s setInterval timer — not driven by spell dispatch)
   const [invisibleFlicker, setInvisibleFlicker] = useState<Record<string, boolean>>({});
-
-  // Dragon attack state - triggered by "clever girl" spell
-  const [dragonAttack, setDragonAttack] = useState<{
-    active: boolean;
-    targetX: number;
-    targetPlayerId: string | null;
-  }>({ active: false, targetX: 0, targetPlayerId: null });
 
   // Refs to track current state for socket event handlers (avoids stale closures)
   // Note: currentLobbyRef is declared after useGameState hook below
@@ -266,14 +185,30 @@ export function Lobby() {
   React.useEffect(() => { myPositionRef.current = myPosition; }, [myPosition]);
   React.useEffect(() => { invisiblePlayersRef.current = invisiblePlayers; }, [invisiblePlayers]);
 
-  // Speed buff state - tracks haste stacks (1-3) or slow per player
-  // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x speed
-  const [speedBuffs, setSpeedBuffs] = useState<Record<string, { type: 'haste' | 'slow'; stacks: number }>>({});
+  // MAINT-11: Promote buff/jump values to refs to prevent the 16ms movement interval
+  // from being recreated on every frame tick (jumpState.jumpHeight changes ~60x/jump via rAF).
+  // Pattern mirrors the existing flyingPlayersRef/invisiblePlayersRef block above (L258-267).
+  // Note: speedBuffsRef and sizeBuffsRef are declared after the corresponding useState below.
+  const jumpHeightRef = React.useRef(0);
+  React.useEffect(() => { jumpHeightRef.current = jumpState.jumpHeight; }, [jumpState.jumpHeight]);
 
-  // Size buff state - tracks enlarge/reduce stacks (1-3) per player
-  // Enlarge stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x size
-  // Reduce stacks: 1 = 0.7x, 2 = 0.5x, 3 = 0.35x size (minimum to stay visible)
-  const [sizeBuffs, setSizeBuffs] = useState<Record<string, { type: 'enlarge' | 'reduce'; stacks: number }>>({});
+  const frozenPlayersRef = React.useRef(frozenPlayers);
+  React.useEffect(() => { frozenPlayersRef.current = frozenPlayers; }, [frozenPlayers]);
+
+  const petrifiedPlayersRef = React.useRef(petrifiedPlayers);
+  React.useEffect(() => { petrifiedPlayersRef.current = petrifiedPlayers; }, [petrifiedPlayers]);
+
+  const deadPlayersRef = React.useRef(deadPlayers);
+  React.useEffect(() => { deadPlayersRef.current = deadPlayers; }, [deadPlayers]);
+
+  // MAINT-12: speedBuffs and sizeBuffs are now in buffState (useReducer).
+  // Refs maintained for movement loop — declared here to satisfy TDZ ordering
+  // (speedBuffs/sizeBuffs destructured from buffState above, available at this point).
+  const speedBuffsRef = React.useRef(speedBuffs);
+  React.useEffect(() => { speedBuffsRef.current = speedBuffs; }, [speedBuffs]);
+
+  const sizeBuffsRef = React.useRef(sizeBuffs);
+  React.useEffect(() => { sizeBuffsRef.current = sizeBuffs; }, [sizeBuffs]);
 
   // Screen shake state - intensity 0-3 based on enlarged player movement
   const [screenShake, setScreenShake] = useState(0);
@@ -331,20 +266,13 @@ export function Lobby() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentLobby?.id]);
 
-  // Reset dead players, speed buffs, flying, frozen, and invisible when battle starts (phase changes from lobby)
+  // MAINT-12: Reset all buff state when leaving lobby phase (one dispatch replaces 7 setters).
   useEffect(() => {
     if (currentLobby?.gamePhase && currentLobby.gamePhase !== 'lobby') {
-      // Clear all states when leaving lobby
-      setDeadPlayers(new Set());
-      setSpeedBuffs({});
+      dispatch({ type: 'PHASE_RESET' });
       setAfterimages([]);
-      setFlyingPlayers(new Set());
       setFlyHeight(0);
-      setFrozenPlayers(new Set());
-      setPetrifiedPlayers(new Set());
-      setInvisiblePlayers(new Set());
       setInvisibleFlicker({});
-      setSizeBuffs({});
     }
   }, [currentLobby?.gamePhase]);
 
@@ -479,173 +407,32 @@ export function Lobby() {
     });
   }, []);
 
-  // Handle movement based on pressed keys
-  useEffect(() => {
-    if (currentLobby?.gamePhase !== 'lobby' || keys.size === 0) {
-      return;
-    }
-
-    const movePlayer = () => {
-      // Check if player is frozen or petrified - no movement allowed
-      const playerId = currentPlayer?.id;
-      if (playerId && (frozenPlayers.has(playerId) || petrifiedPlayers.has(playerId))) {
-        return; // Can't move while frozen or petrified
-      }
-
-      setMyPosition(prev => {
-        let newX = prev.x;
-        let direction: SpriteDirection = prev.direction;
-        let moving = false;
-
-        // Get movement area width with proper fallback and safety checks
-        const movementArea = movementAreaRef.current;
-        if (!movementArea) return prev; // Don't move if area not available yet
-
-        const movementAreaWidth = movementArea.clientWidth;
-        if (movementAreaWidth <= characterSize) return prev; // Safety check
-
-        const maxX = movementAreaWidth - characterSize;
-
-        // Calculate speed multiplier based on buffs
-        const isDead = playerId ? deadPlayers.has(playerId) : false;
-        const speedBuff = playerId ? speedBuffs[playerId] : undefined;
-
-        let speedMultiplier = 1;
-        if (isDead) {
-          speedMultiplier = 0.25; // Dead = 1/4 speed
-        } else if (speedBuff?.type === 'haste') {
-          // Haste stacks: 1 = 1.5x, 2 = 2x, 3 = 2.5x
-          speedMultiplier = 1 + (speedBuff.stacks * 0.5);
-        } else if (speedBuff?.type === 'slow') {
-          speedMultiplier = 0.5; // Slow = 1/2 speed
-        }
-
-        const effectiveSpeed = moveSpeed * speedMultiplier;
-
-        // Use percent-based movement for consistency across screen sizes
-        const movePercentage = (effectiveSpeed / maxX) * 100;
-        const currentPercent = (prev.x / maxX) * 100;
-
-        // Horizontal movement (left/right)
-        if (keys.has('ArrowLeft') || keys.has('KeyA')) {
-          const newPercent = Math.max(0, currentPercent - movePercentage);
-          newX = (newPercent / 100) * maxX;
-          direction = 'left';
-          moving = true;
-        }
-        if (keys.has('ArrowRight') || keys.has('KeyD')) {
-          const newPercent = Math.min(100, currentPercent + movePercentage);
-          newX = (newPercent / 100) * maxX;
-          direction = 'right';
-          moving = true;
-        }
-
-        // Vertical movement (only when flying)
-        const isFlying = playerId ? flyingPlayers.has(playerId) : false;
-        if (isFlying) {
-          const maxFlyHeight = 150; // Max height in pixels
-          if (keys.has('ArrowUp') || keys.has('KeyW')) {
-            setFlyHeight(prev => Math.min(prev + effectiveSpeed * 2, maxFlyHeight));
-            moving = true;
-          }
-          if (keys.has('ArrowDown') || keys.has('KeyS')) {
-            setFlyHeight(prev => Math.max(prev - effectiveSpeed * 2, 0));
-            moving = true;
-          }
-        }
-
-        // Emit position to server for other players to see
-        if (moving) {
-          const percentX = (newX / maxX) * 100;
-          emit('lobby_player_pos', { x: percentX, y: 85, direction });
-
-          // Generate afterimages for haste/slow effects
-          if (speedBuff && playerId) {
-            const currentJumpHeight = jumpState.jumpHeight;
-            setAfterimages(prevImages => [
-              ...prevImages.slice(-10), // Keep only last 10 afterimages
-              {
-                id: `${playerId}-${Date.now()}`,
-                playerId,
-                x: prev.x,
-                y: currentJumpHeight,
-                timestamp: Date.now(),
-                type: speedBuff.type
-              }
-            ]);
-          }
-
-          // Trigger screen shake for enlarged players
-          const sizeBuff = playerId ? sizeBuffs[playerId] : undefined;
-          if (sizeBuff?.type === 'enlarge') {
-            setScreenShake(sizeBuff.stacks);
-            // Reset shake after short duration
-            setTimeout(() => setScreenShake(0), 100);
-          }
-        }
-
-        return { x: newX, direction };
-      });
-    };
-
-    const interval = setInterval(movePlayer, 16); // ~60 FPS for smooth movement
-    return () => clearInterval(interval);
-  }, [keys, currentLobby?.gamePhase, emit, deadPlayers, speedBuffs, sizeBuffs, currentPlayer?.id, jumpState.jumpHeight, flyingPlayers, frozenPlayers, petrifiedPlayers]);
-
-  // Simple jump animation
-  useEffect(() => {
-    if (!jumpState.isJumping) return;
-
-    const jumpDuration = 600; // 600ms total jump time
-    const maxHeight = 50; // 50px max jump height
-    const startTime = Date.now();
-    let lastAfterimageTime = 0;
-
-    const animateJump = () => {
-      const elapsed = Date.now() - startTime;
-      const progress = Math.min(elapsed / jumpDuration, 1);
-
-      // Sine wave for smooth up/down motion
-      const height = Math.sin(progress * Math.PI) * maxHeight;
-
-      setJumpState(prev => ({
-        ...prev,
-        jumpHeight: height
-      }));
-
-      // Generate afterimages during jump if player has speed buff
-      const playerId = currentPlayer?.id;
-      const speedBuff = playerId ? speedBuffs[playerId] : undefined;
-      if (speedBuff && playerId && elapsed - lastAfterimageTime > 50) {
-        lastAfterimageTime = elapsed;
-        setAfterimages(prevImages => [
-          ...prevImages.slice(-10),
-          {
-            id: `${playerId}-jump-${Date.now()}`,
-            playerId,
-            x: myPosition.x,
-            y: height, // Capture current jump height
-            timestamp: Date.now(),
-            type: speedBuff.type
-          }
-        ]);
-      }
-
-      if (progress < 1) {
-        requestAnimationFrame(animateJump);
-      } else {
-        // Jump complete
-        setJumpState({
-          isJumping: false,
-          jumpHeight: 0
-        });
-        // Emit landing event to other players
-        emit('lobby_player_jump', { isJumping: false });
-      }
-    };
-
-    requestAnimationFrame(animateJump);
-  }, [jumpState.isJumping, emit, currentPlayer?.id, speedBuffs, myPosition.x]);
+  // MAINT-13 seam 5 (LAST): movement interval + jump animation extracted to useLobbyMovement.
+  // The collapsed dep array from MAINT-11 travels into the hook; refs are stable props, not deps.
+  useLobbyMovement({
+    keys,
+    gamePhase: currentLobby?.gamePhase,
+    emit,
+    currentPlayerId: currentPlayer?.id,
+    characterSize,
+    moveSpeed,
+    movementAreaRef,
+    jumpHeightRef,
+    frozenPlayersRef,
+    petrifiedPlayersRef,
+    flyingPlayersRef,
+    speedBuffsRef,
+    sizeBuffsRef,
+    deadPlayersRef,
+    setMyPosition,
+    setFlyHeight,
+    setAfterimages,
+    setScreenShake,
+    jumpState,
+    setJumpState,
+    speedBuffs,
+    myPositionX: myPosition.x,
+  });
 
   // Mobile touch jump handler
   const handleAvatarTap = () => {
@@ -812,281 +599,38 @@ export function Lobby() {
       if (detectedEffects.length > 0) {
         const lobby = currentLobbyRef.current;
 
-        // Helper to resolve target IDs for a spell
-        // Returns array of player IDs - either targets from message or just the caster
-        const resolveTargets = (effectType: MagicEffectType): string[] => {
-          const spellWords = getSpellWords(effectType);
-          const targetNames = extractSpellTargets(message, spellWords);
+        // MAINT-12: Remote cascade replaced by applySpellEffects (isLocalCast=false).
+        // Dragon handled separately below (requires random victim + external setTimeout).
+        applySpellEffects(
+          detectedEffects,
+          message,
+          playerId,
+          lobby?.players ?? [],
+          flyingPlayersRef.current,
+          invisiblePlayersRef.current,
+          false, // isLocalCast — remote path does NOT call setFlyHeight
+          dispatch,
+          setFlyHeight,
+          null,
+          null,
+        );
 
-          if (!targetNames || !lobby) {
-            return [playerId]; // Self-cast
-          }
-
-          // Find matching players by name
-          const targetIds: string[] = [];
-          for (const name of targetNames) {
-            const player = lobby.players.find(
-              p => p.name.toLowerCase() === name.toLowerCase()
-            );
-            if (player) {
-              targetIds.push(player.id);
-            }
-          }
-
-          return targetIds.length > 0 ? targetIds : [playerId]; // Fall back to self if no valid targets
-        };
-
-        // Handle die - targetable
-        if (detectedEffects.includes('die')) {
-          const targets = resolveTargets('die');
-          targets.forEach(targetId => {
-            setDeadPlayers(prev => new Set([...prev, targetId]));
-          });
-        }
-
-        // Handle revive - targetable
-        if (detectedEffects.includes('revive')) {
-          const targets = resolveTargets('revive');
-          targets.forEach(targetId => {
-            setDeadPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          });
-        }
-
-        // Handle haste - targetable, stacks up to 3
-        if (detectedEffects.includes('haste')) {
-          const targets = resolveTargets('haste');
-          targets.forEach(targetId => {
-            setSpeedBuffs(prev => {
-              const current = prev[targetId];
-              if (current?.type === 'haste') {
-                return { ...prev, [targetId]: { type: 'haste', stacks: Math.min(current.stacks + 1, 3) } };
-              }
-              return { ...prev, [targetId]: { type: 'haste', stacks: 1 } };
-            });
-          });
-        }
-
-        // Handle slow - targetable
-        if (detectedEffects.includes('slow')) {
-          const targets = resolveTargets('slow');
-          targets.forEach(targetId => {
-            setSpeedBuffs(prev => ({ ...prev, [targetId]: { type: 'slow', stacks: 1 } }));
-          });
-        }
-
-        // Handle enlarge - targetable, stacks up to 3
-        if (detectedEffects.includes('enlarge')) {
-          const targets = resolveTargets('enlarge');
-          targets.forEach(targetId => {
-            setSizeBuffs(prev => {
-              const current = prev[targetId];
-              if (current?.type === 'enlarge') {
-                return { ...prev, [targetId]: { type: 'enlarge', stacks: Math.min(current.stacks + 1, 3) } };
-              }
-              return { ...prev, [targetId]: { type: 'enlarge', stacks: 1 } };
-            });
-          });
-        }
-
-        // Handle reduce - targetable, stacks up to 3
-        if (detectedEffects.includes('reduce')) {
-          const targets = resolveTargets('reduce');
-          targets.forEach(targetId => {
-            setSizeBuffs(prev => {
-              const current = prev[targetId];
-              if (current?.type === 'reduce') {
-                return { ...prev, [targetId]: { type: 'reduce', stacks: Math.min(current.stacks + 1, 3) } };
-              }
-              return { ...prev, [targetId]: { type: 'reduce', stacks: 1 } };
-            });
-          });
-        }
-
-        // Handle fly - targetable
-        if (detectedEffects.includes('fly')) {
-          const targets = resolveTargets('fly');
-          targets.forEach(targetId => {
-            setFlyingPlayers(prev => new Set([...prev, targetId]));
-          });
-        }
-
-        // Handle hold (freeze) - targetable, 5 second duration
-        if (detectedEffects.includes('hold')) {
-          const targets = resolveTargets('hold');
-          targets.forEach(targetId => {
-            setFrozenPlayers(prev => new Set([...prev, targetId]));
-            // Auto-unfreeze after 5 seconds
-            setTimeout(() => {
-              setFrozenPlayers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(targetId);
-                return newSet;
-              });
-            }, 5000);
-          });
-        }
-
-        // Handle petrify - targetable
-        if (detectedEffects.includes('petrify')) {
-          const targets = resolveTargets('petrify');
-          targets.forEach(targetId => {
-            setPetrifiedPlayers(prev => new Set([...prev, targetId]));
-            // Show effect on target
-            const targetPos = playerPositionsRef.current[targetId]?.x ?? 0;
-            setMagicEffects(prev => ({
-              ...prev,
-              [targetId]: { effects: ['petrify'], x: targetPos, timestamp: Date.now() }
-            }));
-          });
-        }
-
-        // Handle invisibility - targetable
-        if (detectedEffects.includes('invisibility')) {
-          const targets = resolveTargets('invisibility');
-          targets.forEach(targetId => {
-            setInvisiblePlayers(prev => new Set([...prev, targetId]));
-          });
-          // Note: Breaking invisibility on spell cast is handled separately below
-        }
-
-        // Handle dispel - targetable, removes all effects
-        if (detectedEffects.includes('dispel')) {
-          const targets = resolveTargets('dispel');
-          targets.forEach(targetId => {
-            setSpeedBuffs(prev => {
-              const newBuffs = { ...prev };
-              delete newBuffs[targetId];
-              return newBuffs;
-            });
-            setFlyingPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setFrozenPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setDeadPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setInvisiblePlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-            setSizeBuffs(prev => {
-              const newBuffs = { ...prev };
-              delete newBuffs[targetId];
-              return newBuffs;
-            });
-            setPetrifiedPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          });
-        }
-
-        // === LOBBY-WIDE SPELLS (no targeting) ===
-
-        // Handle earthbind spell - all flying players crash and die
-        if (detectedEffects.includes('earthbind')) {
-          // Get all currently flying players from ref
-          const flyersToKill = Array.from(flyingPlayersRef.current);
-          if (flyersToKill.length > 0) {
-            // Remove all flyers from flying state
-            setFlyingPlayers(new Set());
-            // Kill all flyers
-            setDeadPlayers(prev => new Set([...prev, ...flyersToKill]));
-            // Show earthbind effect on each falling player
-            flyersToKill.forEach(flyerId => {
-              const flyerPos = playerPositionsRef.current[flyerId]?.x ?? 0;
-              setMagicEffects(prev => ({
-                ...prev,
-                [flyerId]: { effects: ['earthbind'], x: flyerPos, timestamp: Date.now() }
-              }));
-            });
-          }
-        }
-
-        // Handle massacre spell (avada kedavra) - kills all OTHER players, darkens tavern
-        if (detectedEffects.includes('massacre')) {
-          const lobby = currentLobbyRef.current;
-          if (lobby) {
-            // Kill all players except the caster
-            const playersToKill = lobby.players
-              .filter(p => p.id !== playerId)
-              .map(p => p.id);
-            setDeadPlayers(prev => new Set([...prev, ...playersToKill]));
-            // Remove flying state from killed players
-            setFlyingPlayers(prev => {
-              const newSet = new Set(prev);
-              playersToKill.forEach(id => newSet.delete(id));
-              return newSet;
-            });
-            // Darken the tavern for 15 seconds
-            setTavernDarkMode(true);
-            setTimeout(() => setTavernDarkMode(false), 15000);
-          }
-        }
-
-        // Handle mass revive spell - revives entire lobby
-        if (detectedEffects.includes('massrevive')) {
-          // Clear all dead players
-          setDeadPlayers(new Set());
-          // Also clear frozen state
-          setFrozenPlayers(new Set());
-        }
-
-        // Handle dragon attack spell - dragon eats a random player
+        // Dragon attack (not handled by applySpellEffects — random victim + setTimeout)
         if (detectedEffects.includes('dragon')) {
-          const lobby = currentLobbyRef.current;
           if (lobby && lobby.players.length > 1) {
-            // Pick a random player (excluding the caster)
             const eligiblePlayers = lobby.players.filter(p => p.id !== playerId);
             if (eligiblePlayers.length > 0) {
               const victim = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
               const victimPos = playerPositionsRef.current[victim.id]?.x ?? 200;
-              // Start dragon animation
-              setDragonAttack({ active: true, targetX: victimPos, targetPlayerId: victim.id });
-              // Kill the victim after dragon reaches them (at ~50% of animation)
+              dispatch({ type: 'DRAGON', victim: victim.id, victimPos });
               setTimeout(() => {
-                setDeadPlayers(prev => new Set([...prev, victim.id]));
-                setFlyingPlayers(prev => {
-                  const newSet = new Set(prev);
-                  newSet.delete(victim.id);
-                  return newSet;
-                });
+                dispatch({ type: 'DIE', targets: [victim.id] });
               }, 1500);
-              // End dragon animation
               setTimeout(() => {
-                setDragonAttack({ active: false, targetX: 0, targetPlayerId: null });
+                dispatch({ type: 'DRAGON_END' });
               }, 3500);
             }
           }
-        }
-
-        // Handle chaos mode - rainbow disco effect for 5 seconds (lobby-wide)
-        if (detectedEffects.includes('chaos')) {
-          setChaosMode(true);
-          setTimeout(() => setChaosMode(false), 5000);
-        }
-
-        // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
-        if (!detectedEffects.includes('invisibility') && invisiblePlayersRef.current.has(playerId)) {
-          setInvisiblePlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(playerId);
-            return newSet;
-          });
         }
 
         // Get player's X position from playerPositions ref
@@ -1305,319 +849,43 @@ export function Lobby() {
     // Detect magic words and trigger effects for local player
     const detectedEffects = detectMagicWords(message);
     if (detectedEffects.length > 0) {
-      // Helper to resolve target IDs for a spell
-      // Returns array of player IDs - either targets from message or just the caster
-      const resolveTargets = (effectType: MagicEffectType): string[] => {
-        const spellWords = getSpellWords(effectType);
-        const targetNames = extractSpellTargets(message, spellWords);
+      // MAINT-12: Local cascade replaced by applySpellEffects (isLocalCast=true).
+      // Dragon handled separately below (requires random victim + external setTimeout).
+      applySpellEffects(
+        detectedEffects,
+        message,
+        currentPlayer.id,
+        currentLobby?.players ?? [],
+        flyingPlayersRef.current,
+        invisiblePlayersRef.current,
+        true, // isLocalCast — local path calls setFlyHeight(0) on earthbind/dispel-self
+        dispatch,
+        setFlyHeight,
+        null,
+        null,
+      );
 
-        if (!targetNames || !currentLobby) {
-          return [currentPlayer.id]; // Self-cast
-        }
-
-        // Find matching players by name
-        const targetIds: string[] = [];
-        for (const name of targetNames) {
-          const player = currentLobby.players.find(
-            p => p.name.toLowerCase() === name.toLowerCase()
-          );
-          if (player) {
-            targetIds.push(player.id);
-          }
-        }
-
-        return targetIds.length > 0 ? targetIds : [currentPlayer.id]; // Fall back to self if no valid targets
-      };
-
-      // Handle die - targetable
-      if (detectedEffects.includes('die')) {
-        const targets = resolveTargets('die');
-        targets.forEach(targetId => {
-          setDeadPlayers(prev => new Set([...prev, targetId]));
-          // Break invisibility when dying
-          if (invisiblePlayersRef.current.has(targetId)) {
-            setInvisiblePlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          }
-        });
-      }
-
-      // Handle revive - targetable
-      if (detectedEffects.includes('revive')) {
-        const targets = resolveTargets('revive');
-        targets.forEach(targetId => {
-          setDeadPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-        });
-      }
-
-      // Handle haste - targetable, stacks up to 3
-      if (detectedEffects.includes('haste')) {
-        const targets = resolveTargets('haste');
-        targets.forEach(targetId => {
-          setSpeedBuffs(prev => {
-            const current = prev[targetId];
-            if (current?.type === 'haste') {
-              return { ...prev, [targetId]: { type: 'haste', stacks: Math.min(current.stacks + 1, 3) } };
-            }
-            return { ...prev, [targetId]: { type: 'haste', stacks: 1 } };
-          });
-        });
-      }
-
-      // Handle slow - targetable
-      if (detectedEffects.includes('slow')) {
-        const targets = resolveTargets('slow');
-        targets.forEach(targetId => {
-          setSpeedBuffs(prev => ({ ...prev, [targetId]: { type: 'slow', stacks: 1 } }));
-        });
-      }
-
-      // Handle enlarge - targetable, stacks up to 3
-      if (detectedEffects.includes('enlarge')) {
-        const targets = resolveTargets('enlarge');
-        targets.forEach(targetId => {
-          setSizeBuffs(prev => {
-            const current = prev[targetId];
-            if (current?.type === 'enlarge') {
-              return { ...prev, [targetId]: { type: 'enlarge', stacks: Math.min(current.stacks + 1, 3) } };
-            }
-            return { ...prev, [targetId]: { type: 'enlarge', stacks: 1 } };
-          });
-        });
-      }
-
-      // Handle reduce - targetable, stacks up to 3
-      if (detectedEffects.includes('reduce')) {
-        const targets = resolveTargets('reduce');
-        targets.forEach(targetId => {
-          setSizeBuffs(prev => {
-            const current = prev[targetId];
-            if (current?.type === 'reduce') {
-              return { ...prev, [targetId]: { type: 'reduce', stacks: Math.min(current.stacks + 1, 3) } };
-            }
-            return { ...prev, [targetId]: { type: 'reduce', stacks: 1 } };
-          });
-        });
-      }
-
-      // Handle fly - targetable
-      if (detectedEffects.includes('fly')) {
-        const targets = resolveTargets('fly');
-        targets.forEach(targetId => {
-          setFlyingPlayers(prev => new Set([...prev, targetId]));
-        });
-      }
-
-      // Handle hold (freeze) - targetable, 5 second duration
-      if (detectedEffects.includes('hold')) {
-        const targets = resolveTargets('hold');
-        targets.forEach(targetId => {
-          setFrozenPlayers(prev => new Set([...prev, targetId]));
-          // Show magic effect on the target
-          const targetPos = targetId === currentPlayer.id
-            ? myPosition.x
-            : (playerPositions[targetId]?.x ?? 0);
-          setMagicEffects(prev => ({
-            ...prev,
-            [targetId]: { effects: ['hold'], x: targetPos, timestamp: Date.now() }
-          }));
-          // Auto-unfreeze after 5 seconds
-          setTimeout(() => {
-            setFrozenPlayers(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(targetId);
-              return newSet;
-            });
-          }, 5000);
-        });
-      }
-
-      // Handle petrify - targetable
-      if (detectedEffects.includes('petrify')) {
-        const targets = resolveTargets('petrify');
-        targets.forEach(targetId => {
-          setPetrifiedPlayers(prev => new Set([...prev, targetId]));
-          // Show effect on target
-          const targetPos = targetId === currentPlayer.id
-            ? myPosition.x
-            : (playerPositions[targetId]?.x ?? 0);
-          setMagicEffects(prev => ({
-            ...prev,
-            [targetId]: { effects: ['petrify'], x: targetPos, timestamp: Date.now() }
-          }));
-        });
-      }
-
-      // Handle invisibility - targetable
-      if (detectedEffects.includes('invisibility')) {
-        const targets = resolveTargets('invisibility');
-        targets.forEach(targetId => {
-          setInvisiblePlayers(prev => new Set([...prev, targetId]));
-        });
-      }
-
-      // Handle dispel - targetable, removes all effects
-      if (detectedEffects.includes('dispel')) {
-        const targets = resolveTargets('dispel');
-        targets.forEach(targetId => {
-          setSpeedBuffs(prev => {
-            const newBuffs = { ...prev };
-            delete newBuffs[targetId];
-            return newBuffs;
-          });
-          // Reset fly height if dispelling self
-          if (targetId === currentPlayer.id && flyingPlayersRef.current.has(targetId)) {
-            setFlyHeight(0);
-          }
-          setFlyingPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setFrozenPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setDeadPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setInvisiblePlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-          setSizeBuffs(prev => {
-            const newBuffs = { ...prev };
-            delete newBuffs[targetId];
-            return newBuffs;
-          });
-          setPetrifiedPlayers(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(targetId);
-            return newSet;
-          });
-        });
-      }
-
-      // === LOBBY-WIDE SPELLS (no targeting) ===
-
-      // Handle earthbind spell - all flying players crash and die
-      if (detectedEffects.includes('earthbind')) {
-        // Get all currently flying players from ref
-        const flyersToKill = Array.from(flyingPlayersRef.current);
-        if (flyersToKill.length > 0) {
-          // Reset local fly height if we're flying
-          if (flyingPlayersRef.current.has(currentPlayer.id)) {
-            setFlyHeight(0);
-          }
-          // Remove all flyers from flying state
-          setFlyingPlayers(new Set());
-          // Kill all flyers
-          setDeadPlayers(prev => new Set([...prev, ...flyersToKill]));
-          // Show earthbind effect on each falling player
-          flyersToKill.forEach(flyerId => {
-            const flyerPos = flyerId === currentPlayer.id
-              ? myPosition.x
-              : (playerPositions[flyerId]?.x ?? 0);
-            setMagicEffects(prev => ({
-              ...prev,
-              [flyerId]: { effects: ['earthbind'], x: flyerPos, timestamp: Date.now() }
-            }));
-          });
-        }
-      }
-
-      // Handle massacre spell (avada kedavra) - kills all OTHER players, darkens tavern
-      if (detectedEffects.includes('massacre')) {
-        if (currentLobby) {
-          // Kill all players except the caster
-          const playersToKill = currentLobby.players
-            .filter(p => p.id !== currentPlayer.id)
-            .map(p => p.id);
-          setDeadPlayers(prev => new Set([...prev, ...playersToKill]));
-          // Remove flying state from killed players
-          setFlyingPlayers(prev => {
-            const newSet = new Set(prev);
-            playersToKill.forEach(id => newSet.delete(id));
-            return newSet;
-          });
-          // Show massacre effect on each killed player
-          playersToKill.forEach(targetId => {
-            const targetPos = playerPositions[targetId]?.x ?? 0;
-            setMagicEffects(prev => ({
-              ...prev,
-              [targetId]: { effects: ['massacre'], x: targetPos, timestamp: Date.now() }
-            }));
-          });
-          // Darken the tavern for 15 seconds
-          setTavernDarkMode(true);
-          setTimeout(() => setTavernDarkMode(false), 15000);
-        }
-      }
-
-      // Handle mass revive spell - revives entire lobby
-      if (detectedEffects.includes('massrevive')) {
-        // Clear all dead players
-        setDeadPlayers(new Set());
-        // Also clear frozen state
-        setFrozenPlayers(new Set());
-      }
-
-      // Handle dragon attack spell - dragon eats a random player
+      // Dragon attack (not handled by applySpellEffects — random victim + setTimeout)
       if (detectedEffects.includes('dragon')) {
         if (currentLobby && currentLobby.players.length > 1) {
-          // Pick a random player (excluding the caster)
           const eligiblePlayers = currentLobby.players.filter(p => p.id !== currentPlayer.id);
           if (eligiblePlayers.length > 0) {
             const victim = eligiblePlayers[Math.floor(Math.random() * eligiblePlayers.length)];
             const victimPos = playerPositions[victim.id]?.x ?? 200;
-            // Start dragon animation
-            setDragonAttack({ active: true, targetX: victimPos, targetPlayerId: victim.id });
-            // Kill the victim after dragon reaches them
+            dispatch({ type: 'DRAGON', victim: victim.id, victimPos });
             setTimeout(() => {
-              setDeadPlayers(prev => new Set([...prev, victim.id]));
-              setFlyingPlayers(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(victim.id);
-                return newSet;
-              });
+              dispatch({ type: 'DIE', targets: [victim.id] });
               // Show fire effect on victim
               setMagicEffects(prev => ({
                 ...prev,
                 [victim.id]: { effects: ['dragon', 'fire'], x: victimPos, timestamp: Date.now() }
               }));
             }, 1500);
-            // End dragon animation
             setTimeout(() => {
-              setDragonAttack({ active: false, targetX: 0, targetPlayerId: null });
+              dispatch({ type: 'DRAGON_END' });
             }, 3500);
           }
         }
-      }
-
-      // Handle chaos mode - rainbow disco effect for 5 seconds (lobby-wide)
-      if (detectedEffects.includes('chaos')) {
-        setChaosMode(true);
-        setTimeout(() => setChaosMode(false), 5000);
-      }
-
-      // Breaking invisibility: if invisible player casts any spell OTHER than invisibility, break it
-      if (!detectedEffects.includes('invisibility') && invisiblePlayersRef.current.has(currentPlayer.id)) {
-        setInvisiblePlayers(prev => {
-          const newSet = new Set(prev);
-          newSet.delete(currentPlayer.id);
-          return newSet;
-        });
       }
 
       setMagicEffects(prev => ({
@@ -1687,19 +955,9 @@ export function Lobby() {
   const renderPlayerSprite = (avatarClass: string) => {
     const avatar = AVATAR_CLASSES[avatarClass as keyof typeof AVATAR_CLASSES];
     
+    // Delegates to AVATAR_CLASSES registry — monk and all classes resolve correctly
     const getClassIcon = (avatarClass: string): string => {
-      const icons: Record<string, string> = {
-        ranger: '🏹',
-        rogue: '🗡️', 
-        bard: '🎵',
-        sorcerer: '🔥',
-        wizard: '🧙',
-        warrior: '⚔️',
-        paladin: '🛡️',
-        cleric: '✨',
-        oathbreaker: '⚡'
-      };
-      return icons[avatarClass] || '⚔️';
+      return AVATAR_CLASSES[avatarClass as AvatarClass]?.icon ?? '⚔️';
     };
 
     return (
@@ -1823,172 +1081,16 @@ export function Lobby() {
                       </RetroButton>
                     </>
                   )}
-                  {isHost && (
-                    <Dialog open={showSettingsModal} onOpenChange={setShowSettingsModal}>
-                      <DialogTrigger asChild>
-                        <RetroButton size="sm" variant="secondary">
-                          ⚙️ Settings
-                        </RetroButton>
-                      </DialogTrigger>
-                      <DialogContent className="bg-gray-900 border-gray-600 text-white max-w-md w-[95vw] sm:w-full max-h-[80vh] overflow-y-auto p-4 sm:p-6">
-                        <DialogHeader>
-                          <DialogTitle className="text-xl font-bold retro-text-glow">⚙️ Lobby Settings</DialogTitle>
-                          <DialogDescription className="text-gray-400">
-                            Configure settings for this lobby session
-                          </DialogDescription>
-                        </DialogHeader>
-                        
-                        {/* Estimation Timer Section */}
-                        <div className="space-y-6">
-                          <div>
-                            <h3 className="text-lg font-semibold text-gray-200 mb-4">Estimation Timer</h3>
-                            <div className="space-y-4">
-                              <div className="flex items-center gap-3">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                                    checked={currentLobby.timerSettings?.enabled || false}
-                                    onChange={(e) => updateTimerSettings({
-                                      enabled: e.target.checked,
-                                      durationMinutes: currentLobby.timerSettings?.durationMinutes || 5
-                                    })}
-                                  />
-                                  <span className="text-sm font-medium">Enable estimation timer</span>
-                                </label>
-                              </div>
-                              
-                              {currentLobby.timerSettings?.enabled && (
-                                <div className="space-y-2">
-                                  <label className="block text-sm font-medium text-gray-300" htmlFor="timerDuration">
-                                    Timer Duration
-                                  </label>
-                                  <select
-                                    name='timerDuration'
-                                    className="retro-input w-full"
-                                    value={currentLobby.timerSettings?.durationMinutes || 5}
-                                    onChange={(e) => updateTimerSettings({
-                                      enabled: true,
-                                      durationMinutes: parseInt(e.target.value)
-                                    })}
-                                  >
-                                    <option value={1}>1 minute</option>
-                                    <option value={2}>2 minutes</option>
-                                    <option value={3}>3 minutes</option>
-                                    <option value={5}>5 minutes</option>
-                                    <option value={10}>10 minutes</option>
-                                    <option value={15}>15 minutes</option>
-                                  </select>
-                                  <p className="text-xs text-gray-400">
-                                    ⏰ Scores will auto-reveal when timer expires
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* JIRA Integration Section */}
-                          <div className="border-t border-gray-700 pt-6">
-                            <h3 className="text-lg font-semibold text-gray-200 mb-4">JIRA Integration</h3>
-                            <div className="space-y-3">
-                              <div>
-                                <label className="block text-sm font-medium text-gray-300 mb-2" htmlFor='jiraBaseUrl'>
-                                  JIRA Base URL
-                                </label>
-                                <input
-                                  name='jiraBaseUrl'
-                                  type="url"
-                                  placeholder="https://yourcompany.atlassian.net/browse/"
-                                  className="retro-input w-full"
-                                  value={currentLobby.jiraSettings?.baseUrl || ''}
-                                  onChange={(e) => updateJiraSettings({
-                                    baseUrl: e.target.value.trim() || undefined
-                                  })}
-                                />
-                                <p className="text-xs text-gray-400 mt-1">
-                                  🔗 When set, ticket names become clickable links to your JIRA instance
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          
-                          {/* Estimation Scale Section */}
-                          <div className="border-t border-gray-700 pt-6">
-                            <h3 className="text-lg font-semibold text-gray-200 mb-4">Estimation Scale</h3>
-                            <div className="space-y-4">
-                              <div className="space-y-2">
-                                <label className="block text-sm font-medium text-gray-300" htmlFor='estimationScaleType'>
-                                  Scale Type
-                                </label>
-                                <select
-                                  name='estimationScaleType'
-                                  className="retro-input w-full"
-                                  value={currentLobby.estimationSettings?.scaleType || 'fibonacci'}
-                                  onChange={(e) => updateEstimationSettings({
-                                    scaleType: e.target.value as EstimationScaleType,
-                                    customTshirtMapping: currentLobby.estimationSettings?.customTshirtMapping
-                                  })}
-                                >
-                                  <option value="fibonacci">Fibonacci (1, 2, 3, 5, 8, 13...)</option>
-                                  <option value="doubling">Doubling (1, 2, 4, 8, 16, 32...)</option>
-                                  <option value="tshirt">T-Shirt Sizes (XS, S, M, L, XL)</option>
-                                </select>
-                              </div>
-                              
-                              {/* Phase 42-02a / FIX-05: host-only auto-advance toggle (default OFF) */}
-                              <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  className="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500 focus:ring-2"
-                                  checked={currentLobby.estimationSettings?.autoAdvance ?? false}
-                                  onChange={(e) => updateEstimationSettings({
-                                    scaleType: currentLobby.estimationSettings?.scaleType ?? 'fibonacci',
-                                    customTshirtMapping: currentLobby.estimationSettings?.customTshirtMapping,
-                                    autoAdvance: e.target.checked,
-                                  })}
-                                  disabled={!currentPlayer?.isHost || currentLobby?.gamePhase !== 'lobby'}
-                                />
-                                <span className="text-sm font-medium">Auto-advance to next ticket on consensus (5s countdown)</span>
-                              </label>
-
-                              {/* T-shirt size point mapping */}
-                              {(currentLobby.estimationSettings?.scaleType || 'fibonacci') === 'tshirt' && (
-                                <div className="space-y-2">
-                                  <label className="block text-sm font-medium text-gray-300" htmlFor='customTshirtMapping'>
-                                    T-Shirt Size Point Values
-                                  </label>
-                                  <div className="grid grid-cols-5 gap-2" id='customTshirtMapping'>
-                                    {['XS', 'S', 'M', 'L', 'XL'].map(size => (
-                                      <div key={size} className="space-y-1">
-                                        <label className="block text-xs text-gray-400 text-center">{size}</label>
-                                        <input
-                                          type="number"
-                                          min="0"
-                                          className="retro-input w-full text-center text-xs"
-                                          value={currentLobby.estimationSettings?.customTshirtMapping?.[size] || ESTIMATION_SCALES.tshirt.pointMapping![size]}
-                                          onChange={(e) => {
-                                            const newMapping = {
-                                              ...ESTIMATION_SCALES.tshirt.pointMapping,
-                                              ...currentLobby.estimationSettings?.customTshirtMapping,
-                                              [size]: parseInt(e.target.value) || 0
-                                            };
-                                            updateEstimationSettings({
-                                              scaleType: 'tshirt',
-                                              customTshirtMapping: newMapping
-                                            });
-                                          }}
-                                        />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      </DialogContent>
-                    </Dialog>
-                  )}
+                  <LobbySettingsDialog
+                    currentLobby={currentLobby}
+                    currentPlayer={currentPlayer}
+                    isHost={!!isHost}
+                    onTimerUpdate={updateTimerSettings}
+                    onJiraUpdate={updateJiraSettings}
+                    onEstimationUpdate={updateEstimationSettings}
+                    open={showSettingsModal}
+                    onOpenChange={setShowSettingsModal}
+                  />
                 </div>
                 
                 {/* Copy notification */}
@@ -2315,22 +1417,7 @@ export function Lobby() {
           
           {/* Layer 2: Particle Lighting Effects */}
           <div className="absolute inset-0" style={{ zIndex: 8, pointerEvents: 'none' }}>
-            <Canvas
-              camera={{ position: [0, 2, 8], fov: 120 }}
-              style={{ width: '100%', height: '100%', touchAction: 'none' }}
-              dpr={dpr}
-              gl={{ antialias: !isMobile, alpha: true }}
-              onCreated={attachWebglResilience}
-            >
-              <PerformanceMonitor
-                onDecline={() => setDpr((d) => Math.max(d - 0.5, 1))}
-                onIncline={() => setDpr((d) => Math.min(d + 0.5, 2))}
-              >
-                <Suspense fallback={null}>
-                  <TavernLighting />
-                </Suspense>
-              </PerformanceMonitor>
-            </Canvas>
+            <TavernScene isMobile={isMobile} />
           </div>
           
           {/* Layer 3: Player Movement Area */}
@@ -2400,309 +1487,123 @@ export function Lobby() {
 
           {/* My Player Character */}
           {currentPlayer && (() => {
-            // Calculate fly rotation based on movement direction
             const isFlying = flyingPlayers.has(currentPlayer.id);
+            const isInvisible = invisiblePlayers.has(currentPlayer.id);
+            const isDead = deadPlayers.has(currentPlayer.id);
             let flyRotation = 0;
             if (isFlying && !frozenPlayers.has(currentPlayer.id)) {
-              // Vertical tilt: up = tilt back (-15deg), down = tilt forward (15deg)
               if (keys.has('ArrowUp') || keys.has('KeyW')) flyRotation -= 15;
               if (keys.has('ArrowDown') || keys.has('KeyS')) flyRotation += 15;
-              // Horizontal tilt: add slight banking
               if (keys.has('ArrowLeft') || keys.has('KeyA')) flyRotation -= 8;
               if (keys.has('ArrowRight') || keys.has('KeyD')) flyRotation += 8;
             }
-
-            const isInvisible = invisiblePlayers.has(currentPlayer.id);
-
-            // Calculate size scale based on size buffs
-            // Enlarge: 1.5x, 2x, 2.5x | Reduce: 0.7x, 0.5x, 0.35x
-            const sizeBuff = sizeBuffs[currentPlayer.id];
-            let sizeScale = 1;
-            if (sizeBuff?.type === 'enlarge') {
-              sizeScale = 1 + (sizeBuff.stacks * 0.5); // 1.5x, 2x, 2.5x
-            } else if (sizeBuff?.type === 'reduce') {
-              const reduceScales = [0.7, 0.5, 0.35];
-              sizeScale = reduceScales[sizeBuff.stacks - 1] || 0.35;
-            }
-            const baseScale = jumpState.isJumping ? 1.05 : 1;
-            const totalScale = baseScale * sizeScale;
-
             return (
-            <div
-              className="absolute transition-transform duration-100 ease-linear cursor-pointer select-none"
-              style={{
-                left: `${myPosition.x}px`,
-                bottom: `${deadPlayers.has(currentPlayer.id) ? -20 : (isFlying ? flyHeight : jumpState.jumpHeight)}px`,
-                zIndex: 10,
-                transform: `scale(${totalScale}) ${deadPlayers.has(currentPlayer.id) ? 'rotate(90deg)' : (isFlying ? `rotate(${flyRotation}deg)` : '')}`,
-                transformOrigin: 'bottom center',
-                transition: deadPlayers.has(currentPlayer.id) ? 'transform 0.5s ease-out, bottom 0.5s ease-out' : (jumpState.isJumping || isFlying ? 'none' : 'transform 0.2s ease-out'),
-                opacity: isInvisible ? 0.5 : 1
-              }}
-              onClick={handleAvatarTap}
-              onTouchStart={(e) => {
-                e.preventDefault(); // Prevent default touch behaviors
-                handleAvatarTap();
-              }}
-              title={isFlying ? "Use W/S or Up/Down to fly!" : (isInvisible ? "You are invisible!" : "Tap to jump!")}
-            >
-              {/* Player name above character */}
-              <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
-                {currentPlayer.name}
-                {deadPlayers.has(currentPlayer.id) && ' 💀'}
-                {frozenPlayers.has(currentPlayer.id) && ' 🧊'}
-                {petrifiedPlayers.has(currentPlayer.id) && ' 🗿'}
-                {flyingPlayers.has(currentPlayer.id) && ' 🪶'}
-                {isInvisible && ' 👻'}
-                {sizeBuff?.type === 'enlarge' && (
-                  <span className="text-orange-400">
-                    {' '}{'🔺'.repeat(sizeBuff.stacks)}
-                  </span>
-                )}
-                {sizeBuff?.type === 'reduce' && (
-                  <span className="text-blue-400">
-                    {' '}{'🔻'.repeat(sizeBuff.stacks)}
-                  </span>
-                )}
-                {speedBuffs[currentPlayer.id]?.type === 'haste' && (
-                  <span className="text-lime-400">
-                    {' '}{'⚡'.repeat(speedBuffs[currentPlayer.id].stacks)}
-                  </span>
-                )}
-                {speedBuffs[currentPlayer.id]?.type === 'slow' && ' 🐌'}
-              </div>
-
-              <div
-                className={currentPlayer.team === 'spectators' ? 'spectator-character' : ''}
-                style={{
-                  filter: deadPlayers.has(currentPlayer.id)
-                    ? 'grayscale(100%) brightness(0.7)'
-                    : petrifiedPlayers.has(currentPlayer.id)
-                    ? 'sepia(100%) saturate(50%) brightness(0.8) contrast(1.1)'
-                    : frozenPlayers.has(currentPlayer.id)
-                    ? 'hue-rotate(180deg) saturate(1.5) brightness(1.2)'
-                    : (currentPlayer.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none'),
-                  animation: (frozenPlayers.has(currentPlayer.id) || petrifiedPlayers.has(currentPlayer.id))
-                    ? 'none' // Frozen/Petrified = no animation
-                    : (currentPlayer.team === 'spectators' && !deadPlayers.has(currentPlayer.id)
-                      ? 'spectatorPulse 2s ease-in-out infinite'
-                      : 'none')
+              <LobbyAvatar
+                key={currentPlayer.id}
+                player={currentPlayer}
+                avatarClass={getAvatarClass(currentPlayer)}
+                position={{ x: myPosition.x, direction: myPosition.direction }}
+                jumpHeight={isFlying ? flyHeight : jumpState.jumpHeight}
+                isMoving={keys.size > 0}
+                isJumping={jumpState.isJumping}
+                isDead={isDead}
+                isFrozen={frozenPlayers.has(currentPlayer.id)}
+                isPetrified={petrifiedPlayers.has(currentPlayer.id)}
+                isFlying={isFlying}
+                isInvisible={isInvisible}
+                showInvisibleBadge={true}
+                showReadyBadge={false}
+                sizeBuff={sizeBuffs[currentPlayer.id]}
+                speedBuff={speedBuffs[currentPlayer.id]}
+                emote={emotes[currentPlayer.id]}
+                magicEffects={magicEffects[currentPlayer.id]?.effects}
+                characterSize={characterSize}
+                interactive={true}
+                opacity={isInvisible ? 0.5 : 1}
+                flyRotation={flyRotation}
+                onTap={handleAvatarTap}
+                onEmoteComplete={() => {
+                  setEmotes(prev => {
+                    const newEmotes = { ...prev };
+                    delete newEmotes[currentPlayer.id];
+                    return newEmotes;
+                  });
                 }}
-              >
-                {keys.size === 0 && !deadPlayers.has(currentPlayer.id) && !jumpState.isJumping ? (
-                  <motion.div
-                    animate={{ y: [0, -3, 0] }}
-                    transition={{
-                      duration: 2.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                      repeatType: 'loop',
-                    }}
-                  >
-                    <SpriteRenderer
-                      avatarClass={getAvatarClass(currentPlayer)}
-                      animation="idle"
-                      direction={myPosition.direction}
-                      isMoving={false}
-                      size={characterSize}
-                    />
-                  </motion.div>
-                ) : (
-                  <SpriteRenderer
-                    avatarClass={getAvatarClass(currentPlayer)}
-                    animation={deadPlayers.has(currentPlayer.id) ? 'death' : (jumpState.isJumping ? 'victory' : 'walk')}
-                    direction={myPosition.direction}
-                    isMoving={keys.size > 0}
-                    size={characterSize}
-                  />
-                )}
-              </div>
-              
-              
-              {/* Current Player's Speech Bubble */}
-              {emotes[currentPlayer.id] && (
-                <SpeechBubble
-                  message={emotes[currentPlayer.id].message}
-                  x={0} // Relative to character position
-                  y={0} // Relative to character position
-                  onComplete={() => {
-                    setEmotes(prev => {
-                      const newEmotes = { ...prev };
-                      delete newEmotes[currentPlayer.id];
-                      return newEmotes;
-                    });
-                  }}
-                />
-              )}
-
-              {/* Current Player's Magic Effects */}
-              {magicEffects[currentPlayer.id] && magicEffects[currentPlayer.id].effects.map((effect, index) => (
-                <MagicEffect
-                  key={`${currentPlayer.id}-${effect}-${index}`}
-                  type={effect}
-                  x={characterSize / 2} // Center on character
-                  y={0}
-                  onComplete={() => {
-                    setMagicEffects(prev => {
-                      const newEffects = { ...prev };
-                      delete newEffects[currentPlayer.id];
-                      return newEffects;
-                    });
-                  }}
-                />
-              ))}
-            </div>
-          );
+                onMagicEffectComplete={() => {
+                  setMagicEffects(prev => {
+                    const newEffects = { ...prev };
+                    delete newEffects[currentPlayer.id];
+                    return newEffects;
+                  });
+                }}
+              />
+            );
           })()}
 
           {/* Other Players */}
           {currentLobby.players
             .filter(player => player.id !== currentPlayer?.id)
-            .map(player => {
-              const position = playerPositions[player.id];
-              if (!position) return null;
+            .map((player, index) => {
+              // BUGFIX: render remote players even before their first movement.
+              // Previously `if (!position) return null` hid any player without a
+              // playerPositions entry — which only gets populated by a movement
+              // broadcast — so a freshly joined/avatar-selected player was invisible
+              // to everyone until they moved. Fall back to a staggered default spawn
+              // (local player spawns at x:200) so connected players show immediately;
+              // the stagger avoids stacking, and resolves to the real position on
+              // their first move.
+              const position = playerPositions[player.id] ?? {
+                x: 200 + ((index % 5) + 1) * 120,
+                direction: 'right' as SpriteDirection,
+                isMoving: false,
+                isJumping: false,
+                jumpHeight: 0,
+              };
 
               const isDead = deadPlayers.has(player.id);
               const isInvisible = invisiblePlayers.has(player.id);
               const isFlickering = invisibleFlicker[player.id];
-              // Invisible players: normally hidden (0), flicker at 20%
               const playerOpacity = isInvisible ? (isFlickering ? 0.2 : 0) : 1;
 
-              // Calculate size scale for other players
-              const otherSizeBuff = sizeBuffs[player.id];
-              let otherSizeScale = 1;
-              if (otherSizeBuff?.type === 'enlarge') {
-                otherSizeScale = 1 + (otherSizeBuff.stacks * 0.5); // 1.5x, 2x, 2.5x
-              } else if (otherSizeBuff?.type === 'reduce') {
-                const reduceScales = [0.7, 0.5, 0.35];
-                otherSizeScale = reduceScales[otherSizeBuff.stacks - 1] || 0.35;
-              }
-
               return (
-                <div
+                <LobbyAvatar
                   key={player.id}
-                  className="absolute transition-transform duration-200 ease-out"
-                  style={{
-                    left: `${position.x}px`,
-                    bottom: `${isDead ? -20 : (position.jumpHeight || 0)}px`,
-                    zIndex: 9,
-                    transform: `scale(${otherSizeScale}) ${isDead ? 'rotate(90deg)' : ''}`,
-                    transformOrigin: 'bottom center',
-                    transition: isDead ? 'transform 0.5s ease-out, bottom 0.5s ease-out' : 'transform 0.2s ease-out, opacity 0.3s ease-in-out',
-                    opacity: playerOpacity,
-                    pointerEvents: isInvisible && !isFlickering ? 'none' : 'auto'
+                  player={player}
+                  avatarClass={getAvatarClass(player)}
+                  position={{ x: position.x, direction: position.direction }}
+                  jumpHeight={position.jumpHeight || 0}
+                  isMoving={position.isMoving}
+                  isJumping={position.isJumping || false}
+                  isDead={isDead}
+                  isFrozen={frozenPlayers.has(player.id)}
+                  isPetrified={petrifiedPlayers.has(player.id)}
+                  isFlying={flyingPlayers.has(player.id)}
+                  isInvisible={isInvisible}
+                  showInvisibleBadge={false}
+                  showReadyBadge={true}
+                  sizeBuff={sizeBuffs[player.id]}
+                  speedBuff={speedBuffs[player.id]}
+                  emote={emotes[player.id]}
+                  magicEffects={magicEffects[player.id]?.effects}
+                  characterSize={characterSize}
+                  interactive={false}
+                  opacity={playerOpacity}
+                  pointerEventsDisabled={isInvisible && !isFlickering}
+                  onEmoteComplete={() => {
+                    setEmotes(prev => {
+                      const newEmotes = { ...prev };
+                      delete newEmotes[player.id];
+                      return newEmotes;
+                    });
                   }}
-                >
-                  {/* Player name above character */}
-                  <div className="text-center text-xs text-white bg-black/50 rounded px-1 mb-1">
-                    {player.name}
-                    {player.isReady && (
-                      <span className="text-green-400 ml-1" aria-label="Ready">
-                        ✓
-                      </span>
-                    )}
-                    {isDead && ' 💀'}
-                    {frozenPlayers.has(player.id) && ' 🧊'}
-                    {petrifiedPlayers.has(player.id) && ' 🗿'}
-                    {flyingPlayers.has(player.id) && ' 🪶'}
-                    {otherSizeBuff?.type === 'enlarge' && (
-                      <span className="text-orange-400">
-                        {' '}{'🔺'.repeat(otherSizeBuff.stacks)}
-                      </span>
-                    )}
-                    {otherSizeBuff?.type === 'reduce' && (
-                      <span className="text-blue-400">
-                        {' '}{'🔻'.repeat(otherSizeBuff.stacks)}
-                      </span>
-                    )}
-                    {speedBuffs[player.id]?.type === 'haste' && (
-                      <span className="text-lime-400">
-                        {' '}{'⚡'.repeat(speedBuffs[player.id].stacks)}
-                      </span>
-                    )}
-                    {speedBuffs[player.id]?.type === 'slow' && ' 🐌'}
-                  </div>
-
-                  <div
-                    className={player.team === 'spectators' ? 'spectator-character' : ''}
-                    style={{
-                      filter: isDead
-                        ? 'grayscale(100%) brightness(0.7)'
-                        : petrifiedPlayers.has(player.id)
-                        ? 'sepia(100%) saturate(50%) brightness(0.8) contrast(1.1)'
-                        : frozenPlayers.has(player.id)
-                        ? 'hue-rotate(180deg) saturate(1.5) brightness(1.2)'
-                        : (player.team === 'spectators' ? 'hue-rotate(200deg) saturate(1.2)' : 'none'),
-                      animation: (frozenPlayers.has(player.id) || petrifiedPlayers.has(player.id))
-                        ? 'none' // Frozen/Petrified = no animation
-                        : (player.team === 'spectators' && !isDead
-                          ? 'spectatorPulse 2s ease-in-out infinite'
-                          : 'none')
-                    }}
-                  >
-                    {!position.isMoving && !isDead && !position.isJumping ? (
-                      <motion.div
-                        animate={{ y: [0, -3, 0] }}
-                        transition={{
-                          duration: 2.5,
-                          repeat: Infinity,
-                          ease: 'easeInOut',
-                          repeatType: 'loop',
-                        }}
-                      >
-                        <SpriteRenderer
-                          avatarClass={getAvatarClass(player)}
-                          animation="idle"
-                          direction={position.direction}
-                          isMoving={false}
-                          size={characterSize}
-                        />
-                      </motion.div>
-                    ) : (
-                      <SpriteRenderer
-                        avatarClass={getAvatarClass(player)}
-                        animation={isDead ? 'death' : (position.isJumping ? 'victory' : 'walk')}
-                        direction={position.direction}
-                        isMoving={position.isMoving}
-                        size={characterSize}
-                      />
-                    )}
-                  </div>
-                  
-                  
-                  {/* Other Player's Speech Bubble */}
-                  {emotes[player.id] && (
-                    <SpeechBubble
-                      message={emotes[player.id].message}
-                      x={0} // Relative to character position
-                      y={0} // Relative to character position
-                      onComplete={() => {
-                        setEmotes(prev => {
-                          const newEmotes = { ...prev };
-                          delete newEmotes[player.id];
-                          return newEmotes;
-                        });
-                      }}
-                    />
-                  )}
-
-                  {/* Other Player's Magic Effects */}
-                  {magicEffects[player.id] && magicEffects[player.id].effects.map((effect, index) => (
-                    <MagicEffect
-                      key={`${player.id}-${effect}-${index}`}
-                      type={effect}
-                      x={characterSize / 2} // Center on character
-                      y={0}
-                      onComplete={() => {
-                        setMagicEffects(prev => {
-                          const newEffects = { ...prev };
-                          delete newEffects[player.id];
-                          return newEffects;
-                        });
-                      }}
-                    />
-                  ))}
-                </div>
+                  onMagicEffectComplete={() => {
+                    setMagicEffects(prev => {
+                      const newEffects = { ...prev };
+                      delete newEffects[player.id];
+                      return newEffects;
+                    });
+                  }}
+                />
               );
             })}
           
