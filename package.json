@@ -145,7 +145,7 @@
     "tailwind-merge": "^2.5.4",
     "tailwind-scrollbar": "^3.1.0",
     "tailwindcss-animate": "^1.0.7",
-    "three": "^0.184.0",
+    "three": "^0.185.1",
     "vaul": "^1.1.2",
     "vite-plugin-glsl": "^1.6.0",
     "wouter": "^3.9.0",
