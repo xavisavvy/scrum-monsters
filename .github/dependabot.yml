@@ -36,6 +36,13 @@ updates:
     schedule:
       interval: "weekly"
       day: "monday"
+    # Actions are third-party-published but version-pinned and low-risk to
+    # bump as a batch (mostly Node-runtime-EOL major bumps with no input
+    # changes) — group them all into one PR instead of one per action.
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     labels:
       - "dependencies"
       - "github-actions"
