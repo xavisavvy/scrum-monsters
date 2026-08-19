@@ -140,6 +140,12 @@ services:
       - '--storage.tsdb.retention.time=7d'
       - '--storage.tsdb.retention.size=512MB'
       - '--storage.tsdb.path=/prometheus'
+      # Enables POST /-/reload. Without it that endpoint 404s and a
+      # prometheus.yml edit silently does nothing until the container is
+      # restarted — which is how the 2026-05-16 config changes sat
+      # dormant for three months. Prometheus is bound to 127.0.0.1:9090,
+      # so the lifecycle endpoints are not reachable from the internet.
+      - '--web.enable-lifecycle'
     deploy:
       resources:
         limits:

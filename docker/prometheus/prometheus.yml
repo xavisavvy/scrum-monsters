@@ -31,6 +31,7 @@ scrape_configs:
           - https://scrummonsters.com
           - https://prestonfarr.com
           - https://familytokens.app
+          - https://talesofaneria.com
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
