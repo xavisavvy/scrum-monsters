@@ -10,6 +10,7 @@ import { LobbySettingsDialog } from './LobbySettingsDialog';
 import { MusicControls } from '@/components/ui/MusicControls';
 import { MobileControls } from './MobileControls';
 import { TavernScene } from './TavernScene';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useWebSocket } from '@/lib/stores/useWebSocket';
 import { useGameState } from '@/lib/stores/useGameState';
 import { useAudio } from '@/lib/stores/useAudio';
@@ -1417,7 +1418,12 @@ export function Lobby() {
           
           {/* Layer 2: Particle Lighting Effects */}
           <div className="absolute inset-0" style={{ zIndex: 8, pointerEvents: 'none' }}>
-            <TavernScene isMobile={isMobile} />
+            {/* Purely decorative — a WebGL context failure (unsupported
+                browser/GPU, headless test runner) must not take down the
+                whole lobby. */}
+            <ErrorBoundary fallback={null}>
+              <TavernScene isMobile={isMobile} />
+            </ErrorBoundary>
           </div>
           
           {/* Layer 3: Player Movement Area */}

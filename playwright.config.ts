@@ -34,8 +34,14 @@ export default defineConfig({
     reducedMotion: "reduce",
   },
 
-  // Use platform-agnostic snapshot paths (CI Docker ensures consistent rendering)
-  snapshotPathTemplate: "{testDir}/{testFileDir}/{testFileName}-snapshots/{arg}{ext}",
+  // Platform-agnostic (no {platform} token) since CI Docker ensures
+  // consistent rendering across host OSes — but chromium and firefox are
+  // different rendering engines, not different platforms, and render this
+  // app's pixel-art/glow-heavy UI ~4% apart even with animations/blur
+  // stripped for tests. Without {projectName}, both browsers compared
+  // against one shared file, so only whichever engine wrote it last could
+  // ever pass — every other engine failed deterministically, not flakily.
+  snapshotPathTemplate: "{testDir}/{testFileDir}/{testFileName}-snapshots/{projectName}/{arg}{ext}",
 
   // Configure projects for major browsers
   projects: [

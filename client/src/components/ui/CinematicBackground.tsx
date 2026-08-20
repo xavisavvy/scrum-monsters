@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useReducedMotion } from 'framer-motion';
 
 interface CinematicBackgroundProps {
   className?: string;
@@ -16,7 +17,25 @@ const BOSS_LAIR_IMAGES = [
 const DISPLAY_DURATION = 5000; // 5 seconds per image
 const CROSSFADE_DURATION = 2000; // 2 second smooth crossfade
 
+/**
+ * Test-only escape hatch: `useReducedMotion()` gates the crossfade on
+ * `matchMedia`, which Playwright emulates over CDP. Under CI resource
+ * contention that emulation can race against this module's first
+ * evaluation, occasionally leaving the crossfade running in a supposedly
+ * reduced-motion test and producing a nondeterministic background image
+ * in visual regression screenshots. e2e/visual/lobby.visual.spec.ts sets
+ * this via `page.addInitScript` — guaranteed to run before any page
+ * script, so unlike matchMedia it can't lose a timing race.
+ */
+function crossfadeDisabledForTests(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    (window as unknown as { __DISABLE_CINEMATIC_CROSSFADE__?: boolean }).__DISABLE_CINEMATIC_CROSSFADE__ === true
+  );
+}
+
 export function CinematicBackground({ className = '' }: CinematicBackgroundProps) {
+  const prefersReducedMotion = useReducedMotion() || crossfadeDisabledForTests();
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState(-1);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -49,11 +68,16 @@ export function CinematicBackground({ className = '' }: CinematicBackgroundProps
     }, CROSSFADE_DURATION);
   }, [activeIndex]);
 
-  // Setup cycling with seamless timing
+  // Setup cycling with seamless timing. Skipped entirely when the user
+  // prefers reduced motion, leaving the background on the first lair image
+  // instead of continuously crossfading/panning.
   useEffect(() => {
+    if (prefersReducedMotion) {
+      return;
+    }
     intervalRef.current = setInterval(startCrossfade, DISPLAY_DURATION);
     return cleanup;
-  }, [startCrossfade, cleanup]);
+  }, [startCrossfade, cleanup, prefersReducedMotion]);
 
   // Get seamless animation style for each layer
   const getLayerStyle = (imageIndex: number): React.CSSProperties => {
@@ -78,11 +102,21 @@ export function CinematicBackground({ className = '' }: CinematicBackgroundProps
       backgroundRepeat: 'no-repeat',
       opacity,
       transition: `opacity ${CROSSFADE_DURATION}ms ease-in-out`,
-      animationName,
-      animationDuration: '28s', // Longer duration for seamless looping
-      animationTimingFunction: 'linear',
-      animationIterationCount: 'infinite',
-      animationDirection: 'alternate', // Prevents jarring position resets
+      // Skip the continuous pan when reduced motion is preferred — both a
+      // real accessibility fix (this ran unconditionally regardless of the
+      // user's OS-level preference) and a determinism fix: an infinite,
+      // alternating-direction animation forced to 0s duration (as visual
+      // regression tests do) resolves inconsistently across browser
+      // engines, since which iteration/direction it's "at" is ambiguous.
+      ...(prefersReducedMotion
+        ? { animationName: 'none' }
+        : {
+            animationName,
+            animationDuration: '28s', // Longer duration for seamless looping
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
+            animationDirection: 'alternate', // Prevents jarring position resets
+          }),
       transform: 'scale(1.1)',
       willChange: 'transform, opacity',
       pointerEvents: 'none',

@@ -46,8 +46,13 @@ jobs:
     name: Visual Regression Tests
     needs: pre-check
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    env:
+      # Firefox refuses to launch as root when $HOME isn't owned by root —
+      # the container's default $HOME (/github/home) is owned by the host
+      # runner's user, not root. Official Playwright-in-container workaround.
+      HOME: /root
     container:
-      image: mcr.microsoft.com/playwright:v1.49.1-noble
+      image: mcr.microsoft.com/playwright:v1.62.1-noble
       # No --user pin: container runs as root. We chown the workspace +
       # cache dirs back to RUNNER_UID:RUNNER_GID in a final 'always()'
       # step. Makes this workflow agnostic to which self-hosted runner
