@@ -146,6 +146,7 @@ jobs:
       - name: Run contract tests
         run: |
           schemathesis run specs/openapi.yaml \
+            --experimental=openapi-3.1 \
             --base-url=http://localhost:5000 \
             --checks all \
             --hypothesis-max-examples=20 \
