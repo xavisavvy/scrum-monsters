@@ -82,7 +82,7 @@ jobs:
         continue-on-error: true
 
       - name: Upload accessibility report
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: accessibility-report
@@ -90,7 +90,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         if: steps.a11y-tests.outcome == 'failure'
         with:
           name: a11y-test-results
