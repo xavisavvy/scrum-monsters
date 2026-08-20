@@ -75,6 +75,25 @@ jobs:
     name: Contract Tests
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: validate-specs
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test
+        ports:
+          # Host port 15433 (not 5432, and distinct from ci.yml's
+          # validate-migrations 15432) to avoid colliding with DSM/WSL's
+          # native Postgres on the self-hosted runner and with a
+          # concurrently-running validate-migrations job on the same host.
+          - 15433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v7
 
@@ -104,6 +123,11 @@ jobs:
       - name: Build application
         run: npm run build
 
+      - name: Apply migrations
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:15433/test
+        run: npm run db:migrate
+
       - name: Start server
         run: |
           npm run start &
@@ -113,6 +137,11 @@ jobs:
         env:
           NODE_ENV: production
           PORT: 5000
+          DATABASE_URL: postgresql://postgres:postgres@localhost:15433/test
+          # CI-only ephemeral server, not a real deployment — a fixed value
+          # here is fine; production boot just requires this to be set and
+          # non-default (see server/logger.ts's SESSION_SECRET check).
+          SESSION_SECRET: ci-contract-tests-not-a-real-secret
 
       - name: Run contract tests
         run: |
