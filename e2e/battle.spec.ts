@@ -21,6 +21,35 @@ async function seedName(page: Page, name: string): Promise<void> {
 }
 
 /**
+ * Mark every tutorial walkthrough as already-completed so a fresh test
+ * session (fresh localStorage, same as a real first-time player) doesn't
+ * get the "Battle Advisor" onboarding spotlight/hint-bubble sequence.
+ * Without this, the spotlight overlay's full-screen click-catcher blocks
+ * interaction with anything but the current walkthrough step's target
+ * until each step is dismissed — these tests aren't exercising the
+ * tutorial, so skip it the same way seedName skips the name-entry step.
+ */
+async function seedTutorialSeen(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    window.localStorage.setItem(
+      "scrumquest-tutorial",
+      JSON.stringify({
+        state: {
+          completedTutorials: {
+            "walkthrough:lobby": true,
+            "walkthrough:avatar_selection": true,
+            "walkthrough:battle": true,
+          },
+          completedHints: {},
+          version: 1,
+        },
+        version: 1,
+      })
+    );
+  });
+}
+
+/**
  * Create a lobby, confirm an avatar, add a ticket and begin the battle.
  * Returns once the BattleScreen voting UI is visible.
  */
@@ -29,6 +58,7 @@ async function startSoloBattle(
   hostName: string,
   lobbyName: string
 ): Promise<void> {
+  await seedTutorialSeen(page);
   await page.goto("/play");
   await page.getByRole("button", { name: "Create Battle Lobby" }).click();
 

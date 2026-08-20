@@ -15,3 +15,17 @@
   transition-duration: 0s !important;
   transition-delay: 0s !important;
 }
+
+/* .retro-text-glow/-light stack several blurred text-shadow layers (up to
+   30px blur radius) for a neon effect. Blur rasterization isn't pixel-exact
+   between runs in headless Chromium, so these were causing visual regression
+   flakiness unrelated to any real UI change. Keep the crisp 1px outline for
+   readability but drop the blurred glow layers for screenshot stability. */
+.retro-text-glow,
+.retro-text-glow-light {
+  text-shadow:
+    -1px -1px 0 #000000,
+    1px -1px 0 #000000,
+    -1px 1px 0 #000000,
+    1px 1px 0 #000000 !important;
+}
