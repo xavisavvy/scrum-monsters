@@ -54,6 +54,13 @@ jobs:
     needs: pre-check
     runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 30
+    env:
+      # Firefox refuses to launch as root when $HOME isn't owned by root —
+      # the container's default $HOME (/github/home) is owned by the host
+      # runner's user, not root. Official Playwright-in-container workaround:
+      # https://github.com/microsoft/playwright/issues (browserType.launch
+      # error names this exact fix).
+      HOME: /root
     # Run the job inside Microsoft's official Playwright image - chromium,
     # firefox and every system library Playwright needs ship preinstalled.
     # Avoids `--with-deps` which calls `sudo apt-get` and fails on Synology
