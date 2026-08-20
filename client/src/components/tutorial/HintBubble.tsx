@@ -27,30 +27,39 @@ function getPositionStyles(
   const centerX = targetRect.left + targetRect.width / 2;
   const centerY = targetRect.top + targetRect.height / 2;
 
+  // Use the standalone CSS `translate` property, not `transform:
+  // translate(...)`. This element is a framer-motion `motion.div` that
+  // also animates `scale` — framer-motion owns `transform` for its own
+  // animated values and overwrites any transform string passed via
+  // `style`, silently dropping this positioning offset (the bubble would
+  // render anchored at the target's edge/center instead of beside it,
+  // overlapping — and blocking clicks on — the element it's meant to
+  // point at). `translate` composes independently of `transform`, so it
+  // survives framer-motion's own transform management.
   switch (position) {
     case 'bottom':
       return {
         top: targetRect.bottom + 12,
         left: centerX,
-        transform: 'translateX(-50%)',
+        translate: '-50% 0',
       };
     case 'top':
       return {
         top: targetRect.top - 12,
         left: centerX,
-        transform: 'translate(-50%, -100%)',
+        translate: '-50% -100%',
       };
     case 'right':
       return {
         top: centerY,
         left: targetRect.right + 12,
-        transform: 'translateY(-50%)',
+        translate: '0 -50%',
       };
     case 'left':
       return {
         top: centerY,
         left: targetRect.left - 12,
-        transform: 'translate(-100%, -50%)',
+        translate: '-100% -50%',
       };
   }
 }
