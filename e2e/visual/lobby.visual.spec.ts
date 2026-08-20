@@ -5,6 +5,20 @@ import { openPlayScreen } from '../helpers/lobby-flow';
 test.describe('Lobby Visual Regression', () => {
   test.beforeEach(async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-01-01T12:00:00Z'));
+    // CinematicBackground gates its 5s crossfade interval behind
+    // `prefers-reduced-motion`, checked via `matchMedia` — but Playwright
+    // applies that media emulation over CDP, which under CI resource
+    // contention can race against the page's very first script execution.
+    // When it loses, the interval starts for real and can fire mid-test,
+    // landing the screenshot on a different background image than the
+    // baseline (Chromium-only, load-dependent — exactly issue #198's
+    // symptom, previously misattributed to text-shadow blur rasterization).
+    // addInitScript is guaranteed by Playwright to run before any of the
+    // page's own scripts, so this flag is synchronous and race-proof in a
+    // way matchMedia timing isn't.
+    await page.addInitScript(() => {
+      (window as unknown as { __DISABLE_CINEMATIC_CROSSFADE__?: boolean }).__DISABLE_CINEMATIC_CROSSFADE__ = true;
+    });
   });
 
   for (const [name, dimensions] of Object.entries(viewports)) {

@@ -17,8 +17,25 @@ const BOSS_LAIR_IMAGES = [
 const DISPLAY_DURATION = 5000; // 5 seconds per image
 const CROSSFADE_DURATION = 2000; // 2 second smooth crossfade
 
+/**
+ * Test-only escape hatch: `useReducedMotion()` gates the crossfade on
+ * `matchMedia`, which Playwright emulates over CDP. Under CI resource
+ * contention that emulation can race against this module's first
+ * evaluation, occasionally leaving the crossfade running in a supposedly
+ * reduced-motion test and producing a nondeterministic background image
+ * in visual regression screenshots. e2e/visual/lobby.visual.spec.ts sets
+ * this via `page.addInitScript` — guaranteed to run before any page
+ * script, so unlike matchMedia it can't lose a timing race.
+ */
+function crossfadeDisabledForTests(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    (window as unknown as { __DISABLE_CINEMATIC_CROSSFADE__?: boolean }).__DISABLE_CINEMATIC_CROSSFADE__ === true
+  );
+}
+
 export function CinematicBackground({ className = '' }: CinematicBackgroundProps) {
-  const prefersReducedMotion = useReducedMotion();
+  const prefersReducedMotion = useReducedMotion() || crossfadeDisabledForTests();
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState(-1);
   const [isTransitioning, setIsTransitioning] = useState(false);
