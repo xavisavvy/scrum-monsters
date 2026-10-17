@@ -322,7 +322,13 @@ export default [
 
   // Profiling and utility scripts
   {
-    files: ["tests/profiling/**/*.ts", "scripts/**/*.ts", "scripts/**/*.js"],
+    files: ["tests/profiling/**/*.ts", "scripts/**/*.ts", "scripts/**/*.js", "scripts/**/*.mjs"],
+    languageOptions: {
+      globals: {
+        console: "readonly",
+        process: "readonly",
+      },
+    },
     rules: {
       "no-console": "off",
     },
