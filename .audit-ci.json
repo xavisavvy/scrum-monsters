@@ -5,5 +5,13 @@
   "low": false,
   "report-type": "full",
   "advisories": [],
-  "allowlist": []
+  "allowlist": [
+    {
+      "GHSA-vfj7-8cjw-p6xm": {
+        "active": true,
+        "expiry": "2027-01-17",
+        "notes": "braces <=3.0.3 stack-exhaustion DoS on deeply nested patterns. No patched release exists (3.0.3 is latest). Reached only via tailwindcss (chokidar, micromatch), a build-time CSS tool; the server never imports it and never passes user input to it. Re-check by expiry."
+      }
+    }
+  ]
 }

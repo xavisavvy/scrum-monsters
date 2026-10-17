@@ -26,7 +26,18 @@ const LEVELS = ["low", "moderate", "high", "critical"];
 // audit-ci semantics: enabling a level blocks that level and everything above it.
 const lowest = LEVELS.findIndex((l) => config[l] === true);
 const blocking = new Set(lowest === -1 ? ["high", "critical"] : LEVELS.slice(lowest));
-const allowlist = new Set((config.allowlist ?? []).map(String));
+// Entries are either plain ids ("GHSA-...", a package name) or audit-ci records
+// ({"GHSA-...": {active, expiry, notes}}). Inactive or expired records don't count.
+const today = new Date().toISOString().slice(0, 10);
+const allowlist = new Set(
+  (config.allowlist ?? []).flatMap((entry) =>
+    typeof entry === "object" && entry !== null
+      ? Object.entries(entry)
+          .filter(([, rec]) => rec?.active !== false && !(rec?.expiry && String(rec.expiry).slice(0, 10) < today))
+          .map(([id]) => id)
+      : [String(entry)],
+  ),
+);
 
 // Each blocking advisory, keyed by "<package> <advisory url>".
 function advisories(path) {
