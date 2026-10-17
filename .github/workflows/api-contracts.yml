@@ -83,11 +83,11 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test
         ports:
-          # Host port 15433 (not 5432, and distinct from ci.yml's
-          # validate-migrations 15432) to avoid colliding with DSM/WSL's
-          # native Postgres on the self-hosted runner and with a
-          # concurrently-running validate-migrations job on the same host.
-          - 15433:5432
+          # No fixed host port: Docker picks a free one per job, read back via
+          # job.services.postgres.ports['5432']. A fixed port (it was 15433) collides
+          # when parallel runners share one Docker daemon -- Shadowsong runs four
+          # scrum-monsters runners on the same dockerd.
+          - 5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -125,7 +125,7 @@ jobs:
 
       - name: Apply migrations
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:15433/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{ job.services.postgres.ports['5432'] }}/test
         run: npm run db:migrate
 
       - name: Start server
@@ -137,7 +137,7 @@ jobs:
         env:
           NODE_ENV: production
           PORT: 5000
-          DATABASE_URL: postgresql://postgres:postgres@localhost:15433/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{ job.services.postgres.ports['5432'] }}/test
           # CI-only ephemeral server, not a real deployment — a fixed value
           # here is fine; production boot just requires this to be set and
           # non-default (see server/logger.ts's SESSION_SECRET check).
