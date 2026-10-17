@@ -18,6 +18,16 @@ updates:
           - "minor"
           - "patch"
       # Keep major updates separate for review
+      # Security updates (advisory-driven, opened as soon as an alert fires,
+      # usually for transitive deps) are NOT covered by the group above --
+      # groups apply to scheduled version updates unless they say otherwise.
+      # Without this they arrive as one PR per package, and under the "branch
+      # must be up to date" rule each one needs its own rebase + full CI run
+      # after every merge. Batch them into a single PR instead.
+      security:
+        applies-to: security-updates
+        patterns:
+          - "*"
     # Limit to reduce noise
     open-pull-requests-limit: 10
     # Add labels for easier filtering
