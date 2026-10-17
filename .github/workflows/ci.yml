@@ -122,31 +122,68 @@ jobs:
           path: dist/
           retention-days: 7
 
+  # Blocks a PR only on high/critical advisories that the PR itself introduces
+  # (levels + allowlist from .audit-ci.json). PRs that don't touch the lockfile
+  # pass immediately. The full audit of the existing tree runs nightly in
+  # security-audit-nightly.yml -- running it here failed every PR on advisories
+  # the PR had nothing to do with.
   security-audit:
     name: Security Audit
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
-    timeout-minutes: 10
-    # Block PRs on high/critical vulnerabilities (configured in .audit-ci.json)
+    # GitHub-hosted: lockfile-only audit, no install, and free on a public repo.
+    # Keeps it from queueing behind the self-hosted runners.
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: read
 
     steps:
       - name: Checkout
         uses: actions/checkout@v7
 
+      - name: Did this PR change dependencies?
+        id: deps
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          if [[ "${{ github.event_name }}" != "pull_request" ]]; then
+            echo "Not a PR - the full audit runs nightly (security-audit-nightly.yml)."
+            echo "changed=false" >> "$GITHUB_OUTPUT"; exit 0
+          fi
+          if gh api "repos/${{ github.repository }}/pulls/$PR/files" --paginate --jq '.[].filename' \
+               | grep -qxE 'package(-lock)?\.json'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "package.json / package-lock.json unchanged - nothing new to audit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Setup Node.js
+        if: steps.deps.outputs.changed == 'true'
         uses: actions/setup-node@v7
         with:
           node-version: ${{ env.NODE_VERSION }}
-          cache: "npm"
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Run security audit
-        run: npm run audit
+      - name: Audit base and head lockfiles
+        if: steps.deps.outputs.changed == 'true'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=1 origin "$BASE_SHA"
+          mkdir -p "$RUNNER_TEMP/base"
+          git show "$BASE_SHA:package.json" > "$RUNNER_TEMP/base/package.json"
+          git show "$BASE_SHA:package-lock.json" > "$RUNNER_TEMP/base/package-lock.json"
+          # npm audit exits non-zero whenever it finds anything; the comparison decides.
+          (cd "$RUNNER_TEMP/base" && npm audit --json --package-lock-only > "$RUNNER_TEMP/base-audit.json") || true
+          npm audit --json --package-lock-only > "$RUNNER_TEMP/head-audit.json" || true
+          node scripts/ci/audit-new-vulns.mjs "$RUNNER_TEMP/base-audit.json" "$RUNNER_TEMP/head-audit.json"
 
   license-check:
     name: License Check
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    # GitHub-hosted: seconds of work that used to queue 15-30 min for a self-hosted runner. Free on a public repo.
+    runs-on: ubuntu-latest
     timeout-minutes: 10
 
     steps:
@@ -257,7 +294,8 @@ jobs:
   # Summary job for branch protection rules
   ci-success:
     name: CI Success
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    # GitHub-hosted: seconds of work that used to queue 15-30 min for a self-hosted runner. Free on a public repo.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [lint-and-typecheck, test, build, security-audit, license-check, validate-migrations, deploy-scripts]
     if: always()

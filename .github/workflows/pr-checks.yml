@@ -14,7 +14,8 @@ env:
 jobs:
   pr-title:
     name: Validate PR Title
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    # GitHub-hosted: seconds of work that used to queue 15-30 min for a self-hosted runner. Free on a public repo.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
@@ -51,7 +52,8 @@ jobs:
 
   size-label:
     name: PR Size Label
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    # GitHub-hosted: seconds of work that used to queue 15-30 min for a self-hosted runner. Free on a public repo.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
@@ -74,7 +76,8 @@ jobs:
 
   files-changed:
     name: Detect Changed Files
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    # GitHub-hosted: seconds of work that used to queue 15-30 min for a self-hosted runner. Free on a public repo.
+    runs-on: ubuntu-latest
     timeout-minutes: 5
 
     outputs:
