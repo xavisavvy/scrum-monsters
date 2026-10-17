@@ -52,7 +52,7 @@ jobs:
       # runner's user, not root. Official Playwright-in-container workaround.
       HOME: /root
     container:
-      image: mcr.microsoft.com/playwright:v1.62.1-noble
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
       # No --user pin: container runs as root. We chown the workspace +
       # cache dirs back to RUNNER_UID:RUNNER_GID in a final 'always()'
       # step. Makes this workflow agnostic to which self-hosted runner
