@@ -214,11 +214,11 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test
         ports:
-          # Host port 15432 (not 5432) to avoid collision with DSM's native
-          # Postgres on the self-hosted Synology runner. Inside the service
-          # container Postgres still listens on 5432; the mapping rewrites
-          # only the host-side port that the job's `localhost:NNNNN` URL hits.
-          - 15432:5432
+          # No fixed host port: Docker picks a free one per job, read back via
+          # job.services.postgres.ports['5432']. A fixed port (it was 15432) collides
+          # when parallel runners share one Docker daemon -- Shadowsong runs four
+          # scrum-monsters runners on the same dockerd.
+          - 5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -240,12 +240,12 @@ jobs:
 
       - name: Apply migrations to fresh database
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:15432/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{ job.services.postgres.ports['5432'] }}/test
         run: npm run db:migrate
 
       - name: Check for schema drift
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:15432/test
+          DATABASE_URL: postgresql://postgres:postgres@localhost:${{ job.services.postgres.ports['5432'] }}/test
         run: |
           # Generate would create files if schema changed without migration
           npx drizzle-kit generate
