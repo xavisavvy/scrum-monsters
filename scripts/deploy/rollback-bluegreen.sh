@@ -27,7 +27,7 @@ ACTIVE_COLOR_FILE="${ACTIVE_COLOR_FILE:-/opt/scrummonsters/.active-color}"
 COMPOSE_FILE="${COMPOSE_FILE:-/opt/scrummonsters/docker-compose.prod.yml}"
 
 echo "Rolling back to $TARGET"
-docker compose -f "$COMPOSE_FILE" --profile "$TARGET" up -d "app-$TARGET"
+docker compose -f "$COMPOSE_FILE" --profile "$TARGET" up -d --no-deps "app-$TARGET"
 wait_for_healthy "app-$TARGET" 60
 
 set +x

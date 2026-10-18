@@ -1,19 +1,20 @@
-# Default owner for everything
-* @Preston
+# Default owner for everything. (@Preston was a different GitHub user, not the
+# repo owner, so every rule below was being ignored.)
+* @xavisavvy
 
 # Frontend
-/client/ @Preston
-*.tsx @Preston
-*.css @Preston
+/client/ @xavisavvy
+*.tsx @xavisavvy
+*.css @xavisavvy
 
 # Backend
-/server/ @Preston
+/server/ @xavisavvy
 
 # Shared types
-/shared/ @Preston
+/shared/ @xavisavvy
 
 # Infrastructure
-/k8s/ @Preston
-/.github/ @Preston
-Dockerfile @Preston
-docker-compose.yml @Preston
+/k8s/ @xavisavvy
+/.github/ @xavisavvy
+Dockerfile @xavisavvy
+docker-compose.yml @xavisavvy

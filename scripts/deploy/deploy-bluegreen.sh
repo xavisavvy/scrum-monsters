@@ -94,7 +94,12 @@ deploy_bluegreen_main() {
   echo "Available: ${AVAILABLE_MB}MB"
 
   echo "[5/9] Start inactive color (app-$INACTIVE)"
-  docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" up -d "app-$INACTIVE"
+  # --no-deps: never touch shared services from a deploy. Without it, any
+  # compose change to postgres (e.g. its memory cap) made this `up` recreate
+  # Postgres mid-deploy -- restarting the database toa-website shares too
+  # (happened 2026-10-18 03:05). Infra services are changed deliberately with
+  # `docker compose up -d --no-deps <service>`, not as a deploy side effect.
+  docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" up -d --no-deps "app-$INACTIVE"
   # stop_color dropped this container's restart policy when it last went
   # down, and `up -d` may reuse the container without resetting it. Put it
   # back so the color we are promoting survives a reboot.
@@ -120,7 +125,7 @@ deploy_bluegreen_main() {
   # GATE: a failed migration MUST abort the deploy BEFORE the NPM swap — never
   # promote an image whose schema did not apply. Check the exit code explicitly
   # (a bare command under `set -e` proved insufficient once — see above).
-  if ! docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm "app-$INACTIVE" npx drizzle-kit migrate; then
+  if ! docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm --no-deps "app-$INACTIVE" npx drizzle-kit migrate; then
     echo "ERROR: drizzle-kit migrate failed. Aborting WITHOUT NPM swap (old color still serving)." >&2
     stop_color "$INACTIVE" "$COMPOSE_FILE"
     return 1
