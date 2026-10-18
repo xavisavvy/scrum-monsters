@@ -16,6 +16,30 @@ source "$SCRIPT_DIR/lib/npm-api.sh"
 # shellcheck source=scripts/deploy/lib/health-poll.sh
 source "$SCRIPT_DIR/lib/health-poll.sh"
 
+# Host memory the kernel says is available, in MB. MEMINFO_FILE is overridable
+# so tests can feed a fake /proc/meminfo.
+mem_available_mb() {
+  awk '/^MemAvailable:/ { print int($2 / 1024) }' "${MEMINFO_FILE:-/proc/meminfo}"
+}
+
+# Stop a color and make sure it stays stopped. On 2026-10-17 a plain
+# `docker compose stop` of the old color hung under memory pressure until the
+# 10-minute SSH timeout killed the deploy, leaving both colors running with
+# `restart: unless-stopped` -- so every reboot revived both and the 1GB host
+# thrashed again. Order matters:
+#   1. drop the restart policy first, so even a stop that never returns cannot
+#      come back on the next boot;
+#   2. stop with a deadline (stop_grace_period is 45s), then `docker kill`.
+# Best-effort by design: a missing container is not an error.
+stop_color() {
+  local color="$1" compose_file="$2" timeout_s="${STOP_TIMEOUT:-90}"
+  docker update --restart=no "app-$color" >/dev/null 2>&1 || true
+  if ! timeout "$timeout_s" docker compose -f "$compose_file" stop "app-$color" >/dev/null 2>&1; then
+    echo "WARN: stopping app-$color did not finish within ${timeout_s}s - killing it" >&2
+    timeout 30 docker kill "app-$color" >/dev/null 2>&1 || true
+  fi
+}
+
 deploy_bluegreen_main() {
   # Re-assert strict mode inside the function so failures propagate even when
   # the script is sourced into a shell (e.g. bats `run`) that has cleared
@@ -30,6 +54,9 @@ deploy_bluegreen_main() {
   local COMPOSE_FILE="${COMPOSE_FILE:-/opt/scrummonsters/docker-compose.prod.yml}"
   local EXTERNAL_SMOKE_URL="${EXTERNAL_SMOKE_URL:-https://scrummonsters.com/api/health}"
   local LEGACY_APP_CONTAINER="${LEGACY_APP_CONTAINER:-scrummonsters-app-1}"
+  # Headroom needed before starting a second color: the new app plus the
+  # drizzle-kit migrate container both run while the old color still serves.
+  local MIN_AVAILABLE_MB="${MIN_AVAILABLE_MB:-512}"
 
   local ACTIVE INACTIVE
   echo "[1/9] Determine active color"
@@ -48,7 +75,7 @@ deploy_bluegreen_main() {
 
   echo "[2/9] Stuck-deploy cleanup — force-stop the off-color in case of prior crash"
   # Pitfall 3 / Pitfall 7: use service-name argument, NOT --profile, to avoid stopping the whole stack.
-  docker compose -f "$COMPOSE_FILE" stop "app-$INACTIVE" 2>/dev/null || true
+  stop_color "$INACTIVE" "$COMPOSE_FILE"
 
   echo "[3/9] Disk prune"
   docker image prune -af || true
@@ -57,13 +84,26 @@ deploy_bluegreen_main() {
   echo "[4/9] Pull latest image"
   docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" pull "app-$INACTIVE"
 
+  echo "[4b/9] Memory precheck (need ${MIN_AVAILABLE_MB}MB available)"
+  local AVAILABLE_MB
+  AVAILABLE_MB=$(mem_available_mb)
+  if [ -z "$AVAILABLE_MB" ] || [ "$AVAILABLE_MB" -lt "$MIN_AVAILABLE_MB" ]; then
+    echo "ERROR: only ${AVAILABLE_MB:-unknown}MB available, need ${MIN_AVAILABLE_MB}MB to run a second color. Aborting before starting app-$INACTIVE (app-$ACTIVE still serving)." >&2
+    return 1
+  fi
+  echo "Available: ${AVAILABLE_MB}MB"
+
   echo "[5/9] Start inactive color (app-$INACTIVE)"
   docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" up -d "app-$INACTIVE"
+  # stop_color dropped this container's restart policy when it last went
+  # down, and `up -d` may reuse the container without resetting it. Put it
+  # back so the color we are promoting survives a reboot.
+  docker update --restart=unless-stopped "app-$INACTIVE" >/dev/null
 
   echo "[6/9] Wait for healthcheck (timeout=${HEALTH_TIMEOUT}s)"
   if ! wait_for_healthy "app-$INACTIVE" "$HEALTH_TIMEOUT"; then
     echo "ERROR: app-$INACTIVE did not become healthy. Aborting WITHOUT NPM swap." >&2
-    docker compose -f "$COMPOSE_FILE" stop "app-$INACTIVE" || true
+    stop_color "$INACTIVE" "$COMPOSE_FILE"
     return 1
   fi
 
@@ -82,7 +122,7 @@ deploy_bluegreen_main() {
   # (a bare command under `set -e` proved insufficient once — see above).
   if ! docker compose -f "$COMPOSE_FILE" --profile "$INACTIVE" run --rm "app-$INACTIVE" npx drizzle-kit migrate; then
     echo "ERROR: drizzle-kit migrate failed. Aborting WITHOUT NPM swap (old color still serving)." >&2
-    docker compose -f "$COMPOSE_FILE" stop "app-$INACTIVE" || true
+    stop_color "$INACTIVE" "$COMPOSE_FILE"
     return 1
   fi
 
@@ -103,7 +143,7 @@ deploy_bluegreen_main() {
   echo "[9/9] Persist new active color and stop old color"
   echo "$INACTIVE" > "$ACTIVE_COLOR_FILE"
   chmod 644 "$ACTIVE_COLOR_FILE"
-  docker compose -f "$COMPOSE_FILE" stop "app-$ACTIVE" 2>/dev/null || true
+  stop_color "$ACTIVE" "$COMPOSE_FILE"
 
   # First-deploy bootstrap cleanup: if the legacy single-color `app` container
   # (named `scrummonsters-app-1` per the docker compose default before Plan 44-01)

@@ -17,11 +17,21 @@ services:
     profiles: ["blue"]
     stop_grace_period: 45s
     restart: unless-stopped
+    # Memory cap (2026-10-17 outage): with no limit, a blue-green deploy on the
+    # old 1GB box (two app colors + the drizzle-kit migrate container, which
+    # inherits this cap via `docker compose run`) starved the host until even
+    # SSH timed out. Node's heap is capped below the container limit so it
+    # garbage-collects instead of being OOM-killed.
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
       PORT: "5000"
+      NODE_OPTIONS: "--max-old-space-size=384"
       ALLOWED_ORIGINS: https://scrummonsters.com
       BASE_URL: https://scrummonsters.com
       # Optional OAuth providers — uncomment and set values in .env to enable
@@ -48,11 +58,21 @@ services:
     profiles: ["green"]
     stop_grace_period: 45s
     restart: unless-stopped
+    # Memory cap (2026-10-17 outage): with no limit, a blue-green deploy on the
+    # old 1GB box (two app colors + the drizzle-kit migrate container, which
+    # inherits this cap via `docker compose run`) starved the host until even
+    # SSH timed out. Node's heap is capped below the container limit so it
+    # garbage-collects instead of being OOM-killed.
+    deploy:
+      resources:
+        limits:
+          memory: 512M
     environment:
       NODE_ENV: production
       DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       SESSION_SECRET: ${SESSION_SECRET}
       PORT: "5000"
+      NODE_OPTIONS: "--max-old-space-size=384"
       ALLOWED_ORIGINS: https://scrummonsters.com
       BASE_URL: https://scrummonsters.com
       # Optional OAuth providers — uncomment and set values in .env to enable
@@ -76,6 +96,11 @@ services:
   postgres:
     image: postgres:17-alpine
     restart: unless-stopped
+    # Memory cap (2026-10-17 outage): shared instance (scrummonsters + toa_website); default shared_buffers is 128MB.
+    deploy:
+      resources:
+        limits:
+          memory: 384M
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -90,6 +115,11 @@ services:
 
   postgres-backup:
     build: ./docker/postgres-backup
+    # Memory cap (2026-10-17 outage): pg_dump + gzip + the AWS CLI upload once a night.
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     environment:
       SCHEDULE: "0 2 * * *"
       S3_REGION: us-east-1
@@ -115,6 +145,11 @@ services:
     # NPM upgrade to confirm the API contract still matches.
     image: jc21/nginx-proxy-manager:2.14.0
     restart: unless-stopped
+    # Memory cap (2026-10-17 outage): about 150MB at steady state; it fronts every site on the box.
+    deploy:
+      resources:
+        limits:
+          memory: 256M
     ports:
       - "80:80"
       - "443:443"
