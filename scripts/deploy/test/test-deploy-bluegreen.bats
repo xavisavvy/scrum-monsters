@@ -189,3 +189,16 @@ STUB
   [ "$status" -ne 0 ]
   [ "$(grep -cx 'update --restart=no app-green' "$TMPBIN/docker.log")" -ge 2 ]
 }
+
+@test "deploy never recreates shared services: up and migrate both use --no-deps" {
+  echo "blue" > "$ACTIVE_COLOR_FILE"
+  source "$BATS_TEST_DIRNAME/../deploy-bluegreen.sh"
+  wait_for_healthy() { return 0; }
+  npm_login() { echo "tok"; }
+  npm_set_forward_host() { return 0; }
+  run deploy_bluegreen_main
+  [ "$status" -eq 0 ]
+  grep -q -- 'up -d --no-deps app-green' "$TMPBIN/docker.log"
+  grep -q -- 'run --rm --no-deps app-green npx drizzle-kit migrate' "$TMPBIN/docker.log"
+  ! grep -E -- ' up -d app-' "$TMPBIN/docker.log"
+}
