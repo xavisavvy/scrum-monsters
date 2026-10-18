@@ -184,7 +184,7 @@
     "eslint": "^9.17.0",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^5.1.0",
-    "happy-dom": "^20.9.0",
+    "happy-dom": "^21.0.1",
     "husky": "^9.1.7",
     "license-checker-rseidelsohn": "^4.4.2",
     "nanoid": "^3.3.11",
