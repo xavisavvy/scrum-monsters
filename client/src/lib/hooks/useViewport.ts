@@ -47,7 +47,7 @@ export function useViewport(): ViewportState {
     height: window.innerHeight,
   });
   const [cameraPosition, setCameraPosition] = useState<ViewportPosition>({ x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 });
-  const animationFrameRef = useRef<number>();
+  const animationFrameRef = useRef<number | undefined>(undefined);
   const targetCameraPosition = useRef<ViewportPosition>({ x: WORLD_WIDTH / 2, y: WORLD_HEIGHT / 2 });
 
   // Update viewport dimensions on window resize

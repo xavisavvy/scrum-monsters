@@ -43,12 +43,9 @@ function TavernLighting() {
   return (
     <points ref={particlesRef}>
       <bufferGeometry>
-        <bufferAttribute
-          attach="attributes-position"
-          count={particles.length / 3}
-          array={particles}
-          itemSize={3}
-        />
+        {/* R3F v9 constructs THREE.BufferAttribute from `args` (array,
+            itemSize); count is derived from them. */}
+        <bufferAttribute attach="attributes-position" args={[particles, 3]} />
       </bufferGeometry>
       <pointsMaterial
         color="#ffaa44"

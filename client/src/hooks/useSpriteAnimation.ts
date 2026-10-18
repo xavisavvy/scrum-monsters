@@ -63,7 +63,7 @@ export function useSpriteAnimation({
 }: UseSpriteAnimationProps) {
   const [currentFrame, setCurrentFrame] = useState(0);
   const [isAnimationComplete, setIsAnimationComplete] = useState(false);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number | undefined>(undefined);
   const lastFrameTime = useRef(0);
 
   // Audio system for walking sounds
