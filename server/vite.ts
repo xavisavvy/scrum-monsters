@@ -52,7 +52,8 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
-  app.use("*", htmlLimiter, async (req, res, next) => {
+  // No path: a bare "*" crashes Express 5 at startup (path-to-regexp v8).
+  app.use(htmlLimiter, async (req, res, next) => {
     const url = req.originalUrl;
 
     try {
@@ -97,8 +98,9 @@ export function serveStatic(app: Express) {
   const htmlPath = path.resolve(distPath, "index.html");
   let cachedHtml: string | null = null;
 
-  // fall through to index.html if the file doesn't exist
-  app.use("*", htmlLimiter, (req, res) => {
+  // fall through to index.html if the file doesn't exist. No path: a bare "*"
+  // crashes Express 5 at startup (path-to-regexp v8).
+  app.use(htmlLimiter, (req, res) => {
     try {
       // Read HTML from cache or disk
       if (!cachedHtml) {
