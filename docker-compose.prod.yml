@@ -34,6 +34,7 @@ services:
       NODE_OPTIONS: "--max-old-space-size=384"
       ALLOWED_ORIGINS: https://scrummonsters.com
       BASE_URL: https://scrummonsters.com
+      METRICS_ALLOWED_IPS: ${METRICS_ALLOWED_IPS:-}
       # Optional OAuth providers — uncomment and set values in .env to enable
       # GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       # GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
@@ -75,6 +76,7 @@ services:
       NODE_OPTIONS: "--max-old-space-size=384"
       ALLOWED_ORIGINS: https://scrummonsters.com
       BASE_URL: https://scrummonsters.com
+      METRICS_ALLOWED_IPS: ${METRICS_ALLOWED_IPS:-}
       # Optional OAuth providers — uncomment and set values in .env to enable
       # GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
       # GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}

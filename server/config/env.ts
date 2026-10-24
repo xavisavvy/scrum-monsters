@@ -15,6 +15,8 @@ const envSchema = z.object({
   DB_POOL_IDLE_TIMEOUT: z.coerce.number().default(60),
   DB_POOL_CONNECT_TIMEOUT: z.coerce.number().default(10),
   ALLOWED_ORIGINS: z.string().optional(),
+  // Comma-separated client IPs allowed to read /metrics through the public proxy.
+  METRICS_ALLOWED_IPS: z.string().optional(),
   HOST: z.string().default("0.0.0.0"),
   // Auth0 (optional — enables authentication)
   AUTH0_ISSUER_BASE_URL: z.string().url().optional(),

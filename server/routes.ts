@@ -6,7 +6,7 @@ import profileRoutes from "./auth/profileRoutes.js";
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { generateToken, csrfSynchronisedProtection } from './middleware/csrf.js';
 import { storage, PgStorage } from './storage.js';
-import { getMetrics, getMetricsContentType, metricsMiddleware, webglContextLossTotal } from "./metrics.js";
+import { getMetrics, getMetricsContentType, isMetricsRequestAllowed, metricsMiddleware, webglContextLossTotal } from "./metrics.js";
 import { httpLogger } from "./logger.js";
 import { gameState } from "./gameState.js";
 import { createRequire } from "node:module";
@@ -32,8 +32,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server first
   const httpServer = createServer(app);
 
-  // Prometheus metrics endpoint — before rate limiter so Prometheus can always scrape
-  app.get('/metrics', async (_req, res) => {
+  // Prometheus metrics endpoint — before rate limiter so Prometheus can always scrape.
+  // Not public: only direct (Docker-network) scrapes and METRICS_ALLOWED_IPS get it.
+  app.get('/metrics', async (req, res) => {
+    if (!isMetricsRequestAllowed(req.headers['x-forwarded-for'], req.ip)) {
+      res.status(404).end();
+      return;
+    }
     try {
       res.set('Content-Type', getMetricsContentType());
       res.end(await getMetrics());

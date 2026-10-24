@@ -385,6 +385,27 @@ export function metricsMiddleware() {
 }
 
 /**
+ * Decide whether a /metrics request may be served.
+ *
+ * Prometheus scrapes app-blue/app-green directly on the Docker network, so its
+ * requests carry no X-Forwarded-For. Anything arriving through the public
+ * reverse proxy (NPM always appends X-Forwarded-For) is refused unless the
+ * client IP is listed in METRICS_ALLOWED_IPS (comma-separated). `clientIp` must
+ * be Express `req.ip`, which with `trust proxy = 1` is the address NPM saw, so
+ * a spoofed X-Forwarded-For from the client cannot pick it.
+ */
+export function isMetricsRequestAllowed(
+  forwardedFor: string | string[] | undefined,
+  clientIp: string | undefined,
+  allowedIps: string | undefined = process.env.METRICS_ALLOWED_IPS,
+): boolean {
+  if (forwardedFor === undefined) return true;
+  if (!clientIp || !allowedIps) return false;
+  const ip = clientIp.replace(/^::ffff:/, "");
+  return allowedIps.split(",").some((allowed) => allowed.trim() === ip);
+}
+
+/**
  * Get metrics endpoint handler
  */
 export async function getMetrics(): Promise<string> {
