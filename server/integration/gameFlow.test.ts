@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { ScopedEventBus } from '../events/ScopedEventBus';
 import { CombatManager } from '../domains/CombatManager';
 import { EstimationManager } from '../domains/EstimationManager';
+import { NotHealerClassError } from '../errors/CombatErrors';
 
 describe('Game Flow Integration', () => {
   let eventBus: ScopedEventBus;
@@ -316,6 +317,38 @@ describe('Game Flow Integration', () => {
       combatManager.healParty(lobbyId, 'cleric1');
 
       expect(cs.players.get('w1')!.combatState).toBe('ghost'); // untouched
+    });
+
+    // Regression coverage for UAT Test 12 (live prod, lobby 7DG3TN): a non-healer
+    // pressing Q must be rejected, not silently no-op or revive anyway.
+    it('rejects heal_party from a non-cleric caller (downed teammate stays downed)', () => {
+      // healParty only enforces the class check when getPlayerClass is wired up
+      // (websocket.ts always wires it); build a local manager with the mock so
+      // this test exercises the same branch production does.
+      const classAwareEventBus = new ScopedEventBus();
+      const getPlayerClass = (_lobbyId: string, playerId: string) =>
+        playerId === 'warrior1' ? 'warrior' as const : 'cleric' as const;
+      const classAwareCombatManager = new CombatManager({ eventBus: classAwareEventBus, getPlayerClass });
+
+      const lobbyId = 'non-healer-lobby';
+      const players = [
+        { id: 'warrior1', team: 'developers' as const },
+        { id: 'w2', team: 'developers' as const },
+      ];
+      classAwareCombatManager.initializeCombat(lobbyId, players, 0);
+
+      const cs = classAwareCombatManager.getCombatState(lobbyId)!;
+      cs.players.get('w2')!.hp = 0;
+      classAwareCombatManager.downPlayer(lobbyId, 'w2');
+      expect(cs.players.get('w2')!.combatState).toBe('downed');
+
+      // warrior1's mocked class is not a cleric — heal_party must throw, not no-op.
+      expect(() => {
+        classAwareCombatManager.healParty(lobbyId, 'warrior1');
+      }).toThrow(NotHealerClassError);
+
+      // Downed teammate is untouched by the rejected call.
+      expect(cs.players.get('w2')!.combatState).toBe('downed');
     });
   });
 });

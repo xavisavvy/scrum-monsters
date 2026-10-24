@@ -2,7 +2,7 @@
 title: Dual boss-HP model (combat vs estimation) breaks the HP bar and the down/revive lifecycle
 discovered: 2026-06-25 (live on prod during Phase 47-52 UAT Test 12)
 severity: high (broken boss HP display + revival not working once combat is live)
-status: ROOT-CAUSED, fix planned (fix-forward) — NOT yet implemented. Pre-existing on ticket 2+; surfaced on ticket 1 by the start_battle initializeCombat fix (e9a09ce).
+status: BOSS HP FIXED 2026-10-24 (combat model is the source of truth; lobby.boss mirrors it, see .planning/debug/dual-boss-hp-model.md). REVIVAL STILL BROKEN in real games, root-caused separately in combat-never-starts-vote-cast-not-emitted-and-split-player-hp.md.
 area: server / combat boss HP reconciliation + revive lifecycle; client boss HP display
 reporter: Preston (live prod) + investigation
 ---

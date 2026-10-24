@@ -927,11 +927,10 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           // transition (~L1195 below). Without this, CombatManager has no combat
           // state for ticket 1, so the boss never attacks and attack_boss throws
           // CombatNotActiveError (boss inert, players un-downable). CombatManager is
-          // the single boss-HP truth (see gameState.attackBoss); lobby.boss is a
-          // projection of it. ticketIndex 0 = first ticket.
-          combatManager.cleanupLobby(updatedLobby.id);
-          const combatPlayers = updatedLobby.players.map(p => ({ id: p.id, team: p.team }));
-          combatManager.initializeCombat(updatedLobby.id, combatPlayers, 0, boss?.sprite);
+          // the single boss-HP truth (see gameState.attackBoss); this also copies the
+          // combat boss's HP onto `boss` before battle_started sends it to clients.
+          // ticketIndex 0 = first ticket.
+          gameState.initializeCombatForCurrentTicket(updatedLobby.id, 0);
 
           // Start the battle (synchronous - relies on socket.io event ordering)
           io.to(updatedLobby.id).emit('battle_started', { lobby: updatedLobby, boss });
@@ -1201,11 +1200,11 @@ export function setupWebSocket(httpServer: HTTPServer, sessionMiddleware?: Reque
           }
         }
 
-        // Reset combat state
-        combatManager.cleanupLobby(lobbyId);
-        const players = lobby.players.map(p => ({ id: p.id, team: p.team }));
+        // Reset combat state. lobby.boss was already recreated for this ticket in
+        // gameState.ts (full-consensus handler); this re-sizes its HP to the combat
+        // boss's before session:game_reset sends it to clients.
         const ticketIndex = (lobby.completedTickets?.length ?? 0);
-        combatManager.initializeCombat(lobbyId, players, ticketIndex, lobby.boss?.sprite);
+        gameState.initializeCombatForCurrentTicket(lobbyId, ticketIndex);
 
         // Reset player scores
         for (const player of lobby.players) {

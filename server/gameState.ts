@@ -1567,6 +1567,30 @@ export class GameStateManager {
     this.playerPerformanceMap.delete(lobby.id);
   }
 
+  /**
+   * Start live combat for the lobby's current ticket and make the combat boss the
+   * single boss-HP truth. CombatManager sizes the boss for the fight (1000 HP per
+   * active player, +20% per ticket); lobby.boss, which clients render, is created
+   * earlier by createBossFromTickets with a much smaller estimation-only number.
+   * Copying the combat HP onto lobby.boss here, before it is sent to clients, keeps
+   * the HP bar's current and max values from one model (the dual-boss-HP bug
+   * showed combat HP over the estimation max, e.g. 2145 / 173).
+   */
+  initializeCombatForCurrentTicket(lobbyId: string, ticketIndex: number): void {
+    const lobby = this.lobbies.get(lobbyId);
+    if (!lobby) return;
+
+    combatManager.cleanupLobby(lobbyId);
+    const combatPlayers = lobby.players.map(p => ({ id: p.id, team: p.team }));
+    combatManager.initializeCombat(lobbyId, combatPlayers, ticketIndex, lobby.boss?.sprite);
+
+    const combatBoss = combatManager.getCombatState(lobbyId)?.boss;
+    if (lobby.boss && combatBoss) {
+      lobby.boss.maxHealth = combatBoss.maxHp;
+      lobby.boss.currentHealth = combatBoss.hp;
+    }
+  }
+
   attackBoss(playerId: string, _damage: number): { lobby: Lobby; bossHealth: number; ringAttack?: RingAttack | null; healedBoss?: boolean; modifier?: number } | null {
     const lobby = this.getLobbyByPlayerId(playerId);
     if (!lobby || !lobby.boss || lobby.gamePhase !== 'battle') return null;

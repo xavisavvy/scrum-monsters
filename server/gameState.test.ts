@@ -3,6 +3,7 @@ import { gameState, GameStateManager } from './gameState';
 import { SessionManager } from './domains/SessionManager';
 import { ScopedEventBus } from './events';
 import type { Lobby } from '@shared/gameEvents';
+import { combatManager } from './domains';
 
 /**
  * Phase 42-02a / FIX-05 — auto-advance toggle gate.
@@ -309,5 +310,62 @@ describe('GameStateManager.syncPlayerToLobby — alias registration', () => {
     mgr.syncPlayerToLobby(hostId, lobby);
 
     expect(mgr.getLobby(lobby.id)?.name).toBe('Updated Name');
+  });
+});
+
+/**
+ * Dual boss-HP model regression (UAT Test 12, prod lobby 7DG3TN): the HP bar showed
+ * 2145 / 173 because lobby.boss.maxHealth came from the estimation formula while
+ * attack_boss drained the CombatManager boss (1000 HP per player). Combat now owns
+ * boss HP, and initializeCombatForCurrentTicket copies it onto lobby.boss.
+ */
+describe('initializeCombatForCurrentTicket — one boss-HP model', () => {
+  let lobbyId: string;
+
+  beforeEach(() => {
+    const lobby = buildDiscussionLobby(undefined);
+    lobby.gamePhase = 'battle';
+    lobby.players.push({ id: 'd2', name: 'Dev2', team: 'developers', isHost: false, avatar: 'warrior', avatarClass: 'warrior', level: 1 } as any);
+    lobby.tickets = [{ id: 't1', title: 'Test', description: '' } as any];
+    lobby.boss = gs.createBossFromTickets(lobby.tickets, 3);
+    lobbyId = injectLobby(lobby);
+    for (const p of lobby.players) gs.playerToLobby.set(p.id, lobbyId);
+  });
+
+  afterEach(() => {
+    combatManager.cleanupLobby(lobbyId);
+    gs.lobbies.delete(lobbyId);
+  });
+
+  it('sizes the displayed boss from the combat boss, replacing the estimation formula', () => {
+    const estimationMax = gs.lobbies.get(lobbyId).boss.maxHealth;
+    expect(estimationMax).toBe(173); // 100 x 1 ticket x sqrt(3 players)
+
+    gameState.initializeCombatForCurrentTicket(lobbyId, 0);
+
+    const combatBoss = combatManager.getCombatState(lobbyId)!.boss!;
+    const boss = gs.lobbies.get(lobbyId).boss;
+    expect(combatBoss.maxHp).toBe(3000); // 1000 x 3 active players
+    expect(boss.maxHealth).toBe(combatBoss.maxHp);
+    expect(boss.currentHealth).toBe(combatBoss.hp);
+  });
+
+  it('scales the boss up on later tickets', () => {
+    gameState.initializeCombatForCurrentTicket(lobbyId, 2);
+
+    expect(gs.lobbies.get(lobbyId).boss.maxHealth).toBe(4200); // 3000 x (1 + 2 x 0.2)
+  });
+
+  it('keeps the HP bar within its max as attacks land', () => {
+    gameState.initializeCombatForCurrentTicket(lobbyId, 0);
+    const maxHealth = gs.lobbies.get(lobbyId).boss.maxHealth;
+
+    const first = gameState.attackBoss('d1', 1)!;
+    const second = gameState.attackBoss('q1', 1)!;
+
+    expect(first.bossHealth).toBeLessThan(maxHealth);
+    expect(second.bossHealth).toBeLessThan(first.bossHealth);
+    expect(gs.lobbies.get(lobbyId).boss.maxHealth).toBe(maxHealth);
+    expect(second.bossHealth).toBe(combatManager.getCombatState(lobbyId)!.boss!.hp);
   });
 });
