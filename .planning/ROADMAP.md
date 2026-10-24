@@ -1,4 +1,4 @@
-# Roadmap: ScrumQuest
+# Roadmap: ScrumMonsters
 
 ## Milestones
 
@@ -71,7 +71,7 @@ See `.planning/milestones/v4.0-ROADMAP.md`
 
 ### ✅ v5.0 UX & Onboarding (Shipped 2026-06-17)
 
-**Milestone Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback. (Phases 45-46 — socket schema reconciliation and music controls — landed under this milestone as it extended.)
+**Milestone Goal:** Make ScrumMonsters welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback. (Phases 45-46 — socket schema reconciliation and music controls — landed under this milestone as it extended.)
 
 - [x] **Phase 37: State Polish & Bug Fixes** — Graceful handling of every app state plus known bug fixes (completed 2026-03-11)
 - [x] **Phase 38: Interaction Feedback & Transitions** — Responsive micro-interactions, toast notifications, and cinematic phase transitions (completed 2026-03-11)

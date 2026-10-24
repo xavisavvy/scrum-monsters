@@ -2,7 +2,7 @@
 
 **Domain:** XP/leveling, boss AI patterns, team combat mechanics for multiplayer JRPG-style game
 **Researched:** 2026-02-03
-**Confidence:** MEDIUM (industry patterns well documented; ScrumQuest-specific integration needs validation)
+**Confidence:** MEDIUM (industry patterns well documented; ScrumMonsters-specific integration needs validation)
 
 ---
 
@@ -47,7 +47,7 @@ Features users expect for XP/leveling, boss fights, and combat abilities. Missin
 
 ## Differentiators
 
-Features that would make ScrumQuest stand out from standard planning poker or generic boss games.
+Features that would make ScrumMonsters stand out from standard planning poker or generic boss games.
 
 ### XP/Progression Differentiators
 
@@ -80,13 +80,13 @@ Features that would make ScrumQuest stand out from standard planning poker or ge
 | **Revival chains** | Reviving builds meter for team buff | LOW | Rewards helping downed teammates |
 | **Position-based abilities** | Tank stance in front protects backline | MEDIUM | Spatial strategy layer |
 | **Shared resource pool** | Team mana/energy for powerful abilities | MEDIUM | Coordination requirement |
-| **Cross-team synergies** | Dev + QA combo attacks | LOW | Unique to ScrumQuest's team structure |
+| **Cross-team synergies** | Dev + QA combo attacks | LOW | Unique to ScrumMonsters's team structure |
 
 ---
 
 ## Anti-Features
 
-Features that seem appealing but would harm the ScrumQuest experience.
+Features that seem appealing but would harm the ScrumMonsters experience.
 
 ### Progression Anti-Features
 
@@ -316,6 +316,6 @@ For the v1.3 milestone, prioritize features that create the core progression loo
 
 ---
 
-*Feature research for: Game Progression Systems (ScrumQuest v1.3)*
+*Feature research for: Game Progression Systems (ScrumMonsters v1.3)*
 *Researched: 2026-02-03*
-*Confidence: MEDIUM - Industry patterns well-established, ScrumQuest-specific integration requires validation during implementation*
+*Confidence: MEDIUM - Industry patterns well-established, ScrumMonsters-specific integration requires validation during implementation*

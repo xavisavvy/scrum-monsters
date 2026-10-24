@@ -98,9 +98,9 @@ Mistakes that cause rewrites, data loss, or service outages. Must address before
       image: eeshugerman/postgres-backup-s3:latest
       environment:
         POSTGRES_HOST: postgres
-        POSTGRES_DB: scrumquest
-        POSTGRES_USER: scrumquest
-        POSTGRES_PASSWORD: scrumquest
+        POSTGRES_DB: scrummonsters
+        POSTGRES_USER: scrummonsters
+        POSTGRES_PASSWORD: scrummonsters
         S3_BUCKET: your-backup-bucket
         S3_PREFIX: backups
         AWS_ACCESS_KEY_ID: your-key
@@ -460,7 +460,7 @@ Mistakes that cause rewrites, data loss, or service outages. Must address before
 ### "Database fills disk after 1 week"
 - Check what's growing: `SELECT datname, pg_size_pretty(pg_database_size(datname)) FROM pg_database;`
 - Common culprits: Transaction logs (WAL), session store bloat, old backups on disk
-- Clean up: `docker exec postgres vacuumdb -U scrumquest scrumquest` (maintenance)
+- Clean up: `docker exec postgres vacuumdb -U scrummonsters scrummonsters` (maintenance)
 
 ---
 
@@ -517,7 +517,7 @@ Save this in your ops documentation:
 - docker-compose down
 - docker volume rm postgres_data
 - docker-compose up -d postgres (wait for healthy)
-- Restore: docker exec postgres pg_restore -U scrumquest scrumquest < backup.dump
+- Restore: docker exec postgres pg_restore -U scrummonsters scrummonsters < backup.dump
 - docker-compose up -d
 
 ## Verification

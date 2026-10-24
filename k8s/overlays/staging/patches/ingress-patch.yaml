@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: scrumquest-ingress
+  name: scrummonsters-ingress
   annotations:
     # Enable SSL redirect for staging
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -10,23 +10,23 @@ metadata:
 spec:
   tls:
     - hosts:
-        - staging.scrumquest.local
-      secretName: scrumquest-staging-tls
+        - staging.scrummonsters.local
+      secretName: scrummonsters-staging-tls
   rules:
-    - host: staging.scrumquest.local
+    - host: staging.scrummonsters.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: staging-scrumquest-service
+                name: staging-scrummonsters-service
                 port:
                   number: 80
           - path: /socket.io
             pathType: Prefix
             backend:
               service:
-                name: staging-scrumquest-service
+                name: staging-scrummonsters-service
                 port:
                   number: 80

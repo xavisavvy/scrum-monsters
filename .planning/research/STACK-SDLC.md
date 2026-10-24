@@ -1,6 +1,6 @@
 # Technology Stack - v1.2 SDLC Best Practices
 
-**Project:** ScrumQuest
+**Project:** ScrumMonsters
 **Researched:** 2026-02-02
 **Overall Confidence:** HIGH
 
@@ -340,7 +340,7 @@ test('home page accessibility', async ({ page }) => {
 apiVersion: argoproj.io/v1alpha1
 kind: Rollout
 metadata:
-  name: scrumquest
+  name: scrummonsters
 spec:
   strategy:
     canary:

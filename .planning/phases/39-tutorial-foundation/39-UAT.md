@@ -30,7 +30,7 @@ result: PASS (2026-05-15)
 
 ### 5. Tutorial completion persists across reload
 expected: After dismissing/completing the tutorial overlay, reload the browser tab. The tutorial does NOT auto-replay (completion state was persisted to localStorage via the useTutorial store's partialize). DevTools → Application → Local Storage should show a `useTutorial`-keyed entry with the completion flag.
-result: PASS (2026-05-15) — `scrumquest-tutorial` localStorage entry shows `completedTutorials: { 'walkthrough:battle': true }` after completion and survives reload.
+result: PASS (2026-05-15) — `scrum-monsters-tutorial` localStorage entry shows `completedTutorials: { 'walkthrough:battle': true }` after completion and survives reload.
 
 ## Summary
 

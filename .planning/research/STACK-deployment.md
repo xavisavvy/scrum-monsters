@@ -1,6 +1,6 @@
 # Technology Stack: Docker + AWS Lightsail Deployment & CI/CD
 
-**Project:** ScrumQuest (Real-time multiplayer JRPG scrum poker)
+**Project:** ScrumMonsters (Real-time multiplayer JRPG scrum poker)
 **Scope:** Deployment stack for Docker containerization, AWS Lightsail hosting, CI/CD automation, and production observability
 **Researched:** 2026-02-24
 **Confidence:** HIGH (verified with official AWS docs, GitHub Actions patterns, and current Lightsail specifications)
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-ScrumQuest needs a lightweight deployment stack for AWS Lightsail ($5-20/mo budget, ~1GB RAM single instance). The existing application has Docker, Docker Compose, GitHub Actions CI, Prometheus metrics, and Kubernetes manifests. This research identifies the **specific tools and versions needed to bridge the gap** between dev (Replit) and production (Lightsail).
+ScrumMonsters needs a lightweight deployment stack for AWS Lightsail ($5-20/mo budget, ~1GB RAM single instance). The existing application has Docker, Docker Compose, GitHub Actions CI, Prometheus metrics, and Kubernetes manifests. This research identifies the **specific tools and versions needed to bridge the gap** between dev (Replit) and production (Lightsail).
 
 **Key recommendation:** Use AWS Lightsail **Containers** (not instances) for automatic TLS, zero-downtime deployments, and managed load balancing at $40+/mo entry price. For tighter budget (<$20/mo), use Lightsail instances with Docker Compose and automated Let's Encrypt via certbot. Supplement with minimal on-instance monitoring (Prometheus + Grafana in containers).
 
@@ -152,7 +152,7 @@ AWS_SECRET_ACCESS_KEY=...
 # ECR: Use AWS credentials above
 
 # Lightsail Container Service Name
-LIGHTSAIL_CONTAINER_SERVICE_NAME=scrumquest-prod
+LIGHTSAIL_CONTAINER_SERVICE_NAME=scrummonsters-prod
 
 # Lightsail Region
 AWS_REGION=us-east-1
@@ -211,13 +211,13 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: scrumquest-app
+    container_name: scrummonsters-app
     restart: unless-stopped
     ports:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://scrumquest:${POSTGRES_PASSWORD}@postgres:5432/scrumquest
+      - DATABASE_URL=postgresql://scrummonsters:${POSTGRES_PASSWORD}@postgres:5432/scrummonsters
       - SESSION_SECRET=${SESSION_SECRET}
       - REDIS_URL=redis://redis:6379
       - LOG_LEVEL=info
@@ -233,34 +233,34 @@ services:
       retries: 3
       start_period: 15s
     networks:
-      - scrumquest
+      - scrummonsters
     volumes:
       - app_logs:/app/logs  # For persistent log access
 
   postgres:
     image: postgres:16-alpine
-    container_name: scrumquest-postgres
+    container_name: scrummonsters-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: scrumquest
+      POSTGRES_USER: scrummonsters
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: scrumquest
+      POSTGRES_DB: scrummonsters
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "127.0.0.1:5432:5432"  # localhost-only; not exposed externally
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scrumquest -d scrumquest"]
+      test: ["CMD-SHELL", "pg_isready -U scrummonsters -d scrummonsters"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 10s
     networks:
-      - scrumquest
+      - scrummonsters
 
   redis:
     image: redis:7-alpine
-    container_name: scrumquest-redis
+    container_name: scrummonsters-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
     volumes:
@@ -274,12 +274,12 @@ services:
       retries: 5
       start_period: 10s
     networks:
-      - scrumquest
+      - scrummonsters
 
   # Optional: On-instance monitoring
   prometheus:
     image: prom/prometheus:v2.54.1
-    container_name: scrumquest-prometheus
+    container_name: scrummonsters-prometheus
     restart: unless-stopped
     ports:
       - "127.0.0.1:9090:9090"  # Accessible only via SSH tunnel
@@ -291,11 +291,11 @@ services:
       - "--storage.tsdb.path=/prometheus"
       - "--storage.tsdb.retention.time=7d"
     networks:
-      - scrumquest
+      - scrummonsters
 
   grafana:
     image: grafana/grafana:10.2.2
-    container_name: scrumquest-grafana
+    container_name: scrummonsters-grafana
     restart: unless-stopped
     ports:
       - "127.0.0.1:3000:3000"  # Accessible only via SSH tunnel + VPN
@@ -306,7 +306,7 @@ services:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana-dashboards:/etc/grafana/provisioning/dashboards:ro
     networks:
-      - scrumquest
+      - scrummonsters
 
 volumes:
   postgres_data:
@@ -321,7 +321,7 @@ volumes:
     driver: local
 
 networks:
-  scrumquest:
+  scrummonsters:
     driver: bridge
 ```
 
@@ -420,7 +420,7 @@ jobs:
     if: github.event_name == 'push'
     environment:
       name: staging
-      url: https://staging.scrumquest.local
+      url: https://staging.scrummonsters.local
 
     steps:
       - name: Checkout
@@ -436,7 +436,7 @@ jobs:
         if: vars.USE_LIGHTSAIL_CONTAINERS == 'true'
         run: |
           aws lightsail create-container-service-deployment \
-            --service-name scrumquest-staging \
+            --service-name scrummonsters-staging \
             --containers app='{
               "image":"${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}",
               "ports":{"5000":"HTTP"}
@@ -460,15 +460,15 @@ jobs:
 
           # Push image to Lightsail
           ./lightsailctl push-container-image \
-            --service-name scrumquest-staging \
-            --label scrumquest-${{ github.sha }} \
+            --service-name scrummonsters-staging \
+            --label scrummonsters-${{ github.sha }} \
             --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
             --region ${{ env.AWS_REGION }}
 
       - name: Wait for deployment
         run: |
           aws lightsail get-container-service-deployments \
-            --service-name scrumquest-staging \
+            --service-name scrummonsters-staging \
             --region ${{ env.AWS_REGION }} \
             --query 'deployments[0].state' \
             --output text | grep -q "ACTIVE" || sleep 30
@@ -479,7 +479,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch'
     environment:
       name: production
-      url: https://scrumquest.com
+      url: https://scrummonsters.com
 
     steps:
       - name: Configure AWS credentials
@@ -499,7 +499,7 @@ jobs:
           fi
 
           aws lightsail create-container-service-deployment \
-            --service-name scrumquest-prod \
+            --service-name scrummonsters-prod \
             --containers app='{
               "image":"${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:'"$VERSION"'",
               "ports":{"5000":"HTTP"}
@@ -510,7 +510,7 @@ jobs:
         run: |
           for i in {1..30}; do
             STATE=$(aws lightsail get-container-service-deployments \
-              --service-name scrumquest-prod \
+              --service-name scrummonsters-prod \
               --region ${{ env.AWS_REGION }} \
               --query 'deployments[0].state' \
               --output text)
@@ -542,7 +542,7 @@ ssh -i ~/.ssh/lightsail.pem ec2-user@instance-ip
 sudo apt-get update && sudo apt-get install -y certbot python3-certbot-nginx
 
 # Create certificate
-sudo certbot certonly --standalone -d scrumquest.com -d www.scrumquest.com
+sudo certbot certonly --standalone -d scrummonsters.com -d www.scrummonsters.com
 
 # Setup auto-renewal
 sudo systemctl enable certbot.timer
@@ -563,7 +563,7 @@ Or use this approach in Docker (no systemd):
       - ./certs:/etc/letsencrypt
       - ./cert-validation:/var/www/certbot
     networks:
-      - scrumquest
+      - scrummonsters
 ```
 
 ### 8. Monitoring Setup (On-Instance)
@@ -580,7 +580,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'scrumquest'
+  - job_name: 'scrummonsters'
     static_configs:
       - targets: ['app:5000']
     metrics_path: '/metrics'
@@ -620,23 +620,23 @@ Access Grafana at `http://localhost:3000` (via SSH tunnel on production).
 ```bash
 # Create service
 aws lightsail create-container-service \
-  --service-name scrumquest-prod \
+  --service-name scrummonsters-prod \
   --power small \
   --scale 1 \
   --region us-east-1
 
 # Push image and deploy
 aws lightsail push-container-image \
-  --service-name scrumquest-prod \
-  --label scrumquest \
-  --image ghcr.io/yourorg/scrumquest:latest \
+  --service-name scrummonsters-prod \
+  --label scrummonsters \
+  --image ghcr.io/yourorg/scrummonsters:latest \
   --region us-east-1
 
 # Create deployment
 aws lightsail create-container-service-deployment \
-  --service-name scrumquest-prod \
+  --service-name scrummonsters-prod \
   --containers app='{
-    "image":":scrumquest-prod.scrumquest.1",
+    "image":":scrummonsters-prod.scrummonsters.1",
     "ports":{"5000":"HTTP"}
   }' \
   --region us-east-1
@@ -664,8 +664,8 @@ aws lightsail create-container-service-deployment \
 ssh -i lightsail.pem ubuntu@instance-ip
 
 # Clone repository
-git clone https://github.com/yourorg/scrumquest.git
-cd scrumquest
+git clone https://github.com/yourorg/scrummonsters.git
+cd scrummonsters
 
 # Create .env from template
 cp .env.example .env
@@ -699,17 +699,17 @@ docker-compose logs -f app
 cat > backup.sh << 'EOF'
 #!/bin/bash
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-pg_dump postgresql://user:pass@postgres:5432/scrumquest \
-  | gzip > /tmp/scrumquest_${TIMESTAMP}.sql.gz
+pg_dump postgresql://user:pass@postgres:5432/scrummonsters \
+  | gzip > /tmp/scrummonsters_${TIMESTAMP}.sql.gz
 
 # Upload to S3 (requires AWS credentials)
-aws s3 cp /tmp/scrumquest_${TIMESTAMP}.sql.gz \
-  s3://your-backup-bucket/scrumquest/
+aws s3 cp /tmp/scrummonsters_${TIMESTAMP}.sql.gz \
+  s3://your-backup-bucket/scrummonsters/
 
 # Keep only last 30 days
-aws s3 rm s3://your-backup-bucket/scrumquest/ \
+aws s3 rm s3://your-backup-bucket/scrummonsters/ \
   --recursive --exclude "*" \
-  --include "scrumquest_*.sql.gz" \
+  --include "scrummonsters_*.sql.gz" \
   --older-than 30
 EOF
 
@@ -756,7 +756,7 @@ Else:
   → ECS Fargate or Kubernetes on EKS (requires full ops team)
 ```
 
-For ScrumQuest at "50 concurrent users" scale, **Nano or Micro Lightsail instance is sufficient**.
+For ScrumMonsters at "50 concurrent users" scale, **Nano or Micro Lightsail instance is sufficient**.
 
 ---
 
@@ -766,7 +766,7 @@ For ScrumQuest at "50 concurrent users" scale, **Nano or Micro Lightsail instanc
 - [ ] Sensitive env vars (DATABASE_URL, SESSION_SECRET, OAUTH tokens) stored in AWS Secrets Manager, not in docker-compose.yml
 - [ ] TLS enforced (redirect HTTP → HTTPS in reverse proxy or via Lightsail)
 - [ ] Lightsail firewall rules: port 5000 (HTTP) closed; only 443 (HTTPS) open to public
-- [ ] PostgreSQL container only accessible to app container (network: scrumquest)
+- [ ] PostgreSQL container only accessible to app container (network: scrummonsters)
 - [ ] Redis container only accessible to app container
 - [ ] Prometheus/Grafana ports (9090, 3000) only bind to 127.0.0.1 (localhost-only)
 - [ ] SSH key (lightsail.pem) restricted to 0600, stored in ~/.ssh/
@@ -782,12 +782,12 @@ For ScrumQuest at "50 concurrent users" scale, **Nano or Micro Lightsail instanc
 | Service | Cost | Notes |
 |---------|------|-------|
 | **Lightsail Micro Instance** | $10/mo | 1 vCPU, 1GB RAM; sufficient for 50 concurrent |
-| **Data transfer** | $0 | First 1 TB free/mo; ScrumQuest ~50GB/mo predicted |
+| **Data transfer** | $0 | First 1 TB free/mo; ScrumMonsters ~50GB/mo predicted |
 | **Snapshots (2/mo)** | ~$2 | For backup redundancy |
 | **PostgreSQL (managed)** | ~$15 | Optional; container sidecar adds no cost |
 | **Route 53 DNS** | ~$0.50 | Minimal query volume |
 | **S3 backups** | ~$1 | pg_dump storage at standard pricing |
-| **GitHub Actions** | $0 | 2000 free minutes/mo; ScrumQuest ~500 min/mo |
+| **GitHub Actions** | $0 | 2000 free minutes/mo; ScrumMonsters ~500 min/mo |
 | **ECR (private registry)** | ~$0.70 | Per GB stored; ~2GB typical |
 | **AWS Secrets Manager** | ~$0.40 | Per secret per month |
 | **Total Estimated** | **~$30-32/mo** | Exceeds target but all infrastructure covered; can cut PostgreSQL managed ($-15/mo if using container) → **$15-17/mo** |
@@ -803,7 +803,7 @@ To stay <$20/mo: Use containerized PostgreSQL (no managed DB fee), single snapsh
 ```bash
 # Build and test locally
 npm run build
-docker build -t scrumquest:test .
+docker build -t scrummonsters:test .
 docker-compose -f docker-compose.yml up -d
 
 # Validate endpoints
@@ -840,7 +840,7 @@ docker-compose logs --tail 50 app
 docker stats
 
 # Check TLS certificate
-openssl s_client -connect scrumquest.com:443 -showcerts
+openssl s_client -connect scrummonsters.com:443 -showcerts
 ```
 
 ### Automated Rollback Test
@@ -848,8 +848,8 @@ openssl s_client -connect scrumquest.com:443 -showcerts
 ```bash
 # Deploy version A
 aws lightsail create-container-service-deployment \
-  --service-name scrumquest-prod \
-  --containers app='{"image":"ghcr.io/.../scrumquest:v1"}' \
+  --service-name scrummonsters-prod \
+  --containers app='{"image":"ghcr.io/.../scrummonsters:v1"}' \
   --region us-east-1
 
 # Wait for healthy
@@ -857,8 +857,8 @@ sleep 30
 
 # Rollback to previous
 aws lightsail create-container-service-deployment \
-  --service-name scrumquest-prod \
-  --containers app='{"image":"ghcr.io/.../scrumquest:v0"}' \
+  --service-name scrummonsters-prod \
+  --containers app='{"image":"ghcr.io/.../scrummonsters:v0"}' \
   --region us-east-1
 ```
 
@@ -915,23 +915,23 @@ aws lightsail create-container-service-deployment \
 ```bash
 # Lightsail Container Service
 aws lightsail create-container-service \
-  --service-name scrumquest-prod \
+  --service-name scrummonsters-prod \
   --power small --scale 1 --region us-east-1
 
 aws lightsail push-container-image \
-  --service-name scrumquest-prod \
-  --label scrumquest \
-  --image ghcr.io/user/scrumquest:latest
+  --service-name scrummonsters-prod \
+  --label scrummonsters \
+  --image ghcr.io/user/scrummonsters:latest
 
 aws lightsail create-container-service-deployment \
-  --service-name scrumquest-prod \
-  --containers 'app={"image":":scrumquest-prod.scrumquest.latest","ports":{"5000":"HTTP"}}' \
+  --service-name scrummonsters-prod \
+  --containers 'app={"image":":scrummonsters-prod.scrummonsters.latest","ports":{"5000":"HTTP"}}' \
   --region us-east-1
 
 # Instance management
 aws lightsail get-instances --region us-east-1
 aws lightsail open-instance-public-ports \
-  --instance-name scrumquest-instance \
+  --instance-name scrummonsters-instance \
   --port-info fromPort=443,toPort=443,protocol=tcp
 
 # Database backups

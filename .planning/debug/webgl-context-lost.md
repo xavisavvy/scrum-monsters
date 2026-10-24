@@ -96,7 +96,7 @@ updated: 2026-05-16
    recovery.
 
 3. **Surface the loss to ops** — add a Prometheus counter
-   `scrumquest_webgl_context_loss_total` (server-emitted via socket
+   `scrummonsters_webgl_context_loss_total` (server-emitted via socket
    so we can attribute to environment / lobby) OR a client-side
    structured log to `/api/log` (whichever exists). If neither exists,
    defer telemetry to a follow-up.
@@ -172,7 +172,7 @@ updated: 2026-05-16
 
 - **Follow-ups (not done, defer to a separate phase if desired):**
   - Telemetry: client-side structured log or Prometheus counter
-    `scrumquest_webgl_context_loss_total` so prod recovery rate is
+    `scrummonsters_webgl_context_loss_total` so prod recovery rate is
     measurable. The session file's investigation prompt #3 outlines the
     options; deferred per the "low-effort first cut" decision.
   - UX: optional toast ("Graphics paused, recovering…") if the

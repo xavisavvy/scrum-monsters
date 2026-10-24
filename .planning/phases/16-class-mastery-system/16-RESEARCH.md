@@ -8,7 +8,7 @@
 
 Phase 16 adds class-specific mastery progression where players earn XP for their currently-played avatar class, advance through mastery tiers (Novice → Expert → Master), gain stat bonuses, and unlock class-specific abilities. This builds directly on Phase 15's XP infrastructure, adding a parallel per-class progression system alongside global player level.
 
-**Existing foundation:** ScrumQuest has XP infrastructure (ProgressionManager domain), 10 avatar classes with CharacterStats (str/dex/con/wis/int/cha), combat stat usage (base damage by class), database schema with Drizzle ORM, and event-driven architecture. Phase 15 established global XP/leveling; Phase 16 adds class-specific mastery tracking as a complementary system.
+**Existing foundation:** ScrumMonsters has XP infrastructure (ProgressionManager domain), 10 avatar classes with CharacterStats (str/dex/con/wis/int/cha), combat stat usage (base damage by class), database schema with Drizzle ORM, and event-driven architecture. Phase 15 established global XP/leveling; Phase 16 adds class-specific mastery tracking as a complementary system.
 
 **Primary recommendation:** Create ClassMasteryManager as a new domain manager that tracks per-class XP in parallel with ProgressionManager. Extend database schema with class mastery table. Apply stat bonuses as percentage multipliers to combat calculations. Gate abilities behind mastery tier checks. Use same event subscriptions as ProgressionManager but track XP separately per class played.
 

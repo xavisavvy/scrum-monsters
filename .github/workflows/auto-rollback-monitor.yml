@@ -72,7 +72,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP_INFO=$(argocd app get scrumquest-${{ steps.get-env.outputs.result }} \
+          APP_INFO=$(argocd app get scrummonsters-${{ steps.get-env.outputs.result }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             -o json)
@@ -97,13 +97,13 @@ jobs:
           # For now, construct expected URL based on environment
           case "$ENV" in
             dev)
-              HEALTH_URL="https://scrumquest-dev.local/api/health"
+              HEALTH_URL="https://scrummonsters-dev.local/api/health"
               ;;
             staging)
-              HEALTH_URL="https://staging.scrumquest.local/api/health"
+              HEALTH_URL="https://staging.scrummonsters.local/api/health"
               ;;
             prod)
-              HEALTH_URL="https://scrumquest.com/api/health"
+              HEALTH_URL="https://scrummonsters.com/api/health"
               ;;
             *)
               echo "Unknown environment: $ENV"

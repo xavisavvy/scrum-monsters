@@ -93,8 +93,8 @@ Fixed 58 → 0 production code errors:
 
 ## Issues Filed During Verification
 
-- **ScrumQuest-9o3:** After-image effect doesn't track vertical position when fly combined with haste/slow
-- **ScrumQuest-x0d:** Ctrl key attack in battle doesn't damage boss
+- **ScrumMonsters-9o3:** After-image effect doesn't track vertical position when fly combined with haste/slow
+- **ScrumMonsters-x0d:** Ctrl key attack in battle doesn't damage boss
 
 ## Success Criteria Met
 

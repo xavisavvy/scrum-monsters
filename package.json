@@ -1,5 +1,5 @@
 {
-  "name": "rest-express",
+  "name": "scrum-monsters",
   "version": "1.0.0",
   "type": "module",
   "license": "MIT",
@@ -37,6 +37,7 @@
     "check": "tsc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "lint:names": "node scripts/ci/check-app-name.mjs",
     "db:push": "drizzle-kit push",
     "db:migrate:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",

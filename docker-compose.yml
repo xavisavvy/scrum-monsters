@@ -10,7 +10,7 @@ services:
       - "5000:5000"
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://scrumquest:scrumquest@postgres:5432/scrumquest
+      - DATABASE_URL=postgresql://scrumquest:scrumquest@postgres:5432/scrumquest  # legacy-name-ok
       - SESSION_SECRET=local-dev-session-secret-change-in-production
       - REDIS_URL=redis://redis:6379
       # OAuth (optional - uncomment and set values)
@@ -34,15 +34,17 @@ services:
   postgres:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: scrumquest
-      POSTGRES_PASSWORD: scrumquest
-      POSTGRES_DB: scrumquest
+      # The Postgres role and database keep the app's pre-rename name on purpose:
+      # renaming them would orphan existing data volumes, and prod uses the same role.
+      POSTGRES_USER: scrumquest  # legacy-name-ok
+      POSTGRES_PASSWORD: scrumquest  # legacy-name-ok
+      POSTGRES_DB: scrumquest  # legacy-name-ok
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U scrumquest -d scrumquest"]
+      test: ["CMD-SHELL", "pg_isready -U scrumquest -d scrumquest"]  # legacy-name-ok
       interval: 10s
       timeout: 5s
       retries: 5

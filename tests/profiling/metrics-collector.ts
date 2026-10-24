@@ -163,9 +163,9 @@ export class MetricsCollector {
     const text = await response.text();
     const snapshot: PrometheusSnapshot = {
       timestamp: Date.now(),
-      wsConnections: this.parsePrometheusGauge(text, "scrumquest_websocket_connections"),
-      wsMessagesSent: this.parsePrometheusCounter(text, "scrumquest_websocket_messages_sent_total"),
-      wsMessagesReceived: this.parsePrometheusCounter(text, "scrumquest_websocket_messages_received_total"),
+      wsConnections: this.parsePrometheusGauge(text, "scrummonsters_websocket_connections"),
+      wsMessagesSent: this.parsePrometheusCounter(text, "scrummonsters_websocket_messages_sent_total"),
+      wsMessagesReceived: this.parsePrometheusCounter(text, "scrummonsters_websocket_messages_received_total"),
     };
 
     return snapshot;

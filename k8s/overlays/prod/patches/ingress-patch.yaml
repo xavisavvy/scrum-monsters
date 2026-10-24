@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: scrumquest-ingress
+  name: scrummonsters-ingress
   annotations:
     # Enable SSL redirect for production
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
@@ -13,41 +13,41 @@ metadata:
 spec:
   tls:
     - hosts:
-        - scrumquest.com
-        - www.scrumquest.com
-      secretName: scrumquest-prod-tls
+        - scrummonsters.com
+        - www.scrummonsters.com
+      secretName: scrummonsters-prod-tls
   rules:
-    - host: scrumquest.com
+    - host: scrummonsters.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: prod-scrumquest-service
+                name: prod-scrummonsters-service
                 port:
                   number: 80
           - path: /socket.io
             pathType: Prefix
             backend:
               service:
-                name: prod-scrumquest-service
+                name: prod-scrummonsters-service
                 port:
                   number: 80
-    - host: www.scrumquest.com
+    - host: www.scrummonsters.com
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: prod-scrumquest-service
+                name: prod-scrummonsters-service
                 port:
                   number: 80
           - path: /socket.io
             pathType: Prefix
             backend:
               service:
-                name: prod-scrumquest-service
+                name: prod-scrummonsters-service
                 port:
                   number: 80

@@ -6,7 +6,7 @@
 
 ## Context: What Already Exists
 
-ScrumQuest v1.1 already has substantial CI/CD infrastructure:
+ScrumMonsters v1.1 already has substantial CI/CD infrastructure:
 
 | Existing Feature | Implementation | Status |
 |-----------------|----------------|--------|
@@ -45,7 +45,7 @@ Features that are expected for mature SDLC. Missing these indicates gaps in engi
 | Up-to-date branch | PR must be current with base branch | Low |
 | Status checks gate | All CI must pass before merge | Low |
 
-**Current Gap:** ScrumQuest has PR workflows but branch protection rules need configuration in GitHub repository settings.
+**Current Gap:** ScrumMonsters has PR workflows but branch protection rules need configuration in GitHub repository settings.
 
 **Implementation Notes:**
 - Configure via GitHub UI: Settings > Branches > Branch protection rules
@@ -68,7 +68,7 @@ Features that are expected for mature SDLC. Missing these indicates gaps in engi
 | Coverage reporting | PR comments showing coverage delta | Low |
 | Ratcheting | Threshold increases as coverage improves | Low |
 
-**Current Gap:** ScrumQuest runs `test:coverage` but uses `continue-on-error: true` and doesn't enforce thresholds.
+**Current Gap:** ScrumMonsters runs `test:coverage` but uses `continue-on-error: true` and doesn't enforce thresholds.
 
 **Implementation Notes:**
 - Vitest supports coverage thresholds in `vitest.config.ts`
@@ -93,7 +93,7 @@ Features that are expected for mature SDLC. Missing these indicates gaps in engi
 | CI validation | Test migrations against clean DB | Medium |
 | Staging-first | Apply to staging before production | Low |
 
-**Current Gap:** ScrumQuest uses `drizzle-kit push` for development. No migration file workflow.
+**Current Gap:** ScrumMonsters uses `drizzle-kit push` for development. No migration file workflow.
 
 **Implementation Notes:**
 - Switch to `drizzle-kit generate` + `drizzle-kit migrate` workflow
@@ -158,7 +158,7 @@ Features that set engineering practices apart. Not expected, but add significant
 
 ### 6. Visual Regression Testing
 
-**Why Valuable:** Catches unintended UI changes. Especially valuable for ScrumQuest's 3D/animation-heavy UI.
+**Why Valuable:** Catches unintended UI changes. Especially valuable for ScrumMonsters's 3D/animation-heavy UI.
 
 | Aspect | Expected Behavior | Complexity |
 |--------|-------------------|------------|
@@ -173,7 +173,7 @@ Features that set engineering practices apart. Not expected, but add significant
 - **Option 1: Playwright built-in** - `toHaveScreenshot()`, free, local baselines, OS-dependent rendering
 - **Option 2: Percy** (BrowserStack) - Cloud-based, AI noise filtering, cross-browser, paid
 - **Option 3: Chromatic** - Best for Storybook/component-driven, collaboration features, paid
-- For ScrumQuest: Start with Playwright built-in, consider Percy for CI consistency
+- For ScrumMonsters: Start with Playwright built-in, consider Percy for CI consistency
 - Reference: [Playwright Visual Testing](https://playwright.dev/docs/test-snapshots)
 
 **Complexity:** Medium
@@ -192,7 +192,7 @@ Features that set engineering practices apart. Not expected, but add significant
 | Provider verification | Server validates it meets contract | Medium |
 | Breaking change detection | CI fails on contract violations | Medium |
 
-**Current State:** ScrumQuest already has `shared/gameEvents.ts` defining Socket.IO contracts with TypeScript interfaces.
+**Current State:** ScrumMonsters already has `shared/gameEvents.ts` defining Socket.IO contracts with TypeScript interfaces.
 
 **Implementation Notes:**
 - TypeScript provides compile-time contract enforcement
@@ -345,7 +345,7 @@ Things to deliberately NOT build. Common mistakes in this domain.
 
 ### 6. Contract Testing Between Internal Services
 
-**Why Avoid:** Overkill for monolithic or single-repo apps. ScrumQuest is full-stack in one repo.
+**Why Avoid:** Overkill for monolithic or single-repo apps. ScrumMonsters is full-stack in one repo.
 
 **What to Do Instead:**
 - Use TypeScript's type system for internal contracts

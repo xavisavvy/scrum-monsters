@@ -30,7 +30,7 @@ score: 3/3 must-haves verified
 |----------|----------|--------|---------|
 | .github/workflows/rollback.yml | Unified rollback workflow | VERIFIED | 367 lines, workflow_dispatch trigger with 4 inputs, 3 jobs |
 | .github/workflows/auto-rollback-monitor.yml | Post-deploy health monitoring | VERIFIED | 179 lines, workflow_run trigger on Deploy workflow |
-| k8s/argocd-apps/scrumquest-staging.yaml | ArgoCD Application for staging | VERIFIED | 72 lines, manual sync policy, revisionHistoryLimit: 10 |
+| k8s/argocd-apps/scrummonsters-staging.yaml | ArgoCD Application for staging | VERIFIED | 72 lines, manual sync policy, revisionHistoryLimit: 10 |
 | .argocd-rollback/.gitkeep | Audit log directory | VERIFIED | Directory exists with .gitkeep file |
 
 ### Key Link Verification

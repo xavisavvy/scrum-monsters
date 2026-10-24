@@ -1,4 +1,4 @@
-# Requirements: ScrumQuest
+# Requirements: ScrumMonsters
 
 **Defined:** 2026-03-11
 **Core Value:** Focused estimation that doesn't bore people — voting distraction-free, waiting fun

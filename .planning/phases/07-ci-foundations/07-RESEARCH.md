@@ -6,7 +6,7 @@
 
 ## Summary
 
-This phase establishes CI quality gates for the ScrumQuest repository. The research covers four main areas: (1) GitHub branch protection rules for reviewer requirements and status checks, (2) PR templates for standardized contribution format, (3) Vitest coverage thresholds to enforce minimum test coverage, and (4) GitHub Actions for coverage reporting in PR comments with badges.
+This phase establishes CI quality gates for the ScrumMonsters repository. The research covers four main areas: (1) GitHub branch protection rules for reviewer requirements and status checks, (2) PR templates for standardized contribution format, (3) Vitest coverage thresholds to enforce minimum test coverage, and (4) GitHub Actions for coverage reporting in PR comments with badges.
 
 The project already has a working CI infrastructure (ci.yml, pr-checks.yml) with lint, type-check, test, and build jobs. The existing test coverage is very low (most files at 0%, some server/domains files at 64-91%), so the initial threshold should be set at current levels to establish a floor without blocking all PRs. The project also has an existing PR template that needs updating to match the multi-template structure decided upon.
 
@@ -517,11 +517,11 @@ Things that couldn't be fully resolved:
 2. **Gist ID for Coverage Badge**
    - What we know: Dynamic badges action needs a gist ID
    - What's unclear: Whether to create new gist or use existing
-   - Recommendation: Create new public gist named "scrumquest-coverage", add ID to workflow
+   - Recommendation: Create new public gist named "scrummonsters-coverage", add ID to workflow
 
 3. **Fork PR Coverage Reporting**
    - What we know: External PRs from forks can't get coverage comments with simple setup
-   - What's unclear: Whether ScrumQuest expects external contributors
+   - What's unclear: Whether ScrumMonsters expects external contributors
    - Recommendation: Start with simple setup; add two-workflow pattern if external PRs become common
 
 ## Sources

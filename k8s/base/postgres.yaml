@@ -3,7 +3,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: postgres-pvc
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: database
 spec:
   accessModes:
@@ -17,7 +17,7 @@ kind: StatefulSet
 metadata:
   name: postgres
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: database
 spec:
   serviceName: postgres-service
@@ -29,7 +29,7 @@ spec:
     metadata:
       labels:
         app: postgres
-        app.kubernetes.io/name: scrumquest
+        app.kubernetes.io/name: scrummonsters
         app.kubernetes.io/component: database
     spec:
       containers:
@@ -56,9 +56,9 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - scrumquest
+                - scrummonsters
                 - -d
-                - scrumquest
+                - scrummonsters
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -68,9 +68,9 @@ spec:
               command:
                 - pg_isready
                 - -U
-                - scrumquest
+                - scrummonsters
                 - -d
-                - scrumquest
+                - scrummonsters
             initialDelaySeconds: 5
             periodSeconds: 5
             timeoutSeconds: 3
@@ -85,7 +85,7 @@ kind: Service
 metadata:
   name: postgres-service
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: database
 spec:
   type: ClusterIP

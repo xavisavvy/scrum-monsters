@@ -1,6 +1,6 @@
 # Research Summary: Docker + AWS Lightsail Deployment & CI/CD
 
-**Project:** ScrumQuest (Real-time multiplayer JRPG scrum poker)
+**Project:** ScrumMonsters (Real-time multiplayer JRPG scrum poker)
 **Researched:** 2026-02-24
 **Overall Confidence:** HIGH (AWS official docs + GitHub Actions patterns verified)
 
@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-ScrumQuest has a solid foundation for deployment: multi-stage Dockerfile, GitHub Actions CI pipeline, Docker Compose orchestration, and Kubernetes manifests. The missing piece is **bridging from dev (Replit) to production (AWS Lightsail)** with automated CI/CD, TLS management, and on-instance observability.
+ScrumMonsters has a solid foundation for deployment: multi-stage Dockerfile, GitHub Actions CI pipeline, Docker Compose orchestration, and Kubernetes manifests. The missing piece is **bridging from dev (Replit) to production (AWS Lightsail)** with automated CI/CD, TLS management, and on-instance observability.
 
 This research identifies the minimal, cost-effective stack for hosting 50 concurrent users on AWS Lightsail within a $5-20/mo budget:
 
@@ -22,7 +22,7 @@ This research identifies the minimal, cost-effective stack for hosting 50 concur
 
 ### Stack Decisions
 
-**Why AWS Lightsail for ScrumQuest:**
+**Why AWS Lightsail for ScrumMonsters:**
 - Simplest AWS onboarding (no Kubernetes knowledge required)
 - Includes 1TB free data transfer per month (critical for WebSocket-heavy games)
 - Lightsail CLI tooling is minimal but sufficient for small teams
@@ -38,7 +38,7 @@ This research identifies the minimal, cost-effective stack for hosting 50 concur
 **Why Let's Encrypt + certbot (not AWS Certificate Manager):**
 - ACM requires ALB/CloudFront (adds $16+/mo)
 - Let's Encrypt + certbot costs $0, fully automated renewal
-- Single domain (scrumquest.com) doesn't need multi-region failover
+- Single domain (scrummonsters.com) doesn't need multi-region failover
 - Certbot runs in a simple Docker container; renewal via cron
 
 **Why GHCR + minimal ECR:**
@@ -48,7 +48,7 @@ This research identifies the minimal, cost-effective stack for hosting 50 concur
 
 **Why Prometheus + Grafana on-instance:**
 - Not Datadog/New Relic ($50+/mo incompatible with budget)
-- Not CloudWatch Logs ($0.50/GB ingested; ScrumQuest ~30GB/mo = $15/mo)
+- Not CloudWatch Logs ($0.50/GB ingested; ScrumMonsters ~30GB/mo = $15/mo)
 - Lightweight containers use minimal overhead; fit in 1GB instance
 - JSON structured logs from Pino (already configured) pair well with Grafana
 
@@ -152,7 +152,7 @@ This research identifies the minimal, cost-effective stack for hosting 50 concur
 | **TLS** | Manual (certbot) | Automatic |
 | **Deployments** | Push via lightsailctl + SSH | API-driven; zero-downtime |
 | **Familiarity** | docker-compose (known) | Lightsail-specific config |
-| **Recommendation for ScrumQuest** | **START HERE** | Upgrade later if budget/scale increases |
+| **Recommendation for ScrumMonsters** | **START HERE** | Upgrade later if budget/scale increases |
 
 **Rationale:** Instances fit budget; Containers win on ops burden. Start with instances, migrate if costs allow.
 
@@ -163,7 +163,7 @@ This research identifies the minimal, cost-effective stack for hosting 50 concur
 | **Backups** | Automatic daily | Manual pg_dump required |
 | **Scaling** | Separate instance | Shares 1GB RAM |
 | **Network isolation** | Isolated (secure) | Same docker network (simpler) |
-| **Recommendation for ScrumQuest** | Container sidecar to stay <$20/mo | Upgrade to managed at 500+ concurrent users |
+| **Recommendation for ScrumMonsters** | Container sidecar to stay <$20/mo | Upgrade to managed at 500+ concurrent users |
 
 **Rationale:** Container sidecar keeps costs down. At <10K total users, shared instance is fine.
 
@@ -174,7 +174,7 @@ This research identifies the minimal, cost-effective stack for hosting 50 concur
 | **Cost** | ~$0.40/secret/mo | Free |
 | **Rotation** | Automatic | Manual |
 | **Complexity** | AWS API calls | Plain text (risky) |
-| **Recommendation for ScrumQuest** | Use Secrets Manager for prod; plain .env for staging |
+| **Recommendation for ScrumMonsters** | Use Secrets Manager for prod; plain .env for staging |
 
 **Rationale:** Prod uses Secrets Manager (audit trail, rotation). Staging uses .env (faster iteration). GitHub Actions can fetch from Secrets Manager at deploy time.
 
@@ -289,7 +289,7 @@ TOTAL                        $99.50/mo
 | **CI/CD deployment patterns** | MEDIUM-HIGH | Multiple GitHub + Lightsail tutorials (2023-2025); one December 2025 pg_dump article | Pattern works; some implementations may be outdated; recommend testing |
 | **On-instance monitoring** | HIGH | Prometheus + Grafana Docker images verified; Pino already in codebase | Well-established stack; low risk |
 | **Database backup strategy** | MEDIUM | December 2025 article on serverless pg_dump backups; Lightsail snapshot limitations documented | pg_dump to S3 best practice; snapshot restore workflow requires testing |
-| **Cost projections** | MEDIUM | Based on AWS pricing + ScrumQuest Phase 29 load test data | Depends on actual concurrent users; projections vary by region |
+| **Cost projections** | MEDIUM | Based on AWS pricing + ScrumMonsters Phase 29 load test data | Depends on actual concurrent users; projections vary by region |
 
 ---
 

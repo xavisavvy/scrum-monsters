@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * synthetic-profile.ts - Synthetic profiling data generator for ScrumQuest
+ * synthetic-profile.ts - Synthetic profiling data generator for ScrumMonsters
  *
  * Generates realistic ProfileReport JSON without requiring k6 or a running server.
  * Use this in environments where live load testing is not feasible.
@@ -275,7 +275,7 @@ function printSummary(report: ProfileReport, filename: string): void {
  */
 function main(): void {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("  ScrumQuest Synthetic Profile Generator");
+  console.log("  ScrumMonsters Synthetic Profile Generator");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   const { users, duration } = parseArgs();

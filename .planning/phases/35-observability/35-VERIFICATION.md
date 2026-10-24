@@ -4,7 +4,7 @@ verified: 2026-03-09T23:45:00Z
 status: human_needed
 score: 4/4 must-haves verified (automated)
 human_verification:
-  - test: Open SSH tunnel and verify Prometheus targets page shows scrumquest target UP
+  - test: Open SSH tunnel and verify Prometheus targets page shows scrummonsters target UP
     expected: Prometheus Status Targets shows app 5000 target with state UP and 60s scrape interval
     why_human: Requires SSH access to VPS and live service verification
   - test: Verify Grafana dashboard shows live data
@@ -32,7 +32,7 @@ human_verification:
 | # | Truth | Status | Evidence |
 |---|-------|--------|----------|
 | 1 | Prometheus scrapes /metrics at 60s intervals with 7d retention under 256MB RAM | VERIFIED (config) | prometheus.yml has scrape_interval 60s, targets app:5000. docker-compose has retention.time=7d, retention.size=512MB, memory limit 128M. SUMMARY confirms live VPS target state UP, memory at 43MB/128MB. |
-| 2 | Grafana dashboard shows active lobbies, player count, WebSocket connections, error rates | VERIFIED (config) | scrumquest.json has 10 panels covering all required metrics. Provisioning auto-loads datasource and dashboard. |
+| 2 | Grafana dashboard shows active lobbies, player count, WebSocket connections, error rates | VERIFIED (config) | scrummonsters.json has 10 panels covering all required metrics. Provisioning auto-loads datasource and dashboard. |
 | 3 | All Docker container logs viewable from single interface | VERIFIED (config) | Dozzle service mounts /var/run/docker.sock:ro, port 127.0.0.1:9999:8080. SUMMARY confirms HTTP 200 on VPS. |
 | 4 | Monitoring ports bound to 127.0.0.1 only (SSH tunnel required) | VERIFIED (code) | docker-compose ports: 127.0.0.1:9090:9090, 127.0.0.1:3001:3000, 127.0.0.1:9999:8080. Runbook Part 8 documents SSH tunnel. |
 
@@ -49,7 +49,7 @@ human_verification:
 | docker/prometheus/prometheus.yml | Scrape config | VERIFIED | scrape_interval 60s, targets app:5000, metrics_path /metrics |
 | docker/grafana/provisioning/datasources/prometheus.yml | Auto-configured datasource | VERIFIED | Points to http://prometheus:9090, isDefault true |
 | docker/grafana/provisioning/dashboards/dashboard.yml | Dashboard provider | VERIFIED | Points to /var/lib/grafana/dashboards |
-| docker/grafana/dashboards/scrumquest.json | Pre-built dashboard | VERIFIED | 402 lines, 10 panels, valid JSON, all required metrics present |
+| docker/grafana/dashboards/scrummonsters.json | Pre-built dashboard | VERIFIED | 402 lines, 10 panels, valid JSON, all required metrics present |
 | runbook.md | SSH tunnel instructions | VERIFIED | Part 8 (lines 552-608): tunnel command, service table, memory limits |
 
 ### Key Link Verification
@@ -60,7 +60,7 @@ human_verification:
 | routes.ts | metrics.ts | import getMetrics etc | WIRED | Line 9 imports, lines 25-35 use all three |
 | websocket.ts | metrics.ts | import updateWebsocketMetrics | WIRED | Line 43 imports, lines 255/2048 call it |
 | Grafana datasource | Prometheus | url http://prometheus:9090 | WIRED | Docker DNS resolution |
-| scrumquest.json | metrics.ts | PromQL expressions | WIRED | Dashboard queries match metric names |
+| scrummonsters.json | metrics.ts | PromQL expressions | WIRED | Dashboard queries match metric names |
 | docker-compose volumes | provisioning files | Volume mounts | WIRED | Dirs mounted read-only |
 
 ### Requirements Coverage
@@ -81,7 +81,7 @@ No TODO, FIXME, placeholder, or stub patterns found in any phase artifacts.
 ### 1. Prometheus Target Health
 
 **Test:** Open SSH tunnel, navigate to http://localhost:9090/targets
-**Expected:** scrumquest target shows state UP with 60s scrape interval
+**Expected:** scrummonsters target shows state UP with 60s scrape interval
 **Why human:** Requires SSH access to VPS and live service state check
 
 ### 2. Grafana Dashboard Data Flow

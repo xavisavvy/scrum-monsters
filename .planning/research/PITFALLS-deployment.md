@@ -208,14 +208,14 @@ Let's Encrypt certificate expires after 90 days. Renewal automation failed silen
        restart: unless-stopped
 
      app:
-       image: scrumquest:latest
+       image: scrummonsters:latest
        ports:
          - "5000:5000"
    ```
 
    Caddyfile:
    ```
-   scrumquest.example.com {
+   scrummonsters.example.com {
        reverse_proxy app:5000
    }
    ```
@@ -230,7 +230,7 @@ Let's Encrypt certificate expires after 90 days. Renewal automation failed silen
        volumes:
          - /etc/letsencrypt:/etc/letsencrypt  # Persist on host
          - /var/www/certbot:/var/www/certbot
-       entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --non-interactive --agree-tos --email admin@example.com --webroot -w /var/www/certbot -d scrumquest.example.com; sleep 24h & wait $${!}; done"
+       entrypoint: /bin/sh -c "trap exit TERM; while :; do certbot renew --non-interactive --agree-tos --email admin@example.com --webroot -w /var/www/certbot -d scrummonsters.example.com; sleep 24h & wait $${!}; done"
        restart: unless-stopped
    ```
 
@@ -238,7 +238,7 @@ Let's Encrypt certificate expires after 90 days. Renewal automation failed silen
    ```typescript
    setInterval(() => {
      try {
-       const cert = fs.readFileSync('/etc/letsencrypt/live/scrumquest.example.com/cert.pem');
+       const cert = fs.readFileSync('/etc/letsencrypt/live/scrummonsters.example.com/cert.pem');
        // Parse cert and check expiry date
        // Log warning if < 30 days remaining
      } catch (err) {
@@ -248,7 +248,7 @@ Let's Encrypt certificate expires after 90 days. Renewal automation failed silen
    ```
 
 **Detection:**
-- Test: `openssl s_client -connect scrumquest.example.com:443 | grep -A2 Validity`
+- Test: `openssl s_client -connect scrummonsters.example.com:443 | grep -A2 Validity`
 - Set Prometheus alert for cert expiry < 30 days
 - Test renewal in staging environment first
 
@@ -303,9 +303,9 @@ After deploying a new version, PostgreSQL reports "too many connections" error. 
        environment:
          DATABASES_HOST: postgres
          DATABASES_PORT: 5432
-         DATABASES_USER: scrumquest
-         DATABASES_PASSWORD: scrumquest
-         DATABASES_DBNAME: scrumquest
+         DATABASES_USER: scrummonsters
+         DATABASES_PASSWORD: scrummonsters
+         DATABASES_DBNAME: scrummonsters
          PGBOUNCER_POOL_MODE: transaction
          PGBOUNCER_MAX_CLIENT_CONN: 1000
          PGBOUNCER_DEFAULT_POOL_SIZE: 25
@@ -318,7 +318,7 @@ After deploying a new version, PostgreSQL reports "too many connections" error. 
      app:
        environment:
          # Connect to PgBouncer instead of PostgreSQL directly
-         DATABASE_URL: postgres://scrumquest:scrumquest@pgbouncer:6432/scrumquest
+         DATABASE_URL: postgres://scrummonsters:scrummonsters@pgbouncer:6432/scrummonsters
    ```
 
 3. **Monitor connection count:**
@@ -519,7 +519,7 @@ Production secrets (DATABASE_URL, SESSION_SECRET) baked into Docker image or pri
 2. **Pass secrets at runtime via docker-compose:**
    ```yaml
    app:
-     image: scrumquest:latest
+     image: scrummonsters:latest
      environment:
        - NODE_ENV=production
        - DATABASE_URL=${DATABASE_URL}
@@ -528,7 +528,7 @@ Production secrets (DATABASE_URL, SESSION_SECRET) baked into Docker image or pri
 
    File: `.env.production.local` (not in git):
    ```
-   DATABASE_URL=postgres://user:pass@postgres:5432/scrumquest
+   DATABASE_URL=postgres://user:pass@postgres:5432/scrummonsters
    SESSION_SECRET=long-random-string
    ```
 
@@ -544,7 +544,7 @@ Production secrets (DATABASE_URL, SESSION_SECRET) baked into Docker image or pri
    ```
 
 **Detection:**
-- `docker inspect scrumquest | grep -A20 Env` should not show credentials
+- `docker inspect scrummonsters | grep -A20 Env` should not show credentials
 - Search logs for "postgresql://" or "SESSION_SECRET"
 
 **Phase:** Phase 8 (Docker Deployment) - Security essentials.
@@ -575,9 +575,9 @@ New version has a bug. Deployed to production. Players can't create lobbies. No 
      uses: docker/build-push-action@v5
      with:
        tags: |
-         scrumquest:latest
-         scrumquest:v${{ github.event.release.tag_name }}
-         scrumquest:${{ github.sha }}
+         scrummonsters:latest
+         scrummonsters:v${{ github.event.release.tag_name }}
+         scrummonsters:${{ github.sha }}
    ```
 
 2. **Keep image history on registry (don't delete old tags)**
@@ -587,23 +587,23 @@ New version has a bug. Deployed to production. Players can't create lobbies. No 
    # scripts/rollback.sh
    #!/bin/bash
    VERSION=$1
-   docker pull scrumquest:${VERSION}
+   docker pull scrummonsters:${VERSION}
    docker-compose down app
-   docker-compose up -d --no-deps scrumquest:${VERSION} app
+   docker-compose up -d --no-deps scrummonsters:${VERSION} app
    ```
 
 4. **Document runbook:**
    ```
    ## Emergency Rollback
    If prod breaks:
-   1. Check previous version: docker ps | grep scrumquest
+   1. Check previous version: docker ps | grep scrummonsters
    2. Rollback: ./scripts/rollback.sh v1.0.1
-   3. Verify: curl https://scrumquest.example.com/api/health
+   3. Verify: curl https://scrummonsters.example.com/api/health
    ```
 
 **Detection:**
 - Test: Deploy broken version, attempt rollback, measure time
-- Verify: `docker images scrumquest | head -10` shows 10+ tags
+- Verify: `docker images scrummonsters | head -10` shows 10+ tags
 
 **Phase:** Phase 7 (CI/CD Foundations).
 
@@ -634,7 +634,7 @@ Schema change deployed. Migration script fails or gets skipped. App writes new f
            condition: service_completed_successfully
 
      migrate:
-       image: scrumquest:latest
+       image: scrummonsters:latest
        command: npm run db:migrate
        environment:
          - DATABASE_URL
@@ -810,13 +810,13 @@ Players can't connect over HTTPS. Works locally, broken in production behind ngi
 
 2. **Or use Caddy (automatic):**
    ```caddyfile
-   scrumquest.example.com {
+   scrummonsters.example.com {
      reverse_proxy app:5000
    }
    ```
 
 **Detection:**
-- Test: `curl -i https://scrumquest.example.com/api/health` works, WebSocket fails
+- Test: `curl -i https://scrummonsters.example.com/api/health` works, WebSocket fails
 - Check nginx logs for "upgrade" errors
 
 **Phase:** Phase 8 (Docker Deployment).
@@ -871,6 +871,6 @@ Players can't connect over HTTPS. Works locally, broken in production behind ngi
 
 ---
 
-*Deployment pitfalls research for: ScrumQuest — Docker, VPS, CI/CD, and on-instance monitoring*
+*Deployment pitfalls research for: ScrumMonsters — Docker, VPS, CI/CD, and on-instance monitoring*
 *Researched: 2026-02-24*
 *Confidence: HIGH (existing codebase + verified sources)*

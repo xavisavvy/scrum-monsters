@@ -1,8 +1,8 @@
-# Project Milestones: ScrumQuest
+# Project Milestones: ScrumMonsters
 
 ## v5.0 UX & Onboarding (Shipped: 2026-06-17)
 
-**Delivered:** Made ScrumQuest welcoming to new players and polished for everyone — graceful empty/loading/error states, responsive interaction feedback and cinematic phase transitions, a full tutorial system with JRPG narrator dialogue, reconnection-state integrity, working Auth0 sign-in, zero-downtime blue-green deploys, a socket-schema drift reconciliation (typed sockets, ESLint override removed), and persistent music controls with history.
+**Delivered:** Made ScrumMonsters welcoming to new players and polished for everyone — graceful empty/loading/error states, responsive interaction feedback and cinematic phase transitions, a full tutorial system with JRPG narrator dialogue, reconnection-state integrity, working Auth0 sign-in, zero-downtime blue-green deploys, a socket-schema drift reconciliation (typed sockets, ESLint override removed), and persistent music controls with history.
 
 **Phases completed:** 37-46 (10 phases, 27 plans)
 
@@ -171,7 +171,7 @@
 
 ## v2.0 UI Redesign & Mobile (Shipped: 2026-02-19)
 
-**Delivered:** Full UI overhaul with JRPG theming, mobile-first responsive layout, production security hardening, modern routing with SEO, and lobby polish — making ScrumQuest a polished product on any device.
+**Delivered:** Full UI overhaul with JRPG theming, mobile-first responsive layout, production security hardening, modern routing with SEO, and lobby polish — making ScrumMonsters a polished product on any device.
 
 **Phases completed:** 21-25 (5 phases, 23 plans, 44 tasks)
 
@@ -198,7 +198,7 @@
 
 ## v3.0 Production Optimization (Shipped: 2026-02-20)
 
-**Delivered:** Production-ready infrastructure with PostgreSQL persistence, graceful shutdown, split health probes, and data-driven hosting recommendation — making ScrumQuest deployable with confidence.
+**Delivered:** Production-ready infrastructure with PostgreSQL persistence, graceful shutdown, split health probes, and data-driven hosting recommendation — making ScrumMonsters deployable with confidence.
 
 **Phases completed:** 26-29 (4 phases, 9 plans)
 

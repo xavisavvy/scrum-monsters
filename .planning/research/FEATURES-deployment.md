@@ -1,6 +1,6 @@
 # Deployment Features & Capabilities
 
-**Project:** ScrumQuest
+**Project:** ScrumMonsters
 **Researched:** 2026-02-24
 
 ---
@@ -25,7 +25,7 @@ Features required for production deployment. Missing = service feels incomplete.
 
 ## Differentiators
 
-Features that set ScrumQuest apart. Not expected, but valuable.
+Features that set ScrumMonsters apart. Not expected, but valuable.
 
 | Feature | Value Proposition | Complexity | Implementation | Notes |
 |---------|-------------------|-----------|-----------------|-------|
@@ -48,7 +48,7 @@ Features to explicitly NOT build. Doing so wastes resources or introduces comple
 | Anti-Feature | Why Avoid | What to Do Instead |
 |--------------|-----------|-------------------|
 | **Auto-scaling (Kubernetes / ECS)** | Overkill for 50 concurrent users; 5x cost + ops burden | Vertical scale to Lightsail Small ($20) if needed; revisit at 200+ users |
-| **Multi-region deployment** | ScrumQuest has no global user base; adds latency for US users | Single region (us-east-1); add backup region if compliance required later |
+| **Multi-region deployment** | ScrumMonsters has no global user base; adds latency for US users | Single region (us-east-1); add backup region if compliance required later |
 | **APM tools (Datadog, New Relic)** | $50+/mo; Prometheus + Grafana covers all use cases at $0 | Use on-instance Prometheus + Grafana for entire lifetime |
 | **Dedicated database server** | RDS Micro ($15/mo) unnecessary at <10K users; container sidecar is free | Keep PostgreSQL in docker-compose sidecar; migrate to RDS at 500+ users |
 | **Message queue (RabbitMQ, Kafka)** | Adds complexity; game state already synced via WebSocket | Keep current Socket.IO architecture; queue is overkill |

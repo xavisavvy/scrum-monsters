@@ -1,18 +1,18 @@
 openapi: 3.1.0
 info:
-  title: ScrumQuest API
+  title: ScrumMonsters API
   version: 1.0.0
   description: |
     Real-time multiplayer scrum poker estimation game API.
 
-    ScrumQuest provides REST endpoints for authentication, user profiles,
+    ScrumMonsters provides REST endpoints for authentication, user profiles,
     and health checks. Real-time game functionality is handled via WebSocket
     (Socket.IO) connections documented separately.
 
 servers:
   - url: http://localhost:5000
     description: Development server
-  - url: https://scrumquest.app
+  - url: https://scrummonsters.com
     description: Production server (placeholder)
 
 tags:

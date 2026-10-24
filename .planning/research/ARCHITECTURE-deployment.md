@@ -1,6 +1,6 @@
 # Architecture Patterns: Docker + Lightsail Deployment
 
-**Project:** ScrumQuest
+**Project:** ScrumMonsters
 **Researched:** 2026-02-24
 
 ---
@@ -29,7 +29,7 @@
             │  │  │  Docker Compose Stack  │  │   │
             │  │  │                         │  │   │
             │  │  │ ┌─────────────────────┐│  │   │
-            │  │  │ │  scrumquest-app     ││  │   │
+            │  │  │ │  scrummonsters-app     ││  │   │
             │  │  │ │  (Node.js 22-slim)  ││  │   │
             │  │  │ │  :5000 (internal)   ││  │   │
             │  │  │ └─────────────────────┘│  │   │
@@ -68,7 +68,7 @@
             │        :443         :22              │
             │                                        │
             │  ┌─ Route 53 (DNS) ─────────────────┐ │
-            │  │  scrumquest.com → Lightsail IP  │ │
+            │  │  scrummonsters.com → Lightsail IP  │ │
             │  └────────────────────────────────┐ │
             │                                        │
             │  ┌─ Let's Encrypt Certificates ───┐  │
@@ -87,11 +87,11 @@
 
 ## Network Architecture
 
-### Container Network (`scrumquest` bridge network)
+### Container Network (`scrummonsters` bridge network)
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  Docker Bridge Network: scrumquest               │
+│  Docker Bridge Network: scrummonsters               │
 │                                                  │
 │  ┌──────────────┐    ┌──────────────┐           │
 │  │ app:5000     │◄──►│ postgres:5432│           │
@@ -146,7 +146,7 @@ Internet
 ### WebSocket Connection Lifecycle
 
 ```
-Client Browser                           ScrumQuest Server
+Client Browser                           ScrumMonsters Server
     │                                           │
     ├─ connect() ──────────────────────────────┤
     │                                    socket.io handshake
@@ -196,12 +196,12 @@ PostgreSQL (postgres:5432)
   │
   ├─ 02:00 UTC: Docker cron container triggers
   │
-  └─ pg_dump → scrumquest_YYYYMMDD_HHMMSS.sql.gz
+  └─ pg_dump → scrummonsters_YYYYMMDD_HHMMSS.sql.gz
       │
       ├─ Store locally in volume (short-term)
       │
       └─ Upload to S3
-          s3://scrumquest-backups/scrumquest_YYYYMMDD_HHMMSS.sql.gz
+          s3://scrummonsters-backups/scrummonsters_YYYYMMDD_HHMMSS.sql.gz
           │
           └─ S3 lifecycle policy auto-deletes after 30 days
 ```
@@ -236,8 +236,8 @@ PostgreSQL (postgres:5432)
        ↓
 3. GitHub Actions Docker workflow
    ├─ docker build (multi-stage)
-   ├─ docker push → ghcr.io/username/scrumquest:SHA
-   └─ docker tag → ghcr.io/username/scrumquest:latest
+   ├─ docker push → ghcr.io/username/scrummonsters:SHA
+   └─ docker tag → ghcr.io/username/scrummonsters:latest
        ↓
 4. GitHub Actions Lightsail deploy workflow (auto)
    ├─ AWS CLI lightsail push-container-image
@@ -261,11 +261,11 @@ PostgreSQL (postgres:5432)
 2. GitHub Actions Lightsail deploy workflow (manual)
    ├─ If rollback_version set:
    │  └─ aws lightsail create-container-service-deployment \
-   │     --image ghcr.io/.../scrumquest:v1.2.0
+   │     --image ghcr.io/.../scrummonsters:v1.2.0
    │
    └─ If latest:
       └─ aws lightsail create-container-service-deployment \
-         --image ghcr.io/.../scrumquest:latest
+         --image ghcr.io/.../scrummonsters:latest
           ↓
 3. Lightsail deployment happens (2-5 minutes)
    ├─ Spin up new container
@@ -367,7 +367,7 @@ Prevention:
   3. Logs renewal attempts: docker logs certbot-renewer
 
 Monitoring:
-  1. Manual check: $ openssl s_client -connect scrumquest.com:443 -showcerts
+  1. Manual check: $ openssl s_client -connect scrummonsters.com:443 -showcerts
      └─ Shows expiry date
   2. Prometheus alert: if cert expiry < 14 days, page on-call
 
@@ -390,9 +390,9 @@ Symptoms:
 
 Recovery:
   1. $ docker-compose down
-  2. $ docker network rm scrumquest  (force remove)
+  2. $ docker network rm scrummonsters  (force remove)
   3. $ docker-compose up -d  (recreates network)
-  4. Verify: $ docker network inspect scrumquest
+  4. Verify: $ docker network inspect scrummonsters
 ```
 
 ---
@@ -592,19 +592,19 @@ services:
 ```bash
 # 1. Identify previous good version
 aws lightsail get-container-service-deployments \
-  --service-name scrumquest-prod --region us-east-1 | jq '.deployments[] | .version'
+  --service-name scrummonsters-prod --region us-east-1 | jq '.deployments[] | .version'
 
 # 2. Trigger rollback workflow
 # GitHub Actions > Deploy to Lightsail > Run workflow > Production + rollback_version=SHA
 
 # OR manual:
 aws lightsail create-container-service-deployment \
-  --service-name scrumquest-prod \
-  --containers 'app={"image":"ghcr.io/org/scrumquest:PREVIOUS_SHA"}' \
+  --service-name scrummonsters-prod \
+  --containers 'app={"image":"ghcr.io/org/scrummonsters:PREVIOUS_SHA"}' \
   --region us-east-1
 
 # 3. Monitor health
-watch -n 5 'aws lightsail get-container-service-deployments --service-name scrumquest-prod --region us-east-1 | jq ".deployments[0].state"'
+watch -n 5 'aws lightsail get-container-service-deployments --service-name scrummonsters-prod --region us-east-1 | jq ".deployments[0].state"'
 
 # Done when state = ACTIVE
 ```
@@ -618,7 +618,7 @@ watch -n 5 'aws lightsail get-container-service-deployments --service-name scrum
 ssh -i lightsail.pem ubuntu@instance-ip
 
 # Connect to postgres container
-docker-compose exec postgres psql -U scrumquest -d scrumquest -c "SELECT NOW();"
+docker-compose exec postgres psql -U scrummonsters -d scrummonsters -c "SELECT NOW();"
 
 # If fails, check logs
 docker-compose logs postgres

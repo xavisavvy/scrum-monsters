@@ -1,13 +1,13 @@
 # Architecture: v1.2 SDLC CI/CD Integration
 
-**Project:** ScrumQuest v1.2 SDLC Best Practices
+**Project:** ScrumMonsters v1.2 SDLC Best Practices
 **Researched:** 2026-02-02
 **Focus:** How new SDLC features integrate with existing CI/CD infrastructure
 **Confidence:** HIGH (based on existing codebase analysis)
 
 ## Executive Summary
 
-ScrumQuest already has a mature CI/CD infrastructure with 11 GitHub Actions workflows, Kustomize-based Kubernetes deployments, and ArgoCD for GitOps. The v1.2 SDLC features primarily involve **extending existing workflows** rather than creating new infrastructure. The architecture is well-positioned for these additions, with clear integration points.
+ScrumMonsters already has a mature CI/CD infrastructure with 11 GitHub Actions workflows, Kustomize-based Kubernetes deployments, and ArgoCD for GitOps. The v1.2 SDLC features primarily involve **extending existing workflows** rather than creating new infrastructure. The architecture is well-positioned for these additions, with clear integration points.
 
 **Key insight:** Most v1.2 features fit naturally into the existing workflow structure. The main architectural decisions are:
 1. Where security scans fit in the pipeline sequence
@@ -78,7 +78,7 @@ ScrumQuest already has a mature CI/CD infrastructure with 11 GitHub Actions work
      |                   |                   |
      v                   v                   v
   ArgoCD             ArgoCD              ArgoCD
-(scrumquest-dev) (scrumquest-staging) (scrumquest-prod)
+(scrummonsters-dev) (scrummonsters-staging) (scrummonsters-prod)
 ```
 
 ---
@@ -433,7 +433,7 @@ jobs:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: scrumquest-migrate
+  name: scrummonsters-migrate
   annotations:
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
@@ -443,11 +443,11 @@ spec:
     spec:
       containers:
         - name: migrate
-          image: scrumquest:latest
+          image: scrummonsters:latest
           command: ["npm", "run", "db:migrate"]
           envFrom:
             - secretRef:
-                name: scrumquest-secrets
+                name: scrummonsters-secrets
           resources:
             requests:
               memory: "128Mi"
@@ -554,7 +554,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP="scrumquest-${{ github.event.inputs.environment }}"
+          APP="scrummonsters-${{ github.event.inputs.environment }}"
           echo "## Current Application State" >> $GITHUB_STEP_SUMMARY
           argocd app get $APP --server $ARGOCD_SERVER --grpc-web >> $GITHUB_STEP_SUMMARY
 
@@ -563,7 +563,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP="scrumquest-${{ github.event.inputs.environment }}"
+          APP="scrummonsters-${{ github.event.inputs.environment }}"
           echo "## Rollback Preview (Dry Run)" >> $GITHUB_STEP_SUMMARY
           argocd app history $APP --server $ARGOCD_SERVER --grpc-web >> $GITHUB_STEP_SUMMARY
           echo "Dry run complete - no changes made"
@@ -573,7 +573,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP="scrumquest-${{ github.event.inputs.environment }}"
+          APP="scrummonsters-${{ github.event.inputs.environment }}"
 
           if [ -n "${{ github.event.inputs.revision }}" ]; then
             echo "Rolling back to revision: ${{ github.event.inputs.revision }}"
@@ -592,7 +592,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP="scrumquest-${{ github.event.inputs.environment }}"
+          APP="scrummonsters-${{ github.event.inputs.environment }}"
           argocd app wait $APP \
             --server $ARGOCD_SERVER \
             --grpc-web \
@@ -604,7 +604,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP="scrumquest-${{ github.event.inputs.environment }}"
+          APP="scrummonsters-${{ github.event.inputs.environment }}"
           echo "## Post-Rollback Status" >> $GITHUB_STEP_SUMMARY
           argocd app get $APP --server $ARGOCD_SERVER --grpc-web >> $GITHUB_STEP_SUMMARY
 ```
@@ -775,7 +775,7 @@ Developer triggers workflow_dispatch
        |       |
        |       +-- GitHub environment protection (requires approval)
        |       |
-       |       +-- argocd app rollback scrumquest-prod [revision]
+       |       +-- argocd app rollback scrummonsters-prod [revision]
        |       |
        |       +-- argocd app wait --health (verify rollback healthy)
        |
@@ -968,6 +968,6 @@ External references (HIGH confidence):
 
 ---
 
-*Architecture research for: ScrumQuest v1.2 SDLC CI/CD integration*
+*Architecture research for: ScrumMonsters v1.2 SDLC CI/CD integration*
 *Researched: 2026-02-02*
 *Confidence: HIGH*

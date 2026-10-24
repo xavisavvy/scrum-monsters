@@ -4,7 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**ScrumQuest** is a real-time multiplayer scrum poker estimation game with JRPG-style boss battles. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
+**ScrumMonsters** is a real-time multiplayer scrum poker estimation game with JRPG-style boss battles. Full-stack TypeScript with Socket.IO for real-time sync and React Three Fiber for 3D graphics.
+
+**Naming:** the app is **ScrumMonsters**: `scrummonsters` in domains, metrics and Unix names, `scrum-monsters` in repo, image and storage-key names. Its retired name, ScrumQuest, must not come back in code, config or `.planning/` docs. <!-- legacy-name-ok -->
+`npm run lint:names` (also run by the pre-commit hook and CI) fails on it. The only intentional survivors are lines tagged `legacy-name-ok`: the Postgres role and database name, and the old localStorage keys that `client/src/lib/utils/legacyStorageMigration.ts` migrates from.
 
 ## Development Commands
 

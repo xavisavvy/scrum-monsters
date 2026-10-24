@@ -1,11 +1,11 @@
 asyncapi: 3.0.0
 info:
-  title: ScrumQuest WebSocket API
+  title: ScrumMonsters WebSocket API
   version: 1.0.0
   description: |
     Real-time multiplayer scrum poker estimation game WebSocket API.
 
-    ScrumQuest uses Socket.IO for real-time communication between clients and the server.
+    ScrumMonsters uses Socket.IO for real-time communication between clients and the server.
     This specification documents all WebSocket events for lobby management, avatar selection,
     battle mechanics, estimation/scoring, and combat systems.
 
@@ -24,7 +24,7 @@ servers:
     protocol: wss
     description: Development server with Socket.IO
   production:
-    host: scrumquest.app
+    host: scrummonsters.com
     protocol: wss
     description: Production server
 

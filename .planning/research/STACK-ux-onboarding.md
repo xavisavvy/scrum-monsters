@@ -1,6 +1,6 @@
 # Technology Stack: UX Onboarding, Tutorials, and Polish
 
-**Project:** ScrumQuest
+**Project:** ScrumMonsters
 **Researched:** 2026-03-11
 
 ## Core Recommendation: Build Custom on Existing Primitives

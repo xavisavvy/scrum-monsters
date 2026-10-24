@@ -140,7 +140,7 @@ const client = postgres(process.env.DATABASE_URL, {
 // ecosystem.config.cjs
 module.exports = {
   apps: [{
-    name: 'scrumquest',
+    name: 'scrummonsters',
     script: './dist/index.js',
     instances: 'max',
     exec_mode: 'cluster',

@@ -8,7 +8,7 @@
 
 ## Summary
 
-Phase 25 is the final polish phase for ScrumQuest v2.0, focusing on three lobby UX gaps: (1) the existing emote/magic system lacks visible UI and formal test coverage, (2) no player readiness indicators exist before game start, and (3) character sprites are static during lobby wait periods instead of showing idle animations. The good news: **80% of the foundation already exists** from v1.3 ad-hoc implementation and Phases 22-23 systematic work.
+Phase 25 is the final polish phase for ScrumMonsters v2.0, focusing on three lobby UX gaps: (1) the existing emote/magic system lacks visible UI and formal test coverage, (2) no player readiness indicators exist before game start, and (3) character sprites are static during lobby wait periods instead of showing idle animations. The good news: **80% of the foundation already exists** from v1.3 ad-hoc implementation and Phases 22-23 systematic work.
 
 The emote system (`magicWords.ts`, `EmoteModal.tsx`, `MagicEffect.tsx`) is fully functional with 31 magic effect types, server-side validation in `websocket.ts`, and extensive visual effects. What's missing: **zero unit tests** for `detectMagicWords()` / `extractSpellTargets()`, no E2E verification of server-side validation, and the EmoteModal UI is buried behind keyboard shortcut "E" with no visible button or mobile-friendly entry point.
 
@@ -158,7 +158,7 @@ export const LobbyEmotePayloadSchema = z.object({
 
 | Standard Approach | Alternative | Why Not |
 |-------------------|-------------|---------|
-| `useSpriteAnimation` custom hook | `react-sprite-animator` npm package | Custom hook already exists, optimized for ScrumQuest sprite sheets |
+| `useSpriteAnimation` custom hook | `react-sprite-animator` npm package | Custom hook already exists, optimized for ScrumMonsters sprite sheets |
 | CSS keyframe animations for idle | JavaScript `requestAnimationFrame` for idle | CSS is more performant for looping animations ([CSS vs JS animations](https://web.dev/articles/css-vs-javascript)) |
 | Framer Motion for UI polish | GSAP / react-spring | Framer Motion already installed, used in phase transitions |
 | Vitest + @testing-library | Jest + Enzyme | Vitest already configured, faster, better ESM support |
@@ -428,7 +428,7 @@ test('emote sent by one player appears for other players', async ({ page, contex
 
 **Why it happens:** Changing `idle: { frames: 2 }` without verifying sprite sheet layout.
 
-**How to avoid:** Before changing frames count, verify sprite sheet has those frames. All ScrumQuest sprites use row 0, frames 0-3 for down-facing walk cycle — frame 0 is idle, frames 1-3 are walk. Can use frames 0-1 for 2-frame idle breathing effect.
+**How to avoid:** Before changing frames count, verify sprite sheet has those frames. All ScrumMonsters sprites use row 0, frames 0-3 for down-facing walk cycle — frame 0 is idle, frames 1-3 are walk. Can use frames 0-1 for 2-frame idle breathing effect.
 
 **Warning signs:** Console warning "Frame out of bounds" from `useSpriteAnimation.ts` line 112-114.
 
@@ -623,7 +623,7 @@ export interface Player {
 
 **What we know:**
 - Standard multiplayer pattern: all players must ready up
-- ScrumQuest supports 1-8 players
+- ScrumMonsters supports 1-8 players
 
 **What's unclear:**
 - Should host override (start even if not all ready)?
@@ -679,7 +679,7 @@ export interface Player {
 - Testing approach: **HIGH** - Vitest config verified, existing test patterns inspected
 - Emote system state: **HIGH** - Full codebase inspection of existing implementation
 - Idle animation approach: **MEDIUM** - Sprite sheet layout assumed based on hook config, needs visual verification
-- Readiness UX: **MEDIUM** - Standard multiplayer pattern, but no ScrumQuest-specific requirements documented
+- Readiness UX: **MEDIUM** - Standard multiplayer pattern, but no ScrumMonsters-specific requirements documented
 
 **Research date:** 2026-02-19
 **Valid until:** 2026-03-21 (30 days for stable tech stack)

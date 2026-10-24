@@ -236,7 +236,7 @@ if (teamsAgree && lobby.boss && lobby.currentTicket && lobby.estimationSettings?
 | Category | Items Found | Action Required |
 |----------|-------------|------------------|
 | Stored data | `localStorage["scrum-monsters-lobby-settings"]` — JSON blob with timerSettings/jiraSettings/estimationSettings. After 42-02 ships, old persisted blobs lack `autoAdvance` field. | Code edit only — `LobbySettingsStorage.validateSettings` already defaults missing fields (line 115-145 pattern). Add default `autoAdvance: false` in `getDefaultSettings`. No migration needed. |
-| Live service config | None — ScrumQuest is self-hosted with no external service that stores `lobby_updated` references. | None |
+| Live service config | None — ScrumMonsters is self-hosted with no external service that stores `lobby_updated` references. | None |
 | OS-registered state | None | None — verified by inspection (no scheduled tasks, no systemd units reference event names). |
 | Secrets/env vars | None — event renames don't touch env. | None |
 | Build artifacts | TypeScript types — `shared/gameEvents.ts:322` declares `lobby_updated` in `ServerToClientEvents`. After 42-02, type must be removed/deprecated. asyncapi.yaml:715 documents the event. | Code edit: remove `lobby_updated` from `ServerToClientEvents`. Update `specs/asyncapi.yaml:715`. Update CLAUDE.md:78 documentation. Update `README.md:206`. |

@@ -263,7 +263,7 @@
     throw new Error('Production must use production database');
   }
   ```
-- Use different database names: `scrumquest_dev`, `scrumquest_prod`
+- Use different database names: `scrummonsters_dev`, `scrummonsters_prod`
 - Railway/Render provide separate database URLs per environment automatically
 - Never commit .env files (already in .gitignore)
 

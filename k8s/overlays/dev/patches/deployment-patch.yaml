@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scrumquest
+  name: scrummonsters
 spec:
   # Single replica for dev
   replicas: 1
   template:
     spec:
       containers:
-        - name: scrumquest
+        - name: scrummonsters
           # Lower resource limits for dev
           resources:
             requests:

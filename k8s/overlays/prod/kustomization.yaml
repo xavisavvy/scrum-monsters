@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: scrumquest-prod
+namespace: scrummonsters-prod
 
 namePrefix: prod-
 
@@ -14,8 +14,8 @@ commonLabels:
 
 # Override image for production
 images:
-  - name: scrumquest
-    newName: scrumquest
+  - name: scrummonsters
+    newName: scrummonsters
     newTag: v1.0.0
 
 # Production-specific patches
@@ -28,7 +28,7 @@ patches:
 # Note: Production secrets MUST use Sealed Secrets
 # This generator is a placeholder - replace with SealedSecret reference in Phase 4
 secretGenerator:
-  - name: scrumquest-secrets
+  - name: scrummonsters-secrets
     literals:
       - DATABASE_URL=REPLACE_WITH_SEALED_SECRET
       - SESSION_SECRET=REPLACE_WITH_SEALED_SECRET

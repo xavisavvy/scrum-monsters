@@ -106,7 +106,7 @@ describe('useTutorial store', () => {
       result.current.completeTutorial('battle-intro');
     });
 
-    const stored = JSON.parse(localStorage.getItem('scrumquest-tutorial') || '{}');
+    const stored = JSON.parse(localStorage.getItem('scrum-monsters-tutorial') || '{}');
     const persistedState = stored.state;
 
     expect(persistedState.completedTutorials).toEqual({ 'battle-intro': true });

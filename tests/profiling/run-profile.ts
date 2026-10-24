@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * run-profile.ts - Profiling orchestrator for ScrumQuest resource measurement
+ * run-profile.ts - Profiling orchestrator for ScrumMonsters resource measurement
  *
  * Runs load tests against the server and measures actual resource usage
  * to support hosting infrastructure decisions.
@@ -372,7 +372,7 @@ function printSummary(report: ProfileReport): void {
  */
 async function main(): Promise<void> {
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-  console.log("  ScrumQuest Resource Profiler");
+  console.log("  ScrumMonsters Resource Profiler");
   console.log("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
 
   const config = parseArgs();

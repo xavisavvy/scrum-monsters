@@ -1,4 +1,4 @@
-# ArgoCD Application for ScrumQuest Production Environment
+# ArgoCD Application for ScrumMonsters Production Environment
 #
 # Features:
 #   - MANUAL sync required (no auto-sync)
@@ -7,45 +7,45 @@
 #   - Requires approval before deployment
 #
 # Deploy:
-#   kubectl apply -f k8s/argocd-apps/scrumquest-prod.yaml
+#   kubectl apply -f k8s/argocd-apps/scrummonsters-prod.yaml
 #
 # Manual Sync:
-#   argocd app sync scrumquest-prod
+#   argocd app sync scrummonsters-prod
 #   # Or via UI with approval workflow
 #
 # Rollback:
-#   argocd app rollback scrumquest-prod
+#   argocd app rollback scrummonsters-prod
 #   # Or: git revert <commit> && git push
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: scrumquest-prod
+  name: scrummonsters-prod
   namespace: argocd
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/environment: production
   # Finalize protection - prevents accidental deletion
   finalizers:
     - resources-finalizer.argocd.argoproj.io
   annotations:
     # Notifications for production (requires notification controller)
-    notifications.argoproj.io/subscribe.on-sync-running.slack: scrumquest-deploys
-    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: scrumquest-deploys
-    notifications.argoproj.io/subscribe.on-sync-failed.slack: scrumquest-alerts
+    notifications.argoproj.io/subscribe.on-sync-running.slack: scrummonsters-deploys
+    notifications.argoproj.io/subscribe.on-sync-succeeded.slack: scrummonsters-deploys
+    notifications.argoproj.io/subscribe.on-sync-failed.slack: scrummonsters-alerts
 spec:
   project: default
 
   source:
     # Repository URL - update to your actual repo
-    repoURL: https://github.com/your-org/scrumquest.git
+    repoURL: https://github.com/your-org/scrummonsters.git
     # Production uses tagged releases
     targetRevision: v1.0.0
     path: k8s/overlays/prod
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: scrumquest-prod
+    namespace: scrummonsters-prod
 
   syncPolicy:
     # NO auto-sync for production - manual approval required
@@ -90,18 +90,18 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: AppProject
 metadata:
-  name: scrumquest-production
+  name: scrummonsters-production
   namespace: argocd
 spec:
-  description: ScrumQuest Production Environment
+  description: ScrumMonsters Production Environment
 
-  # Only allow deploying from scrumquest repo
+  # Only allow deploying from scrummonsters repo
   sourceRepos:
-    - https://github.com/your-org/scrumquest.git
+    - https://github.com/your-org/scrummonsters.git
 
   # Only allow deploying to production namespace
   destinations:
-    - namespace: scrumquest-prod
+    - namespace: scrummonsters-prod
       server: https://kubernetes.default.svc
 
   # Deny all cluster-scoped resources except required ones
@@ -119,7 +119,7 @@ spec:
     - name: production-deployer
       description: Can sync production applications
       policies:
-        - p, proj:scrumquest-production:production-deployer, applications, sync, scrumquest-production/*, allow
-        - p, proj:scrumquest-production:production-deployer, applications, get, scrumquest-production/*, allow
+        - p, proj:scrummonsters-production:production-deployer, applications, sync, scrummonsters-production/*, allow
+        - p, proj:scrummonsters-production:production-deployer, applications, get, scrummonsters-production/*, allow
       groups:
-        - scrumquest-team
+        - scrummonsters-team

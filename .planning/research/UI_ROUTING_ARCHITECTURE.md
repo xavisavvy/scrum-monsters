@@ -9,7 +9,7 @@
 ### Routing Layer Separation
 
 ```
-ScrumQuest Architecture (Post-Routing Integration)
+ScrumMonsters Architecture (Post-Routing Integration)
 
 ┌───────────────────────────────────────────────────────────────────┐
 │ React Router (BrowserRouter)                                      │
@@ -173,12 +173,12 @@ function LandingPage() {
   return (
     <>
       <Helmet>
-        <title>ScrumQuest - JRPG Scrum Poker Battles</title>
+        <title>ScrumMonsters - JRPG Scrum Poker Battles</title>
         <meta name="description" content="Real-time multiplayer scrum poker with epic JRPG boss battles. Estimate tickets, battle monsters, level up your team." />
-        <meta property="og:title" content="ScrumQuest - JRPG Scrum Poker" />
+        <meta property="og:title" content="ScrumMonsters - JRPG Scrum Poker" />
         <meta property="og:description" content="Battle tickets in epic JRPG style" />
-        <meta property="og:url" content="https://scrumquest.app/" />
-        <link rel="canonical" href="https://scrumquest.app/" />
+        <meta property="og:url" content="https://scrummonsters.com/" />
+        <link rel="canonical" href="https://scrummonsters.com/" />
       </Helmet>
       {/* Page content */}
     </>
@@ -455,4 +455,4 @@ useFrame(() => {
 
 **Confidence Level:** HIGH
 
-All recommendations based on official documentation, verified with 2026-current best practices, and aligned with existing ScrumQuest architecture.
+All recommendations based on official documentation, verified with 2026-current best practices, and aligned with existing ScrumMonsters architecture.

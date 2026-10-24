@@ -23,7 +23,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "scrumquest_active_lobbies",
+          "expr": "scrummonsters_active_lobbies",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -63,7 +63,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "scrumquest_active_players",
+          "expr": "scrummonsters_active_players",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -103,7 +103,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "scrumquest_websocket_connections",
+          "expr": "scrummonsters_websocket_connections",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -143,7 +143,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "increase(scrumquest_games_completed_total[1h])",
+          "expr": "increase(scrummonsters_games_completed_total[1h])",
           "legendFormat": "{{instance}}"
         }
       ],
@@ -294,7 +294,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "scrumquest_nodejs_heap_used_bytes",
+          "expr": "scrummonsters_nodejs_heap_used_bytes",
           "legendFormat": "heap used"
         }
       ],
@@ -331,7 +331,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "scrumquest_nodejs_eventloop_lag_seconds",
+          "expr": "scrummonsters_nodejs_eventloop_lag_seconds",
           "legendFormat": "lag"
         }
       ],
@@ -368,7 +368,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "scrumquest_nodejs_active_handles_total",
+          "expr": "scrummonsters_nodejs_active_handles_total",
           "legendFormat": "handles"
         }
       ],

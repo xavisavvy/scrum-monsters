@@ -55,6 +55,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Check for retired app name
+        run: npm run lint:names
+
   test:
     name: Test
     runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'

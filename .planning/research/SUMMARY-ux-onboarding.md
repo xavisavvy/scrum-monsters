@@ -1,13 +1,13 @@
 # Project Research Summary
 
-**Project:** ScrumQuest -- UX Onboarding, Tutorials, and Polish
+**Project:** ScrumMonsters -- UX Onboarding, Tutorials, and Polish
 **Domain:** Multiplayer game onboarding UX / tutorial system / UI polish layer
 **Researched:** 2026-03-11
 **Confidence:** HIGH
 
 ## Executive Summary
 
-ScrumQuest needs a UX polish layer that adds first-time user guidance, contextual hints, loading/empty/error states, and interaction feedback to an already feature-rich multiplayer JRPG estimation game. The critical finding across all research is that **zero new dependencies are needed**. The codebase already contains every primitive required -- Radix tooltips/popovers/dialogs, Framer Motion animations, shadcn Skeleton components, Sonner toasts, and 6+ localStorage utilities -- all installed but largely unused for onboarding purposes. The work is about composing and wiring up what exists, not adding new libraries.
+ScrumMonsters needs a UX polish layer that adds first-time user guidance, contextual hints, loading/empty/error states, and interaction feedback to an already feature-rich multiplayer JRPG estimation game. The critical finding across all research is that **zero new dependencies are needed**. The codebase already contains every primitive required -- Radix tooltips/popovers/dialogs, Framer Motion animations, shadcn Skeleton components, Sonner toasts, and 6+ localStorage utilities -- all installed but largely unused for onboarding purposes. The work is about composing and wiring up what exists, not adding new libraries.
 
 The recommended approach is to build three overlay layers that observe existing game state without modifying it: a tutorial/hint layer (new Zustand store + overlay components), a UX feedback layer (toasts, micro-animations), and a state polish layer (loading skeletons, empty states, error recovery). All three layers are read-only subscribers to `useGameState` and Socket.IO events, following the exact pattern already established by `FloatingXPManager`, `ComboNotification`, and `LevelUpCelebration`. This architecture ensures the onboarding system cannot corrupt live multiplayer state -- the single most dangerous pitfall identified in research.
 
@@ -131,7 +131,7 @@ Phases with standard patterns (skip research-phase):
 | Stack | HIGH | Every recommended technology is already installed in the codebase. Zero new dependencies. Decision validated by examining and rejecting 6 alternative libraries with specific rationale. |
 | Features | HIGH | Feature set derived from established game UX research (NN/g, Acagamic, Inworld) cross-referenced with direct codebase analysis of existing gaps. Clear anti-features identified. |
 | Architecture | HIGH | Architecture directly extends 4+ existing patterns in the codebase (overlay components, sync hooks, localStorage utilities, CVA variants). No novel patterns required. |
-| Pitfalls | HIGH | All critical pitfalls derived from direct analysis of existing code (AnimatePresence keying, useGameState coupling, Socket.IO event flow). ScrumQuest-specific, not generic warnings. |
+| Pitfalls | HIGH | All critical pitfalls derived from direct analysis of existing code (AnimatePresence keying, useGameState coupling, Socket.IO event flow). ScrumMonsters-specific, not generic warnings. |
 
 **Overall confidence:** HIGH
 

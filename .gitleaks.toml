@@ -1,4 +1,4 @@
-# Gitleaks configuration for ScrumQuest
+# Gitleaks configuration for ScrumMonsters
 # Prevents secrets from being committed to the repository
 
 # Use default gitleaks rules

@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file. See [standa
 
 ### Initial Release
 
-First stable release of ScrumQuest - Multiplayer Scrum Poker RPG.
+First stable release of ScrumMonsters - Multiplayer Scrum Poker RPG.
 
 ### Features
 

@@ -1,6 +1,6 @@
 # Technology Stack: UI/UX Milestone
 
-**Project:** ScrumQuest JRPG UI, Mobile UX, Routing & Lobby Magic
+**Project:** ScrumMonsters JRPG UI, Mobile UX, Routing & Lobby Magic
 **Researched:** 2026-02-11
 
 ## Recommended Stack

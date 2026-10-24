@@ -1,27 +1,25 @@
-# ArgoCD Application for ScrumQuest Staging Environment
+# ArgoCD Application for ScrumMonsters Development Environment
 #
 # Features:
-#   - MANUAL sync required (no auto-sync)
-#   - Self-healing disabled (manual control)
-#   - Explicit revision history for rollback support
+#   - Auto-sync on push to main branch
+#   - Self-healing (auto-corrects drift)
+#   - Pruning (removes orphaned resources)
 #
 # Deploy:
-#   kubectl apply -f k8s/argocd-apps/scrumquest-staging.yaml
+#   kubectl apply -f k8s/argocd-apps/scrummonsters-dev.yaml
 #
-# Manual Sync:
-#   argocd app sync scrumquest-staging
-#
-# Rollback:
-#   argocd app rollback scrumquest-staging
+# Monitor:
+#   argocd app get scrummonsters-dev
+#   argocd app sync scrummonsters-dev
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: scrumquest-staging
+  name: scrummonsters-dev
   namespace: argocd
   labels:
-    app.kubernetes.io/name: scrumquest
-    app.kubernetes.io/environment: staging
+    app.kubernetes.io/name: scrummonsters
+    app.kubernetes.io/environment: dev
   # Finalize protection - prevents accidental deletion
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -30,17 +28,21 @@ spec:
 
   source:
     # Repository URL - update to your actual repo
-    repoURL: https://github.com/your-org/scrumquest.git
+    repoURL: https://github.com/your-org/scrummonsters.git
     targetRevision: main
-    path: k8s/overlays/staging
+    path: k8s/overlays/dev
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: scrumquest-staging
+    namespace: scrummonsters-dev
 
   syncPolicy:
-    # NO auto-sync for staging - manual sync required
-    # automated: null
+    # Auto-sync enabled for dev
+    automated:
+      prune: true
+      selfHeal: true
+      # Allow empty - don't block if no changes
+      allowEmpty: false
 
     syncOptions:
       # Create namespace if it doesn't exist
@@ -67,5 +69,10 @@ spec:
       jsonPointers:
         - /spec/replicas
 
-  # Revision history limit for rollbacks
-  revisionHistoryLimit: 10
+  # Notifications (optional - requires notification controller)
+  # notifications:
+  #   triggers:
+  #     - on-sync-succeeded
+  #     - on-sync-failed
+  #   services:
+  #     - slack

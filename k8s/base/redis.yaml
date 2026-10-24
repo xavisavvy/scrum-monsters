@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
   name: redis
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: cache
 spec:
   replicas: 1
@@ -14,7 +14,7 @@ spec:
     metadata:
       labels:
         app: redis
-        app.kubernetes.io/name: scrumquest
+        app.kubernetes.io/name: scrummonsters
         app.kubernetes.io/component: cache
     spec:
       containers:
@@ -64,7 +64,7 @@ kind: Service
 metadata:
   name: redis-service
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: cache
 spec:
   type: ClusterIP

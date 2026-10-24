@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scrumquest-config
+  name: scrummonsters-config
 data:
   NODE_ENV: "staging"
   LOG_LEVEL: "info"
-  ALLOWED_ORIGINS: "https://staging.scrumquest.local,https://scrumquest-staging.example.com"
+  ALLOWED_ORIGINS: "https://staging.scrummonsters.local,https://scrummonsters-staging.example.com"

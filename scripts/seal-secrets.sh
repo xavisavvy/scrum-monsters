@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# seal-secrets.sh - Helper script to create Sealed Secrets for ScrumQuest
+# seal-secrets.sh - Helper script to create Sealed Secrets for ScrumMonsters
 #
 # Usage:
 #   ./scripts/seal-secrets.sh <environment> [controller-namespace]
@@ -49,10 +49,10 @@ case "$ENV" in
 esac
 
 # Set namespace based on environment
-NAMESPACE="scrumquest-${ENV}"
+NAMESPACE="scrummonsters-${ENV}"
 OUTPUT_DIR="${PROJECT_ROOT}/k8s/overlays/${ENV}"
 
-echo -e "${GREEN}=== ScrumQuest Sealed Secrets Generator ===${NC}"
+echo -e "${GREEN}=== ScrumMonsters Sealed Secrets Generator ===${NC}"
 echo -e "Environment: ${YELLOW}${ENV}${NC}"
 echo -e "Namespace: ${YELLOW}${NAMESPACE}${NC}"
 echo ""
@@ -111,22 +111,22 @@ echo ""
 # PostgreSQL credentials
 echo ""
 echo -e "${GREEN}PostgreSQL credentials:${NC}"
-read -p "POSTGRES_USER [scrumquest]: " POSTGRES_USER
-POSTGRES_USER="${POSTGRES_USER:-scrumquest}"
+read -p "POSTGRES_USER [scrummonsters]: " POSTGRES_USER
+POSTGRES_USER="${POSTGRES_USER:-scrummonsters}"
 read -p "POSTGRES_PASSWORD: " -s POSTGRES_PASSWORD
 echo ""
-read -p "POSTGRES_DB [scrumquest]: " POSTGRES_DB
-POSTGRES_DB="${POSTGRES_DB:-scrumquest}"
+read -p "POSTGRES_DB [scrummonsters]: " POSTGRES_DB
+POSTGRES_DB="${POSTGRES_DB:-scrummonsters}"
 
 # Create app secrets YAML
-cat > "${TEMP_DIR}/scrumquest-secrets.yaml" <<EOF
+cat > "${TEMP_DIR}/scrummonsters-secrets.yaml" <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: scrumquest-secrets
+  name: scrummonsters-secrets
   namespace: ${NAMESPACE}
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: secrets
     app.kubernetes.io/environment: ${ENV}
 type: Opaque
@@ -148,7 +148,7 @@ metadata:
   name: postgres-secrets
   namespace: ${NAMESPACE}
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: database
     app.kubernetes.io/environment: ${ENV}
 type: Opaque
@@ -166,8 +166,8 @@ kubeseal \
     --controller-name="$CONTROLLER_NAME" \
     --controller-namespace="$CONTROLLER_NAMESPACE" \
     --format yaml \
-    < "${TEMP_DIR}/scrumquest-secrets.yaml" \
-    > "${OUTPUT_DIR}/sealed-scrumquest-secrets.yaml"
+    < "${TEMP_DIR}/scrummonsters-secrets.yaml" \
+    > "${OUTPUT_DIR}/sealed-scrummonsters-secrets.yaml"
 
 kubeseal \
     --controller-name="$CONTROLLER_NAME" \
@@ -178,13 +178,13 @@ kubeseal \
 
 echo ""
 echo -e "${GREEN}Success! Sealed secrets created:${NC}"
-echo "  - ${OUTPUT_DIR}/sealed-scrumquest-secrets.yaml"
+echo "  - ${OUTPUT_DIR}/sealed-scrummonsters-secrets.yaml"
 echo "  - ${OUTPUT_DIR}/sealed-postgres-secrets.yaml"
 echo ""
 echo -e "${YELLOW}Next steps:${NC}"
 echo "1. Add the sealed secrets to the kustomization.yaml:"
 echo "   resources:"
-echo "     - sealed-scrumquest-secrets.yaml"
+echo "     - sealed-scrummonsters-secrets.yaml"
 echo "     - sealed-postgres-secrets.yaml"
 echo ""
 echo "2. Remove the secretGenerator from kustomization.yaml"

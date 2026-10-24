@@ -507,7 +507,7 @@ Things that couldn't be fully resolved:
 
 ### Primary (HIGH confidence)
 - Socket.IO 4.8.1 official documentation - Room-based broadcasting: https://socket.io/docs/v3/rooms/
-- ScrumQuest codebase - Domain manager pattern (SessionManager, EstimationManager, CombatManager) at server/domains/
+- ScrumMonsters codebase - Domain manager pattern (SessionManager, EstimationManager, CombatManager) at server/domains/
 - Socket.IO official - Emitting events: https://socket.io/docs/v3/emitting-events/
 
 ### Secondary (MEDIUM confidence)

@@ -47,7 +47,7 @@ score: 9/9 must-haves verified
 | drizzle.config.ts | shared/schema.ts | schema source of truth | WIRED | Line 5: schema: "./shared/schema.ts" |
 | .github/workflows/ci.yml | npm run db:migrate | Applies migrations in CI | WIRED | Line 202: npm run db:migrate in validate-migrations job |
 | .github/workflows/ci.yml | ci-success job | needs array includes validate-migrations | WIRED | Line 231: ci-success needs validate-migrations, Line 242: result check |
-| k8s/base/migration-job.yaml | scrumquest-secrets | secretRef for DATABASE_URL | WIRED | Lines 33-34: envFrom secretRef name scrumquest-secrets |
+| k8s/base/migration-job.yaml | scrummonsters-secrets | secretRef for DATABASE_URL | WIRED | Lines 33-34: envFrom secretRef name scrummonsters-secrets |
 | k8s/base/migration-job.yaml | npm run db:migrate | Job command | WIRED | Line 31: command: ["npm", "run", "db:migrate"] |
 | k8s/base/kustomization.yaml | migration-job.yaml | Resource inclusion | WIRED | Line 12: migration-job.yaml in resources list |
 
@@ -159,12 +159,12 @@ No TODO, FIXME, placeholder, or stub patterns found in any migration-related fil
 - Level 3 (Wired): PASS - Kubernetes Job runs once, not per pod replica
 - **Status:** VERIFIED
 
-**Wiring: migration-job.yaml to scrumquest-secrets**
+**Wiring: migration-job.yaml to scrummonsters-secrets**
 - From: Migration Job container
-- To: scrumquest-secrets (DATABASE_URL)
+- To: scrummonsters-secrets (DATABASE_URL)
 - Via: envFrom secretRef
 - Verification:
-  - Lines 32-34: envFrom secretRef name scrumquest-secrets - PASS
+  - Lines 32-34: envFrom secretRef name scrummonsters-secrets - PASS
   - Ensures DATABASE_URL available for drizzle-kit migrate
 - **Status:** WIRED
 

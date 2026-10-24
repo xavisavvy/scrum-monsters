@@ -67,7 +67,7 @@ export function attachWebglResilience(
     console.warn('[webgl] context lost — recovery requested');
     options.onLost?.(event as WebGLContextEvent);
     // Fire-and-forget telemetry: increments
-    // scrumquest_webgl_context_loss_total{recovered="false"}. The
+    // scrummonsters_webgl_context_loss_total{recovered="false"}. The
     // counterpart restored=true ping fires from the restore handler.
     reportContextLoss({ recovered: false });
   });

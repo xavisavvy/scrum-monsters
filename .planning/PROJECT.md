@@ -1,4 +1,4 @@
-# ScrumQuest
+# ScrumMonsters
 
 ## What This Is
 
@@ -113,7 +113,7 @@ Focused estimation that doesn't bore people. Voting should be distraction-free, 
 
 ## Current Milestone: v5.0 UX & Onboarding
 
-**Goal:** Make ScrumQuest welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback.
+**Goal:** Make ScrumMonsters welcoming to new players and polished for everyone — tutorial system, contextual hints, smooth transitions, meaningful error/empty states, and responsive interaction feedback.
 
 **Target features:**
 - Interactive tutorial for first-time players

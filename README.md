@@ -375,10 +375,10 @@ See [k8s/README.md](k8s/README.md) for detailed deployment instructions.
 
 ### Metrics Endpoint
 The app exposes Prometheus metrics at `/metrics`:
-- `scrumquest_active_lobbies` - Current lobby count
-- `scrumquest_active_players` - Current player count
-- `scrumquest_websocket_connections` - WebSocket connections
-- `scrumquest_votes_submitted_total` - Vote submissions by team
+- `scrummonsters_active_lobbies` - Current lobby count
+- `scrummonsters_active_players` - Current player count
+- `scrummonsters_websocket_connections` - WebSocket connections
+- `scrummonsters_votes_submitted_total` - Vote submissions by team
 - `http_request_duration_seconds` - Request latency histogram
 
 ### Structured Logging

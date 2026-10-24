@@ -8,7 +8,7 @@
 
 ## Summary
 
-ScrumQuest has zero explicit mobile support today. The game uses a fixed 1920x1080 world with a viewport scale system, keyboard-driven player controls (WASD/Arrow keys, Ctrl to shoot, Q for specials, E for emotes), and a Three.js Canvas for the lobby's particle lighting. No safe-area CSS, no pointer events, no DPR capping, and no orientation adaptation exist. This phase retrofits mobile support across all five problem areas without breaking the existing desktop experience.
+ScrumMonsters has zero explicit mobile support today. The game uses a fixed 1920x1080 world with a viewport scale system, keyboard-driven player controls (WASD/Arrow keys, Ctrl to shoot, Q for specials, E for emotes), and a Three.js Canvas for the lobby's particle lighting. No safe-area CSS, no pointer events, no DPR capping, and no orientation adaptation exist. This phase retrofits mobile support across all five problem areas without breaking the existing desktop experience.
 
 The work splits into five parallel tracks: (1) touch-target audit — the `AbilityButton` (64x64px, fine) and `fibonacci-button` (60px grid, borderline) need validation and the PlayerController needs touch-move controls added; (2) safe-area CSS — the viewport meta tag lacks `viewport-fit=cover` and zero CSS uses `env(safe-area-inset-*)`; (3) orientation adaptation — no media queries exist for portrait/landscape; (4) Three.js performance — the Canvas in `Lobby.tsx` has no `dpr` prop and no PerformanceMonitor; (5) reconnection UX — the `ReconnectionStatus` component exists and is well-built but needs verification it renders correctly on mobile viewports.
 

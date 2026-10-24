@@ -1,6 +1,6 @@
 # Technology Stack: Docker Deployment to Single VPS
 
-**Project:** ScrumQuest
+**Project:** ScrumMonsters
 **Researched:** 2026-02-24
 **Scale:** 50-100 concurrent users, single VPS instance
 **Budget:** $5-20/month
@@ -41,7 +41,7 @@
 | Technology | Version | Purpose | Why | Trade-offs |
 |-----------|---------|---------|-----|-----------|
 | **Prometheus** | 2.x | Metrics collection, time-series database | Open-source, battle-tested, excellent for Node.js + Socket.IO | Requires scrape configuration, storage management |
-| **prom-client** | 15.x | Node.js Prometheus exporter | Already installed in ScrumQuest, exports standard metrics | Minimal overhead, mature library |
+| **prom-client** | 15.x | Node.js Prometheus exporter | Already installed in ScrumMonsters, exports standard metrics | Minimal overhead, mature library |
 | **socket.io-prometheus** | 0.x | Socket.IO-specific metrics | Captures connection count, room statistics | Optional but highly recommended for observability |
 | **Dozzle** | Latest | Real-time Docker logs UI | Lightweight (40MB), zero-config, shows live container logs | Simpler than Loki, no log aggregation across containers |
 | **Healthchecks.io** | Current | Uptime monitoring + alerts | Free tier sufficient for 1 service, email alerts on downtime | Limited to simple HTTP checks, not suitable for complex health logic |
@@ -103,7 +103,7 @@ docker-compose --version
 ### Core Deployment
 
 ```bash
-# Clone ScrumQuest repository
+# Clone ScrumMonsters repository
 git clone https://github.com/yourorg/scrummonsters.git
 cd scrummonsters
 
@@ -111,7 +111,7 @@ cd scrummonsters
 cp .env.example .env
 
 # Edit .env with production values:
-# DATABASE_URL=postgresql://scrumquest:YOUR_PASSWORD@postgres:5432/scrumquest
+# DATABASE_URL=postgresql://scrummonsters:YOUR_PASSWORD@postgres:5432/scrummonsters
 # SESSION_SECRET=generate-with: openssl rand -base64 32
 # AWS_ACCESS_KEY_ID=your-s3-key
 # AWS_SECRET_ACCESS_KEY=your-s3-secret
@@ -132,7 +132,7 @@ docker-compose exec app npm run db:push
 # .env (local only, not in git)
 
 # Database
-DATABASE_URL=postgresql://scrumquest:YOUR_PASSWORD@postgres:5432/scrumquest
+DATABASE_URL=postgresql://scrummonsters:YOUR_PASSWORD@postgres:5432/scrummonsters
 POSTGRES_PASSWORD=YOUR_PASSWORD
 
 # Session
@@ -156,9 +156,9 @@ NPM_DB_PASSWORD=your-npm-password
 ### Systemd Service (Auto-start on VPS Reboot)
 
 ```ini
-# /etc/systemd/system/scrumquest-docker.service
+# /etc/systemd/system/scrummonsters-docker.service
 [Unit]
-Description=ScrumQuest Docker Compose Application
+Description=ScrumMonsters Docker Compose Application
 After=docker.service
 Requires=docker.service
 
@@ -178,15 +178,15 @@ WantedBy=multi-user.target
 **Installation:**
 ```bash
 # Copy service file
-sudo cp scrumquest-docker.service /etc/systemd/system/
+sudo cp scrummonsters-docker.service /etc/systemd/system/
 
 # Enable auto-start
 sudo systemctl daemon-reload
-sudo systemctl enable scrumquest-docker.service
-sudo systemctl start scrumquest-docker.service
+sudo systemctl enable scrummonsters-docker.service
+sudo systemctl start scrummonsters-docker.service
 
 # Verify
-sudo systemctl status scrumquest-docker.service
+sudo systemctl status scrummonsters-docker.service
 ```
 
 ### Nginx Proxy Manager Setup (via GUI)
@@ -226,7 +226,7 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
-  - job_name: 'scrumquest-app'
+  - job_name: 'scrummonsters-app'
     static_configs:
       - targets: ['app:5000']
     metrics_path: '/metrics'
@@ -307,7 +307,7 @@ docker-compose logs app --tail 1000 | wc -l
 ```
 AWS Lightsail (infrastructure)
     └─ Docker Engine + Docker Compose
-        ├─ ScrumQuest App (Node.js 20)
+        ├─ ScrumMonsters App (Node.js 20)
         │   ├─ Express (HTTP)
         │   ├─ Socket.IO (WebSocket)
         │   └─ Drizzle ORM (database access)

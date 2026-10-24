@@ -6,7 +6,7 @@
 
 ## Context: What Already Exists
 
-Before mapping features, it is critical to note what ScrumQuest already has:
+Before mapping features, it is critical to note what ScrumMonsters already has:
 
 | Existing Feature | Relevance to This Milestone |
 |---|---|
@@ -32,7 +32,7 @@ Features users expect. Missing = product feels incomplete or hostile to new play
 
 | Aspect | Detail |
 |---|---|
-| **Why Expected** | ScrumQuest has 8 game phases, 5 boss AIs, 20 class abilities, items, combos, team mechanics. A new player joining a lobby has zero context for what any of this means. Without guidance, they will stare at the screen, feel lost, and leave. |
+| **Why Expected** | ScrumMonsters has 8 game phases, 5 boss AIs, 20 class abilities, items, combos, team mechanics. A new player joining a lobby has zero context for what any of this means. Without guidance, they will stare at the screen, feel lost, and leave. |
 | **Complexity** | Medium |
 | **What to Build** | Step-by-step overlay walkthrough triggered on first visit. Highlight key UI elements (vote cards, boss HP, ability bar, XP bar) with spotlight + tooltip. 5-8 steps max, skippable, dismissable, remembers completion in localStorage. |
 | **Pattern** | "Learn by spotlighting" -- dark overlay with cutout around target element, tooltip explaining what it does and why. NOT a separate tutorial mode or practice battle. |
@@ -99,7 +99,7 @@ Features users expect. Missing = product feels incomplete or hostile to new play
 
 ## Differentiators
 
-Features that set the product apart. Not expected, but would make ScrumQuest feel polished and memorable.
+Features that set the product apart. Not expected, but would make ScrumMonsters feel polished and memorable.
 
 ### 7. JRPG-Themed Tutorial Narrator
 

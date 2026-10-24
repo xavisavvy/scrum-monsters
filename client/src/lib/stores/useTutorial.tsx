@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { migrateLegacyStorageKeys } from '@/lib/utils/legacyStorageMigration';
 
 interface TutorialState {
   // Persisted (via partialize)
@@ -21,6 +22,9 @@ interface TutorialState {
   resetTutorial: (id: string) => void;
   resetAllTutorials: () => void;
 }
+
+// Carry tutorial progress over from the pre-rename storage key before persist rehydrates.
+migrateLegacyStorageKeys();
 
 export const useTutorial = create<TutorialState>()(
   persist(
@@ -74,7 +78,7 @@ export const useTutorial = create<TutorialState>()(
         }),
     }),
     {
-      name: 'scrumquest-tutorial',
+      name: 'scrum-monsters-tutorial',
       storage: createJSONStorage(() => localStorage),
       version: 1,
       migrate: (persistedState, version) => {

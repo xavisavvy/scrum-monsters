@@ -65,7 +65,7 @@ metrics:
 
 ## What Was Built
 
-Created profiling infrastructure to measure ScrumQuest's actual resource usage under realistic WebSocket load:
+Created profiling infrastructure to measure ScrumMonsters's actual resource usage under realistic WebSocket load:
 
 **MetricsCollector (tests/profiling/metrics-collector.ts):**
 - Process metrics sampling at 1s intervals: memory (heap, RSS, external), CPU delta calculations

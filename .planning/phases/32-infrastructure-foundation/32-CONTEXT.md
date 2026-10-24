@@ -48,7 +48,7 @@ Deploy ScrumMonsters to AWS Lightsail with a production Docker Compose stack (ap
 <specifics>
 ## Specific Ideas
 
-- User wants the game branded as **ScrumMonsters** (not ScrumQuest) — the domain is scrummonsters.com. Full app rename is deferred but the infrastructure should use the correct name.
+- User wants the game branded as **ScrumMonsters** (not ScrumMonsters) — the domain is scrummonsters.com. Full app rename is deferred but the infrastructure should use the correct name.
 - Clean break from Replit — no maintaining two environments. Once Lightsail works, Replit is gone.
 - Deploy script + runbook combo — user wants automation AND understanding.
 
@@ -57,7 +57,7 @@ Deploy ScrumMonsters to AWS Lightsail with a production Docker Compose stack (ap
 <deferred>
 ## Deferred Ideas
 
-- **App-wide rename from ScrumQuest to ScrumMonsters** — branding/code rename across the entire codebase. Captures: all UI text, page titles, component names, README, package.json name, etc. Should be its own phase or added to backlog.
+- **App-wide rename from ScrumMonsters to ScrumMonsters** — branding/code rename across the entire codebase. Captures: all UI text, page titles, component names, README, package.json name, etc. Should be its own phase or added to backlog.
 
 </deferred>
 

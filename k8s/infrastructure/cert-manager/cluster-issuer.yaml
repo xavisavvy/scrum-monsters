@@ -11,7 +11,7 @@ spec:
     server: https://acme-staging-v02.api.letsencrypt.org/directory
     # Email for certificate expiry notifications
     # IMPORTANT: Change this to your actual email
-    email: admin@scrumquest.example.com
+    email: admin@scrummonsters.example.com
     privateKeySecretRef:
       name: letsencrypt-staging-account-key
     solvers:
@@ -32,7 +32,7 @@ spec:
     server: https://acme-v02.api.letsencrypt.org/directory
     # Email for certificate expiry notifications
     # IMPORTANT: Change this to your actual email
-    email: admin@scrumquest.example.com
+    email: admin@scrummonsters.example.com
     privateKeySecretRef:
       name: letsencrypt-prod-account-key
     solvers:

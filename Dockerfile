@@ -1,4 +1,4 @@
-# Multi-stage build for ScrumQuest
+# Multi-stage build for ScrumMonsters
 # Stage 1: Build
 FROM node:24-alpine AS builder
 
@@ -23,7 +23,7 @@ ENV PORT=5000
 
 # Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 scrumquest
+    adduser --system --uid 1001 scrummonsters
 
 # Copy built assets (includes dist/public from vite build)
 COPY --from=builder /app/dist ./dist
@@ -41,9 +41,9 @@ COPY --from=builder /app/shared ./shared
 COPY --from=builder /app/migrations ./migrations
 
 # Set ownership
-RUN chown -R scrumquest:nodejs /app
+RUN chown -R scrummonsters:nodejs /app
 
-USER scrumquest
+USER scrummonsters
 
 EXPOSE 5000
 

@@ -122,7 +122,7 @@ export const useTutorial = create<TutorialState>()(
       }),
     }),
     {
-      name: 'scrumquest-tutorial',
+      name: 'scrum-monsters-tutorial',
       storage: createJSONStorage(() => localStorage),
       version: 1,
       partialize: (state) => ({
@@ -344,7 +344,7 @@ export const useTutorial = create<TutorialState>()(
       // ... state and actions
     }),
     {
-      name: 'scrumquest-tutorial',
+      name: 'scrum-monsters-tutorial',
       storage: createJSONStorage(() => localStorage),
       version: 1,
       partialize: (state) => ({

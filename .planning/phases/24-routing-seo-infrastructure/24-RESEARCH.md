@@ -172,21 +172,21 @@ export default function LandingPage() {
   return (
     <>
       <Helmet>
-        <title>ScrumQuest - Battle Tickets in Epic JRPG Style</title>
+        <title>ScrumMonsters - Battle Tickets in Epic JRPG Style</title>
         <meta name="description" content="Real-time multiplayer scrum poker estimation with JRPG-style boss battles. Turn sprint planning into an epic adventure!" />
 
         {/* Open Graph */}
         <meta property="og:type" content="website" />
-        <meta property="og:title" content="ScrumQuest - Battle Tickets in Epic JRPG Style" />
+        <meta property="og:title" content="ScrumMonsters - Battle Tickets in Epic JRPG Style" />
         <meta property="og:description" content="Real-time multiplayer scrum poker estimation with JRPG-style boss battles." />
-        <meta property="og:image" content="https://scrumquest.com/og-image.png" />
-        <meta property="og:url" content="https://scrumquest.com/" />
+        <meta property="og:image" content="https://scrummonsters.com/og-image.png" />
+        <meta property="og:url" content="https://scrummonsters.com/" />
 
         {/* Twitter Card */}
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="ScrumQuest - Battle Tickets in Epic JRPG Style" />
+        <meta name="twitter:title" content="ScrumMonsters - Battle Tickets in Epic JRPG Style" />
         <meta name="twitter:description" content="Real-time multiplayer scrum poker estimation with JRPG-style boss battles." />
-        <meta name="twitter:image" content="https://scrumquest.com/twitter-card.png" />
+        <meta name="twitter:image" content="https://scrummonsters.com/twitter-card.png" />
       </Helmet>
 
       {/* Page content */}

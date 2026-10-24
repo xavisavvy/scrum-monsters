@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: scrumquest
+  name: scrummonsters
   labels:
-    app.kubernetes.io/name: scrumquest
-    app.kubernetes.io/part-of: scrumquest
+    app.kubernetes.io/name: scrummonsters
+    app.kubernetes.io/part-of: scrummonsters

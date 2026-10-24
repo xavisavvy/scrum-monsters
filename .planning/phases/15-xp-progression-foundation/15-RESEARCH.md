@@ -6,9 +6,9 @@
 
 ## Summary
 
-Phase 15 establishes the XP infrastructure for ScrumQuest's v1.3 progression system. Players earn XP from game actions (voting, combat, consensus, revival), see visual feedback via floating numbers and XP bar updates, experience dramatic level-up celebrations, and have their progress persist across sessions at the account level.
+Phase 15 establishes the XP infrastructure for ScrumMonsters's v1.3 progression system. Players earn XP from game actions (voting, combat, consensus, revival), see visual feedback via floating numbers and XP bar updates, experience dramatic level-up celebrations, and have their progress persist across sessions at the account level.
 
-**Existing foundation:** ScrumQuest already has domain separation (SessionManager, EstimationManager, CombatManager), EventBus coordination, Socket.IO real-time sync, database schema with Drizzle ORM, and account-level user profiles in `shared/schema.ts`. This phase adds a new ProgressionManager domain and extends the existing architecture.
+**Existing foundation:** ScrumMonsters already has domain separation (SessionManager, EstimationManager, CombatManager), EventBus coordination, Socket.IO real-time sync, database schema with Drizzle ORM, and account-level user profiles in `shared/schema.ts`. This phase adds a new ProgressionManager domain and extends the existing architecture.
 
 **Primary recommendation:** Create ProgressionManager as a new domain manager following the existing pattern (like SessionManager, CombatManager). Use EventBus to listen for game events and award XP. Store XP/level in existing user profiles table. Handle all visual feedback client-side with React Three Fiber Text and particles.
 

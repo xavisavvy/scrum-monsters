@@ -1,7 +1,7 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: scrumquest-ingress
+  name: scrummonsters-ingress
   annotations:
     # Self-signed certificate for local development
     cert-manager.io/cluster-issuer: "selfsigned-issuer"
@@ -10,23 +10,23 @@ metadata:
 spec:
   tls:
     - hosts:
-        - scrumquest-dev.local
-      secretName: scrumquest-dev-tls
+        - scrummonsters-dev.local
+      secretName: scrummonsters-dev-tls
   rules:
-    - host: scrumquest-dev.local
+    - host: scrummonsters-dev.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: dev-scrumquest-service
+                name: dev-scrummonsters-service
                 port:
                   number: 80
           - path: /socket.io
             pathType: Prefix
             backend:
               service:
-                name: dev-scrumquest-service
+                name: dev-scrummonsters-service
                 port:
                   number: 80

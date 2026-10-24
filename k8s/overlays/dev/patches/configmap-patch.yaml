@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scrumquest-config
+  name: scrummonsters-config
 data:
   NODE_ENV: "development"
   LOG_LEVEL: "debug"
-  ALLOWED_ORIGINS: "http://localhost:5000,http://scrumquest-dev.local"
+  ALLOWED_ORIGINS: "http://localhost:5000,http://scrummonsters-dev.local"

@@ -1,13 +1,13 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: scrumquest
+  name: scrummonsters
 spec:
   replicas: 3
   template:
     spec:
       containers:
-        - name: scrumquest
+        - name: scrummonsters
           resources:
             requests:
               memory: "512Mi"
@@ -26,5 +26,5 @@ spec:
               podAffinityTerm:
                 labelSelector:
                   matchLabels:
-                    app: scrumquest
+                    app: scrummonsters
                 topologyKey: kubernetes.io/hostname

@@ -6,7 +6,7 @@
 
 ## Summary
 
-This research explores how to implement distinct boss AI behaviors with unique attack patterns, phase transitions, telegraphing, and dynamic difficulty for ScrumQuest's five existing bosses. The current codebase has a basic boss combat system with simple enrage mechanics (one HP threshold at 50%) and random attack selection. This phase extends that foundation with pattern-based AI using composition (Strategy pattern), explicit state machines, and data-driven boss definitions.
+This research explores how to implement distinct boss AI behaviors with unique attack patterns, phase transitions, telegraphing, and dynamic difficulty for ScrumMonsters's five existing bosses. The current codebase has a basic boss combat system with simple enrage mechanics (one HP threshold at 50%) and random attack selection. This phase extends that foundation with pattern-based AI using composition (Strategy pattern), explicit state machines, and data-driven boss definitions.
 
 The recommended approach uses a hybrid state machine + behavior pattern system (not full behavior trees). Each boss type gets a unique `BossBehavior` strategy that returns attack patterns based on battle context (HP phase, threat table, player count). The existing threat table and attack timing infrastructure can be reused and enhanced. Visual telegraphing leverages the existing `combat:boss_telegraph` event, extending it with type-specific visual cues for the React Three Fiber client.
 
@@ -684,7 +684,7 @@ class BossStateMachine {
 
 1. **How many unique patterns per boss?**
    - What we know: Industry standard is 3-5 patterns per boss phase (9-15 total for 3 phases)
-   - What's unclear: How many is too many for ScrumQuest's session length (30-60 min)?
+   - What's unclear: How many is too many for ScrumMonsters's session length (30-60 min)?
    - Recommendation: Start with 3 patterns per phase (9 total). Add more if playtesting shows predictability issues.
 
 2. **Should phase transitions be deterministic or have variance?**
@@ -705,7 +705,7 @@ class BossStateMachine {
 ## Sources
 
 ### Primary (HIGH confidence)
-- [ScrumQuest codebase](file:///C:/Users/Preston/git/ScrumMonsters) - CombatManager.ts, gameEvents.ts, existing combat patterns
+- [ScrumMonsters codebase](file:///C:/Users/Preston/git/ScrumMonsters) - CombatManager.ts, gameEvents.ts, existing combat patterns
 - [React Three Fiber Basic Animations](https://docs.pmnd.rs/react-three-fiber/tutorials/basic-animations) - Animation fundamentals
 - [TypeScript State Machine Implementation](https://kbravh.dev/state-machine-in-typescript) - FSM patterns
 - [Refactoring Guru: State Pattern](https://refactoring.guru/design-patterns/state/typescript/example) - State pattern examples

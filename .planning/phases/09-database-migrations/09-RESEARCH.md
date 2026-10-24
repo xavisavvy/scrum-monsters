@@ -125,7 +125,7 @@ validate-migrations:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: scrumquest-migration
+  name: scrummonsters-migration
   annotations:
     argocd.argoproj.io/hook: PreSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
@@ -137,11 +137,11 @@ spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: scrumquest:latest  # Same image as app
+          image: scrummonsters:latest  # Same image as app
           command: ["npm", "run", "db:migrate"]
           envFrom:
             - secretRef:
-                name: scrumquest-secrets  # DATABASE_URL
+                name: scrummonsters-secrets  # DATABASE_URL
       securityContext:
         fsGroup: 1001
         runAsNonRoot: true
@@ -363,7 +363,7 @@ validate-migrations:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: scrumquest-migration
+  name: scrummonsters-migration
   annotations:
     # Run before main sync
     argocd.argoproj.io/hook: PreSync
@@ -379,16 +379,16 @@ spec:
   template:
     metadata:
       labels:
-        app: scrumquest-migration
+        app: scrummonsters-migration
     spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: scrumquest:latest
+          image: scrummonsters:latest
           command: ["npm", "run", "db:migrate"]
           envFrom:
             - secretRef:
-                name: scrumquest-secrets
+                name: scrummonsters-secrets
           env:
             - name: LOG_LEVEL
               value: "info"
@@ -489,7 +489,7 @@ Things that couldn't be fully resolved:
 
 2. **ArgoCD sync-wave ordering with secrets**
    - What we know: PreSync hooks need DATABASE_URL from secrets. ArgoCD applies resources in wave order.
-   - What's unclear: If scrumquest-secrets needs sync-wave annotation to ensure it exists before migration Job runs.
+   - What's unclear: If scrummonsters-secrets needs sync-wave annotation to ensure it exists before migration Job runs.
    - Recommendation: Test in dev environment. If migration Job fails due to missing secret, add `argocd.argoproj.io/sync-wave: "0"` to secret manifest.
 
 3. **Migration failure rollback strategy**

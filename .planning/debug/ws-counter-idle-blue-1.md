@@ -1,7 +1,7 @@
 ---
 slug: ws-counter-idle-blue-1
 status: resolved
-trigger: scrumquest_websocket_connections on idle app-blue shows 1 connection / 0 players since 15:27 UTC
+trigger: scrummonsters_websocket_connections on idle app-blue shows 1 connection / 0 players since 15:27 UTC
 created: 2026-05-16
 updated: 2026-05-16
 ---
@@ -12,11 +12,11 @@ updated: 2026-05-16
 
 <DATA_START>
 - **Observed in Prometheus / Grafana Cloud:** all three of
-  `scrumquest_websocket_connections`, `scrumquest_active_players`, and
-  `scrumquest_active_lobbies` show data only for the **idle** color
+  `scrummonsters_websocket_connections`, `scrummonsters_active_players`, and
+  `scrummonsters_active_lobbies` show data only for the **idle** color
   `app-blue:5000`. `app-green` (the live color) shows nothing for these
   metrics in the current window.
-- **Stuck value:** `scrumquest_websocket_connections{color="blue"} == 1`
+- **Stuck value:** `scrummonsters_websocket_connections{color="blue"} == 1`
   since approximately **2026-05-16T15:27Z**, never dropping back to 0,
   with `active_players == 0` and `active_lobbies == 0` alongside it.
 - **Corroborating signal:** the `/api/ws-health` endpoint has been hit
@@ -38,7 +38,7 @@ updated: 2026-05-16
   > that opened a WS connection and didn't close it, or a monitoring
   > client keeping a persistent connection.
   >
-  > Real question: does `scrumquest_websocket_connections` count any
+  > Real question: does `scrummonsters_websocket_connections` count any
   > open socket (including unauthenticated/pre-lobby) or only players
   > in a session? If the app increments as soon as the WebSocket
   > handshake completes — before any game join/auth — then a health
@@ -84,8 +84,8 @@ updated: 2026-05-16
 ## Evidence
 
 - timestamp: 2026-05-16T15:41Z, source: lightsail SSH `cat /opt/scrummonsters/.active-color`, fact: returned `blue`. **Blue is the live color**, not idle. `docker ps` shows only `app-blue` running; `app-green` is not up.
-- timestamp: 2026-05-16T15:41Z, source: prometheus query `up{job="scrumquest"}`, fact: `up{color="blue"}=1`, `up{color="green"}=0`. The series only appears for blue because blue is the live slot.
-- timestamp: 2026-05-16T15:41Z, source: prometheus query, fact: `scrumquest_websocket_connections{color="blue"}=1`, `scrumquest_active_lobbies=0`, `scrumquest_active_players=0`.
+- timestamp: 2026-05-16T15:41Z, source: prometheus query `up{job="scrummonsters"}`, fact: `up{color="blue"}=1`, `up{color="green"}=0`. The series only appears for blue because blue is the live slot.
+- timestamp: 2026-05-16T15:41Z, source: prometheus query, fact: `scrummonsters_websocket_connections{color="blue"}=1`, `scrummonsters_active_lobbies=0`, `scrummonsters_active_players=0`.
 - timestamp: 2026-05-16T15:41Z, source: `docker exec app-blue ss -tn state established`, fact: 2 inbound TCP connections to port 5000 — one from nginx-proxy-manager (172.18.0.12), one from prometheus (172.18.0.3). Only one of these is a Socket.IO session (NPM-proxied); the prom one is the `/metrics` scrape.
 - timestamp: 2026-05-16T15:41Z, source: `docker logs app-blue` log analysis (connect/disconnect socketIds diff), fact: socketId `‹redacted-socket-id›` connected at 2026-05-16T15:31:51Z from IP `‹redacted-client-ip›` (Chrome/Windows) as host of lobby `‹redacted-lobby›`, `authenticated:false`. No matching disconnect log — this is the currently-open socket. Approximately 10 minutes alive at investigation time, NOT "since 15:27Z" as the symptom report claimed.
 - timestamp: 2026-05-16T15:41Z, source: `server/routes.ts:134`, fact: `/api/ws-health` is a plain Express HTTP GET that reads `io.sockets.sockets.size`. It does NOT open a WebSocket. The external hypothesis blaming it for the leak is wrong; the `http_requests_total{route="/api/ws-health"}=1` is an unrelated HTTP probe.
@@ -113,14 +113,14 @@ The "leak" is not a leak. The investigation premise was wrong on three points:
 
 ### Fix applied (label-only, diagnostic improvement)
 
-Split `scrumquest_websocket_connections` by a new `state` label with four values:
+Split `scrummonsters_websocket_connections` by a new `state` label with four values:
 
 - `unauthenticated_no_lobby` — open tab, no user, no lobby (this case)
 - `unauthenticated_in_lobby` — guest player in a lobby
 - `authenticated_no_lobby`   — logged-in user not in a lobby
 - `authenticated_in_lobby`   — logged-in user actively playing
 
-The sum across labels equals the legacy unlabeled count (`sum(scrumquest_websocket_connections)`), so existing dashboard panels migrate with a `sum()` wrapper. New panels can distinguish "real player traffic" from "page-open / pre-lobby" sockets and won't trigger this false alarm again.
+The sum across labels equals the legacy unlabeled count (`sum(scrummonsters_websocket_connections)`), so existing dashboard panels migrate with a `sum()` wrapper. New panels can distinguish "real player traffic" from "page-open / pre-lobby" sockets and won't trigger this false alarm again.
 
 ### Files changed
 
@@ -135,6 +135,6 @@ The sum across labels equals the legacy unlabeled count (`sum(scrumquest_websock
 ### Follow-up for operators
 
 On next deploy:
-1. The legacy unlabeled `scrumquest_websocket_connections` series will disappear and be replaced by four labeled series.
-2. Wrap existing dashboard queries in `sum(scrumquest_websocket_connections)` to preserve the legacy total view, OR migrate panels to the new breakdown.
-3. Suggested alert (future): `sum(scrumquest_websocket_connections{state=~".*_in_lobby"}) == 0 and scrumquest_active_lobbies > 0` would catch a real divergence between socket and player state.
+1. The legacy unlabeled `scrummonsters_websocket_connections` series will disappear and be replaced by four labeled series.
+2. Wrap existing dashboard queries in `sum(scrummonsters_websocket_connections)` to preserve the legacy total view, OR migrate panels to the new breakdown.
+3. Suggested alert (future): `sum(scrummonsters_websocket_connections{state=~".*_in_lobby"}) == 0 and scrummonsters_active_lobbies > 0` would catch a real divergence between socket and player state.

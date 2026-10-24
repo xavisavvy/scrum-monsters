@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-This research analyzes how to integrate XP/leveling systems, boss AI variety, and class abilities into ScrumQuest's existing domain-separated architecture. The existing architecture (SessionManager, EstimationManager, CombatManager, ScopedEventBus) provides an excellent foundation. The recommended approach adds two new domain managers (ProgressionManager, AbilityManager) and extends CombatManager with AI behavior patterns, all coordinated through the existing event bus.
+This research analyzes how to integrate XP/leveling systems, boss AI variety, and class abilities into ScrumMonsters's existing domain-separated architecture. The existing architecture (SessionManager, EstimationManager, CombatManager, ScopedEventBus) provides an excellent foundation. The recommended approach adds two new domain managers (ProgressionManager, AbilityManager) and extends CombatManager with AI behavior patterns, all coordinated through the existing event bus.
 
 **Key Recommendation:** Extend, don't replace. The existing architecture handles the new features well with minimal structural changes.
 

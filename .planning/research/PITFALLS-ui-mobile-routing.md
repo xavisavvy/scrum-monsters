@@ -63,7 +63,7 @@ Mistakes that cause rewrites or major issues.
 
 **Consequences:**
 - Social crawler middleware can't work (can't detect route from URL hash)
-- URLs look broken when shared (e.g., `scrumquest.com/#/lobby/abc123`)
+- URLs look broken when shared (e.g., `scrummonsters.com/#/lobby/abc123`)
 - Can't use Express routing to inject meta tags
 - Migration requires changing all route definitions
 

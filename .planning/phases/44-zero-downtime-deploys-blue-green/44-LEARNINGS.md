@@ -1,7 +1,7 @@
 ---
 phase: 44
 phase_name: "zero-downtime-deploys-blue-green"
-project: "ScrumQuest"
+project: "ScrumMonsters"
 generated: "2026-05-09"
 counts:
   decisions: 7

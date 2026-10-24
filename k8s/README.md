@@ -2,7 +2,7 @@
 
 Deploy Scrum Monsters to Kubernetes with environment-specific overlays and GitOps support.
 
-> **Note:** Kubernetes namespaces, resources, hostnames, and image names below still use the legacy `scrumquest` identifier (cluster-internal — not a user-facing brand name). They will be renamed in a future infrastructure migration.
+> **Note:** Kubernetes namespaces, resources, hostnames, and image names below still use the legacy `scrummonsters` identifier (cluster-internal — not a user-facing brand name). They will be renamed in a future infrastructure migration.
 
 ## Prerequisites
 
@@ -55,7 +55,7 @@ minikube addons enable ingress
 
 **Kind:**
 ```bash
-kind create cluster --name scrumquest
+kind create cluster --name scrummonsters
 kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml
 ```
 
@@ -69,13 +69,13 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/cont
 
 ```bash
 # From project root
-docker build -t scrumquest:latest .
+docker build -t scrummonsters:latest .
 
 # For minikube
-minikube image load scrumquest:latest
+minikube image load scrummonsters:latest
 
 # For kind
-kind load docker-image scrumquest:latest --name scrumquest
+kind load docker-image scrummonsters:latest --name scrummonsters
 ```
 
 ### 3. Deploy to Environment
@@ -96,21 +96,21 @@ kubectl apply -k k8s/overlays/prod
 Add to `/etc/hosts` (Linux/Mac) or `C:\Windows\System32\drivers\etc\hosts` (Windows):
 
 ```
-127.0.0.1 scrumquest-dev.local
-127.0.0.1 staging.scrumquest.local
-127.0.0.1 scrumquest.local
+127.0.0.1 scrummonsters-dev.local
+127.0.0.1 staging.scrummonsters.local
+127.0.0.1 scrummonsters.local
 ```
 
 For minikube:
 ```bash
-echo "$(minikube ip) scrumquest-dev.local" | sudo tee -a /etc/hosts
+echo "$(minikube ip) scrummonsters-dev.local" | sudo tee -a /etc/hosts
 ```
 
 ### 5. Access the App
 
-- Development: http://scrumquest-dev.local
-- Staging: https://staging.scrumquest.local
-- Production: https://scrumquest.local
+- Development: http://scrummonsters-dev.local
+- Staging: https://staging.scrummonsters.local
+- Production: https://scrummonsters.local
 
 ## Infrastructure Setup
 
@@ -168,8 +168,8 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 # Open https://localhost:8080
 
 # Deploy applications
-kubectl apply -f k8s/argocd-apps/scrumquest-dev.yaml   # Auto-syncs from main
-kubectl apply -f k8s/argocd-apps/scrumquest-prod.yaml  # Manual sync required
+kubectl apply -f k8s/argocd-apps/scrummonsters-dev.yaml   # Auto-syncs from main
+kubectl apply -f k8s/argocd-apps/scrummonsters-prod.yaml  # Manual sync required
 ```
 
 ## Environment Differences
@@ -187,25 +187,25 @@ kubectl apply -f k8s/argocd-apps/scrumquest-prod.yaml  # Manual sync required
 
 ```bash
 # Check pod status
-kubectl get pods -n scrumquest-dev
+kubectl get pods -n scrummonsters-dev
 
 # View logs (structured JSON in prod)
-kubectl logs -n scrumquest-dev -l app=scrumquest -f
+kubectl logs -n scrummonsters-dev -l app=scrummonsters -f
 
 # Check services
-kubectl get svc -n scrumquest-dev
+kubectl get svc -n scrummonsters-dev
 
 # Describe deployment
-kubectl describe deployment dev-scrumquest -n scrumquest-dev
+kubectl describe deployment dev-scrummonsters -n scrummonsters-dev
 
 # Scale manually (overrides HPA temporarily)
-kubectl scale deployment dev-scrumquest -n scrumquest-dev --replicas=3
+kubectl scale deployment dev-scrummonsters -n scrummonsters-dev --replicas=3
 
 # Port forward (bypass ingress)
-kubectl port-forward -n scrumquest-dev svc/dev-scrumquest-service 5000:80
+kubectl port-forward -n scrummonsters-dev svc/dev-scrummonsters-service 5000:80
 
 # Access PostgreSQL
-kubectl exec -it -n scrumquest-dev dev-postgres-0 -- psql -U scrumquest -d scrumquest
+kubectl exec -it -n scrummonsters-dev dev-postgres-0 -- psql -U scrummonsters -d scrummonsters
 
 # View metrics
 curl http://localhost:5000/metrics
@@ -228,8 +228,8 @@ cat > /tmp/secret.yaml <<EOF
 apiVersion: v1
 kind: Secret
 metadata:
-  name: scrumquest-secrets
-  namespace: scrumquest-prod
+  name: scrummonsters-secrets
+  namespace: scrummonsters-prod
 stringData:
   DATABASE_URL: "postgresql://user:pass@host:5432/db"
   SESSION_SECRET: "your-secret-here"
@@ -249,28 +249,28 @@ git add k8s/overlays/prod/sealed-secrets.yaml
 
 ### Pods not starting
 ```bash
-kubectl describe pod -n scrumquest-dev <pod-name>
-kubectl logs -n scrumquest-dev <pod-name> --previous
+kubectl describe pod -n scrummonsters-dev <pod-name>
+kubectl logs -n scrummonsters-dev <pod-name> --previous
 ```
 
 ### Database connection issues
 ```bash
-kubectl get pods -n scrumquest-dev -l app=postgres
-kubectl logs -n scrumquest-dev dev-postgres-0
+kubectl get pods -n scrummonsters-dev -l app=postgres
+kubectl logs -n scrummonsters-dev dev-postgres-0
 ```
 
 ### Certificate issues
 ```bash
-kubectl get certificates -n scrumquest-prod
-kubectl describe certificate scrumquest-prod-tls -n scrumquest-prod
-kubectl get certificaterequest -n scrumquest-prod
+kubectl get certificates -n scrummonsters-prod
+kubectl describe certificate scrummonsters-prod-tls -n scrummonsters-prod
+kubectl get certificaterequest -n scrummonsters-prod
 ```
 
 ### ArgoCD sync issues
 ```bash
-argocd app get scrumquest-dev
-argocd app sync scrumquest-dev --prune
-argocd app diff scrumquest-dev
+argocd app get scrummonsters-dev
+argocd app sync scrummonsters-dev --prune
+argocd app diff scrummonsters-dev
 ```
 
 ### WebSocket issues

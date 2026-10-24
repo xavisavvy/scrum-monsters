@@ -5,7 +5,7 @@
 ## Directory Layout
 
 ```
-ScrumQuest/
+ScrumMonsters/
 ├── client/                      # React frontend (Vite + React Three Fiber)
 │   ├── public/                  # Static assets
 │   │   ├── fonts/               # Custom fonts

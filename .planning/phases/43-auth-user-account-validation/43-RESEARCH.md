@@ -341,7 +341,7 @@ Call site is unchanged: `App.tsx:62` already calls `checkAuth()` on mount. `[VER
 
 ### Pitfall 3: Cookie / session secret mismatch
 
-**What goes wrong:** `express-session` uses `SESSION_SECRET` (env.ts:7) for `scrumquest.sid`. `express-openid-connect` uses `AUTH0_SECRET` (auth0.ts:25) for its OWN cookie (`appSession` by default). They're separate cookies signed with separate secrets. If a planner accidentally aligns them ("just use one secret") it will silently keep working in dev but break upgrades.
+**What goes wrong:** `express-session` uses `SESSION_SECRET` (env.ts:7) for `scrum-monsters.sid`. `express-openid-connect` uses `AUTH0_SECRET` (auth0.ts:25) for its OWN cookie (`appSession` by default). They're separate cookies signed with separate secrets. If a planner accidentally aligns them ("just use one secret") it will silently keep working in dev but break upgrades.
 
 **How to avoid:** Keep them separate — `SESSION_SECRET` and `AUTH0_SECRET` are independent. Document this in `.env.example` (already documents both, no change needed).
 

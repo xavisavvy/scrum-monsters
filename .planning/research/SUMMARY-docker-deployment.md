@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-ScrumQuest's migration from Replit to a production Docker deployment on AWS Lightsail ($5-20/mo) is **technically straightforward** and **organizationally low-risk**. The existing Express + Socket.IO + Drizzle stack is production-ready with Docker already configured (Dockerfile + docker-compose.yml). Migration complexity is primarily operational (configuring reverse proxy, backups, monitoring) rather than architectural.
+ScrumMonsters's migration from Replit to a production Docker deployment on AWS Lightsail ($5-20/mo) is **technically straightforward** and **organizationally low-risk**. The existing Express + Socket.IO + Drizzle stack is production-ready with Docker already configured (Dockerfile + docker-compose.yml). Migration complexity is primarily operational (configuring reverse proxy, backups, monitoring) rather than architectural.
 
 **Key finding:** Single-VPS Docker Compose is a legitimate production pattern for 50-100 concurrent users. The ecosystem has matured substantially—tools like Nginx Proxy Manager, postgres-backup-s3, and Prometheus eliminate most operational friction. No major architectural refactoring needed.
 
@@ -147,7 +147,7 @@ ScrumQuest's migration from Replit to a production Docker deployment on AWS Ligh
 - **Grafana dashboard templates:** Multiple community dashboards for Node.js/Socket.IO. Will need selection + customization for game-specific metrics.
 
 ### Phase 4: Zero-Downtime Deployments
-- **Blue-green Compose setup:** Research covers pattern, but ScrumQuest-specific details (session store, Redis adapter) need verification. Ensure using PostgreSQL session store (not app memory).
+- **Blue-green Compose setup:** Research covers pattern, but ScrumMonsters-specific details (session store, Redis adapter) need verification. Ensure using PostgreSQL session store (not app memory).
 
 ---
 

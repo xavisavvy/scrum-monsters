@@ -516,7 +516,7 @@ Things that couldn't be fully resolved:
 
 4. **Baseline storage with Git LFS**
    - What we know: Committing PNG files to Git increases repo size. Git LFS manages large files efficiently.
-   - What's unclear: Whether ScrumQuest needs Git LFS given ~20-30 expected baseline images (5-10MB total)
+   - What's unclear: Whether ScrumMonsters needs Git LFS given ~20-30 expected baseline images (5-10MB total)
    - Recommendation: Start without Git LFS. If baseline count exceeds 50 images or repo size becomes problematic, migrate to Git LFS. Not a phase 10 concern.
 
 ## Sources

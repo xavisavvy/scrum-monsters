@@ -6,7 +6,7 @@
 
 ## Summary
 
-This phase adds three categories of interaction feedback to ScrumQuest: (1) button press/spring-back animations and vote card selection glow, (2) toast notifications for key game events using the already-installed sonner library, and (3) JRPG-themed interstitial screens during phase transitions. The project already has framer-motion v11.13+ and sonner v1.7+ installed, a `<Toaster>` mounted in `App.tsx`, and an existing `PhaseTransition` component wrapping all phases with `AnimatePresence`. The existing `session:phase_changed` socket event provides the hook point for interstitial display.
+This phase adds three categories of interaction feedback to ScrumMonsters: (1) button press/spring-back animations and vote card selection glow, (2) toast notifications for key game events using the already-installed sonner library, and (3) JRPG-themed interstitial screens during phase transitions. The project already has framer-motion v11.13+ and sonner v1.7+ installed, a `<Toaster>` mounted in `App.tsx`, and an existing `PhaseTransition` component wrapping all phases with `AnimatePresence`. The existing `session:phase_changed` socket event provides the hook point for interstitial display.
 
 The primary challenge is integrating interstitials into the existing `PhaseTransition` / `PhaseRenderer` pipeline without breaking the `AnimatePresence` exit/enter flow or causing the ErrorBoundary `resetKey` mechanism to fire prematurely. The `sonner.tsx` component currently uses a `next-themes` `useTheme()` call that may need adjustment since the app has a fixed dark JRPG theme rather than dynamic light/dark switching.
 
@@ -161,7 +161,7 @@ toast('Ability Activated!', {
 
 ### Pitfall 1: sonner.tsx useTheme() Returns "system" on a Dark-Only App
 **What goes wrong:** The `sonner.tsx` wrapper uses `next-themes` `useTheme()` which defaults to "system". If the system is in light mode, toasts render with light background against the dark JRPG UI.
-**Why it happens:** The shadcn/ui sonner component was generated for a generic app with theme switching. ScrumQuest is always dark.
+**Why it happens:** The shadcn/ui sonner component was generated for a generic app with theme switching. ScrumMonsters is always dark.
 **How to avoid:** Hardcode `theme="dark"` on the `<Sonner>` component in `sonner.tsx`, or add JRPG-specific class overrides. Remove the `next-themes` dependency from this file.
 **Warning signs:** Toasts appearing with white background.
 

@@ -2,20 +2,20 @@ import { Registry, Counter, Gauge, Histogram, collectDefaultMetrics } from "prom
 import type { Request, Response, NextFunction } from "express";
 
 /**
- * Prometheus metrics registry for ScrumQuest
+ * Prometheus metrics registry for ScrumMonsters
  * All custom metrics should be registered here
  */
 export const metricsRegistry = new Registry();
 
 // Set default labels
 metricsRegistry.setDefaultLabels({
-  app: "scrumquest",
+  app: "scrummonsters",
 });
 
 // Collect default Node.js metrics (CPU, memory, event loop, etc.)
 collectDefaultMetrics({
   register: metricsRegistry,
-  prefix: "scrumquest_",
+  prefix: "scrummonsters_",
 });
 
 // ============================================
@@ -52,7 +52,7 @@ export const httpRequestsTotal = new Counter({
  * Number of active lobbies
  */
 export const activeLobbies = new Gauge({
-  name: "scrumquest_active_lobbies",
+  name: "scrummonsters_active_lobbies",
   help: "Current number of active game lobbies",
   registers: [metricsRegistry],
 });
@@ -61,7 +61,7 @@ export const activeLobbies = new Gauge({
  * Number of active players across all lobbies
  */
 export const activePlayers = new Gauge({
-  name: "scrumquest_active_players",
+  name: "scrummonsters_active_players",
   help: "Current number of active players",
   registers: [metricsRegistry],
 });
@@ -70,7 +70,7 @@ export const activePlayers = new Gauge({
  * Players by game phase
  */
 export const playersByPhase = new Gauge({
-  name: "scrumquest_players_by_phase",
+  name: "scrummonsters_players_by_phase",
   help: "Number of players by current game phase",
   labelNames: ["phase"],
   registers: [metricsRegistry],
@@ -93,7 +93,7 @@ export const playersByPhase = new Gauge({
  *
  * The sum across all label values equals the raw socket count
  * (`io.sockets.sockets.size`). Recover the legacy single-series view with
- * `sum(scrumquest_websocket_connections)`.
+ * `sum(scrummonsters_websocket_connections)`.
  *
  * Motivation (2026-05-16, debug ws-counter-idle-blue-1): the unlabeled
  * gauge sitting at 1 with `active_players=0` looked like a leak in
@@ -103,7 +103,7 @@ export const playersByPhase = new Gauge({
  * prevents this false alarm from recurring.
  */
 export const websocketConnections = new Gauge({
-  name: "scrumquest_websocket_connections",
+  name: "scrummonsters_websocket_connections",
   help: "Current number of active WebSocket connections, labeled by lifecycle state",
   labelNames: ["state"],
   registers: [metricsRegistry],
@@ -128,7 +128,7 @@ for (const state of WS_STATES) {
  * WebSocket messages received
  */
 export const websocketMessagesReceived = new Counter({
-  name: "scrumquest_websocket_messages_received_total",
+  name: "scrummonsters_websocket_messages_received_total",
   help: "Total WebSocket messages received",
   labelNames: ["event_type"],
   registers: [metricsRegistry],
@@ -138,7 +138,7 @@ export const websocketMessagesReceived = new Counter({
  * WebSocket messages sent
  */
 export const websocketMessagesSent = new Counter({
-  name: "scrumquest_websocket_messages_sent_total",
+  name: "scrummonsters_websocket_messages_sent_total",
   help: "Total WebSocket messages sent",
   labelNames: ["event_type"],
   registers: [metricsRegistry],
@@ -152,7 +152,7 @@ export const websocketMessagesSent = new Counter({
  * Votes submitted counter by team
  */
 export const votesSubmitted = new Counter({
-  name: "scrumquest_votes_submitted_total",
+  name: "scrummonsters_votes_submitted_total",
   help: "Total number of votes submitted",
   labelNames: ["team"],
   registers: [metricsRegistry],
@@ -162,7 +162,7 @@ export const votesSubmitted = new Counter({
  * Boss battles completed counter
  */
 export const bossDefeated = new Counter({
-  name: "scrumquest_boss_defeated_total",
+  name: "scrummonsters_boss_defeated_total",
   help: "Total number of bosses defeated",
   registers: [metricsRegistry],
 });
@@ -171,7 +171,7 @@ export const bossDefeated = new Counter({
  * Lobbies created counter
  */
 export const lobbiesCreated = new Counter({
-  name: "scrumquest_lobbies_created_total",
+  name: "scrummonsters_lobbies_created_total",
   help: "Total number of lobbies created",
   registers: [metricsRegistry],
 });
@@ -184,7 +184,7 @@ export const lobbiesCreated = new Counter({
  * the same tab before the page is reloaded.
  */
 export const webglContextLossTotal = new Counter({
-  name: "scrumquest_webgl_context_loss_total",
+  name: "scrummonsters_webgl_context_loss_total",
   help: "Total client-reported WebGL context-loss events",
   labelNames: ["recovered"],
   registers: [metricsRegistry],
@@ -194,7 +194,7 @@ export const webglContextLossTotal = new Counter({
  * Game sessions completed counter
  */
 export const gamesCompleted = new Counter({
-  name: "scrumquest_games_completed_total",
+  name: "scrummonsters_games_completed_total",
   help: "Total number of games completed",
   labelNames: ["outcome"], // "victory" or "defeat"
   registers: [metricsRegistry],
@@ -208,7 +208,7 @@ export const gamesCompleted = new Counter({
  * Damage dealt histogram
  */
 export const damageDealt = new Histogram({
-  name: "scrumquest_damage_dealt",
+  name: "scrummonsters_damage_dealt",
   help: "Distribution of damage dealt to bosses",
   buckets: [10, 25, 50, 100, 200, 500, 1000],
   registers: [metricsRegistry],
@@ -218,7 +218,7 @@ export const damageDealt = new Histogram({
  * Consensus bonus rate
  */
 export const consensusBonusRate = new Gauge({
-  name: "scrumquest_consensus_bonus_rate",
+  name: "scrummonsters_consensus_bonus_rate",
   help: "Rate of votes achieving consensus bonus (0-1)",
   registers: [metricsRegistry],
 });
@@ -231,7 +231,7 @@ export const consensusBonusRate = new Gauge({
  * Vote value distribution histogram
  */
 export const voteValueDistribution = new Histogram({
-  name: "scrumquest_vote_values",
+  name: "scrummonsters_vote_values",
   help: "Distribution of vote values selected",
   buckets: [1, 2, 3, 5, 8, 13, 21],
   registers: [metricsRegistry],
@@ -241,7 +241,7 @@ export const voteValueDistribution = new Histogram({
  * Time to reach consensus
  */
 export const timeToConsensus = new Histogram({
-  name: "scrumquest_time_to_consensus_seconds",
+  name: "scrummonsters_time_to_consensus_seconds",
   help: "Time taken for all players to submit votes",
   buckets: [5, 10, 20, 30, 60, 120, 300],
   registers: [metricsRegistry],
@@ -283,7 +283,7 @@ export interface WebsocketMetricsSocketIO {
 }
 
 /**
- * Update the labeled `scrumquest_websocket_connections` gauge by walking
+ * Update the labeled `scrummonsters_websocket_connections` gauge by walking
  * the live socket.io socket map and bucketing each socket by auth + lobby
  * state. Safe to call from `connection`, `disconnect`, and any handler
  * that mutates `socket.data.userId` / `socket.data.lobbyId`.

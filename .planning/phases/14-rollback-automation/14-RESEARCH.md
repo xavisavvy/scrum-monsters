@@ -63,9 +63,9 @@ sudo mv argocd /usr/local/bin/
 └── rollback-history.jsonl # Append-only JSONL log
 
 k8s/argocd-apps/
-├── scrumquest-dev.yaml    # Auto-sync enabled (temporarily disable for rollback)
-├── scrumquest-staging.yaml # Auto-sync disabled (manual sync)
-└── scrumquest-prod.yaml   # Auto-sync disabled (manual sync)
+├── scrummonsters-dev.yaml    # Auto-sync enabled (temporarily disable for rollback)
+├── scrummonsters-staging.yaml # Auto-sync disabled (manual sync)
+└── scrummonsters-prod.yaml   # Auto-sync disabled (manual sync)
 ```
 
 ### Pattern 1: Unified Rollback Workflow with Environment Parameter
@@ -128,7 +128,7 @@ jobs:
     ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
   run: |
     # Get history in JSON format
-    HISTORY=$(argocd app history scrumquest-${{ inputs.environment }} \
+    HISTORY=$(argocd app history scrummonsters-${{ inputs.environment }} \
       --server ${{ env.ARGOCD_SERVER }} \
       --grpc-web \
       -o json)
@@ -145,7 +145,7 @@ jobs:
   env:
     ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
   run: |
-    argocd app rollback scrumquest-${{ inputs.environment }} \
+    argocd app rollback scrummonsters-${{ inputs.environment }} \
       ${{ steps.get-target.outputs.previous-id }} \
       --server ${{ env.ARGOCD_SERVER }} \
       --grpc-web \
@@ -165,7 +165,7 @@ jobs:
   env:
     ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
   run: |
-    argocd app wait scrumquest-${{ inputs.environment }} \
+    argocd app wait scrummonsters-${{ inputs.environment }} \
       --server ${{ env.ARGOCD_SERVER }} \
       --grpc-web \
       --health \
@@ -242,7 +242,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP_INFO=$(argocd app get scrumquest-${{ github.event.workflow_run.environment }} \
+          APP_INFO=$(argocd app get scrummonsters-${{ github.event.workflow_run.environment }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             -o json)
@@ -559,7 +559,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP_INFO=$(argocd app get scrumquest-${{ inputs.environment }} \
+          APP_INFO=$(argocd app get scrummonsters-${{ inputs.environment }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             -o json)
@@ -577,7 +577,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          HISTORY=$(argocd app history scrumquest-${{ inputs.environment }} \
+          HISTORY=$(argocd app history scrummonsters-${{ inputs.environment }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             -o json)
@@ -625,7 +625,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          argocd app set scrumquest-${{ inputs.environment }} \
+          argocd app set scrummonsters-${{ inputs.environment }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             --sync-policy none
@@ -640,7 +640,7 @@ jobs:
 
           # Retry once on failure
           for i in 1 2; do
-            if argocd app rollback scrumquest-${{ inputs.environment }} \
+            if argocd app rollback scrummonsters-${{ inputs.environment }} \
               ${{ steps.get-target.outputs.previous-id }} \
               --server ${{ env.ARGOCD_SERVER }} \
               --grpc-web \
@@ -667,7 +667,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          argocd app wait scrumquest-${{ inputs.environment }} \
+          argocd app wait scrummonsters-${{ inputs.environment }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             --health \
@@ -694,7 +694,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          argocd app set scrumquest-${{ inputs.environment }} \
+          argocd app set scrummonsters-${{ inputs.environment }} \
             --server ${{ env.ARGOCD_SERVER }} \
             --grpc-web \
             --sync-policy automated
@@ -823,7 +823,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          APP_INFO=$(argocd app get scrumquest-${{ steps.get-env.outputs.environment }} \
+          APP_INFO=$(argocd app get scrummonsters-${{ steps.get-env.outputs.environment }} \
             --server argocd.local \
             --grpc-web \
             -o json)

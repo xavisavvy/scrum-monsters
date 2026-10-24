@@ -803,7 +803,7 @@ socket.on('position_correction', (data) => {
 
 ### Pattern: Time-Based Authority (Battle Modifier)
 
-**Context:** Current ScrumQuest has battle modifier increasing every 10s, but time is managed server-side.
+**Context:** Current ScrumMonsters has battle modifier increasing every 10s, but time is managed server-side.
 
 **Solution:** Server broadcasts time anchors, clients calculate current modifier locally.
 
@@ -830,7 +830,7 @@ class CombatManager {
 }
 ```
 
-## Implementation Checklist for ScrumQuest Refactoring
+## Implementation Checklist for ScrumMonsters Refactoring
 
 ### Pre-Refactoring
 - [ ] Audit current GameStateManager methods, group by domain (session/estimation/combat)
@@ -900,6 +900,6 @@ This research synthesizes patterns from multiple authoritative sources on real-t
 
 ---
 
-*Architecture research for: ScrumQuest domain-separated refactoring*
+*Architecture research for: ScrumMonsters domain-separated refactoring*
 *Researched: 2026-02-01*
-*Confidence: HIGH - Patterns verified across multiple authoritative sources, combined with analysis of existing ScrumQuest codebase*
+*Confidence: HIGH - Patterns verified across multiple authoritative sources, combined with analysis of existing ScrumMonsters codebase*

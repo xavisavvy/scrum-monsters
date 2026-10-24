@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-ScrumQuest already has a **robust architecture foundation** for PostgreSQL integration:
+ScrumMonsters already has a **robust architecture foundation** for PostgreSQL integration:
 - IStorage interface with both MemStorage (in-memory) and PgStorage (PostgreSQL) implementations
 - Drizzle ORM schema defining 7 tables (users, oauth_accounts, user_profiles, user_stats, estimation_history, sessions, class_mastery_progress)
 - Kubernetes manifests for PostgreSQL StatefulSet with persistent volumes
@@ -94,7 +94,7 @@ function createStorage(): IStorage {
 
 **Connection Pooling Configuration:**
 
-According to [Drizzle ORM best practices](https://www.answeroverflow.com/m/1154016477381414932), the `postgres.js` driver used in ScrumQuest supports connection pooling with configuration like:
+According to [Drizzle ORM best practices](https://www.answeroverflow.com/m/1154016477381414932), the `postgres.js` driver used in ScrumMonsters supports connection pooling with configuration like:
 
 ```typescript
 const client = postgres(connectionString, {
@@ -198,7 +198,7 @@ if (process.env.DATABASE_URL) {
 └─────────────────┬───────────────────────────────────────────┘
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
-│          Service (ClusterIP) - scrumquest:5000               │
+│          Service (ClusterIP) - scrummonsters:5000               │
 └─────────────────┬───────────────────────────────────────────┘
                   ▼
 ┌─────────────────────────────────────────────────────────────┐
@@ -243,7 +243,7 @@ According to [Render vs Fly.io comparison](https://render.com/articles/render-vs
 **Architecture on Render:**
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Web Service (scrumquest-app)                               │
+│  Web Service (scrummonsters-app)                               │
 │  - Docker deployment (multi-process: Express + Socket.IO)   │
 │  - Health check: /api/health                                │
 │  - Auto-deploy from main branch                             │
@@ -300,7 +300,7 @@ From [Socket.IO multi-node docs](https://socket.io/docs/v3/using-multiple-nodes/
 
 **Current Implementation (server/websocket.ts — needs verification):**
 - Check if Redis adapter is configured for multi-instance Socket.IO
-- ScrumQuest currently uses Upstash Redis for caching, not Socket.IO adapter
+- ScrumMonsters currently uses Upstash Redis for caching, not Socket.IO adapter
 
 **Required Addition for Multi-Instance:**
 ```typescript
@@ -345,7 +345,7 @@ According to [hosting platform comparison](https://www.jasonsy.dev/blog/comparin
 
 **Connection String:**
 ```
-postgres://user:pass@ep-xxx.neon.tech/scrumquest?sslmode=require
+postgres://user:pass@ep-xxx.neon.tech/scrummonsters?sslmode=require
 ```
 
 **Source:** [Neon vs Supabase comparison](https://www.bytebase.com/blog/neon-vs-supabase/)
@@ -365,7 +365,7 @@ postgres://user:pass@ep-xxx.neon.tech/scrumquest?sslmode=require
 - Want real-time DB subscriptions (alternative to Socket.IO for some features)
 
 **Not Ideal Because:**
-- ScrumQuest already has auth (Passport.js + OAuth)
+- ScrumMonsters already has auth (Passport.js + OAuth)
 - Real-time via Socket.IO (don't need Supabase real-time)
 
 **Source:** [Supabase vs Neon comparison](https://bertomill.medium.com/supabase-vs-neon-the-battle-of-postgresql-titans-418044159d1f)

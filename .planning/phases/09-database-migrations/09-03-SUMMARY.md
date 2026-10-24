@@ -93,9 +93,9 @@ ArgoCD will now include this Job in every sync operation, ensuring database sche
 1. **ArgoCD sync triggered** (manual or automatic)
 2. **Sync-wave 0:** Secrets synced (implicit, no wave annotation needed)
 3. **Sync-wave 5:** Migration Job created and runs
-   - Job pulls latest `scrumquest:latest` image
+   - Job pulls latest `scrummonsters:latest` image
    - Executes `npm run db:migrate` (from 09-01)
-   - Uses `DATABASE_URL` from `scrumquest-secrets`
+   - Uses `DATABASE_URL` from `scrummonsters-secrets`
 4. **Migration completes:**
    - **Success:** Job completes, sync continues to app deployment
    - **Failure:** Job fails after 3 attempts, sync halts, old app version keeps running
@@ -134,7 +134,7 @@ All verification checks passed:
 - [x] k8s/base/migration-job.yaml exists with correct structure
 - [x] ArgoCD annotations present: `hook: PreSync`, `hook-delete-policy: BeforeHookCreation`
 - [x] Job uses `npm run db:migrate` command
-- [x] Job references `scrumquest-secrets` for DATABASE_URL
+- [x] Job references `scrummonsters-secrets` for DATABASE_URL
 - [x] kustomization.yaml includes migration-job.yaml in resources
 - [x] `kubectl kustomize k8s/base/` succeeds without errors
 
@@ -255,8 +255,8 @@ All verification checks passed:
 **k8s/base/migration-job.yaml**
 - Kubernetes Job manifest
 - ArgoCD PreSync hook annotations
-- Executes `npm run db:migrate` from scrumquest image
-- Uses scrumquest-secrets for DATABASE_URL
+- Executes `npm run db:migrate` from scrummonsters image
+- Uses scrummonsters-secrets for DATABASE_URL
 - Hardened security context (non-root, drop ALL capabilities)
 
 ### Modified Files

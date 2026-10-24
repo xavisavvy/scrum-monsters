@@ -186,7 +186,7 @@ rule_files:
   - '/etc/prometheus/alerts.yml'
 
 scrape_configs:
-  # ... existing scrumquest job ...
+  # ... existing scrummonsters job ...
 
   - job_name: 'blackbox-tls'
     metrics_path: /probe

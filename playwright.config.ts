@@ -1,7 +1,7 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * Playwright E2E test configuration for ScrumQuest
+ * Playwright E2E test configuration for ScrumMonsters
  * @see https://playwright.dev/docs/test-configuration
  */
 export default defineConfig({

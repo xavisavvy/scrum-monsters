@@ -32,7 +32,7 @@ async function seedName(page: Page, name: string): Promise<void> {
 async function seedTutorialSeen(page: Page): Promise<void> {
   await page.addInitScript(() => {
     window.localStorage.setItem(
-      "scrumquest-tutorial",
+      "scrum-monsters-tutorial",
       JSON.stringify({
         state: {
           completedTutorials: {

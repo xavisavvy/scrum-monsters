@@ -50,7 +50,7 @@ metrics:
 
 ## What Was Built
 
-Established the foundation for visual regression testing across ScrumQuest's UI phases:
+Established the foundation for visual regression testing across ScrumMonsters's UI phases:
 
 1. **Global Playwright Configuration** - Added `toHaveScreenshot` defaults to playwright.config.ts:
    - `maxDiffPixelRatio: 0.01` (1% pixel difference allowed)

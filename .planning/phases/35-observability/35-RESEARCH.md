@@ -63,7 +63,7 @@ docker/
       dashboards/
         dashboard.yml        # Dashboard provider config
     dashboards/
-      scrumquest.json        # Pre-built dashboard JSON
+      scrummonsters.json        # Pre-built dashboard JSON
 docker-compose.prod.yml      # Updated with prometheus, grafana, dozzle services
 ```
 
@@ -79,7 +79,7 @@ global:
   evaluation_interval: 60s
 
 scrape_configs:
-  - job_name: 'scrumquest'
+  - job_name: 'scrummonsters'
     static_configs:
       - targets: ['app:5000']
     metrics_path: '/metrics'
@@ -348,14 +348,14 @@ The dashboard JSON should include these panels based on existing metrics:
 
 | Panel | Metric | Visualization |
 |-------|--------|---------------|
-| Active Lobbies | `scrumquest_active_lobbies` | Stat/Gauge |
-| Connected Players | `scrumquest_active_players` | Stat/Gauge |
-| WebSocket Connections | `scrumquest_websocket_connections` | Stat/Gauge |
+| Active Lobbies | `scrummonsters_active_lobbies` | Stat/Gauge |
+| Connected Players | `scrummonsters_active_players` | Stat/Gauge |
+| WebSocket Connections | `scrummonsters_websocket_connections` | Stat/Gauge |
 | HTTP Error Rate | `rate(http_requests_total{status_code=~"5.."}[5m])` | Time series |
 | HTTP Request Duration | `histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m]))` | Time series |
-| Games Completed | `rate(scrumquest_games_completed_total[1h])` | Time series |
-| Node.js Memory | `scrumquest_nodejs_heap_used_bytes` | Time series |
-| Node.js Event Loop Lag | `scrumquest_nodejs_eventloop_lag_seconds` | Time series |
+| Games Completed | `rate(scrummonsters_games_completed_total[1h])` | Time series |
+| Node.js Memory | `scrummonsters_nodejs_heap_used_bytes` | Time series |
+| Node.js Event Loop Lag | `scrummonsters_nodejs_eventloop_lag_seconds` | Time series |
 
 ---
 

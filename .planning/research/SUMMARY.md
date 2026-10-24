@@ -1,6 +1,6 @@
 # Project Research Summary
 
-**Project:** ScrumQuest — Docker + AWS Lightsail Deployment
+**Project:** ScrumMonsters — Docker + AWS Lightsail Deployment
 **Domain:** Production Docker Compose deployment to single VPS with CI/CD, TLS, observability, and data backups
 **Researched:** 2026-02-24
 **Confidence:** HIGH
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-ScrumQuest's migration from Replit to production hosting on AWS Lightsail is **technically low-risk and organizationally straightforward**. The existing stack already has a multi-stage Dockerfile, docker-compose.yml with health checks, GitHub Actions CI, Prometheus `/metrics` endpoint, and Pino structured logging. The missing pieces are operational: automated deployment workflow, TLS certificate management, database backups, and on-instance observability. No architectural refactoring is required.
+ScrumMonsters's migration from Replit to production hosting on AWS Lightsail is **technically low-risk and organizationally straightforward**. The existing stack already has a multi-stage Dockerfile, docker-compose.yml with health checks, GitHub Actions CI, Prometheus `/metrics` endpoint, and Pino structured logging. The missing pieces are operational: automated deployment workflow, TLS certificate management, database backups, and on-instance observability. No architectural refactoring is required.
 
 **The recommended path** is a Lightsail Micro instance ($10/mo) with Docker Compose, an Nginx reverse proxy for TLS termination via Let's Encrypt, GitHub Actions CI/CD deploying to the instance via SSH, automated daily pg_dump to S3, and a lightweight on-instance monitoring stack (Prometheus + Grafana). With containerized PostgreSQL as a sidecar (no managed DB fee), total cost lands at $15-20/mo — equal to or less than current Replit spend — while gaining full control, backups, and observability. The 1GB RAM constraint is manageable: app (~300MB), PostgreSQL (~150MB), monitoring (~150MB), and OS overhead (~100MB) fit within budget when Prometheus retention and memory limits are properly configured.
 
@@ -99,12 +99,12 @@ Research converged tightly on a prioritized feature hierarchy. Both research thr
 
 ### Architecture Approach
 
-The production topology is a single Lightsail Micro instance running a Docker Compose stack. Internet traffic hits port 443 via Nginx Proxy Manager (TLS termination), which forwards HTTP internally to the app container on port 5000. PostgreSQL and Redis are internal-only services on the `scrumquest` bridge network. Prometheus and Grafana bind to `127.0.0.1` only and are accessed via SSH tunnel. A `postgres-backup-s3` sidecar runs pg_dump nightly. A systemd service unit file ensures Docker Compose restarts automatically on VPS reboot.
+The production topology is a single Lightsail Micro instance running a Docker Compose stack. Internet traffic hits port 443 via Nginx Proxy Manager (TLS termination), which forwards HTTP internally to the app container on port 5000. PostgreSQL and Redis are internal-only services on the `scrummonsters` bridge network. Prometheus and Grafana bind to `127.0.0.1` only and are accessed via SSH tunnel. A `postgres-backup-s3` sidecar runs pg_dump nightly. A systemd service unit file ensures Docker Compose restarts automatically on VPS reboot.
 
 **Major components and their responsibilities:**
 
 1. **Nginx Proxy Manager** — TLS termination, Let's Encrypt cert lifecycle, WebSocket header forwarding, HTTP-to-HTTPS redirect
-2. **ScrumQuest App (Node.js)** — Game logic, Socket.IO WebSocket events, Express API, Prometheus metrics on `/metrics`, health check on `/api/health`
+2. **ScrumMonsters App (Node.js)** — Game logic, Socket.IO WebSocket events, Express API, Prometheus metrics on `/metrics`, health check on `/api/health`
 3. **PostgreSQL 16** — Persistent storage for user data, game results, sessions (`connect-pg-simple`). Named volume for data persistence. Health check via `pg_isready`.
 4. **Redis 7** — Session store and Socket.IO adapter (required for future horizontal scaling). Optional at 512MB, recommended at 1GB.
 5. **postgres-backup-s3** — Scheduled daily pg_dump to S3. Auto-deletes backups older than 30 days.
@@ -153,7 +153,7 @@ Both research streams independently converged on the same 4-5 phase structure. T
 
 **Rationale:** Cannot deploy or test anything without working infrastructure, HTTPS, and auto-restart. This phase is the unblocking prerequisite for all subsequent phases.
 
-**Delivers:** ScrumQuest running on AWS Lightsail with HTTPS, custom domain, and auto-restart on VPS reboot.
+**Delivers:** ScrumMonsters running on AWS Lightsail with HTTPS, custom domain, and auto-restart on VPS reboot.
 
 **Addresses (from FEATURES.md):**
 - HTTPS on custom domain
@@ -199,7 +199,7 @@ Both research streams independently converged on the same 4-5 phase structure. T
 - No rollback strategy (Critical Pitfall 6)
 - No database backups
 
-**Research flag:** Graceful shutdown for Socket.IO needs testing — drain logic for in-progress games requires verification. The 30s drain window is standard, but ScrumQuest-specific connection lifecycle may have edge cases.
+**Research flag:** Graceful shutdown for Socket.IO needs testing — drain logic for in-progress games requires verification. The 30s drain window is standard, but ScrumMonsters-specific connection lifecycle may have edge cases.
 
 ---
 
@@ -307,13 +307,13 @@ Both research streams independently converged on the same 4-5 phase structure. T
 | Features | HIGH | Table-stakes features are industry-standard for production Docker deployments. Differentiator features (zero-downtime, game metrics) are well-documented extensions. |
 | Architecture | HIGH | Single-VPS Docker Compose pattern is mature. Graceful shutdown, health check, and reverse proxy patterns are established Node.js best practices. |
 | Pitfalls | HIGH | Both research threads identified identical top pitfalls from independent sources. Prevention strategies are standard practice with clear implementation paths. |
-| Cost | MEDIUM | Based on AWS pricing and estimated ScrumQuest load. Actual cost depends on traffic volume and backup size growth. Projections are conservative. |
+| Cost | MEDIUM | Based on AWS pricing and estimated ScrumMonsters load. Actual cost depends on traffic volume and backup size growth. Projections are conservative. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **Socket.IO graceful drain timing**: The 30s drain window is the standard recommendation, but ScrumQuest has in-game WebSocket state (lobbies, combat). Phase 2 must test what happens to a game in-progress during a deploy. May need longer drain window or client-side reconnect-and-rejoin logic.
+- **Socket.IO graceful drain timing**: The 30s drain window is the standard recommendation, but ScrumMonsters has in-game WebSocket state (lobbies, combat). Phase 2 must test what happens to a game in-progress during a deploy. May need longer drain window or client-side reconnect-and-rejoin logic.
 - **Prometheus cardinality audit**: Before enabling Prometheus in production, audit `server/metrics.ts` for any per-player or per-lobby label usage. High-cardinality labels will exhaust memory on 1GB instance within days.
 - **Replit compatibility**: The existing Replit workflow must remain unbroken. Deployment changes should be production-only additions, not modifications to dev environment behavior. The `.env` file approach and `npm run dev` command must continue working as-is on Replit.
 - **Redis optionality**: Both research threads noted Redis is optional at fewer than 100 users. The docker-compose.yml should make Redis easy to disable for RAM-constrained deployments.

@@ -3,7 +3,7 @@ import { httpLogger } from '../logger.js';
 
 // Insecure default used only for local development. Reused in the production
 // guard below so the literal can't drift between default and check. (H-4)
-const DEFAULT_SESSION_SECRET = "scrumquest-dev-secret-change-in-production";
+const DEFAULT_SESSION_SECRET = "scrummonsters-dev-secret-change-in-production";
 
 // Environment variable schema
 const envSchema = z.object({

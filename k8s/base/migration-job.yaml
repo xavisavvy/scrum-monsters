@@ -1,9 +1,9 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: scrumquest-migration
+  name: scrummonsters-migration
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: migration
   annotations:
     # Run before main deployment sync
@@ -20,18 +20,18 @@ spec:
   template:
     metadata:
       labels:
-        app: scrumquest-migration
-        app.kubernetes.io/name: scrumquest
+        app: scrummonsters-migration
+        app.kubernetes.io/name: scrummonsters
         app.kubernetes.io/component: migration
     spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: scrumquest:latest
+          image: scrummonsters:latest
           command: ["npm", "run", "db:migrate"]
           envFrom:
             - secretRef:
-                name: scrumquest-secrets
+                name: scrummonsters-secrets
           env:
             - name: LOG_LEVEL
               value: "info"

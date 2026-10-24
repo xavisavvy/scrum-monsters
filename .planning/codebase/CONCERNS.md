@@ -11,7 +11,7 @@
 - Fix approach: Replace all `Math.random().toString(36).substring()` with `crypto.randomBytes()` for sensitive IDs. Use `crypto.randomUUID()` for standard token generation. This affects player IDs, lobby IDs, and all security-sensitive random values.
 
 **Weak Session Secret Default:**
-- Issue: `SESSION_SECRET` defaults to hardcoded string `"scrumquest-dev-secret-change-in-production"` in `server/index.ts` (line 14)
+- Issue: `SESSION_SECRET` defaults to hardcoded string `"scrummonsters-dev-secret-change-in-production"` in `server/index.ts` (line 14)
 - Files: `server/index.ts`
 - Impact: If `SESSION_SECRET` env var not set in production, sessions are compromised; anyone can forge valid session cookies
 - Fix approach: Require `SESSION_SECRET` to be explicitly set in production via environment check. Throw error during startup if NODE_ENV=production and SESSION_SECRET is not configured.

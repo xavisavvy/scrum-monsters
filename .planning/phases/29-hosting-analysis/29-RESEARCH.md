@@ -6,9 +6,9 @@
 
 ## Summary
 
-Phase 29 focuses on data-driven hosting decisions by measuring actual resource usage under load and comparing platform costs. The goal is to provide operators with a clear recommendation for deploying ScrumQuest within a $5-20/mo budget while accommodating 2x traffic growth.
+Phase 29 focuses on data-driven hosting decisions by measuring actual resource usage under load and comparing platform costs. The goal is to provide operators with a clear recommendation for deploying ScrumMonsters within a $5-20/mo budget while accommodating 2x traffic growth.
 
-ScrumQuest already has k6 WebSocket load tests, Prometheus metrics, and connection pooling configured. The missing piece is an automated profiling workflow that captures resource metrics during load testing, generates cost comparisons across Render, Railway, Fly.io, Replit, and AWS Lightsail, and produces actionable hosting recommendations.
+ScrumMonsters already has k6 WebSocket load tests, Prometheus metrics, and connection pooling configured. The missing piece is an automated profiling workflow that captures resource metrics during load testing, generates cost comparisons across Render, Railway, Fly.io, Replit, and AWS Lightsail, and produces actionable hosting recommendations.
 
 **Primary recommendation:** Build a profiling script that runs k6 load tests while capturing process.memoryUsage(), process.cpuUsage(), and bandwidth metrics from Prometheus, then generates a markdown report comparing hosting platforms with a clear "best fit" recommendation for the $5-20/mo budget constraint.
 
@@ -323,7 +323,7 @@ ${recommendation.migrationNotes || 'Standard deployment process applies.'}
 
 **Why it happens:** Default pool size (10 connections in postgres library) insufficient for concurrent WebSocket connections; error manifests as request failures, not resource exhaustion.
 
-**How to avoid:** Monitor Prometheus scrumquest_db_pool_size gauge and check for connection timeouts in logs during load tests; validate pool size ≥ concurrent users / 5.
+**How to avoid:** Monitor Prometheus scrummonsters_db_pool_size gauge and check for connection timeouts in logs during load tests; validate pool size ≥ concurrent users / 5.
 
 **Warning signs:** Load test shows 5xx errors increasing with user count despite RAM/CPU headroom; database connection timeout errors in logs.
 
@@ -338,7 +338,7 @@ import { metricsRegistry, websocketMessagesSent } from './server/metrics.js';
 
 async function getBandwidthMetrics(): Promise<{ totalBytes: number }> {
   const metrics = await metricsRegistry.metrics();
-  const wsMessagesSentMatch = metrics.match(/scrumquest_websocket_messages_sent_total\{.*\} (\d+)/);
+  const wsMessagesSentMatch = metrics.match(/scrummonsters_websocket_messages_sent_total\{.*\} (\d+)/);
 
   if (!wsMessagesSentMatch) return { totalBytes: 0 };
 
@@ -410,7 +410,7 @@ async function checkPoolHealth(): Promise<{ total: number; idle: number; waiting
 ## Open Questions
 
 1. **Should we test with Neon PostgreSQL vs. in-memory storage?**
-   - What we know: ScrumQuest supports both via IStorage abstraction; DATABASE_URL toggles mode
+   - What we know: ScrumMonsters supports both via IStorage abstraction; DATABASE_URL toggles mode
    - What's unclear: Whether connection pooling to serverless Postgres (Neon) adds latency or connection overhead affecting hosting requirements
    - Recommendation: Profile both modes; if Neon adds <50ms p95 latency, recommend it for data persistence in budget
 

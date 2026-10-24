@@ -6,7 +6,7 @@
 
 ## Summary
 
-API contract testing ensures that API implementations match their documented specifications through automated validation. For ScrumQuest, this involves documenting REST endpoints with OpenAPI 3.1 and WebSocket events with AsyncAPI 3.0, validating responses against these specs in CI, and generating TypeScript types from the specifications.
+API contract testing ensures that API implementations match their documented specifications through automated validation. For ScrumMonsters, this involves documenting REST endpoints with OpenAPI 3.1 and WebSocket events with AsyncAPI 3.0, validating responses against these specs in CI, and generating TypeScript types from the specifications.
 
 The standard approach uses **openapi-typescript** for type generation, **Spectral** for spec linting, and either **Schemathesis** or **express-openapi-validator** for contract testing. For WebSocket validation, **zod-sockets** provides runtime validation with AsyncAPI spec generation. This creates a single source of truth (the spec files) that drives both compile-time types and runtime validation.
 
@@ -80,7 +80,7 @@ pip install schemathesis  # Python-based testing tool
 # specs/openapi.yaml
 openapi: 3.1.0
 info:
-  title: ScrumQuest API
+  title: ScrumMonsters API
   version: 1.0.0
 paths:
   /api/health:
@@ -169,11 +169,11 @@ const joinLobbyAction = actionsFactory.build({
 
 // Generate AsyncAPI spec
 const spec = new Documentation({
-  title: "ScrumQuest WebSocket API",
+  title: "ScrumMonsters WebSocket API",
   version: "1.0.0",
   description: "Real-time multiplayer scrum poker events",
   servers: {
-    production: { url: "wss://scrumquest.com", protocol: "socket.io" },
+    production: { url: "wss://scrummonsters.com", protocol: "socket.io" },
   },
 })
   .addEmission("lobby_updated", emissions.lobby_updated)
@@ -587,7 +587,7 @@ io.on("connection", (socket) => {
 
 // Generate AsyncAPI spec
 const docs = new Documentation({
-  title: "ScrumQuest WebSocket API",
+  title: "ScrumMonsters WebSocket API",
   version: "1.0.0",
   servers: {
     local: { url: "ws://localhost:5000", protocol: "socket.io" },
@@ -617,7 +617,7 @@ initialize({
   apiDoc: {
     openapi: '3.1.0',
     info: {
-      title: 'ScrumQuest API',
+      title: 'ScrumMonsters API',
       version: '1.0.0',
     },
     paths: {},
@@ -687,7 +687,7 @@ export const GET = {
 3. **WebSocket acknowledgment validation coverage**
    - What we know: zod-sockets validates ack schemas
    - What's unclear: How comprehensive the validation is for complex ack flows
-   - Recommendation: Test with ScrumQuest's existing Socket.IO ack patterns before full adoption
+   - Recommendation: Test with ScrumMonsters's existing Socket.IO ack patterns before full adoption
 
 ## Sources
 
@@ -726,7 +726,7 @@ export const GET = {
 **Research date:** 2026-02-03
 **Valid until:** ~30 days (stable ecosystem, but Schemathesis and tooling actively updated)
 
-**ScrumQuest-specific notes:**
+**ScrumMonsters-specific notes:**
 - Current REST endpoints: /api/health, /api/ws-health, /api/auth/*, /api/user/*
 - Current WebSocket events: Extensive Socket.IO events in shared/gameEvents.ts
 - Existing Prometheus metrics in server/metrics.ts (custom /metrics endpoint to consider)

@@ -237,7 +237,7 @@ interface TutorialState {
 }
 ```
 
-**Persistence:** Uses `localStorage` with a namespaced key (`scrumquest-tutorial-state`), matching the existing pattern in `lobbySettingsStorage.ts`, `playerNameStorage.ts`, etc.
+**Persistence:** Uses `localStorage` with a namespaced key (`scrum-monsters-tutorial-state`), matching the existing pattern in `lobbySettingsStorage.ts`, `playerNameStorage.ts`, etc.
 
 **No server-side state needed.** Tutorial progress is per-browser, not per-account. This matches the existing pattern where player preferences (name, team, lobby settings) are all client-side localStorage.
 
@@ -343,7 +343,7 @@ export class PlayerNameStorage {
 
 // Tutorial equivalent:
 export class TutorialStorage {
-  private static KEY = 'scrumquest-tutorial-state';
+  private static KEY = 'scrum-monsters-tutorial-state';
   static getCompletedSteps(): string[] { ... }
   static markStepComplete(stepId: string): void { ... }
   static hasCompletedOnboarding(): boolean { ... }

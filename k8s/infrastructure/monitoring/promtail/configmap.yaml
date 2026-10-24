@@ -38,10 +38,10 @@ data:
               source: timestamp
               format: RFC3339
         relabel_configs:
-          # Only scrape pods with promtail.io/scrape: "true" or app: scrumquest
+          # Only scrape pods with promtail.io/scrape: "true" or app: scrummonsters
           - source_labels: [__meta_kubernetes_pod_label_app]
             action: keep
-            regex: (scrumquest|postgres|redis)
+            regex: (scrummonsters|postgres|redis)
           - source_labels: [__meta_kubernetes_pod_node_name]
             target_label: __host__
           - action: labelmap

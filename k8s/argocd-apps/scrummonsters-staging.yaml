@@ -1,25 +1,27 @@
-# ArgoCD Application for ScrumQuest Development Environment
+# ArgoCD Application for ScrumMonsters Staging Environment
 #
 # Features:
-#   - Auto-sync on push to main branch
-#   - Self-healing (auto-corrects drift)
-#   - Pruning (removes orphaned resources)
+#   - MANUAL sync required (no auto-sync)
+#   - Self-healing disabled (manual control)
+#   - Explicit revision history for rollback support
 #
 # Deploy:
-#   kubectl apply -f k8s/argocd-apps/scrumquest-dev.yaml
+#   kubectl apply -f k8s/argocd-apps/scrummonsters-staging.yaml
 #
-# Monitor:
-#   argocd app get scrumquest-dev
-#   argocd app sync scrumquest-dev
+# Manual Sync:
+#   argocd app sync scrummonsters-staging
+#
+# Rollback:
+#   argocd app rollback scrummonsters-staging
 
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: scrumquest-dev
+  name: scrummonsters-staging
   namespace: argocd
   labels:
-    app.kubernetes.io/name: scrumquest
-    app.kubernetes.io/environment: dev
+    app.kubernetes.io/name: scrummonsters
+    app.kubernetes.io/environment: staging
   # Finalize protection - prevents accidental deletion
   finalizers:
     - resources-finalizer.argocd.argoproj.io
@@ -28,21 +30,17 @@ spec:
 
   source:
     # Repository URL - update to your actual repo
-    repoURL: https://github.com/your-org/scrumquest.git
+    repoURL: https://github.com/your-org/scrummonsters.git
     targetRevision: main
-    path: k8s/overlays/dev
+    path: k8s/overlays/staging
 
   destination:
     server: https://kubernetes.default.svc
-    namespace: scrumquest-dev
+    namespace: scrummonsters-staging
 
   syncPolicy:
-    # Auto-sync enabled for dev
-    automated:
-      prune: true
-      selfHeal: true
-      # Allow empty - don't block if no changes
-      allowEmpty: false
+    # NO auto-sync for staging - manual sync required
+    # automated: null
 
     syncOptions:
       # Create namespace if it doesn't exist
@@ -69,10 +67,5 @@ spec:
       jsonPointers:
         - /spec/replicas
 
-  # Notifications (optional - requires notification controller)
-  # notifications:
-  #   triggers:
-  #     - on-sync-succeeded
-  #     - on-sync-failed
-  #   services:
-  #     - slack
+  # Revision history limit for rollbacks
+  revisionHistoryLimit: 10

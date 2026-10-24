@@ -1,6 +1,6 @@
 # Deployment Architecture Research: Docker, Lightsail, CI/CD, and Observability
 
-**Project:** ScrumQuest (Real-time multiplayer scrum poker with JRPG-style boss battles)
+**Project:** ScrumMonsters (Real-time multiplayer scrum poker with JRPG-style boss battles)
 **Research Date:** 2026-02-24
 **Confidence Level:** HIGH (verified against existing codebase + official sources)
 
@@ -8,7 +8,7 @@
 
 ## I. EXECUTIVE SUMMARY
 
-ScrumQuest's new deployment stack adds Docker containerization and AWS Lightsail single-instance hosting while preserving the existing TypeScript monorepo architecture. The constraint is tight: 1GB RAM on Lightsail ($5/month tier) must run application + PostgreSQL + Redis + Prometheus + Loki + Grafana simultaneously. The solution uses Docker Compose orchestration with aggressive memory limits (683 MB container requests, 141 MB safety margin). CI/CD via GitHub Actions builds multi-stage Docker images and pushes to AWS ECR, then a deployment script orchestrates pulling and starting containers on Lightsail. On-instance monitoring (Prometheus metrics scraping + Loki log aggregation) captures game telemetry and operational logs. PostgreSQL backups via pg_dump cron run daily at 2 AM UTC with 7-day retention. Replit compatibility is preserved—no breaking code changes, only deployment-side additions.
+ScrumMonsters's new deployment stack adds Docker containerization and AWS Lightsail single-instance hosting while preserving the existing TypeScript monorepo architecture. The constraint is tight: 1GB RAM on Lightsail ($5/month tier) must run application + PostgreSQL + Redis + Prometheus + Loki + Grafana simultaneously. The solution uses Docker Compose orchestration with aggressive memory limits (683 MB container requests, 141 MB safety margin). CI/CD via GitHub Actions builds multi-stage Docker images and pushes to AWS ECR, then a deployment script orchestrates pulling and starting containers on Lightsail. On-instance monitoring (Prometheus metrics scraping + Loki log aggregation) captures game telemetry and operational logs. PostgreSQL backups via pg_dump cron run daily at 2 AM UTC with 7-day retention. Replit compatibility is preserved—no breaking code changes, only deployment-side additions.
 
 ### Key Architecture Decisions
 
@@ -37,7 +37,7 @@ ScrumQuest's new deployment stack adds Docker containerization and AWS Lightsail
 │ ┌─ Docker Daemon ──────────────────────────────────────────────────────┐   │
 │ │  ┌─ Docker Compose Network (bridge) ────────────────────────────┐   │   │
 │ │  │                                                               │   │   │
-│ │  │  ┌─ scrumquest (app) ─────────┐  ┌─ postgres ──────────┐   │   │   │
+│ │  │  ┌─ scrummonsters (app) ─────────┐  ┌─ postgres ──────────┐   │   │   │
 │ │  │  │ Node.js 20, Express         │  │ PostgreSQL 16       │   │   │   │
 │ │  │  │ React Three Fiber client    │  │ alpine              │   │   │   │
 │ │  │  │ Socket.IO WebSocket server  │  │                     │   │   │   │
@@ -120,15 +120,15 @@ ScrumQuest's new deployment stack adds Docker containerization and AWS Lightsail
 │ │  │ Upstream app: 127.0.0.1:5000                              ││   │
 │ │  │ Upstream grafana: 127.0.0.1:3000                          ││   │
 │ │  │                                                            ││   │
-│ │  │ Server: scrumquest.example.com                            ││   │
+│ │  │ Server: scrummonsters.example.com                            ││   │
 │ │  │   Location / → proxy_pass app:5000                        ││   │
 │ │  │   WebSocket upgrade headers, X-Forwarded-*               ││   │
 │ │  │                                                            ││   │
-│ │  │ Server: grafana.scrumquest.example.com                    ││   │
+│ │  │ Server: grafana.scrummonsters.example.com                    ││   │
 │ │  │   Location / → proxy_pass grafana:3000                    ││   │
 │ │  │   Basic auth (ops team)                                   ││   │
 │ │  │                                                            ││   │
-│ │  │ TLS: /etc/letsencrypt/live/scrumquest.example.com/       ││   │
+│ │  │ TLS: /etc/letsencrypt/live/scrummonsters.example.com/       ││   │
 │ │  │      fullchain.pem, privkey.pem                           ││   │
 │ │  │      (Certbot auto-renewal daily)                        ││   │
 │ │  └──────────────────────────────────────────────────────────┘│   │
@@ -136,8 +136,8 @@ ScrumQuest's new deployment stack adds Docker containerization and AWS Lightsail
 │ │  Cron Jobs (Host) ────────────────────────────────────────┐  │   │
 │ │  │                                                         │  │   │
 │ │  │  0 2 * * * /scripts/backup-postgres.sh                 │  │   │
-│ │  │  └─ docker exec scrumquest-postgres pg_dump           │  │   │
-│ │  │     -U scrumquest scrumquest | gzip > /backups/...    │  │   │
+│ │  │  └─ docker exec scrummonsters-postgres pg_dump           │  │   │
+│ │  │     -U scrummonsters scrummonsters | gzip > /backups/...    │  │   │
 │ │  │     (Daily 2 AM UTC)                                   │  │   │
 │ │  │                                                         │  │   │
 │ │  │  0 3 * * * find /backups -mtime +7 -delete            │  │   │
@@ -226,7 +226,7 @@ Stage 4: GitHub Actions deploy-docker.yml
   Trigger: git push to main
 
   Step 1: Build Docker image
-    docker build --platform linux/amd64 -t scrumquest:latest .
+    docker build --platform linux/amd64 -t scrummonsters:latest .
     (Multi-stage: builder → npm ci + npm run build; runner → copy dist)
 
   Step 2: Login to AWS ECR
@@ -234,10 +234,10 @@ Stage 4: GitHub Actions deploy-docker.yml
       docker login --username AWS --password-stdin <ECR_URI>
 
   Step 3: Tag and push image
-    docker tag scrumquest:latest <ECR_URI>/scrumquest:latest
-    docker tag scrumquest:latest <ECR_URI>/scrumquest:<GIT_SHA>
-    docker push <ECR_URI>/scrumquest:latest
-    docker push <ECR_URI>/scrumquest:<GIT_SHA>
+    docker tag scrummonsters:latest <ECR_URI>/scrummonsters:latest
+    docker tag scrummonsters:latest <ECR_URI>/scrummonsters:<GIT_SHA>
+    docker push <ECR_URI>/scrummonsters:latest
+    docker push <ECR_URI>/scrummonsters:<GIT_SHA>
 
   Step 4: Deploy to Lightsail (manual approval)
     Trigger: workflow_dispatch with environment=staging|prod
@@ -276,8 +276,8 @@ Stage 6: Live Observability
     ↓
 Stage 7: Daily Maintenance (Cron)
   2:00 AM UTC: pg_dump backup
-    docker exec scrumquest-postgres-1 pg_dump \
-      -U scrumquest scrumquest | gzip > /backups/scrumquest-$(date +%Y%m%d).sql.gz
+    docker exec scrummonsters-postgres-1 pg_dump \
+      -U scrummonsters scrummonsters | gzip > /backups/scrummonsters-$(date +%Y%m%d).sql.gz
 
   3:00 AM UTC: Backup cleanup (keep 7 latest)
     find /backups -mtime +7 -delete
@@ -298,7 +298,7 @@ Stage 7: Daily Maintenance (Cron)
 
 ## IV. COMPONENT BOUNDARIES & INTEGRATION POINTS
 
-### 1. Application Container (scrumquest)
+### 1. Application Container (scrummonsters)
 
 **Responsibility:**
 - Serve React frontend (client-side SPA build artifact)
@@ -342,13 +342,13 @@ process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 **Docker Integration:**
 ```yaml
 app:
-  image: scrumquest:latest
-  container_name: scrumquest-app
+  image: scrummonsters:latest
+  container_name: scrummonsters-app
   ports:
     - "5000:5000"
   environment:
     - NODE_ENV=production
-    - DATABASE_URL=postgresql://scrumquest:${DB_PASSWORD}@postgres:5432/scrumquest
+    - DATABASE_URL=postgresql://scrummonsters:${DB_PASSWORD}@postgres:5432/scrummonsters
     - SESSION_SECRET=${SESSION_SECRET}
     - REDIS_URL=redis://redis:6379
   healthcheck:
@@ -391,15 +391,15 @@ app:
 ```yaml
 postgres:
   image: postgres:16-alpine
-  container_name: scrumquest-postgres
+  container_name: scrummonsters-postgres
   environment:
-    - POSTGRES_USER=scrumquest
+    - POSTGRES_USER=scrummonsters
     - POSTGRES_PASSWORD=${DB_PASSWORD}
-    - POSTGRES_DB=scrumquest
+    - POSTGRES_DB=scrummonsters
     # Custom PostgreSQL tuning for 200 MB container:
     - POSTGRES_INITDB_ARGS=-c shared_buffers=64MB -c effective_cache_size=128MB -c maintenance_work_mem=32MB -c work_mem=2MB -c max_connections=20
   healthcheck:
-    test: ["CMD-SHELL", "pg_isready -U scrumquest -d scrumquest"]
+    test: ["CMD-SHELL", "pg_isready -U scrummonsters -d scrummonsters"]
     interval: 10s
     timeout: 5s
     retries: 5
@@ -428,12 +428,12 @@ postgres:
 #!/bin/bash
 BACKUP_DIR=/backups
 TIMESTAMP=$(date +%Y%m%d)
-docker exec scrumquest-postgres pg_dump \
-  -U scrumquest \
-  -d scrumquest \
+docker exec scrummonsters-postgres pg_dump \
+  -U scrummonsters \
+  -d scrummonsters \
   --no-owner \
   --format=plain \
-  | gzip > $BACKUP_DIR/scrumquest-$TIMESTAMP.sql.gz
+  | gzip > $BACKUP_DIR/scrummonsters-$TIMESTAMP.sql.gz
 
 # Compress: ~5 GB database → 500 MB gzipped (90% reduction)
 # Retention: 7-day cleanup
@@ -456,7 +456,7 @@ docker exec scrumquest-postgres pg_dump \
 ```yaml
 redis:
   image: redis:7-alpine
-  container_name: scrumquest-redis
+  container_name: scrummonsters-redis
   command: redis-server --appendonly yes --maxmemory 40M --maxmemory-policy allkeys-lru
   healthcheck:
     test: ["CMD", "redis-cli", "ping"]
@@ -499,7 +499,7 @@ redis:
 ```yaml
 prometheus:
   image: prom/prometheus:latest
-  container_name: scrumquest-prometheus
+  container_name: scrummonsters-prometheus
   ports:
     - "9090:9090"
   volumes:
@@ -530,7 +530,7 @@ global:
 
 scrape_configs:
   # Application metrics
-  - job_name: 'scrumquest'
+  - job_name: 'scrummonsters'
     static_configs:
       - targets: ['app:5000']
     relabel_configs:
@@ -575,7 +575,7 @@ scrape_configs:
 ```yaml
 loki:
   image: grafana/loki:latest
-  container_name: scrumquest-loki
+  container_name: scrummonsters-loki
   ports:
     - "3100:3100"
   volumes:
@@ -642,7 +642,7 @@ storage_config:
 **Log Labels (for Grafana filtering):**
 ```yaml
 # Added by Promtail scrape config
-job: scrumquest
+job: scrummonsters
 env: production
 instance: lightsail
 service: app | postgres | redis  # source
@@ -660,7 +660,7 @@ level: info | warn | error | fatal  # log level
 ```yaml
 promtail:
   image: grafana/promtail:latest
-  container_name: scrumquest-promtail
+  container_name: scrummonsters-promtail
   volumes:
     - /var/lib/docker/containers:/var/lib/docker/containers:ro
     - /var/run/docker.sock:/var/run/docker.sock
@@ -707,7 +707,7 @@ scrape_configs:
                   level: level
                   message: message
       - labels:
-          job: scrumquest
+          job: scrummonsters
           env: production
 
   # File-based logs (if app writes to /logs volume)
@@ -715,7 +715,7 @@ scrape_configs:
     static_configs:
       - targets: [localhost]
         labels:
-          job: scrumquest
+          job: scrummonsters
           __path__: /logs/*.log
     pipeline_stages:
       - json:
@@ -725,7 +725,7 @@ scrape_configs:
             component: component
             message: message
       - labels:
-          job: scrumquest
+          job: scrummonsters
           env: production
 ```
 
@@ -759,7 +759,7 @@ Operators search errors, trace player issues, monitor health
 ```yaml
 grafana:
   image: grafana/grafana:latest
-  container_name: scrumquest-grafana
+  container_name: scrummonsters-grafana
   ports:
     - "3000:3000"
   environment:
@@ -808,7 +808,7 @@ datasources:
 ```
 
 **Default Dashboards:**
-1. **ScrumQuest Overview**
+1. **ScrumMonsters Overview**
    - Active lobbies (gauge)
    - Players online (gauge)
    - Estimation votes/min (graph)
@@ -847,7 +847,7 @@ datasources:
 ```yaml
 node-exporter:
   image: prom/node-exporter:latest
-  container_name: scrumquest-node-exporter
+  container_name: scrummonsters-node-exporter
   ports:
     - "9100:9100"
   command:
@@ -885,7 +885,7 @@ node-exporter:
 ```bash
 # Host: sudo apt-get install nginx certbot python3-certbot-nginx
 
-# /etc/nginx/sites-available/scrumquest.conf
+# /etc/nginx/sites-available/scrummonsters.conf
 upstream app {
   server 127.0.0.1:5000;
   keepalive 32;  # Reuse connections
@@ -897,16 +897,16 @@ upstream grafana {
 
 server {
   listen 80;
-  server_name scrumquest.example.com grafana.scrumquest.example.com;
+  server_name scrummonsters.example.com grafana.scrummonsters.example.com;
   return 301 https://$host$request_uri;  # Redirect HTTP → HTTPS
 }
 
 server {
   listen 443 ssl http2;
-  server_name scrumquest.example.com;
+  server_name scrummonsters.example.com;
 
-  ssl_certificate /etc/letsencrypt/live/scrumquest.example.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/scrumquest.example.com/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/scrummonsters.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/scrummonsters.example.com/privkey.pem;
   ssl_protocols TLSv1.2 TLSv1.3;
   ssl_ciphers HIGH:!aNULL:!MD5;
   ssl_prefer_server_ciphers on;
@@ -934,10 +934,10 @@ server {
 
 server {
   listen 443 ssl http2;
-  server_name grafana.scrumquest.example.com;
+  server_name grafana.scrummonsters.example.com;
 
-  ssl_certificate /etc/letsencrypt/live/scrumquest.example.com/fullchain.pem;
-  ssl_certificate_key /etc/letsencrypt/live/scrumquest.example.com/privkey.pem;
+  ssl_certificate /etc/letsencrypt/live/scrummonsters.example.com/fullchain.pem;
+  ssl_certificate_key /etc/letsencrypt/live/scrummonsters.example.com/privkey.pem;
 
   auth_basic "Grafana Admin";
   auth_basic_user_file /etc/nginx/.htpasswd;  # htpasswd -c .htpasswd admin
@@ -958,7 +958,7 @@ server {
 **TLS Certificate Management:**
 ```bash
 # Initial setup (Certbot auto-renewal)
-sudo certbot certonly --nginx -d scrumquest.example.com
+sudo certbot certonly --nginx -d scrummonsters.example.com
 
 # Auto-renewal cron job (Certbot installs this automatically)
 0 2 * * * /usr/bin/certbot renew --quiet --deploy-hook "systemctl reload nginx"
@@ -983,23 +983,23 @@ set -e
 
 BACKUP_DIR=/backups
 TIMESTAMP=$(date +%Y%m%d)
-CONTAINER=scrumquest-postgres-1
+CONTAINER=scrummonsters-postgres-1
 
 # Create backup directory if not exists
 mkdir -p $BACKUP_DIR
 
 # Perform dump
 docker exec $CONTAINER pg_dump \
-  -U scrumquest \
-  -d scrumquest \
+  -U scrummonsters \
+  -d scrummonsters \
   --no-owner \
   --format=plain \
-| gzip > $BACKUP_DIR/scrumquest-$TIMESTAMP.sql.gz
+| gzip > $BACKUP_DIR/scrummonsters-$TIMESTAMP.sql.gz
 
 # Verify backup
-if [ -f $BACKUP_DIR/scrumquest-$TIMESTAMP.sql.gz ]; then
-  echo "Backup successful: scrumquest-$TIMESTAMP.sql.gz"
-  ls -lh $BACKUP_DIR/scrumquest-$TIMESTAMP.sql.gz
+if [ -f $BACKUP_DIR/scrummonsters-$TIMESTAMP.sql.gz ]; then
+  echo "Backup successful: scrummonsters-$TIMESTAMP.sql.gz"
+  ls -lh $BACKUP_DIR/scrummonsters-$TIMESTAMP.sql.gz
 else
   echo "Backup failed" >&2
   exit 1
@@ -1008,7 +1008,7 @@ fi
 
 **Cron Entry:**
 ```bash
-0 2 * * * /scripts/backup-postgres.sh >> /var/log/scrumquest-backup.log 2>&1
+0 2 * * * /scripts/backup-postgres.sh >> /var/log/scrummonsters-backup.log 2>&1
 0 3 * * * find /backups -mtime +7 -delete  # Cleanup after 7 days
 0 2 * * * certbot renew --quiet  # TLS cert renewal
 ```
@@ -1076,7 +1076,7 @@ services:
 #### Pattern 4: Logging to Stdout for Aggregation
 - **What:** Log to stdout; Docker captures to /var/lib/docker/containers/<id>/
 - **When:** All containers; no file-based logs inside containers
-- **Example (Already in ScrumQuest):**
+- **Example (Already in ScrumMonsters):**
 ```typescript
 // Pino configured to output JSON to stdout in production
 const logger = pino({
@@ -1094,8 +1094,8 @@ const logger = pino({
 - **Example (Already in Dockerfile):**
 ```dockerfile
 RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 scrumquest
-USER scrumquest
+    adduser --system --uid 1001 scrummonsters
+USER scrummonsters
 ```
 - **Rationale:** If container compromised, attacker doesn't get root on host
 
@@ -1127,7 +1127,7 @@ process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 - **Example:**
 ```bash
 # Host: /home/ubuntu/.env (not in repo, 0600 permissions)
-DATABASE_URL=postgresql://scrumquest:${DB_PASSWORD}@postgres:5432/scrumquest
+DATABASE_URL=postgresql://scrummonsters:${DB_PASSWORD}@postgres:5432/scrummonsters
 SESSION_SECRET=<random 32+ char string>
 GRAFANA_ADMIN_PASSWORD=<random>
 ```
@@ -1143,7 +1143,7 @@ env_file:
 - **When:** Production database; schedule off-peak
 - **Example:**
 ```bash
-0 2 * * * docker exec scrumquest-postgres-1 pg_dump -U scrumquest scrumquest | gzip > /backups/scrumquest-$(date +\%Y\%m\%d).sql.gz
+0 2 * * * docker exec scrummonsters-postgres-1 pg_dump -U scrummonsters scrummonsters | gzip > /backups/scrummonsters-$(date +\%Y\%m\%d).sql.gz
 0 3 * * * find /backups -mtime +7 -delete  # Cleanup
 ```
 - **Rationale:** Database state protected; compressed backups fit in 1GB instance; rotation prevents disk exhaustion
@@ -1221,7 +1221,7 @@ env_file:
    - Action: Upgrade instance vCPU, or horizontal scaling with load balancer
 
 3. **WebSocket Connections**
-   - Metric: `scrumquest_websocket_connections` (Prometheus metric)
+   - Metric: `scrummonsters_websocket_connections` (Prometheus metric)
    - Limit: ~500 concurrent per instance (tuning-dependent)
    - Action: Deploy app tier horizontally; use Redis adapter + sticky sessions
 

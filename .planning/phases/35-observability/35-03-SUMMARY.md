@@ -28,7 +28,7 @@ key-files:
 
 key-decisions:
   - "Healthcheck uses 127.0.0.1 not localhost — Alpine wget resolves to IPv6 [::1] but Node listens IPv4"
-  - "Dashboard renamed ScrumQuest to ScrumMonsters to match project branding"
+  - "Dashboard renamed ScrumMonsters to ScrumMonsters to match project branding"
 
 patterns-established:
   - "SSH tunnel pattern: -L 3001:127.0.0.1:3001 -L 9090:127.0.0.1:9090 -L 9999:127.0.0.1:9999"
@@ -73,7 +73,7 @@ Each task was committed atomically:
 
 ## Decisions Made
 - **Healthcheck 127.0.0.1 over localhost:** Alpine's wget resolves `localhost` to IPv6 `[::1]`, but Node.js listens on IPv4 `0.0.0.0`. Changed healthcheck URL to `127.0.0.1` to fix false-unhealthy container status.
-- **Dashboard branding:** Renamed Grafana dashboard from "ScrumQuest" to "ScrumMonsters" to match actual project name.
+- **Dashboard branding:** Renamed Grafana dashboard from "ScrumMonsters" to "ScrumMonsters" to match actual project name.
 
 ## Deviations from Plan
 
@@ -89,9 +89,9 @@ Each task was committed atomically:
 
 **2. [Rule 1 - Bug] Fixed dashboard branding mismatch**
 - **Found during:** Task 1 (deployment verification)
-- **Issue:** Grafana dashboard titled "ScrumQuest" but project is named "ScrumMonsters"
+- **Issue:** Grafana dashboard titled "ScrumMonsters" but project is named "ScrumMonsters"
 - **Fix:** Renamed dashboard title to "ScrumMonsters"
-- **Files modified:** docker/grafana/dashboards/scrumquest-dashboard.json
+- **Files modified:** docker/grafana/dashboards/scrummonsters-dashboard.json
 - **Verification:** Dashboard shows correct name in Grafana UI
 - **Committed in:** f5be923
 

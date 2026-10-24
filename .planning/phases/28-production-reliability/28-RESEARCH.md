@@ -182,7 +182,7 @@ async function checkDatabaseHealth(): Promise<{ healthy: boolean; message?: stri
 **Example:**
 ```typescript
 // Source: https://forwardemail.net/en/blog/docs/best-practices-for-node-js-logging
-console.log('🚀 ScrumQuest Server Starting...');
+console.log('🚀 ScrumMonsters Server Starting...');
 console.log(`   Environment: ${process.env.NODE_ENV || 'development'}`);
 console.log(`   Node version: ${process.version}`);
 console.log(`   Database: ${process.env.DATABASE_URL ? 'PostgreSQL' : 'In-Memory'}`);

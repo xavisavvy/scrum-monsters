@@ -2,14 +2,14 @@
 
 **Domain:** Docker Compose deployments to AWS Lightsail / self-managed VPS
 **Researched:** 2026-02-24
-**Scope:** ScrumQuest migration from Replit to $5-20/mo single-instance VPS with Docker + PostgreSQL
+**Scope:** ScrumMonsters migration from Replit to $5-20/mo single-instance VPS with Docker + PostgreSQL
 **Overall Confidence:** HIGH
 
 ---
 
 ## Executive Summary
 
-Single-VPS Docker deployments are production-viable for apps handling <100 concurrent users (ScrumQuest target: 50). The technology stack is mature and cost-effective. Key decisions cluster around four categories:
+Single-VPS Docker deployments are production-viable for apps handling <100 concurrent users (ScrumMonsters target: 50). The technology stack is mature and cost-effective. Key decisions cluster around four categories:
 
 1. **Table Stakes** (features users expect, missing = product broken)
 2. **Differentiators** (competitive advantage, not expected but valued)
@@ -41,7 +41,7 @@ Features users expect. Missing = app feels production-unready. All are implement
 
 ## Differentiators
 
-Features that set ScrumQuest apart. Not expected, but highly valued. Worth implementing if time/budget allows.
+Features that set ScrumMonsters apart. Not expected, but highly valued. Worth implementing if time/budget allows.
 
 | Feature | Value Proposition | Complexity | Effort | Notes |
 |---------|-------------------|------------|--------|-------|
@@ -63,15 +63,15 @@ Over-engineering waste for single-instance setup. Avoid until constraints force 
 | Anti-Feature | Why Avoid | Cost | When to Reconsider |
 |--------------|-----------|------|-------------------|
 | **Kubernetes orchestration** | Single instance doesn't benefit from pod scheduling. Over 10x complexity. | Time: 80 hours. Cost: Same VPS + K8s management overhead. | When >5 services, >10K concurrent users, or multi-region needed. At 50 users: Premature. |
-| **Multi-container service mesh** | Istio/Linkerd for single app is waste. Adds observability debt. | 40+ hours setup. Network latency overhead. | When >10 microservices with complex routing policies. ScrumQuest: App + DB + Redis is enough. |
-| **Container security scanning in CI/CD** | CVE scanning for all images. Busywork unless you run untrusted code. | 10+ hours Trivy/Snyk setup. | When handling user-uploaded images or plugins. ScrumQuest: Node.js app, low attack surface. |
+| **Multi-container service mesh** | Istio/Linkerd for single app is waste. Adds observability debt. | 40+ hours setup. Network latency overhead. | When >10 microservices with complex routing policies. ScrumMonsters: App + DB + Redis is enough. |
+| **Container security scanning in CI/CD** | CVE scanning for all images. Busywork unless you run untrusted code. | 10+ hours Trivy/Snyk setup. | When handling user-uploaded images or plugins. ScrumMonsters: Node.js app, low attack surface. |
 | **Multi-stage Dockerfile optimization** | Shaving 50MB off a 200MB image. Negligible for <50 users. | 5 hours. 50MB = $0.05/month in egress. | When bandwidth is measurable cost (>100GB/month). Current: Not worth the debugging. |
-| **Distributed tracing (Jaeger/Tempo)** | Trace requests across services. Single monolith means basic logging suffices. | 20 hours setup + agent overhead. | When debugging multi-service latency. ScrumQuest: Single Express server, see logs directly. |
+| **Distributed tracing (Jaeger/Tempo)** | Trace requests across services. Single monolith means basic logging suffices. | 20 hours setup + agent overhead. | When debugging multi-service latency. ScrumMonsters: Single Express server, see logs directly. |
 | **Multiple replicas with load balancing** | "High availability" with >1 app instance. Requires stateless sessions (Redis), shared state. | 30 hours architecture refactor + Redis + LB setup. Extra $30/mo. | When you need zero-downtime deployments AND >50 concurrent users. Currently: Blue-green with 1 instance cheaper. |
-| **Service mesh TLS (mTLS)** | Encrypt container-to-container traffic in internal network. | 15 hours + ongoing cert management. | When containers from untrusted sources / multi-tenant environment. ScrumQuest: Single VPS, same trust boundary. |
-| **Secrets manager (Vault/AWS Secrets Manager)** | Complex key rotation for simple .env file. | 10 hours setup. | When rotating secrets >monthly or >10 apps. ScrumQuest: One app, one database. Use Docker Secrets file mount instead. |
-| **GitOps deployment (ArgoCD/Flux)** | Automated Compose updates from git. Overkill for manual staging→prod promotion. | 15 hours. | When >3 environments or >2 devs pushing at same time. ScrumQuest: Single dev, manual deploys. Use git tags instead. |
-| **Service discovery (Consul/Eureka)** | Dynamic service registration. docker-compose DNS handles this. | 10 hours. | When services scaling up/down frequently. ScrumQuest: Fixed services (app, db, redis). No discovery needed. |
+| **Service mesh TLS (mTLS)** | Encrypt container-to-container traffic in internal network. | 15 hours + ongoing cert management. | When containers from untrusted sources / multi-tenant environment. ScrumMonsters: Single VPS, same trust boundary. |
+| **Secrets manager (Vault/AWS Secrets Manager)** | Complex key rotation for simple .env file. | 10 hours setup. | When rotating secrets >monthly or >10 apps. ScrumMonsters: One app, one database. Use Docker Secrets file mount instead. |
+| **GitOps deployment (ArgoCD/Flux)** | Automated Compose updates from git. Overkill for manual staging→prod promotion. | 15 hours. | When >3 environments or >2 devs pushing at same time. ScrumMonsters: Single dev, manual deploys. Use git tags instead. |
+| **Service discovery (Consul/Eureka)** | Dynamic service registration. docker-compose DNS handles this. | 10 hours. | When services scaling up/down frequently. ScrumMonsters: Fixed services (app, db, redis). No discovery needed. |
 
 ---
 
@@ -110,7 +110,7 @@ Deferred (50+ users):
 
 ## MVP Feature Set
 
-**Minimum viable production deployment for ScrumQuest:**
+**Minimum viable production deployment for ScrumMonsters:**
 
 | Feature | Rationale |
 |---------|-----------|

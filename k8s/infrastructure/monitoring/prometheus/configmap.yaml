@@ -18,7 +18,7 @@ data:
         static_configs:
           - targets: ['localhost:9090']
 
-      # Scrape ScrumQuest pods via annotations
+      # Scrape ScrumMonsters pods via annotations
       - job_name: 'kubernetes-pods'
         kubernetes_sd_configs:
           - role: pod
@@ -48,20 +48,20 @@ data:
             action: replace
             target_label: kubernetes_pod_name
 
-      # Scrape ScrumQuest services directly
-      - job_name: 'scrumquest'
+      # Scrape ScrumMonsters services directly
+      - job_name: 'scrummonsters'
         kubernetes_sd_configs:
           - role: service
             namespaces:
               names:
-                - scrumquest
-                - scrumquest-dev
-                - scrumquest-staging
-                - scrumquest-prod
+                - scrummonsters
+                - scrummonsters-dev
+                - scrummonsters-staging
+                - scrummonsters-prod
         relabel_configs:
           - source_labels: [__meta_kubernetes_service_label_app_kubernetes_io_name]
             action: keep
-            regex: scrumquest
+            regex: scrummonsters
           - source_labels: [__meta_kubernetes_namespace]
             action: replace
             target_label: namespace

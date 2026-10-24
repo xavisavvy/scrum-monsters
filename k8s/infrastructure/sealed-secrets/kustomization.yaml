@@ -20,7 +20,7 @@ resources:
 # Add labels for identification
 commonLabels:
   app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: scrumquest
+  app.kubernetes.io/part-of: scrummonsters
 
 # Patch the controller deployment for reliability
 patches:

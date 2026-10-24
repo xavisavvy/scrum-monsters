@@ -1,21 +1,21 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: scrumquest-ingress
-  namespace: scrumquest
+  name: scrummonsters-ingress
+  namespace: scrummonsters
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: ingress
   annotations:
     # For nginx-ingress controller
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     # WebSocket support
-    nginx.ingress.kubernetes.io/websocket-services: "scrumquest-service"
+    nginx.ingress.kubernetes.io/websocket-services: "scrummonsters-service"
     nginx.ingress.kubernetes.io/upstream-hash-by: "$remote_addr"
     # Sticky sessions for WebSocket
     nginx.ingress.kubernetes.io/affinity: "cookie"
-    nginx.ingress.kubernetes.io/session-cookie-name: "scrumquest-affinity"
+    nginx.ingress.kubernetes.io/session-cookie-name: "scrummonsters-affinity"
     nginx.ingress.kubernetes.io/session-cookie-max-age: "3600"
     nginx.ingress.kubernetes.io/session-cookie-change-on-failure: "true"
     # SSL redirect (uncomment for production with TLS)
@@ -27,17 +27,17 @@ spec:
   # TLS configuration (uncomment for production)
   # tls:
   #   - hosts:
-  #       - scrumquest.local
-  #     secretName: scrumquest-tls
+  #       - scrummonsters.local
+  #     secretName: scrummonsters-tls
   rules:
-    - host: scrumquest.local
+    - host: scrummonsters.local
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: scrumquest-service
+                name: scrummonsters-service
                 port:
                   number: 80
           # Explicit WebSocket path
@@ -45,6 +45,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: scrumquest-service
+                name: scrummonsters-service
                 port:
                   number: 80

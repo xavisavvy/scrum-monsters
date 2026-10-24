@@ -16,8 +16,8 @@ kind: Kustomization
 #   argocd login localhost:8080
 #
 # After setup, deploy applications:
-#   kubectl apply -f k8s/argocd-apps/scrumquest-dev.yaml
-#   kubectl apply -f k8s/argocd-apps/scrumquest-prod.yaml
+#   kubectl apply -f k8s/argocd-apps/scrummonsters-dev.yaml
+#   kubectl apply -f k8s/argocd-apps/scrummonsters-prod.yaml
 
 namespace: argocd
 
@@ -29,7 +29,7 @@ resources:
 
 commonLabels:
   app.kubernetes.io/managed-by: kustomize
-  app.kubernetes.io/part-of: scrumquest
+  app.kubernetes.io/part-of: scrummonsters
 
 # Patch ArgoCD ConfigMap for repository configuration
 patches:
@@ -43,6 +43,6 @@ patches:
           # Allow insecure repositories for local dev (disable in production)
           repositories: |
             - type: git
-              url: https://github.com/your-org/scrumquest
+              url: https://github.com/your-org/scrummonsters
           # Application reconciliation settings
           timeout.reconciliation: 180s

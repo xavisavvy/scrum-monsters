@@ -11,7 +11,7 @@ Mistakes that cause rewrites or major issues.
 
 **What goes wrong:** Tutorial overlays or guided flows write to the same Zustand stores (`useGameState`, `useEventSync`, `useProgression`) that live Socket.IO events also write to. A `lobby_updated` event arrives mid-tutorial and either overwrites the tutorial's mock state or the tutorial's state leaks into the real game state, causing desyncs for all players in the lobby.
 
-**Why it happens:** ScrumQuest's state is deeply coupled -- `useGameState` holds `currentLobby`, `currentBoss`, `countdown`, `telegraph`, etc. all in one store. A tutorial that needs to show "here's what a boss attack looks like" must either use real state (risking conflict) or mock state (risking divergence from the live store shape).
+**Why it happens:** ScrumMonsters's state is deeply coupled -- `useGameState` holds `currentLobby`, `currentBoss`, `countdown`, `telegraph`, etc. all in one store. A tutorial that needs to show "here's what a boss attack looks like" must either use real state (risking conflict) or mock state (risking divergence from the live store shape).
 
 **Consequences:**
 - Other players see the tutorial player as "in battle" when they're in onboarding
@@ -25,7 +25,7 @@ Mistakes that cause rewrites or major issues.
 
 **Detection:** Players reporting they are "stuck" in a phase that doesn't match what other players see. `useEventSync` recovery loops triggering during what should be a tutorial-only flow.
 
-**ScrumQuest-specific:** The `PhaseRegistry` system is a natural extension point -- register tutorial-specific phase variants that render educational overlays without touching the real phase components.
+**ScrumMonsters-specific:** The `PhaseRegistry` system is a natural extension point -- register tutorial-specific phase variants that render educational overlays without touching the real phase components.
 
 **Phase to address:** Tutorial System (first phase -- architecture must be right from the start)
 
@@ -43,7 +43,7 @@ Mistakes that cause rewrites or major issues.
 - Boss attacks damage the player while they're reading tooltip text, leading to confusion
 
 **Prevention:**
-- Tutorials in ScrumQuest must be **non-blocking overlays** that float above the game but never disable interaction. Use Framer Motion for dismissible tooltips, not modals.
+- Tutorials in ScrumMonsters must be **non-blocking overlays** that float above the game but never disable interaction. Use Framer Motion for dismissible tooltips, not modals.
 - Contextual hints should be **phase-aware**: show "submit your estimate here" only during `battle` phase, auto-dismiss when phase changes, and never prevent the user from interacting with game controls underneath.
 - Consider a "sandbox lobby" mode where the tutorial creates a single-player lobby with no real server timers. The `PhaseRegistry.register()` method can register tutorial-specific phases that don't broadcast to other players.
 
@@ -55,7 +55,7 @@ Mistakes that cause rewrites or major issues.
 
 ### Pitfall 3: AnimatePresence Key Conflicts with Hint/Tutorial Layers
 
-**What goes wrong:** ScrumQuest already uses `AnimatePresence` with `key={toPhase}` in `PhaseTransition` for phase changes. Adding tutorial overlays or hint tooltips that also use `AnimatePresence` creates nested `AnimatePresence` contexts where exit animations conflict -- the phase transition's `mode="wait"` blocks until all children (including tutorial animations) complete their exit, causing visible freezes or layout jumps.
+**What goes wrong:** ScrumMonsters already uses `AnimatePresence` with `key={toPhase}` in `PhaseTransition` for phase changes. Adding tutorial overlays or hint tooltips that also use `AnimatePresence` creates nested `AnimatePresence` contexts where exit animations conflict -- the phase transition's `mode="wait"` blocks until all children (including tutorial animations) complete their exit, causing visible freezes or layout jumps.
 
 **Why it happens:** Framer Motion's `AnimatePresence` manages mount/unmount animations by key. Nesting them without careful key management causes the outer `AnimatePresence` to wait for inner ones, or inner animations to be abruptly cancelled.
 
@@ -116,7 +116,7 @@ Mistakes that cause rewrites or major issues.
     return () => clearTimeout(timer);
   }, []);
   ```
-- For ScrumQuest specifically, the `PhaseRegistry.validatePhase()` already returns a loading state when boss/player data is missing. Enhance this with a delayed skeleton rather than an immediate one.
+- For ScrumMonsters specifically, the `PhaseRegistry.validatePhase()` already returns a loading state when boss/player data is missing. Enhance this with a delayed skeleton rather than an immediate one.
 - Distinguish between "first load" (show skeleton) and "update" (don't show skeleton, just swap data).
 
 **Phase to address:** Loading/Transition Polish
@@ -142,7 +142,7 @@ Mistakes that cause rewrites or major issues.
 **What goes wrong:** Generic error boundaries catch errors but lose the WebSocket connection context. The `ErrorBoundary.tsx` catches a render error, shows "Something went wrong," but doesn't attempt reconnection or preserve lobby state. The user must refresh and rejoin.
 
 **Prevention:**
-- ScrumQuest already has `ReconnectionDialog` and `ConnectionIndicator` components. Error states should integrate with `useWebSocket`'s reconnection flow, not replace it.
+- ScrumMonsters already has `ReconnectionDialog` and `ConnectionIndicator` components. Error states should integrate with `useWebSocket`'s reconnection flow, not replace it.
 - Error boundaries should distinguish between:
   - **Render errors** (component crashed): Show error UI but keep WebSocket alive. The lobby state in `useGameState` is still valid.
   - **Connection errors** (Socket.IO disconnect): Defer to `ReconnectionDialog`, don't show a generic error.
@@ -171,7 +171,7 @@ Mistakes that cause rewrites or major issues.
 **What goes wrong:** Tutorial progress, hint visibility, onboarding step, animation states all get added to `useGameState`. The store becomes a grab-bag that re-renders the entire game tree on every hint dismissal.
 
 **Prevention:**
-- Tutorial/hint state belongs in its own store(s), not in `useGameState`. ScrumQuest already uses `subscribeWithSelector` which helps, but the cleanest approach is separate stores:
+- Tutorial/hint state belongs in its own store(s), not in `useGameState`. ScrumMonsters already uses `subscribeWithSelector` which helps, but the cleanest approach is separate stores:
   - `useTutorialStore` - tutorial progress, current step, completion status
   - `useHintStore` - hint visibility, dismissal state, priority queue
 - These stores should persist to `localStorage` for cross-session state (which hints were dismissed, whether tutorial was completed).
@@ -242,7 +242,7 @@ Mistakes that cause rewrites or major issues.
 
 ## Sources
 
-- ScrumQuest codebase analysis: `PhaseRegistry.tsx`, `PhaseTransition.tsx`, `PhaseRenderer.tsx`, `useGameState.tsx`, `useEventSync.ts`, `useWebSocket.tsx`
+- ScrumMonsters codebase analysis: `PhaseRegistry.tsx`, `PhaseTransition.tsx`, `PhaseRenderer.tsx`, `useGameState.tsx`, `useEventSync.ts`, `useWebSocket.tsx`
 - [Game UX: Best practices for video game onboarding](https://inworld.ai/blog/game-ux-best-practices-for-video-game-onboarding)
 - [Tutorial UX: Your Indie Game's Onboarding Roadmap](https://www.wayline.io/blog/tutorial-ux-indie-game-onboarding)
 - [The Importance of First Time User Experience (FTUE) in Games](https://antidote.gg/the-importance-of-first-time-user-experience-in-games/)

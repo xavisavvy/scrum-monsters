@@ -1,12 +1,12 @@
 # Research Summary: JRPG UI Redesign + Routing + Mobile Responsiveness
 
-**Project:** ScrumQuest v2.0 - UI/UX Modernization
+**Project:** ScrumMonsters v2.0 - UI/UX Modernization
 **Researched:** 2026-02-11
 **Overall Confidence:** HIGH
 
 ## Executive Summary
 
-The research confirms that ScrumQuest's existing architecture (React + Three.js + Zustand + Socket.IO) integrates seamlessly with React Router v6/v7 for proper routing and SEO without breaking real-time game functionality. The key insight: routing is an additive layer, not a replacement—Zustand and Socket.IO remain the source of truth for game state, while React Router handles URL synchronization and meta tag management.
+The research confirms that ScrumMonsters's existing architecture (React + Three.js + Zustand + Socket.IO) integrates seamlessly with React Router v6/v7 for proper routing and SEO without breaking real-time game functionality. The key insight: routing is an additive layer, not a replacement—Zustand and Socket.IO remain the source of truth for game state, while React Router handles URL synchronization and meta tag management.
 
 The recommended approach separates the codebase into two distinct routing contexts: **Website Routes** (landing, about, features, pricing, support) which are lightweight, SEO-optimized marketing pages, and **Game Routes** (/game/*) which lazy-load the heavy Three.js bundle only when users enter the game. This code-splitting strategy delivers the single biggest performance win—marketing pages load in <500ms instead of 3-5s.
 

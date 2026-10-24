@@ -1,25 +1,25 @@
-# ServiceMonitor for ScrumQuest Application
-# This tells Prometheus to scrape metrics from ScrumQuest pods
+# ServiceMonitor for ScrumMonsters Application
+# This tells Prometheus to scrape metrics from ScrumMonsters pods
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: scrumquest
+  name: scrummonsters
   namespace: monitoring
   labels:
-    app.kubernetes.io/name: scrumquest
+    app.kubernetes.io/name: scrummonsters
     app.kubernetes.io/component: monitoring
 spec:
-  # Match services in scrumquest namespaces
+  # Match services in scrummonsters namespaces
   namespaceSelector:
     matchNames:
-      - scrumquest
-      - scrumquest-dev
-      - scrumquest-staging
-      - scrumquest-prod
-  # Match scrumquest services
+      - scrummonsters
+      - scrummonsters-dev
+      - scrummonsters-staging
+      - scrummonsters-prod
+  # Match scrummonsters services
   selector:
     matchLabels:
-      app.kubernetes.io/name: scrumquest
+      app.kubernetes.io/name: scrummonsters
   endpoints:
     - port: http
       path: /metrics

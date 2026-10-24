@@ -22,7 +22,7 @@ re_verification: false
 | 1 | Developer runs npm run check and sees zero TypeScript errors in shared/schema.ts | VERIFIED | TypeScript compilation exits with code 0, no errors reported |
 | 2 | All existing Zod schemas in shared/socket-schemas.ts compile and validate correctly after upgrade | VERIFIED | Imports work, z.object/z.enum/z.infer all use Zod 4 API, 615 tests pass |
 | 3 | Full test suite passes after Zod version change | VERIFIED | 615 tests passed in 8.57s, zero failures |
-| 4 | Social media previews display ScrumQuest branded 1200x630 OG image (not 372x372 placeholder) | VERIFIED | client/public/og-image.png is PNG 1200x630, 42KB, referenced in metaConfig.ts |
+| 4 | Social media previews display ScrumMonsters branded 1200x630 OG image (not 372x372 placeholder) | VERIFIED | client/public/og-image.png is PNG 1200x630, 42KB, referenced in metaConfig.ts |
 | 5 | Production build contains no debug console.log statements in useSpriteAnimation.ts | VERIFIED | grep returns 0 matches for console.log in both useSpriteAnimation.ts and SpriteRenderer.tsx |
 | 6 | Developer runs npm install without Husky v10 deprecation warnings | VERIFIED | npm install produces no deprecated messages, .husky/_/ directory deleted |
 | 7 | ESLint prevents new console.log statements from being introduced | VERIFIED | eslint.config.mjs contains no-console warn rule with allow list |
@@ -115,7 +115,7 @@ Both commits documented in SUMMARY files are present in git history:
 All 4 success criteria from ROADMAP.md met:
 
 1. Developer runs npm run check and sees zero TypeScript errors in shared/schema.ts - VERIFIED
-2. Social media previews display ScrumQuest branded 1200x630 OG image (not placeholder) - VERIFIED
+2. Social media previews display ScrumMonsters branded 1200x630 OG image (not placeholder) - VERIFIED
 3. Developer runs npm install without Husky v10 deprecation warnings - VERIFIED
 4. Production build contains no debug console.log statements - VERIFIED
 

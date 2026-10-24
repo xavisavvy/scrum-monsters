@@ -19,7 +19,7 @@
 │  │          Docker Compose Orchestration             │   │
 │  │                                                    │   │
 │  │  ┌──────────────┐  ┌──────────────────┐          │   │
-│  │  │  Nginx Proxy │  │  ScrumQuest App  │          │   │
+│  │  │  Nginx Proxy │  │  ScrumMonsters App  │          │   │
 │  │  │  Manager     │──│  (Node.js)       │          │   │
 │  │  │              │  │  Port: 5000      │          │   │
 │  │  │ Port 80/443  │  │                  │          │   │
@@ -57,7 +57,7 @@
 │  │  └──────────────────────────────────────────┘    │   │
 │  └────────────────────────────────────────────────────┘   │
 │                                                             │
-│  Systemd Service: scrumquest-docker.service               │
+│  Systemd Service: scrummonsters-docker.service               │
 │  Auto-starts docker-compose on VPS reboot                │
 └─────────────────────────────────────────────────────────────┘
          │                          │
@@ -79,7 +79,7 @@
 | Component | Responsibility | Interface | Communicates With |
 |-----------|---------------|-----------|------------------|
 | **Nginx Proxy Manager** | TLS termination, reverse proxy routing, Let's Encrypt cert renewal | HTTP/HTTPS (ports 80, 443), GUI (port 81) | Internet (clients), App container (port 5000), Let's Encrypt API |
-| **ScrumQuest App** | Game logic, WebSocket handling, session management, API endpoints | HTTP (port 5000), WebSocket upgrade | PostgreSQL (session store, user data), Redis (optional: session clustering), Nginx (reverse proxy) |
+| **ScrumMonsters App** | Game logic, WebSocket handling, session management, API endpoints | HTTP (port 5000), WebSocket upgrade | PostgreSQL (session store, user data), Redis (optional: session clustering), Nginx (reverse proxy) |
 | **PostgreSQL** | Persistent data storage (users, games, estimations, sessions) | TCP (port 5432) | App (queries), postgres-backup-s3 (backups) |
 | **Redis** | Session clustering, optional caching | TCP (port 6379) | App (session store if using Redis adapter) |
 | **postgres-backup-s3** | Automated daily backups, S3 upload | TCP to PostgreSQL (5432), S3 API | PostgreSQL (pg_dump), AWS S3 API |
@@ -106,7 +106,7 @@ Nginx Proxy Manager (Port 443)
     ├─ HTTP Request (Port 5000, internal network)
     │
     ▼
-ScrumQuest App
+ScrumMonsters App
     │
     ├─ Query/update data
     │
@@ -136,7 +136,7 @@ Nginx Proxy Manager
     │ (Forward Upgrade headers: Connection: upgrade, Upgrade: websocket)
     │
     ▼
-ScrumQuest App (WebSocket handler)
+ScrumMonsters App (WebSocket handler)
     │
     ├─ Establish persistent connection
     │
@@ -162,7 +162,7 @@ Execute pg_dump
     │
     ├─ Compress with gzip
     │
-    ├─ Create timestamped filename: scrumquest_2026-02-24_020000.dump.gz
+    ├─ Create timestamped filename: scrummonsters_2026-02-24_020000.dump.gz
     │
     ▼
 Upload to S3
@@ -187,7 +187,7 @@ Prometheus (Port 9090)
     ├─ Scrape /metrics every 15s
     │
     ▼
-ScrumQuest App (Prometheus endpoint)
+ScrumMonsters App (Prometheus endpoint)
     │
     ├─ prom-client metrics (existing)
     │ ├─ socketio_connected_total
@@ -359,7 +359,7 @@ Recovery Process (if needed):
     │
     ├─ docker-compose up -d postgres (start fresh database)
     │
-    ├─ docker exec postgres pg_restore -U scrumquest < backup.dump.gz
+    ├─ docker exec postgres pg_restore -U scrummonsters < backup.dump.gz
     │
     ├─ docker-compose up -d app (restart app)
     │
@@ -395,7 +395,7 @@ Total: 512MB (Lightsail micro)
     │
     ├─ Nginx Proxy Manager: 50MB
     │
-    ├─ ScrumQuest App: 100-150MB (Node.js)
+    ├─ ScrumMonsters App: 100-150MB (Node.js)
     │ ├─ Base: 50MB (V8, runtime)
     │ ├─ Lobbies: 30MB (50 active lobbies, ~600KB each)
     │ ├─ In-game state: 50MB (combat calculations, player data)
@@ -537,7 +537,7 @@ services:
 
 ```bash
 # .env file (local only, not in git)
-DATABASE_URL=postgresql://scrumquest:password@postgres:5432/scrumquest
+DATABASE_URL=postgresql://scrummonsters:password@postgres:5432/scrummonsters
 SESSION_SECRET=your-secret-key-here
 ```
 
@@ -568,8 +568,8 @@ services:
         condition: service_healthy
     environment:
       POSTGRES_HOST: postgres
-      POSTGRES_DB: scrumquest
-      POSTGRES_USER: scrumquest
+      POSTGRES_DB: scrummonsters
+      POSTGRES_USER: scrummonsters
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       S3_BUCKET: your-backup-bucket
       S3_PREFIX: backups

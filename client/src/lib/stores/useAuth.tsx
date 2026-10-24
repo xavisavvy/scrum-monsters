@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { subscribeWithSelector, persist } from "zustand/middleware";
 import { getCsrfHeaders } from '@/lib/csrfToken';
+import { migrateLegacyStorageKeys } from '@/lib/utils/legacyStorageMigration';
 
 export interface AuthUser {
   id: number;
@@ -49,6 +50,9 @@ interface AuthState {
   fetchStats: () => Promise<void>;
   clearError: () => void;
 }
+
+// Drop the pre-rename storage key before persist rehydrates.
+migrateLegacyStorageKeys();
 
 export const useAuth = create<AuthState>()(
   subscribeWithSelector(
@@ -170,7 +174,7 @@ export const useAuth = create<AuthState>()(
         clearError: () => set({ error: null }),
       }),
       {
-        name: "scrumquest-auth",
+        name: "scrum-monsters-auth",
         partialize: () => ({
           // Only persist minimal state for quick rehydration
           // Full auth check happens on mount

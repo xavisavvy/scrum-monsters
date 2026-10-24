@@ -25,7 +25,7 @@ tech-stack:
 key-files:
   created:
     - .github/workflows/rollback.yml
-    - k8s/argocd-apps/scrumquest-staging.yaml
+    - k8s/argocd-apps/scrummonsters-staging.yaml
   modified: []
 
 key-decisions:
@@ -79,7 +79,7 @@ Each task was committed atomically:
 
 ## Files Created/Modified
 - `.github/workflows/rollback.yml` - Unified rollback workflow with workflow_dispatch trigger, rate limiting, environment protection, ArgoCD CLI operations, health verification, and audit logging
-- `k8s/argocd-apps/scrumquest-staging.yaml` - ArgoCD Application for staging environment with manual sync policy, no auto-sync, revision history limit 10
+- `k8s/argocd-apps/scrummonsters-staging.yaml` - ArgoCD Application for staging environment with manual sync policy, no auto-sync, revision history limit 10
 
 ## Decisions Made
 

@@ -117,7 +117,7 @@ The GamePage mount fix was necessary but NOT sufficient. User re-ran Test 3 with
   - `useTutorial.persist.onFinishHydration(...)` subscriber for the async case
   Both set `isHydrated: true`, so it's reliably true under any timing.
 
-**Final fix verified 2026-05-15:** Tutorial overlay renders correctly when replayed from any battle sub-phase. All 5 walkthrough steps advance and complete. Completion persists across reload — localStorage `scrumquest-tutorial` shows `completedTutorials: { 'walkthrough:battle': true }`.
+**Final fix verified 2026-05-15:** Tutorial overlay renders correctly when replayed from any battle sub-phase. All 5 walkthrough steps advance and complete. Completion persists across reload — localStorage `scrum-monsters-tutorial` shows `completedTutorials: { 'walkthrough:battle': true }`.
 
 **Files changed (final):**
 - `client/src/pages/GamePage.tsx` — +2 lines (import + JSX sibling mount of `<TutorialOverlay />`)

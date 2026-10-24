@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-ScrumQuest is currently deployed on Replit ($20/month Core plan) with in-memory storage. This research evaluates cost-optimized hosting alternatives, managed PostgreSQL options, and resource profiling strategies to support migration to production-ready infrastructure within a $5-20/month budget.
+ScrumMonsters is currently deployed on Replit ($20/month Core plan) with in-memory storage. This research evaluates cost-optimized hosting alternatives, managed PostgreSQL options, and resource profiling strategies to support migration to production-ready infrastructure within a $5-20/month budget.
 
 **Key findings:** Render.com ($7/month) paired with Neon PostgreSQL (free tier with scale-to-zero) provides the best value for WebSocket applications. The combination costs ~$10-15/month actual usage vs. current $20/month, while adding persistent sessions, automated backups, and better observability. Railway ($5/month + usage) offers a compelling development alternative with PostgreSQL included. Both platforms natively support WebSocket persistent connections without arbitrary timeouts.
 

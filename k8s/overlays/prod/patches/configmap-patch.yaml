@@ -1,8 +1,8 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: scrumquest-config
+  name: scrummonsters-config
 data:
   NODE_ENV: "production"
   LOG_LEVEL: "warn"
-  ALLOWED_ORIGINS: "https://scrumquest.com,https://www.scrumquest.com"
+  ALLOWED_ORIGINS: "https://scrummonsters.com,https://www.scrummonsters.com"

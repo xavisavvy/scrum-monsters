@@ -40,7 +40,7 @@
 - Lightsail region (pick based on cost/latency tradeoffs)
 
 ### Deferred Ideas (OUT OF SCOPE)
-- App-wide rename from ScrumQuest to ScrumMonsters — branding/code rename across the entire codebase. Captures: all UI text, page titles, component names, README, package.json name, etc. Should be its own phase or added to backlog.
+- App-wide rename from ScrumMonsters to ScrumMonsters — branding/code rename across the entire codebase. Captures: all UI text, page titles, component names, README, package.json name, etc. Should be its own phase or added to backlog.
 </user_constraints>
 
 ---

@@ -10,7 +10,7 @@ requires:
     provides: Prometheus scrape config and metrics endpoint
 provides:
   - Grafana auto-provisioned Prometheus datasource
-  - Pre-built ScrumQuest dashboard with 10 metric panels
+  - Pre-built ScrumMonsters dashboard with 10 metric panels
   - Dashboard auto-load on container start via provisioning
 affects: [35-03, docker-compose integration]
 
@@ -23,12 +23,12 @@ key-files:
   created:
     - docker/grafana/provisioning/datasources/prometheus.yml
     - docker/grafana/provisioning/dashboards/dashboard.yml
-    - docker/grafana/dashboards/scrumquest.json
+    - docker/grafana/dashboards/scrummonsters.json
   modified: []
 
 key-decisions:
   - "Name-based datasource reference (datasource: Prometheus) matching provisioned datasource name"
-  - "Stable dashboard UID scrumquest-main for bookmarkable URLs and API access"
+  - "Stable dashboard UID scrummonsters-main for bookmarkable URLs and API access"
   - "30s refresh interval balances real-time visibility with Prometheus scrape interval"
 
 patterns-established:
@@ -42,7 +42,7 @@ completed: 2026-03-09
 
 # Phase 35 Plan 02: Grafana Dashboard Summary
 
-**Grafana provisioning with auto-configured Prometheus datasource and 10-panel ScrumQuest dashboard covering game metrics, HTTP performance, and Node.js health**
+**Grafana provisioning with auto-configured Prometheus datasource and 10-panel ScrumMonsters dashboard covering game metrics, HTTP performance, and Node.js health**
 
 ## Performance
 
@@ -62,16 +62,16 @@ completed: 2026-03-09
 Each task was committed atomically:
 
 1. **Task 1: Create Grafana provisioning configuration files** - `1648785` (feat)
-2. **Task 2: Create ScrumQuest Grafana dashboard JSON** - `84cff65` (feat)
+2. **Task 2: Create ScrumMonsters Grafana dashboard JSON** - `84cff65` (feat)
 
 ## Files Created/Modified
 - `docker/grafana/provisioning/datasources/prometheus.yml` - Auto-configures Prometheus as default datasource at http://prometheus:9090
 - `docker/grafana/provisioning/dashboards/dashboard.yml` - Dashboard provider pointing to /var/lib/grafana/dashboards
-- `docker/grafana/dashboards/scrumquest.json` - 10-panel Grafana dashboard with game, HTTP, and Node.js metrics
+- `docker/grafana/dashboards/scrummonsters.json` - 10-panel Grafana dashboard with game, HTTP, and Node.js metrics
 
 ## Decisions Made
 - Used name-based datasource reference (`"datasource": "Prometheus"`) matching provisioned datasource name for simplicity
-- Set stable UID `scrumquest-main` for bookmarkable URLs and programmatic API access
+- Set stable UID `scrummonsters-main` for bookmarkable URLs and programmatic API access
 - 30s dashboard refresh interval aligns with typical Prometheus scrape interval
 - schemaVersion 39 for modern Grafana compatibility
 
@@ -94,7 +94,7 @@ None - no external service configuration required.
 
 - [x] docker/grafana/provisioning/datasources/prometheus.yml exists
 - [x] docker/grafana/provisioning/dashboards/dashboard.yml exists
-- [x] docker/grafana/dashboards/scrumquest.json exists
+- [x] docker/grafana/dashboards/scrummonsters.json exists
 - [x] Commit 1648785 exists
 - [x] Commit 84cff65 exists
 

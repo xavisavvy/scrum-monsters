@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-Research covered four domains for ScrumQuest's next milestone: JRPG-themed UI redesign, mobile game UX optimization, SPA routing with SEO support, and lobby interaction enhancements. Key finding: **Most table stakes features can leverage existing infrastructure** (WebSocket reconnection, emote events, phase transitions), reducing implementation complexity. The project is well-positioned for mobile-first design and JRPG theming without major architectural changes.
+Research covered four domains for ScrumMonsters's next milestone: JRPG-themed UI redesign, mobile game UX optimization, SPA routing with SEO support, and lobby interaction enhancements. Key finding: **Most table stakes features can leverage existing infrastructure** (WebSocket reconnection, emote events, phase transitions), reducing implementation complexity. The project is well-positioned for mobile-first design and JRPG theming without major architectural changes.
 
 **Critical insight:** Social media SEO requires middleware for crawler detection (not full SSR) to avoid Google's cloaking penalties in 2026. Modern browsers support View Transitions API for smooth phase changes. Mobile safe area handling is straightforward with CSS environment variables. The biggest complexity lies in dual-orientation support (landscape for battle, portrait for lobby) and ensuring 44px minimum touch targets across all phases.
 

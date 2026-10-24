@@ -6,4 +6,7 @@ else
   echo "Skipping local secret detection (CI will still catch secrets)"
 fi
 
+echo "Checking for the retired app name..."
+node scripts/ci/check-app-name.mjs --staged
+
 npm test

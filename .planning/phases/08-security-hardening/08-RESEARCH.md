@@ -321,7 +321,7 @@ gitleaks protect --staged --verbose --redact
 # Source: https://github.com/gitleaks/gitleaks/blob/master/config/gitleaks.toml
 # .gitleaks.toml
 
-title = "ScrumQuest Gitleaks Configuration"
+title = "ScrumMonsters Gitleaks Configuration"
 
 # Extend default rules
 [extend]

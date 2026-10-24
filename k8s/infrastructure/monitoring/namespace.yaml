@@ -4,4 +4,4 @@ metadata:
   name: monitoring
   labels:
     app.kubernetes.io/name: monitoring
-    app.kubernetes.io/part-of: scrumquest-monitoring
+    app.kubernetes.io/part-of: scrummonsters-monitoring

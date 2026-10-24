@@ -129,7 +129,7 @@
 5. getLobby("abc123") → { name: "Epic Game", players: 5, boss: "Product Owner" }
    ↓
 6. generateMeta(route, lobby) → {
-     title: "Join Epic Game - ScrumQuest",
+     title: "Join Epic Game - ScrumMonsters",
      description: "5 players battling Product Owner",
      image: "/og/lobby-abc123.png"
    }
@@ -266,7 +266,7 @@ function LobbyPage({ lobbyId }) {
   return (
     <>
       <Helmet>
-        <title>{lobby.name} - ScrumQuest</title>
+        <title>{lobby.name} - ScrumMonsters</title>
         <meta name="description" content={`Join ${lobby.players.length} players`} />
         <meta property="og:title" content={lobby.name} />
         <meta property="og:image" content={`/og/lobby-${lobbyId}.png`} />

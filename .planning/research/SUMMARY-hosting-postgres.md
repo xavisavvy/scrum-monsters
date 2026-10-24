@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-ScrumQuest's architecture is **already prepared for PostgreSQL integration** — the hard work is done. The codebase has:
+ScrumMonsters's architecture is **already prepared for PostgreSQL integration** — the hard work is done. The codebase has:
 
 1. **Complete IStorage abstraction** with both MemStorage and PgStorage implementations
 2. **Production-ready schema** (7 tables via Drizzle ORM)
@@ -395,7 +395,7 @@ Both paths are **equally valid** — choose based on team operations preference.
 
 **Supabase Analysis:**
 - [Supabase vs PlanetScale](https://www.leanware.co/insights/supabase-vs-planetscale)
-- Conclusion: Not ideal for ScrumQuest (already has auth + Socket.IO)
+- Conclusion: Not ideal for ScrumMonsters (already has auth + Socket.IO)
 
 **WebSocket Hosting:**
 - [Render WebSocket Support](https://render.com/articles/alternatives-to-fly-io)

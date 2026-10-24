@@ -1,4 +1,4 @@
-# ScrumQuest — Maintainability & Extensibility Improvement Plan
+# ScrumMonsters — Maintainability & Extensibility Improvement Plan
 
 *Adversarial code-review council synthesis — 2026-06-21*
 
@@ -6,7 +6,7 @@
 
 ## Executive Summary
 
-ScrumQuest is functionally rich but carries the structural debt profile of a fast-evolving real-time game: a half-finished migration from a monolithic `GameState` god-class to fine-grained domain managers, two client god-components (`Lobby.tsx` at 2862 lines, `PlayerController.tsx` at ~1175 lines), and a hand-maintained event-bridge contract that links five files with no compile-time check.
+ScrumMonsters is functionally rich but carries the structural debt profile of a fast-evolving real-time game: a half-finished migration from a monolithic `GameState` god-class to fine-grained domain managers, two client god-components (`Lobby.tsx` at 2862 lines, `PlayerController.tsx` at ~1175 lines), and a hand-maintained event-bridge contract that links five files with no compile-time check.
 
 The encouraging finding: **every** verified item passed the performance guardian with `blocksChange=false`. Nothing in this plan requires a perf-safe redesign before it can proceed — the constraints are about *sequencing and scope*, not about avoiding regressions. The "Deferred — Performance-Sensitive" section below is therefore short by design; it captures the handful of items where a guardian flagged a guardrail to honor, not a blocker.
 

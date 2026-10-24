@@ -6,7 +6,7 @@
 
 ## Context
 
-ScrumQuest is adding:
+ScrumMonsters is adding:
 - **XP System:** Account XP + class mastery progression
 - **Boss AI Variety:** Attack patterns, difficulty scaling, boss-specific mechanics
 - **Combat Abilities:** Class abilities, team combos, items

@@ -161,9 +161,9 @@ All success criteria met:
 - ✓ All seven ROUTE-* requirements met (ROUTE-01 through ROUTE-07)
 
 **Social sharing test results:**
-- Landing page: "ScrumQuest - Battle Tickets in Epic JRPG Style"
-- About page: "About ScrumQuest - The Story Behind the Quest"
-- Game page: "[LOBBY_ID] - ScrumQuest Battle"
+- Landing page: "ScrumMonsters - Battle Tickets in Epic JRPG Style"
+- About page: "About ScrumMonsters - The Story Behind the Quest"
+- Game page: "[LOBBY_ID] - ScrumMonsters Battle"
 - All pages include og:image, og:description, canonical URL, Twitter card tags
 
 ## Next Phase Readiness

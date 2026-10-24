@@ -1,7 +1,7 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: scrumquest-hpa
+  name: scrummonsters-hpa
 spec:
   # Disable autoscaling in dev
   minReplicas: 1

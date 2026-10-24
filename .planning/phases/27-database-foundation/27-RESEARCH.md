@@ -391,7 +391,7 @@ export const sessionMiddleware = session({
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (in milliseconds)
     sameSite: "lax",
   },
-  name: "scrumquest.sid",
+  name: "scrum-monsters.sid",
 });
 ```
 

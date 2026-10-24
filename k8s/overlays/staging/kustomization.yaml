@@ -1,7 +1,7 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
-namespace: scrumquest-staging
+namespace: scrummonsters-staging
 
 namePrefix: staging-
 
@@ -14,8 +14,8 @@ commonLabels:
 
 # Override image for staging
 images:
-  - name: scrumquest
-    newName: scrumquest
+  - name: scrummonsters
+    newName: scrummonsters
     newTag: staging
 
 # Staging-specific patches
@@ -27,9 +27,9 @@ patches:
 # Note: Secrets should use Sealed Secrets in staging
 # This generator is a placeholder - replace with SealedSecret reference
 secretGenerator:
-  - name: scrumquest-secrets
+  - name: scrummonsters-secrets
     literals:
-      - DATABASE_URL=postgresql://scrumquest:staging-password@staging-postgres-service:5432/scrumquest
+      - DATABASE_URL=postgresql://scrummonsters:staging-password@staging-postgres-service:5432/scrummonsters
       - SESSION_SECRET=staging-session-secret-replace-with-sealed-secret
       - REDIS_URL=redis://staging-redis-service:6379
       - GOOGLE_CLIENT_ID=
@@ -38,9 +38,9 @@ secretGenerator:
       - GITHUB_CLIENT_SECRET=
   - name: postgres-secrets
     literals:
-      - POSTGRES_USER=scrumquest
+      - POSTGRES_USER=scrummonsters
       - POSTGRES_PASSWORD=staging-password
-      - POSTGRES_DB=scrumquest
+      - POSTGRES_DB=scrummonsters
 
 generatorOptions:
   disableNameSuffixHash: true

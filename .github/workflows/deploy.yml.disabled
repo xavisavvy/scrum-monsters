@@ -59,7 +59,7 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'dev')
     environment:
       name: development
-      url: https://scrumquest-dev.local
+      url: https://scrummonsters-dev.local
 
     steps:
       - name: Checkout
@@ -81,7 +81,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'staging'
     environment:
       name: staging
-      url: https://staging.scrumquest.local
+      url: https://staging.scrummonsters.local
 
     steps:
       - name: Checkout
@@ -97,7 +97,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          argocd app sync scrumquest-staging \
+          argocd app sync scrummonsters-staging \
             --server $ARGOCD_SERVER \
             --grpc-web \
             --prune \
@@ -111,7 +111,7 @@ jobs:
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.environment == 'prod'
     environment:
       name: production
-      url: https://scrumquest.com
+      url: https://scrummonsters.com
 
     steps:
       - name: Checkout
@@ -127,7 +127,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          argocd app sync scrumquest-prod \
+          argocd app sync scrummonsters-prod \
             --server $ARGOCD_SERVER \
             --grpc-web \
             --prune \
@@ -137,7 +137,7 @@ jobs:
         env:
           ARGOCD_AUTH_TOKEN: ${{ secrets.ARGOCD_AUTH_TOKEN }}
         run: |
-          argocd app wait scrumquest-prod \
+          argocd app wait scrummonsters-prod \
             --server $ARGOCD_SERVER \
             --grpc-web \
             --health \

@@ -1,6 +1,6 @@
 RESEARCH COMPLETE: Docker/Lightsail Deployment & Observability Architecture
 
-Project: ScrumQuest (Real-time multiplayer scrum poker)
+Project: ScrumMonsters (Real-time multiplayer scrum poker)
 Research Date: 2026-02-24
 Status: COMPLETE
 Confidence: HIGH

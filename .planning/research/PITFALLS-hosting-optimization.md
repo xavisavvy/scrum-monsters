@@ -1,7 +1,7 @@
 # Domain Pitfalls: Hosting & PostgreSQL Optimization
 
 **Domain:** Real-time multiplayer game with Socket.IO
-**Context:** Adding PostgreSQL persistence, hosting optimization, and resource profiling to existing ScrumQuest
+**Context:** Adding PostgreSQL persistence, hosting optimization, and resource profiling to existing ScrumMonsters
 **Researched:** 2026-02-19
 
 ---
@@ -684,7 +684,7 @@ Based on research, here are recommended platforms for $5-20/month budget:
 | **Render** | $7/month starter | Good, persistent containers | Managed ($7/month) | Flat pricing, predictable | Less flexible than Fly.io |
 | **Replit** | $0-20/month | Poor (sleep, rate limits) | External required | Good for development | NOT recommended for production |
 
-**Recommendation for ScrumQuest:** **Railway** ($5-15/month expected) or **Fly.io** ($10-20/month expected)
+**Recommendation for ScrumMonsters:** **Railway** ($5-15/month expected) or **Fly.io** ($10-20/month expected)
 - Both support long-lived WebSocket connections
 - Built-in PostgreSQL (no separate provider needed)
 - Clear usage metrics and pricing
