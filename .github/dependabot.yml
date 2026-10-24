@@ -17,7 +17,22 @@ updates:
         update-types:
           - "minor"
           - "patch"
-      # Keep major updates separate for review
+      # Keep major updates separate for review, except packages whose majors
+      # only work in lockstep: @vitest/coverage-v8 pins vitest exactly, and
+      # @vitejs/plugin-react tracks vite's major. A lone bump of either always
+      # fails CI (#251, #252), so each family arrives as one PR.
+      vitest-major:
+        patterns:
+          - "vitest"
+          - "@vitest/*"
+        update-types:
+          - "major"
+      vite-major:
+        patterns:
+          - "vite"
+          - "@vitejs/*"
+        update-types:
+          - "major"
       # Security updates (advisory-driven, opened as soon as an alert fires,
       # usually for transitive deps) are NOT covered by the group above --
       # groups apply to scheduled version updates unless they say otherwise.
@@ -28,6 +43,13 @@ updates:
         applies-to: security-updates
         patterns:
           - "*"
+    # TypeScript 7 (the native compiler) drops `baseUrl` and the JS compiler
+    # API that openapi-typescript uses, and typescript-eslint doesn't support
+    # it yet (#249). Remove this once both list TS 7 in their peer range.
+    ignore:
+      - dependency-name: "typescript"
+        update-types:
+          - "version-update:semver-major"
     # Limit to reduce noise
     open-pull-requests-limit: 10
     # Add labels for easier filtering
