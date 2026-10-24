@@ -179,7 +179,7 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "happy-dom": "^21.0.3",
     "husky": "^9.1.7",
-    "license-checker-rseidelsohn": "^4.4.2",
+    "license-checker-rseidelsohn": "^5.0.1",
     "nanoid": "^3.3.11",
     "openapi-typescript": "^7.12.0",
     "postcss": "^8.5.30",
