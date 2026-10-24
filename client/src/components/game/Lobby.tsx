@@ -1370,8 +1370,8 @@ export function Lobby() {
             >
             </div>
             
-            {/* Left Background Extension */}
-            <div 
+            {/* Right Background Extension */}
+            <div
               className="absolute bottom-0 left-1/2 h-full"
               style={{
                 height: '250px',
@@ -1386,8 +1386,8 @@ export function Lobby() {
             >
             </div>
             
-            {/* Right Background Extension */}
-            <div 
+            {/* Left Background Extension (mirrored) */}
+            <div
               className="absolute bottom-0 right-1/2 h-full"
               style={{
                 height: '250px',
@@ -1397,7 +1397,6 @@ export function Lobby() {
                 backgroundPosition: 'center bottom',
                 backgroundRepeat: 'repeat-x',
                 imageRendering: 'pixelated',
-                scale: -1,
                 transform: 'scaleX(-1)',
                 zIndex: 2
               }}
