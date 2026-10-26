@@ -143,7 +143,7 @@
     "wouter": "^3.13.0",
     "ws": "^8.22.0",
     "zod": "^4.6.7",
-    "zustand": "^5.0.13"
+    "zustand": "^5.0.16"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
