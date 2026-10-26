@@ -179,7 +179,7 @@
     "happy-dom": "^21.0.4",
     "husky": "^9.1.7",
     "license-checker-rseidelsohn": "^5.0.1",
-    "nanoid": "^3.3.11",
+    "nanoid": "^6.0.2",
     "openapi-typescript": "^7.12.0",
     "postcss": "^8.5.31",
     "standard-version": "^9.5.0",
