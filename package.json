@@ -168,7 +168,7 @@
     "@typescript-eslint/eslint-plugin": "^8.72.0",
     "@typescript-eslint/parser": "^8.72.0",
     "@vitejs/plugin-react": "^4.3.2",
-    "@vitest/coverage-v8": "^4.1.6",
+    "@vitest/coverage-v8": "^5.0.5",
     "audit-ci": "^7.1.0",
     "autoprefixer": "^10.6.1",
     "cross-env": "^10.1.0",
@@ -188,7 +188,7 @@
     "tsx": "^4.23.15",
     "typescript": "5.9.3",
     "vite": "^6.4.5",
-    "vitest": "^4.1.6"
+    "vitest": "^5.0.5"
   },
   "optionalDependencies": {
     "bufferutil": "^4.1.0"
