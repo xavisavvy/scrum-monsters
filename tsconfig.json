@@ -14,7 +14,6 @@
     "skipLibCheck": true,
     "allowImportingTsExtensions": true,
     "moduleResolution": "bundler",
-    "baseUrl": ".",
     "types": ["node", "vite/client", "vitest/globals"],
     "paths": {
       "@/*": ["./client/src/*"],
