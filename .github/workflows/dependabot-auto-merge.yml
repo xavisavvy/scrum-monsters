@@ -34,9 +34,20 @@ jobs:
       # No approval step: main requires 0 approvals (CI is the gate), and this
       # repo does not let GitHub Actions approve PRs, so `gh pr review
       # --approve` always failed here and took the auto-merge step down with it.
-      - name: Enable auto-merge for patch and minor updates
-        if: steps.metadata.outputs.update-type == 'version-update:semver-patch' || steps.metadata.outputs.update-type == 'version-update:semver-minor'
+      # Patch updates only (2026-11-24). A merged update runs on the shared self-hosted runner pool from `main`, and that
+      # pool also builds and deploys other repos (lfg-app to production): the smaller the change merged without a human
+      # look, the smaller that exposure. Minor and major updates get a comment and wait for a manual merge.
+      - name: Enable auto-merge for patch updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-patch'
         run: gh pr merge --auto --rebase "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Comment on minor updates
+        if: steps.metadata.outputs.update-type == 'version-update:semver-minor'
+        run: |
+          gh pr comment "$PR_URL" --body "This is a **minor version update**. Only patch updates auto-merge: merged code runs on the shared self-hosted runners (docs/deployment/self-hosted-runners.md). Skim the changelog, then merge when CI is green."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
