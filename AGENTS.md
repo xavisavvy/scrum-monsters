@@ -12,6 +12,12 @@ bd close <id>         # Complete work
 bd sync               # Sync with git
 ```
 
+## CI runners (read before touching workflows)
+
+Jobs on `[self-hosted, Linux, X64]` run on a shared, hardened WSL pool that also deploys lfg-app to production. Fork
+and Dependabot PRs must run on GitHub-hosted (keep the `runs-on` guard), and the pool has no Windows interop and no
+`/mnt/c`. Details: [docs/deployment/self-hosted-runners.md](docs/deployment/self-hosted-runners.md).
+
 ## Landing the Plane (Session Completion)
 
 **When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
