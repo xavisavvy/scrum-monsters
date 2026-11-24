@@ -47,4 +47,5 @@ What that means for workflows and scripts:
 Runner jobs run as the runner user, who is in the `docker` group (root-equivalent over that machine's Docker daemon,
 which every repo on the machine shares). That is acceptable only because of rule 1. Dependabot updates that are
 auto-merged reach the default branch and then run on the pool like any trusted push, so keep auto-merge to updates you
-would merge without reading.
+would merge without reading. In this repo `dependabot-auto-merge.yml` auto-merges **patch** updates only (since
+2026-11-24); minor and major updates get a comment and wait for a manual merge.
