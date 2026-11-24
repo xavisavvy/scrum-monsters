@@ -25,7 +25,7 @@ env:
 jobs:
   validate-specs:
     name: Validate API Specs
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     steps:
       - uses: actions/checkout@v7
 
@@ -46,7 +46,7 @@ jobs:
 
   type-drift:
     name: Check Type Generation Drift
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     steps:
       - uses: actions/checkout@v7
 
@@ -73,7 +73,7 @@ jobs:
 
   contract-tests:
     name: Contract Tests
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: validate-specs
 
     services:
@@ -194,7 +194,7 @@ jobs:
   # Gate job for branch protection
   api-contracts-success:
     name: API Contracts Success
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: [validate-specs, type-drift, contract-tests]
     if: always()
     steps:

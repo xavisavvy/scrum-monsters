@@ -32,7 +32,7 @@ jobs:
   # route through this single job.
   deploy:
     name: Deploy to scrummonsters.com
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 15
     if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
     environment:
@@ -78,7 +78,7 @@ jobs:
 
   smoke-test:
     name: Smoke Tests
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 10
     needs: [deploy]
     if: needs.deploy.result == 'success'
