@@ -33,7 +33,7 @@ jobs:
   # Quick checks that fail fast
   lint-and-typecheck:
     name: Lint & Type Check
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'' || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 10
 
     steps:
@@ -60,7 +60,7 @@ jobs:
 
   test:
     name: Test
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'' || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 15
     permissions:
       contents: read
@@ -98,7 +98,7 @@ jobs:
 
   build:
     name: Build
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'' || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 15
     needs: [lint-and-typecheck, test]
 
@@ -207,7 +207,7 @@ jobs:
 
   validate-migrations:
     name: Validate Migrations
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'' || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 15
 
     services:
@@ -320,7 +320,7 @@ jobs:
 
   update-coverage-badge:
     name: Update Coverage Badge
-    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'' || github.actor == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: [test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
 

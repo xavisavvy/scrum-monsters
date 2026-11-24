@@ -27,7 +27,7 @@ jobs:
   # PR anyway. The Playwright job below `needs: pre-check`.
   pre-check:
     name: Pre-check (typecheck)
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 5
     steps:
       - name: Checkout
@@ -45,7 +45,7 @@ jobs:
   accessibility:
     name: Accessibility Tests (axe-core)
     needs: pre-check
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     env:
       # Firefox refuses to launch as root when $HOME isn't owned by root —
       # the container's default $HOME (/github/home) is owned by the host

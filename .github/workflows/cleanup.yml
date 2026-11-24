@@ -16,7 +16,7 @@ env:
 jobs:
   cleanup-runs:
     name: Clean Old Workflow Runs
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 10
 
     steps:
@@ -31,7 +31,7 @@ jobs:
 
   cleanup-caches:
     name: Clean Old Caches
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 10
 
     steps:
@@ -62,7 +62,7 @@ jobs:
 
   cleanup-packages:
     name: Clean Old Package Versions
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     timeout-minutes: 10
 
     steps:

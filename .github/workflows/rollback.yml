@@ -42,7 +42,7 @@ env:
 jobs:
   rate-limit-check:
     name: Check Rate Limits
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     outputs:
       rate-check: ${{ steps.rate-check.outputs.rate-check }}
     steps:
@@ -85,7 +85,7 @@ jobs:
 
   rollback:
     name: Rollback ${{ github.event.inputs.environment }}
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: rate-limit-check
     # Environment protection - production requires approval
     environment:
@@ -305,7 +305,7 @@ jobs:
 
   audit-and-notify:
     name: Record Audit Trail
-    runs-on: '${{ fromJSON(github.event.pull_request.head.repo.fork && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
+    runs-on: '${{ fromJSON((github.event.pull_request.head.repo.fork || github.event.pull_request.user.login == ''dependabot[bot]'') && ''["ubuntu-latest"]'' || ''["self-hosted", "Linux", "X64"]'') }}'
     needs: rollback
     if: needs.rollback.outputs.rollback-success == 'true' && github.event.inputs.dry_run == 'false'
     permissions:
