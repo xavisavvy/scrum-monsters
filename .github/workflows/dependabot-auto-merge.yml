@@ -44,9 +44,12 @@ jobs:
           PR_URL: ${{ github.event.pull_request.html_url }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # A PR's update type can grow when Dependabot updates it (a patch PR rebased into a minor, a group gaining a
+      # minor bump), and auto-merge enabled earlier would survive. Minor and major steps therefore turn it off first.
       - name: Comment on minor updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-minor'
         run: |
+          gh pr merge --disable-auto "$PR_URL" || true
           gh pr comment "$PR_URL" --body "This is a **minor version update**. Only patch updates auto-merge: merged code runs on the shared self-hosted runners (docs/deployment/self-hosted-runners.md). Skim the changelog, then merge when CI is green."
         env:
           PR_URL: ${{ github.event.pull_request.html_url }}
@@ -55,6 +58,7 @@ jobs:
       - name: Comment on major updates
         if: steps.metadata.outputs.update-type == 'version-update:semver-major'
         run: |
+          gh pr merge --disable-auto "$PR_URL" || true
           gh pr comment "$PR_URL" --body "⚠️ This is a **major version update** and requires manual review.
 
           Please check:
